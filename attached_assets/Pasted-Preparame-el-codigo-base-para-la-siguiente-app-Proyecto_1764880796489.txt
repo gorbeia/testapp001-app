@@ -1,0 +1,170 @@
+Preparame el codigo base para la siguiente app:
+
+
+
+# 📱 Proyecto de APP para Sociedad Gastronómica (Glide)
+
+## 🎯 Objetivo
+
+Desarrollar una aplicación gratuita, bilingüe (Euskara prioritario + opción en Castellano), para la **gestión integral de una sociedad gastronómica**.
+La app permitirá gestionar usuarios, reservas, consumos, cuentas pendientes, comunicación interna y administración de cargos, incluyendo la **generación de listados SEPA para cobros bancarios**.
+
+---
+
+## 👥 Tipos de usuarios
+
+### 1. Roles principales de acceso
+
+* **Bazkidea (socio)**
+* **Laguna (acompañante de socio)**
+
+> Reglas:
+
+* Todo Bazkidea puede tener un único Laguna vinculado.
+* Todo Laguna debe estar vinculado obligatoriamente a un Bazkidea.
+
+### 2. Roles administrativos (funciones internas)
+
+Entre los Bazkidea se pueden asignar funciones adicionales:
+
+* **Administratzailea (Administrador de la APP)**
+* **Diruzaina (Tesorero)**
+* **Sotolaria (Bodeguero)**
+* **Arrunta (sin función especial)**
+
+> Los cargos (Administratzailea, Diruzaina, Sotolaria) disponen de **cuentas de acceso propias** (ej. `diruzaina@sociedad.com`) con contraseña que solo conoce quien ejerce el cargo en ese momento.
+> De este modo:
+
+* Un socio con cargo puede entrar como Bazkidea para sus usos habituales.
+* O entrar con el perfil del cargo para las funciones específicas.
+
+---
+
+## 🔑 Pantalla de inicio y acceso
+
+1. **Pantalla de login obligatoria** (email + contraseña).
+2. El sistema detecta el rol principal (Bazkidea o Laguna) y, en caso de ser Bazkidea, la función asignada.
+3. El menú principal se adapta según el rol.
+
+---
+
+## 🗂️ Funcionalidades principales
+
+### A) Para Bazkidea y Laguna
+
+* **Erreserbak (Reservas)**
+
+  * Reservar mesas y equipamiento de cocina.
+  * Definir tipo de evento (hamaiketako, comida, merienda, cena, cumpleaños).
+  * Costes fijos (mesa, cocina) se cargan automáticamente al evento.
+
+* **Kontsumoak (Consumiciones)**
+
+  * Registrar productos consumidos (barra o evento).
+  * Asociar consumos al evento activo.
+  * Al “cerrar cuenta”, el coste se acumula en el crédito pendiente del Bazkidea responsable.
+
+* **Zorrak (Créditos pendientes)**
+
+  * Consultar deuda acumulada por socio.
+  * Una vez se pasa el recibo bancario, el crédito vuelve a cero.
+
+* **Oharrak (Tablón de anuncios)**
+
+  * Publicaciones visibles a todos los usuarios por parte de Administratzailea, Diruzaina y Sotolaria.
+
+* **Txata (Chat interno)**
+
+  * Comunicación directa entre usuarios.
+
+---
+
+### B) Funciones específicas por cargo
+
+* **Administratzailea**
+
+  * Gestionar lista de usuarios (Erabiltzaileak):
+
+    * Crear nuevos.
+    * Asignar roles (Bazkidea/Laguna).
+    * Asignar funciones (Administratzailea, Diruzaina, Sotolaria).
+    * Vincular Bazkidea ↔ Laguna.
+  * Acceso completo a toda la app.
+
+* **Diruzaina**
+
+  * Control de créditos pendientes (Zorrak).
+  * Generar listado mensual de cobros.
+  * **Exportar listados SEPA en formato XML** desde los datos de Google Sheets (ver apartado SEPA).
+  * Control de pagos y reseteo de créditos tras cobro.
+
+* **Sotolaria**
+
+  * Gestión de inventario de productos (altas, bajas, movimientos).
+  * Registro de compras y consumos.
+  * Informes de stock y necesidades de reposición.
+
+---
+
+## 📤 Exportación SEPA
+
+### 🎯 Objetivo
+
+Permitir que el Diruzaina genere mensualmente un **archivo SEPA XML** con los recibos bancarios de cada socio.
+
+### 🔹 Datos necesarios
+
+* En **Erabiltzaileak**: nombre completo, IBAN, Bazkide_ID.
+* En **Zorrak**: Bazkide_ID, mes, importe pendiente.
+* En **Elkartea (nueva tabla)**:
+
+  * Izena (nombre de la sociedad).
+  * IBAN (cuenta emisora).
+  * Creditor ID (identificador SEPA obligatorio).
+
+### 🔹 Flujo
+
+1. Diruzaina revisa créditos pendientes.
+2. Genera listado mensual filtrado.
+3. Exporta a Google Sheets.
+4. Google Sheets convierte el listado a XML SEPA (script/plantilla).
+5. Archivo `.xml` se sube al banco para girar recibos.
+
+### ✅ Beneficios
+
+* Automatización del proceso de cobros.
+* Reducción de errores manuales.
+* Transparencia y trazabilidad para socios y tesorería.
+
+---
+
+## 🗃️ Tablas principales en Google Sheets
+
+1. **Erabiltzaileak** → usuarios (datos, rol, función, IBAN).
+2. **Erreserbak** → reservas de mesas y equipamiento.
+3. **Kontsumoak** → consumos por evento.
+4. **Zorrak** → créditos mensuales acumulados.
+5. **Produktuak** → inventario de productos.
+6. **Oharrak** → tablón de anuncios.
+7. **Txata** → mensajes internos.
+8. **Elkartea** → datos de la sociedad para recibos SEPA.
+
+---
+
+## 🌍 Idiomas
+
+* Euskara en todos los campos y menús.
+* Castellano disponible como idioma alternativo en la app.
+
+---
+
+## 📊 Informes exportables
+
+* Reservas por fecha y tipo.
+* Consumos por socio/evento.
+* Créditos pendientes por socio.
+* Stock e inventario.
+* Listados SEPA para el banco.
+
+
+
