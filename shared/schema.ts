@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, integer, decimal } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -48,7 +48,80 @@ export const insertProductSchema = createInsertSchema(products).pick({
   isActive: true,
 });
 
+// Consumption sessions/events (e.g., a bar tab, event consumption)
+export const consumptions = pgTable("consumptions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(), // Who made the consumption
+  eventId: varchar("event_id"), // Optional: linked to a reservation/event
+  type: text("type").notNull().default("bar"), // "bar", "event", "kitchen"
+  status: text("status").notNull().default("open"), // "open", "closed", "cancelled"
+  totalAmount: text("total_amount").notNull().default("0"), // Using text for decimal precision
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  closedAt: timestamp("closed_at"),
+  closedBy: varchar("closed_by"), // User who closed the consumption
+});
+
+// Individual consumption items (products within a consumption session)
+export const consumptionItems = pgTable("consumption_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  consumptionId: varchar("consumption_id").notNull(),
+  productId: varchar("product_id").notNull(),
+  quantity: integer("quantity").notNull().default(1),
+  unitPrice: text("unit_price").notNull(), // Price at time of consumption
+  totalPrice: text("total_price").notNull(), // unitPrice * quantity
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Stock movements (for tracking inventory changes)
+export const stockMovements = pgTable("stock_movements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull(),
+  type: text("type").notNull(), // "consumption", "purchase", "adjustment", "damage"
+  quantity: integer("quantity").notNull(), // Negative for consumption, positive for purchase
+  reason: text("reason"),
+  referenceId: varchar("reference_id"), // e.g., consumption_id, purchase_id
+  previousStock: text("previous_stock").notNull(),
+  newStock: text("new_stock").notNull(),
+  createdBy: varchar("created_by").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertConsumptionSchema = createInsertSchema(consumptions).pick({
+  userId: true,
+  eventId: true,
+  type: true,
+  notes: true,
+});
+
+export const insertConsumptionItemSchema = createInsertSchema(consumptionItems).pick({
+  consumptionId: true,
+  productId: true,
+  quantity: true,
+  unitPrice: true,
+  totalPrice: true,
+  notes: true,
+});
+
+export const insertStockMovementSchema = createInsertSchema(stockMovements).pick({
+  productId: true,
+  type: true,
+  quantity: true,
+  reason: true,
+  referenceId: true,
+  previousStock: true,
+  newStock: true,
+  createdBy: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
+export type InsertConsumption = z.infer<typeof insertConsumptionSchema>;
+export type Consumption = typeof consumptions.$inferSelect;
+export type InsertConsumptionItem = z.infer<typeof insertConsumptionItemSchema>;
+export type ConsumptionItem = typeof consumptionItems.$inferSelect;
+export type InsertStockMovement = z.infer<typeof insertStockMovementSchema>;
+export type StockMovement = typeof stockMovements.$inferSelect;

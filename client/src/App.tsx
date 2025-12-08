@@ -15,6 +15,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Dashboard } from "@/components/Dashboard";
 import { ReservationsPage } from "@/components/ReservationsPage";
 import { ConsumptionsPage } from "@/components/ConsumptionsPage";
+import { ConsumptionsListPage } from "@/components/ConsumptionsListPage";
 import { CreditsPage } from "@/components/CreditsPage";
 import { AnnouncementsPage } from "@/components/AnnouncementsPage";
 import { ChatPage } from "@/components/ChatPage";
@@ -31,6 +32,13 @@ function AppRoutes() {
       <Route path="/" component={Dashboard} />
       <Route path="/erreserbak" component={ReservationsPage} />
       <Route path="/kontsumoak" component={ConsumptionsPage} />
+      <Route path="/kontsumoak-zerrenda">
+        {() => (
+          <ProtectedRoute requiredAccess="admin">
+            <ConsumptionsListPage />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/zorrak" component={CreditsPage} />
       <Route path="/oharrak" component={AnnouncementsPage} />
       <Route path="/txata" component={ChatPage} />

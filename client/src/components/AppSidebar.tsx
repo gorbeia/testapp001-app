@@ -11,6 +11,7 @@ import {
   Building2,
   FileSpreadsheet,
   LogOut,
+  Receipt,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -66,6 +67,7 @@ export function AppSidebar() {
 
   const adminMenuItems = [
     ...(hasAdminAccess(user) ? [{ title: t('users'), url: '/erabiltzaileak', icon: Users }] : []),
+    ...(hasAdminAccess(user) ? [{ title: 'Kontsumo Zerrenda', url: '/kontsumoak-zerrenda', icon: Receipt }] : []),
     ...(hasCellarmanAccess(user) ? [{ title: t('products'), url: '/produktuak', icon: Package }] : []),
     ...(hasTreasurerAccess(user) ? [
       { title: t('society'), url: '/elkartea', icon: Building2 },

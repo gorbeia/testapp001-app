@@ -2,8 +2,8 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { db } from "./db";
-import { users, products, type User, type Product } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { users, products, consumptions, consumptionItems, stockMovements, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement } from "@shared/schema";
+import { eq, and } from "drizzle-orm";
 
 // Simple session storage (in production, use Redis or proper session store)
 const sessions = new Map<string, { user: User; timestamp: number }>();
@@ -437,6 +437,258 @@ export async function registerRoutes(
       }
       
       return res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Consumptions: create new consumption session
+  app.post("/api/consumptions", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      const consumptionData = {
+        ...req.body,
+        userId: user.id,
+      };
+      
+      const [newConsumption] = await db.insert(consumptions).values(consumptionData).returning();
+      
+      return res.status(201).json(newConsumption);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Consumptions: get all consumptions (admin) or user's consumptions
+  app.get("/api/consumptions", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      
+      let allConsumptions;
+      if (['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
+        // Admin can see all consumptions with user names
+        allConsumptions = await db
+          .select({
+            id: consumptions.id,
+            userId: consumptions.userId,
+            userName: users.name,
+            userUsername: users.username,
+            eventId: consumptions.eventId,
+            type: consumptions.type,
+            status: consumptions.status,
+            totalAmount: consumptions.totalAmount,
+            notes: consumptions.notes,
+            createdAt: consumptions.createdAt,
+            closedAt: consumptions.closedAt,
+            closedBy: consumptions.closedBy,
+          })
+          .from(consumptions)
+          .leftJoin(users, eq(consumptions.userId, users.id));
+      } else {
+        // Regular users can only see their own consumptions
+        allConsumptions = await db
+          .select({
+            id: consumptions.id,
+            userId: consumptions.userId,
+            userName: users.name,
+            userUsername: users.username,
+            eventId: consumptions.eventId,
+            type: consumptions.type,
+            status: consumptions.status,
+            totalAmount: consumptions.totalAmount,
+            notes: consumptions.notes,
+            createdAt: consumptions.createdAt,
+            closedAt: consumptions.closedAt,
+            closedBy: consumptions.closedBy,
+          })
+          .from(consumptions)
+          .leftJoin(users, eq(consumptions.userId, users.id))
+          .where(eq(consumptions.userId, user.id));
+      }
+      
+      return res.status(200).json(allConsumptions);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Consumptions: get consumption by ID with items
+  app.get("/api/consumptions/:id", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+      
+      // Get consumption with user info
+      const consumptionData = await db
+        .select({
+          id: consumptions.id,
+          userId: consumptions.userId,
+          userName: users.name,
+          userUsername: users.username,
+          eventId: consumptions.eventId,
+          type: consumptions.type,
+          status: consumptions.status,
+          totalAmount: consumptions.totalAmount,
+          notes: consumptions.notes,
+          createdAt: consumptions.createdAt,
+          closedAt: consumptions.closedAt,
+          closedBy: consumptions.closedBy,
+        })
+        .from(consumptions)
+        .leftJoin(users, eq(consumptions.userId, users.id))
+        .where(eq(consumptions.id, id))
+        .limit(1);
+      
+      if (!consumptionData.length) {
+        return res.status(404).json({ message: "Consumption not found" });
+      }
+      
+      const consumption = consumptionData[0];
+      
+      // Check permissions
+      if (consumption.userId !== user.id && !['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Get consumption items with product info
+      const items = await db
+        .select({
+          id: consumptionItems.id,
+          consumptionId: consumptionItems.consumptionId,
+          productId: consumptionItems.productId,
+          productName: products.name,
+          quantity: consumptionItems.quantity,
+          unitPrice: consumptionItems.unitPrice,
+          totalPrice: consumptionItems.totalPrice,
+          notes: consumptionItems.notes,
+          createdAt: consumptionItems.createdAt,
+        })
+        .from(consumptionItems)
+        .leftJoin(products, eq(consumptionItems.productId, products.id))
+        .where(eq(consumptionItems.consumptionId, id));
+      
+      return res.status(200).json({ consumption, items });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Consumption Items: add items to consumption
+  app.post("/api/consumptions/:id/items", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+      const { items } = req.body; // Array of { productId, quantity, notes }
+      
+      // Verify consumption exists and user has access
+      const consumption = await db.select().from(consumptions).where(eq(consumptions.id, id)).limit(1);
+      
+      if (!consumption.length) {
+        return res.status(404).json({ message: "Consumption not found" });
+      }
+      
+      if (consumption[0].userId !== user.id && !['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      if (consumption[0].status !== 'open') {
+        return res.status(400).json({ message: "Consumption is closed" });
+      }
+      
+      const addedItems = [];
+      let totalAmount = parseFloat(consumption[0].totalAmount || '0');
+      
+      for (const item of items) {
+        // Get product info
+        const product = await db.select().from(products).where(eq(products.id, item.productId)).limit(1);
+        
+        if (!product.length) {
+          return res.status(404).json({ message: `Product ${item.productId} not found` });
+        }
+        
+        const unitPrice = parseFloat(product[0].price);
+        const totalPrice = unitPrice * item.quantity;
+        
+        // Create consumption item
+        const [newItem] = await db.insert(consumptionItems).values({
+          consumptionId: id,
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: unitPrice.toString(),
+          totalPrice: totalPrice.toString(),
+          notes: item.notes || null,
+        }).returning();
+        
+        addedItems.push(newItem);
+        totalAmount += totalPrice;
+        
+        // Update product stock
+        const currentStock = parseInt(product[0].stock);
+        const newStock = currentStock - item.quantity;
+        
+        if (newStock < 0) {
+          return res.status(400).json({ message: `Insufficient stock for product ${product[0].name}` });
+        }
+        
+        await db.update(products)
+          .set({ stock: newStock.toString(), updatedAt: new Date() })
+          .where(eq(products.id, item.productId));
+        
+        // Create stock movement
+        await db.insert(stockMovements).values({
+          productId: item.productId,
+          type: 'consumption',
+          quantity: -item.quantity,
+          reason: 'Bar consumption',
+          referenceId: id,
+          previousStock: currentStock.toString(),
+          newStock: newStock.toString(),
+          createdBy: user.id,
+        });
+      }
+      
+      // Update consumption total
+      await db.update(consumptions)
+        .set({ totalAmount: totalAmount.toString() })
+        .where(eq(consumptions.id, id));
+      
+      return res.status(201).json({ items: addedItems, totalAmount: totalAmount.toString() });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Consumptions: close consumption
+  app.post("/api/consumptions/:id/close", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+      
+      const consumption = await db.select().from(consumptions).where(eq(consumptions.id, id)).limit(1);
+      
+      if (!consumption.length) {
+        return res.status(404).json({ message: "Consumption not found" });
+      }
+      
+      if (consumption[0].userId !== user.id && !['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      if (consumption[0].status !== 'open') {
+        return res.status(400).json({ message: "Consumption already closed" });
+      }
+      
+      const [updatedConsumption] = await db
+        .update(consumptions)
+        .set({ 
+          status: 'closed', 
+          closedAt: new Date(), 
+          closedBy: user.id 
+        })
+        .where(eq(consumptions.id, id))
+        .returning();
+      
+      return res.status(200).json(updatedConsumption);
     } catch (err) {
       next(err);
     }
