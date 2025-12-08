@@ -40,8 +40,8 @@ When('I log in as a bazkide user', async function () {
   assert.ok(page, 'Page was not initialized');
 
   await page.fill('[data-testid="input-email"]', 'bazkidea@txokoa.eus');
-  // Any password is accepted according to the demo notice
-  await page.fill('[data-testid="input-password"]', 'demo-password');
+  // Use the actual seeded password from the database
+  await page.fill('[data-testid="input-password"]', 'demo');
 
   await Promise.all([
     page.waitForLoadState('networkidle'),
@@ -64,13 +64,11 @@ When('I try to log in as a bazkide user with a wrong password', async function (
 Then('I should see the dashboard instead of the login form', async function () {
   assert.ok(page, 'Page was not initialized');
 
-  // Login form should disappear
-  const loginEmail = await page.$('[data-testid="input-email"]');
-  assert.equal(loginEmail, null, 'Login form is still visible after login');
+  // Wait for the login form to disappear after a successful SPA login
+  await page.waitForSelector('[data-testid="input-email"]', { state: 'detached', timeout: 5000 });
 
-  // Dashboard should be visible; check for a known dashboard element
-  const reservationItem = await page.$('[data-testid="reservation-item-1"]');
-  assert.ok(reservationItem, 'Dashboard reservations were not found');
+  // Then wait for a known dashboard element to appear
+  await page.waitForSelector('[data-testid="reservation-item-1"]', { timeout: 5000 });
 });
 
 Then('I should see a login error message and still see the login form', async function () {

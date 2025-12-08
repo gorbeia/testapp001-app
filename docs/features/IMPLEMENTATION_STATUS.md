@@ -5,14 +5,14 @@ Status legend:
 - 🟡 UI Only / Mock (front-end prototype, mock data, no real backend)
 - ❌ Not Implemented
 
-> Note: As of this branch, `server/routes.ts` is empty and most data comes from in-memory mocks in React components. Anything that requires real DB/API/SEPA integration is therefore at best **UI Only / Mock**.
+> Note: Most domain features still use frontend mock data, but **authentication login is now wired to a real API and PostgreSQL users table**, with a seed script and E2E tests. Other areas that talk about credits/reservations/etc. remain mock-only unless noted.
 
 ---
 
 ## 1. Authentication & User Management (`authentication.md`)
 
 1. **User Login** – Login form & auth context
-   - **Status**: 🟡 UI Only / Mock
+   - **Status**: ✅ Implemented (real API + DB-backed credentials, E2E tested; profile data still mocked on client)
 2. **Role-Based Access Control** – role-aware menus
    - **Status**: 🟡 UI Only / Mock
 3. **Create New User** – admin creates users

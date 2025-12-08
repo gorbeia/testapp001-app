@@ -58,14 +58,27 @@ const mockUsers: Record<string, User> = {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
 
-  const login = async (email: string, _password: string): Promise<void> => {
-    // todo: remove mock functionality - implement real login API call
-    const mockUser = mockUsers[email.toLowerCase()];
-    if (mockUser) {
-      setUser(mockUser);
-    } else {
+  const login = async (email: string, password: string): Promise<void> => {
+    const lowerEmail = email.toLowerCase();
+
+    // First, ask the backend to validate credentials against the database
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: lowerEmail, password }),
+    });
+
+    if (!response.ok) {
       throw new Error('Invalid credentials');
     }
+
+    // Once the backend confirms credentials, use the existing demo profile map
+    const mockUser = mockUsers[lowerEmail];
+    if (!mockUser) {
+      throw new Error('Unknown user profile');
+    }
+
+    setUser(mockUser);
   };
 
   const logout = () => {
