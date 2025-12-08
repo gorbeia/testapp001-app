@@ -56,7 +56,7 @@ export function ProductsPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">{t('products')}</h2>
@@ -79,7 +79,7 @@ export function ProductsPage() {
                 <Input placeholder="Produktuaren izena..." data-testid="input-product-name" />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t('price')} (€)</Label>
                   <Input type="number" step="0.01" min="0" placeholder="0.00" data-testid="input-product-price" />
@@ -99,7 +99,7 @@ export function ProductsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t('stock')}</Label>
                   <Input type="number" min="0" placeholder="0" data-testid="input-product-stock" />
@@ -163,7 +163,8 @@ export function ProductsPage() {
         </Select>
       </div>
 
-      <Card>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -235,6 +236,7 @@ export function ProductsPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </Card>
     </div>
   );

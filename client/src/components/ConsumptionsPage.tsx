@@ -92,8 +92,8 @@ export function ConsumptionsPage() {
   };
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      <div className="flex-1 p-6 overflow-auto">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
+      <div className="flex-1 p-4 sm:p-6 overflow-auto">
         <div className="space-y-6">
           <div>
             <h2 className="text-2xl font-bold">{t('consumptions')}</h2>
@@ -154,7 +154,7 @@ export function ConsumptionsPage() {
         </div>
       </div>
 
-      <div className="w-80 border-l bg-card flex flex-col">
+      <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l bg-card flex flex-col max-h-[50vh] lg:max-h-none">
         <div className="p-4 border-b">
           <h3 className="font-semibold flex items-center gap-2">
             <ShoppingCart className="h-4 w-4" />

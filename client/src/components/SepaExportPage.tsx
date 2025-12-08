@@ -51,7 +51,7 @@ export function SepaExportPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div>
         <h2 className="text-2xl font-bold">{t('sepaExport')}</h2>
         <p className="text-muted-foreground">Sortu SEPA XML fitxategia banku kobrantzarako</p>
@@ -121,6 +121,7 @@ export function SepaExportPage() {
               </div>
             )}
 
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -160,8 +161,9 @@ export function SepaExportPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
 
-            <div className="flex items-center justify-between mt-6 pt-4 border-t">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mt-6 pt-4 border-t">
               <div>
                 <p className="text-sm text-muted-foreground">Hautatutakoak: {selectedCredits.length}</p>
                 <p className="text-lg font-bold">{t('total')}: {totalAmount.toFixed(2)}€</p>
