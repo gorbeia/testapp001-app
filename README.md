@@ -29,7 +29,7 @@ A modern web application built with React, TypeScript, and Express.js for managi
 
 ## Database Setup
 
-1. **Start the PostgreSQL database**
+1. **Start the PostgreSQL database (Docker)**
    ```bash
    pnpm docker:db:up
    ```
@@ -44,53 +44,78 @@ A modern web application built with React, TypeScript, and Express.js for managi
 ### Development Mode
 
 ```bash
-# Start the development server
 pnpm dev
 ```
 
-The application will be available at `http://localhost:5173`
+The application will be available at `http://localhost:5000`.
 
 ### Production Build
 
 ```bash
-# Build the application
 pnpm build
-
-# Start the production server
 pnpm start
 ```
 
+---
+
+## E2E Tests (Playwright + Cucumber)
+
+End-to-end tests are implemented using **Playwright** and **Cucumber/Gherkin**. Currently there is a minimal test that verifies the **login page** loads correctly.
+
+### One-time setup
+
+1. **Install Playwright browsers**
+   ```bash
+   pnpm exec playwright install
+   ```
+
+This downloads Chromium/Firefox/WebKit binaries used by Playwright.
+
+### Running E2E tests
+
+1. **Start the application** (in one terminal):
+   ```bash
+   pnpm dev
+   ```
+
+2. **Run the E2E test suite** (in another terminal):
+   ```bash
+   pnpm test:e2e
+   ```
+
+This runs Cucumber with:
+- Features in `e2e/features/**/*.feature` (e.g. `e2e/features/login.feature`)
+- Step definitions in `e2e/steps/**/*.js` (e.g. `e2e/steps/login.steps.js`)
+
+You should see output similar to:
+
+```text
+1 scenario (1 passed)
+3 steps (3 passed)
+```
+
+### Structure
+
+- `e2e/features/login.feature`
+  - Gherkin feature that describes visiting the login page.
+- `e2e/steps/login.steps.js`
+  - Playwright-powered step definitions (ES modules) that:
+    - Launch Chromium
+    - Open `http://localhost:5000/`
+    - Assert that the login form inputs are present.
+
+---
+
 ## Available Scripts
 
-- `pnpm dev` - Start development server
-- `pnpm build` - Create production build
-- `pnpm start` - Start production server
-- `pnpm check` - Run TypeScript type checking
-- `pnpm docker:db:up` - Start the database
-- `pnpm docker:db:down` - Stop the database
-- `pnpm docker:db:reset` - Reset the database (deletes all data)
+- `pnpm dev` – Start development server
+- `pnpm build` – Create production build
+- `pnpm start` – Start production server
+- `pnpm check` – TypeScript type checking
+- `pnpm db:push` – Apply database schema via Drizzle
+- `pnpm docker:db:up` – Start PostgreSQL via Docker Compose
+- `pnpm docker:db:down` – Stop PostgreSQL
+- `pnpm docker:db:reset` – Reset PostgreSQL volume
+- `pnpm test:e2e` – Run E2E tests (Playwright + Cucumber)
 
-## Database Management
 
-- **URL**: `postgresql://postgres:postgres@localhost:5432/elkartearen`
-- **Username**: postgres
-- **Password**: postgres
-
-## User Stories Documentation
-
-Comprehensive user stories are available in the `docs/features/` directory:
-
-- [Authentication](docs/features/authentication.md) - User login and role management
-- [Reservations](docs/features/reservations.md) - Table and equipment reservations
-- [Consumptions](docs/features/consumptions.md) - Product consumption tracking
-- [Credits](docs/features/credits.md) - Credit management and SEPA export
-- [Communication](docs/features/communication.md) - Announcements and chat
-- [Inventory](docs/features/inventory.md) - Product and inventory management
-- [Society Management](docs/features/society-management.md) - Society configuration
-- [Internationalization](docs/features/internationalization.md) - Bilingual support
-
-See [User Stories Index](docs/features/README.md) for complete documentation.
-
-## License
-
-MIT
