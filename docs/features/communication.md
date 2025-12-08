@@ -1,5 +1,7 @@
 # User Stories: Communication (Oharrak & Txata)
 
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#5-communication--oharrak--txata-communicationmd)
+
 ## Epic: Announcements (Oharrak)
 
 ### Story 1: Create Announcement

@@ -1,5 +1,7 @@
 # User Stories: Authentication & User Management
 
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#1-authentication--user-management-authenticationmd)
+
 ## Epic: User Authentication
 
 ### Story 1: User Login

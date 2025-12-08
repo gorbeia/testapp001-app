@@ -1,5 +1,7 @@
 # User Stories: Credits (Zorrak)
 
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#4-credits--zorrak--sepa-creditsmd)
+
 ## Epic: Credit Management
 
 ### Story 1: View Pending Credits
