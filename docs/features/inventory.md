@@ -1,5 +1,7 @@
 # User Stories: Inventory Management (Produktuak)
 
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#6-inventory-management-produktuak-inventorymd)
+
 ## Epic: Product Management
 
 ### Story 1: Add New Products

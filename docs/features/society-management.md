@@ -1,5 +1,7 @@
 # User Stories: Society Management (Elkartea)
 
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#7-society-management-elkartea-society-managementmd)
+
 ## Epic: Society Configuration
 
 ### Story 1: Society Information

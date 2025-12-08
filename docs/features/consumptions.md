@@ -1,5 +1,7 @@
 # User Stories: Consumptions (Kontsumoak)
 
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#3-consumptions-kontsumoak-consumptionsmd)
+
 ## Epic: Consumption Registration
 
 ### Story 1: Register Bar Consumption

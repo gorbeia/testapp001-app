@@ -1,5 +1,7 @@
 # User Stories: Internationalization (Euskara/Castellano)
 
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#8-internationalization-euskaracastellano-internationalizationmd)
+
 ## Epic: Language Support
 
 ### Story 1: Primary Language (Euskara)

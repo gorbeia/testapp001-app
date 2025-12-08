@@ -1,5 +1,7 @@
 # User Stories: Reservations (Erreserbak)
 
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#2-reservations-erreserbak-reservationsmd)
+
 ## Epic: Table and Equipment Reservations
 
 ### Story 1: Create Reservation
