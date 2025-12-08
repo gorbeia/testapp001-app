@@ -104,6 +104,7 @@ export const translations = {
     unit: 'Unitatea',
     myCredits: 'Nire zorrak',
     allCredits: 'Zor guztiak',
+    confirmDeleteUser: 'Ziur zaude erabiltzailea ezabatu nahi duzula?',
   },
   es: {
     appName: 'Gure Txokoa',

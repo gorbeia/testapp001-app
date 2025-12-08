@@ -11,6 +11,7 @@
     "db:push": "drizzle-kit push",
     "db:seed": "tsx script/seed-users.ts",
     "test:e2e": "NODE_ENV=test cucumber-js e2e/features/**/*.feature --import e2e/steps/**/*.js --format progress",
+    "test:e2e:only": "NODE_ENV=test cucumber-js e2e/features/**/*.feature --import e2e/steps/**/*.js --format progress --tags '@only'",
     "docker:db:up": "docker-compose up -d db",
     "docker:db:down": "docker-compose down",
     "docker:db:reset": "docker-compose down -v && docker-compose up -d db"

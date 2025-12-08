@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Search, Users, Link2, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,24 +13,77 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 
-// todo: remove mock functionality - replace with real API data
-const mockUsers = [
-  { id: '1', name: 'Mikel Etxeberria', email: 'mikel@txokoa.eus', role: 'bazkidea', function: 'administratzailea', phone: '+34 943 123 456', iban: 'ES91 2100 0418 4502 0005 1332', linkedMember: null },
-  { id: '2', name: 'Ane Zelaia', email: 'ane@txokoa.eus', role: 'bazkidea', function: 'diruzaina', phone: '+34 943 234 567', iban: 'ES91 2100 0418 4502 0005 1333', linkedMember: null },
-  { id: '3', name: 'Jon Agirre', email: 'jon@txokoa.eus', role: 'bazkidea', function: 'sotolaria', phone: '+34 943 345 678', iban: 'ES91 2100 0418 4502 0005 1334', linkedMember: null },
-  { id: '4', name: 'Miren Urrutia', email: 'miren@txokoa.eus', role: 'bazkidea', function: 'arrunta', phone: '+34 943 456 789', iban: 'ES91 2100 0418 4502 0005 1335', linkedMember: null },
-  { id: '5', name: 'Andoni Garcia', email: 'andoni@txokoa.eus', role: 'laguna', function: 'arrunta', phone: '+34 943 567 890', iban: null, linkedMember: 'Miren Urrutia' },
-  { id: '6', name: 'Iñaki Mendizabal', email: 'inaki@txokoa.eus', role: 'bazkidea', function: 'arrunta', phone: '+34 943 678 901', iban: 'ES91 2100 0418 4502 0005 1336', linkedMember: null },
-];
+type UsersPageUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  function: string;
+  phone: string;
+  iban: string | null;
+  linkedMember: string | null;
+};
 
 export function UsersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const [users, setUsers] = useState<UsersPageUser[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UsersPageUser | null>(null);
 
-  const filteredUsers = mockUsers.filter((u) => {
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
+  const emailInputRef = useRef<HTMLInputElement | null>(null);
+  const editNameRef = useRef<HTMLInputElement | null>(null);
+  const editPhoneRef = useRef<HTMLInputElement | null>(null);
+  const editIbanRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const response = await fetch('/api/users');
+        if (!response.ok) return;
+        const data: {
+          id: string;
+          username: string;
+          password: string;
+          name: string | null;
+          role: string | null;
+          function: string | null;
+          phone: string | null;
+          iban: string | null;
+          linkedMemberId: string | null;
+          linkedMemberName: string | null;
+        }[] = await response.json();
+
+        setUsers((prev) => {
+          const existingEmails = new Set(prev.map((u) => u.email.toLowerCase()));
+          const mapped: UsersPageUser[] = data
+            .filter((dbUser) => !existingEmails.has(dbUser.username.toLowerCase()))
+            .map((dbUser) => ({
+              id: dbUser.id,
+              name: dbUser.name ?? dbUser.username,
+              email: dbUser.username,
+              role: dbUser.role ?? 'bazkidea',
+              function: dbUser.function ?? 'arrunta',
+              phone: dbUser.phone ?? '',
+              iban: dbUser.iban ?? null,
+              linkedMember: dbUser.linkedMemberName,
+            }));
+
+          return [...prev, ...mapped];
+        });
+      } catch {
+        // ignore errors for now
+      }
+    };
+
+    void loadUsers();
+  }, []);
+
+  const filteredUsers = users.filter((u) => {
     const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           u.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
@@ -50,6 +103,99 @@ export function UsersPage() {
     }
   };
 
+  const handleOpenEditUser = (user: UsersPageUser) => {
+    setEditingUser(user);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
+
+    const payload = {
+      name: editNameRef.current?.value.trim() || editingUser.name,
+      phone: editPhoneRef.current?.value.trim() || editingUser.phone,
+      iban: editIbanRef.current?.value.trim() ?? editingUser.iban ?? null,
+    };
+
+    try {
+      const response = await fetch(`/api/users/${encodeURIComponent(editingUser.id)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update user');
+      }
+
+      const updated = await response.json() as {
+        id: string;
+        username: string;
+        name: string | null;
+        role: string | null;
+        function: string | null;
+        phone: string | null;
+        iban: string | null;
+        linkedMemberName: string | null;
+      };
+
+      const updatedUser: UsersPageUser = {
+        id: updated.id,
+        name: updated.name ?? updated.username,
+        email: updated.username,
+        role: updated.role ?? editingUser.role,
+        function: updated.function ?? editingUser.function,
+        phone: updated.phone ?? '',
+        iban: updated.iban ?? null,
+        linkedMember: updated.linkedMemberName ?? editingUser.linkedMember,
+      };
+
+      setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+
+      toast({
+        title: t('success'),
+        description: `${updatedUser.name} (${updatedUser.email})`,
+      });
+
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+    } catch {
+      toast({
+        title: t('error'),
+        description: 'Ezin izan da erabiltzailea eguneratu',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteUser = async (user: UsersPageUser) => {
+    const confirmed = window.confirm(t('confirmDeleteUser'));
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`/api/users/${encodeURIComponent(user.id)}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok && response.status !== 204) {
+        throw new Error('Failed to delete user');
+      }
+
+      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+
+      toast({
+        title: t('success'),
+        description: `${user.name} (${user.email})`,
+      });
+    } catch {
+      toast({
+        title: t('error'),
+        description: 'Ezin izan da erabiltzailea ezabatu',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -59,12 +205,62 @@ export function UsersPage() {
       .slice(0, 2);
   };
 
-  const handleCreateUser = () => {
-    toast({
-      title: t('success'),
-      description: 'Erabiltzailea sortua / Usuario creado',
-    });
-    setIsDialogOpen(false);
+  const handleCreateUser = async () => {
+    const name = nameInputRef.current?.value.trim() ?? '';
+    const email = emailInputRef.current?.value.trim().toLowerCase() ?? '';
+
+    if (!email) {
+      toast({
+        title: t('error'),
+        description: t('email') + ' is required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: email, password: 'demo' }),
+      });
+
+      if (!response.ok) {
+        toast({
+          title: t('error'),
+          description: 'Ezin izan da erabiltzailea sortu',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const created: { id: number; username: string; password: string } = await response.json();
+
+      const newUser: UsersPageUser = {
+        id: String(created.id),
+        name: name || created.username,
+        email: created.username,
+        role: 'bazkidea',
+        function: 'arrunta',
+        phone: '',
+        iban: null,
+        linkedMember: null,
+      };
+
+      setUsers((prev) => [...prev, newUser]);
+
+      toast({
+        title: t('success'),
+        description: 'Erabiltzailea sortua / Usuario creado',
+      });
+      setIsDialogOpen(false);
+    } catch {
+      toast({
+        title: t('error'),
+        description: 'Ezin izan da erabiltzailea sortu',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -89,11 +285,20 @@ export function UsersPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Izena / Nombre</Label>
-                  <Input placeholder="Izena..." data-testid="input-user-name" />
+                  <Input
+                    placeholder="Izena..."
+                    data-testid="input-user-name"
+                    ref={nameInputRef}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label>{t('email')}</Label>
-                  <Input type="email" placeholder="email@txokoa.eus" data-testid="input-user-email" />
+                  <Input
+                    type="email"
+                    placeholder="email@txokoa.eus"
+                    data-testid="input-user-email"
+                    ref={emailInputRef}
+                  />
                 </div>
               </div>
 
@@ -139,7 +344,7 @@ export function UsersPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">Inor ez</SelectItem>
-                      {mockUsers.filter(u => u.role === 'bazkidea').map(u => (
+                      {users.filter(u => u.role === 'bazkidea').map(u => (
                         <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -163,6 +368,94 @@ export function UsersPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {editingUser && (
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>{t('edit')}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Izena / Nombre</Label>
+                    <Input
+                      defaultValue={editingUser.name}
+                      ref={editNameRef}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t('email')}</Label>
+                    <Input value={editingUser.email} disabled />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t('phone')}</Label>
+                    <Input defaultValue={editingUser.phone} ref={editPhoneRef} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t('role')}</Label>
+                    <Select defaultValue={editingUser.role} disabled>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bazkidea">{t('member')}</SelectItem>
+                        <SelectItem value="laguna">{t('companion')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>{t('function')}</Label>
+                    <Select defaultValue={editingUser.function} disabled>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="arrunta">{t('regular')}</SelectItem>
+                        <SelectItem value="administratzailea">{t('administrator')}</SelectItem>
+                        <SelectItem value="diruzaina">{t('treasurer')}</SelectItem>
+                        <SelectItem value="sotolaria">{t('cellarman')}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>{t('linkedMember')}</Label>
+                    <Input value={editingUser.linkedMember ?? ''} disabled />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>{t('iban')}</Label>
+                  <Input
+                    defaultValue={editingUser.iban ?? ''}
+                    ref={editIbanRef}
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditDialogOpen(false);
+                      setEditingUser(null);
+                    }}
+                  >
+                    {t('cancel')}
+                  </Button>
+                  <Button onClick={handleUpdateUser}>
+                    {t('save')}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
@@ -256,11 +549,14 @@ export function UsersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleOpenEditUser(user)}>
                           <Edit className="mr-2 h-4 w-4" />
                           {t('edit')}
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
+                        <DropdownMenuItem
+                          className="text-destructive"
+                          onClick={() => handleDeleteUser(user)}
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           {t('delete')}
                         </DropdownMenuItem>

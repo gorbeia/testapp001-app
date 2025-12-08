@@ -11,10 +11,13 @@
 
 **Acceptance Criteria:**
 - Login form requires email and password
-- System validates credentials against database
+- System validates credentials against PostgreSQL database via real API
 - Upon successful login, user is redirected to dashboard
 - Error messages appear for invalid credentials
 - Session is maintained across the application
+- **Implementation**: Real API endpoint `/api/auth/login` with database-backed credentials
+- **Testing**: E2E tests validate complete login flow
+- **Note**: Profile data remains mocked on client side
 
 ### Story 2: Role-Based Access Control
 **As a** system  
@@ -26,6 +29,7 @@
 - For Bazkidea, checks for administrative functions (Administratzailea, Diruzaina, Sotolaria)
 - Menu adapts based on detected role
 - Access restrictions enforced for different functionalities
+- **Implementation**: UI Only / Mock - role-aware menus exist but backend integration pending
 
 ## Epic: User Management (Administratzailea)
 
@@ -40,6 +44,9 @@
 - Assign administrative functions if applicable
 - Link Laguna to a Bazkidea (required for Laguna users)
 - Generate initial password or allow user creation with temporary password
+- **Implementation**: Fully implemented - UsersPage + real `/api/users` POST endpoint + database integration
+- **Testing**: Create dialog wired and E2E tested
+- **Database**: Users table with proper schema and seed script
 
 ### Story 4: Manage User Roles
 **As an** Administratzailea  
@@ -52,6 +59,7 @@
 - Ability to assign/remove administrative functions
 - Maintain Bazkidea-Laguna relationships
 - Audit trail of role changes
+- **Implementation**: Not Implemented - UI exists but backend role management pending
 
 ### Story 5: User Directory
 **As an** Administratzailea  
@@ -63,6 +71,9 @@
 - Filter by user type and administrative function
 - View user details including contact information
 - Export user list for administrative purposes
+- **Implementation**: Fully implemented - UsersPage table + filters backed by `/api/users` GET endpoint
+- **Database**: Seeded demo users for testing and demonstration
+- **Features**: Real-time search and filtering functionality
 
 ## Epic: User Profile Management
 
@@ -76,6 +87,7 @@
 - Show linked user relationships (Bazkidea ↔ Laguna)
 - Display current administrative functions if any
 - Option to edit personal information (limited fields)
+- **Implementation**: Not Implemented - profile viewing functionality pending
 
 ### Story 7: Update Password
 **As a** user  
@@ -87,3 +99,4 @@
 - Password strength validation
 - Confirmation of successful password change
 - Automatic logout after password change for security
+- **Implementation**: Not Implemented - password change flow pending
