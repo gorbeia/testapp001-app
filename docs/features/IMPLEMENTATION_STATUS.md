@@ -9,26 +9,37 @@ Status legend:
 
 ---
 
-## 1. Authentication & User Management (`authentication.md`)
+## 1. Authentication (`authentication.md`)
 
 1. **User Login** – Login form & auth context
    - **Status**: ✅ Implemented (real API + DB-backed credentials, E2E tested; profile data still mocked on client)
 2. **Role-Based Access Control** – role-aware menus
    - **Status**: 🟡 UI Only / Mock
-3. **Create New User** – admin creates users
-   - **Status**: 🟡 UI Only / Mock
-4. **Manage User Roles** – change roles/functions, audit
+3. **View Personal Profile** – self profile view
    - **Status**: ❌ Not Implemented
-5. **User Directory** – search/filter/export users
-   - **Status**: 🟡 UI Only / Mock
-6. **View Personal Profile** – self profile view
-   - **Status**: ❌ Not Implemented
-7. **Update Password** – change password flow
+4. **Update Password** – change password flow
    - **Status**: ❌ Not Implemented
 
 ---
 
-## 2. Reservations (Erreserbak) (`reservations.md`)
+## 2. User Management (`user-management.md`)
+
+1. **List users** – table with search/filter
+   - **Status**: ✅ Implemented (UsersPage table + filters backed by /api/users GET + seeded demo users)
+2. **Create a new member** – add bazkide with contact/bank details
+   - **Status**: ✅ Implemented (UsersPage + real /api/users POST + DB; create dialog wired and E2E tested)
+3. **Create a companion linked to a member** – add laguna linked to bazkide
+   - **Status**: ✅ Implemented (create dialog supports laguna role with linked member selection)
+4. **Edit user details** – update contact/role information
+   - **Status**: ✅ Implemented
+5. **Delete a user** – remove users
+   - **Status**:  ✅ Implemented
+6. **Role-based access to user management** – restrict admin page access
+   - **Status**: ❌ Not Implemented
+
+---
+
+## 3. Reservations (Erreserbak) (`reservations.md`)
 
 1. **Create Reservation** – date/time, event type, resources, cost
    - **Status**: 🟡 UI Only / Mock
@@ -47,7 +58,7 @@ Status legend:
 
 ---
 
-## 3. Consumptions (Kontsumoak) (`consumptions.md`)
+## 4. Consumptions (Kontsumoak) (`consumptions.md`)
 
 1. **Register Bar Consumption** – product grid + cart
    - **Status**: 🟡 UI Only / Mock
@@ -68,7 +79,7 @@ Status legend:
 
 ---
 
-## 4. Credits / Zorrak & SEPA (`credits.md`)
+## 5. Credits / Zorrak & SEPA (`credits.md`)
 
 1. **View Pending Credits (Bazkidea)** – personal debt view
    - **Status**: 🟡 UI Only / Mock
@@ -93,7 +104,7 @@ Status legend:
 
 ---
 
-## 5. Communication – Oharrak & Txata (`communication.md`)
+## 6. Communication – Oharrak & Txata (`communication.md`)
 
 ### Announcements (Oharrak)
 
@@ -120,7 +131,7 @@ Status legend:
 
 ---
 
-## 6. Inventory Management (Produktuak) (`inventory.md`)
+## 7. Inventory Management (Produktuak) (`inventory.md`)
 
 Most stories here require real products/stock tables and movement logs, which are not present yet.
 
@@ -137,7 +148,7 @@ Most stories here require real products/stock tables and movement logs, which ar
 
 ---
 
-## 7. Society Management (Elkartea) (`society-management.md`)
+## 8. Society Management (Elkartea) (`society-management.md`)
 
 All these stories depend on dedicated tables and admin UIs; currently only environment placeholders exist.
 
@@ -152,7 +163,7 @@ All these stories depend on dedicated tables and admin UIs; currently only envir
 
 ---
 
-## 8. Internationalization (Euskara/Castellano) (`internationalization.md`)
+## 9. Internationalization (Euskara/Castellano) (`internationalization.md`)
 
 1. **Primary Language (Euskara)** – full UI in EU
    - **Status**: ✅ Implemented (frontend)

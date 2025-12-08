@@ -16,6 +16,8 @@ This directory contains comprehensive user stories organized by feature area for
 - **[Communication](communication.md)** - Announcements and internal chat (Oharrak & Txata)
 
 ### Management Features
+// user management stories
+- **[User Management](user-management.md)** - Manage members and companions (Erabiltzaileak)
 - **[Inventory](inventory.md)** - Product and inventory management (Produktuak)
 - **[Society Management](society-management.md)** - Society configuration and administration (Elkartea)
 

@@ -56,7 +56,16 @@ const mockUsers: Record<string, User> = {
 };
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const stored = window.localStorage.getItem('auth:user');
+      if (!stored) return null;
+      return JSON.parse(stored) as User;
+    } catch {
+      return null;
+    }
+  });
 
   const login = async (email: string, password: string): Promise<void> => {
     const lowerEmail = email.toLowerCase();
@@ -79,10 +88,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     setUser(mockUser);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('auth:user', JSON.stringify(mockUser));
+    }
   };
 
   const logout = () => {
     setUser(null);
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('auth:user');
+    }
   };
 
   return (
