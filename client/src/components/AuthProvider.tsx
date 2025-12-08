@@ -54,6 +54,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('auth:user', JSON.stringify(updatedUser));
+    }
+  };
+
   const logout = async () => {
     try {
       // Call logout endpoint to invalidate session
@@ -77,7 +84,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

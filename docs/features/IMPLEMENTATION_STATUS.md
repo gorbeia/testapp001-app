@@ -16,9 +16,9 @@ Status legend:
 2. **Role-Based Access Control** – role-aware menus
    - **Status**: ✅ Implemented 
 3. **View Personal Profile** – self profile view
-   - **Status**: ❌ Not Implemented
+   - **Status**: ✅ Implemented
 4. **Update Password** – change password flow
-   - **Status**: ❌ Not Implemented
+   - **Status**: ✅ Implemented
 
 ---
 
@@ -35,7 +35,7 @@ Status legend:
 5. **Delete a user** – remove users
    - **Status**:  ✅ Implemented
 6. **Role-based access to user management** – restrict admin page access
-   - **Status**: ❌ Not Implemented
+   - **Status**: ✅ Implemented
 
 ---
 

@@ -48,6 +48,8 @@ When('I log in as a {word} user', async function (role) {
   const emailByRole = {
     bazkide: 'bazkidea@txokoa.eus',
     admin: 'admin@txokoa.eus',
+    sotolaria: 'sotolaria@txokoa.eus',
+    laguna: 'laguna@txokoa.eus',
   };
 
   const email = emailByRole[role];

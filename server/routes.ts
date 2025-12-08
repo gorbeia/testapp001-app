@@ -38,6 +38,15 @@ const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
+// Authentication middleware
+const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  next();
+};
+
 // Reusable validation middleware
 const validateUserId = (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params;
@@ -153,6 +162,113 @@ export async function registerRoutes(
         .returning();
 
       return res.status(201).json(created);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Users: update own profile (authenticated user only)
+  app.put("/api/users/:id/profile", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+
+      // Users can only update their own profile
+      if (!req.user || req.user.id !== id) {
+        return res.status(403).json({ message: "Forbidden: You can only update your own profile" });
+      }
+
+      const {
+        name,
+        phone,
+        iban,
+      } = req.body as {
+        name?: string;
+        phone?: string | null;
+        iban?: string | null;
+      };
+
+      const updateData: Partial<typeof users.$inferInsert> = {};
+      if (typeof name !== "undefined") updateData.name = name;
+      if (typeof phone !== "undefined") updateData.phone = phone;
+      if (typeof iban !== "undefined") updateData.iban = iban;
+
+      if (Object.keys(updateData).length === 0) {
+        return res.status(400).json({ message: "No updatable fields provided" });
+      }
+
+      await db
+        .update(users)
+        .set(updateData)
+        .where(eq(users.id, id));
+
+      // Fetch the complete updated user
+      const [updatedUser] = await db
+        .select()
+        .from(users)
+        .where(eq(users.id, id))
+        .limit(1);
+
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Update session with new user data
+      const sessionId = req.headers.authorization?.replace('Bearer ', '');
+      if (sessionId) {
+        const currentSession = sessions.get(sessionId);
+        if (currentSession) {
+          currentSession.user = updatedUser;
+        }
+      }
+      
+      // Transform username to email for frontend compatibility
+      const responseUser = {
+        ...updatedUser,
+        email: updatedUser.username
+      };
+      
+      return res.status(200).json(responseUser);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Change password
+  app.post("/api/change-password", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      const user = req.user!;
+
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ message: "Current password and new password are required" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+
+      // Verify current password (in a real app, you'd hash and compare)
+      if (user.password !== currentPassword) {
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+
+      // Update password
+      await db
+        .update(users)
+        .set({ password: newPassword })
+        .where(eq(users.id, user.id));
+
+      // Update session with new password
+      const sessionId = req.headers.authorization?.replace('Bearer ', '');
+      if (sessionId) {
+        const currentSession = sessions.get(sessionId);
+        if (currentSession) {
+          currentSession.user.password = newPassword;
+        }
+      }
+
+      return res.status(200).json({ message: "Password updated successfully" });
     } catch (err) {
       next(err);
     }
