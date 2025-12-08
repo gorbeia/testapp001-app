@@ -21,5 +21,34 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
+export const products = pgTable("products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  category: text("category").notNull(),
+  price: text("price").notNull(), // Using text for decimal precision
+  stock: text("stock").notNull().default("0"), // Using text for large numbers
+  unit: text("unit").notNull().default("unit"), // e.g., "unit", "kg", "liter"
+  minStock: text("min_stock").notNull().default("0"), // Alert threshold
+  supplier: text("supplier"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertProductSchema = createInsertSchema(products).pick({
+  name: true,
+  description: true,
+  category: true,
+  price: true,
+  stock: true,
+  unit: true,
+  minStock: true,
+  supplier: true,
+  isActive: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type Product = typeof products.$inferSelect;

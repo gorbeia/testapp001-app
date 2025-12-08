@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { db } from "./db";
-import { users, type User } from "@shared/schema";
+import { users, products, type User, type Product } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
 // Simple session storage (in production, use Redis or proper session store)
@@ -337,6 +337,105 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
 
+      return res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Products: get all products
+  app.get("/api/products", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const allProducts = await db.select().from(products);
+      return res.status(200).json(allProducts);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Products: get product by id
+  app.get("/api/products/:id", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const product = await db.select().from(products).where(eq(products.id, id)).limit(1);
+      
+      if (!product.length) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      return res.status(200).json(product[0]);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Products: create new product (admin only)
+  app.post("/api/products", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      
+      // Check if user is admin
+      if (user.role !== 'bazkidea' || user.function !== 'administratzailea') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const productData = req.body;
+      const [newProduct] = await db.insert(products).values(productData).returning();
+      
+      return res.status(201).json(newProduct);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Products: update product (admin only)
+  app.put("/api/products/:id", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+      
+      // Check if user is admin
+      if (user.role !== 'bazkidea' || user.function !== 'administratzailea') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const updateData = req.body;
+      const [updatedProduct] = await db
+        .update(products)
+        .set({ ...updateData, updatedAt: new Date() })
+        .where(eq(products.id, id))
+        .returning();
+      
+      if (!updatedProduct) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      return res.status(200).json(updatedProduct);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Products: delete product (admin only)
+  app.delete("/api/products/:id", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+      
+      // Check if user is admin
+      if (user.role !== 'bazkidea' || user.function !== 'administratzailea') {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const [deletedProduct] = await db
+        .delete(products)
+        .where(eq(products.id, id))
+        .returning();
+      
+      if (!deletedProduct) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
       return res.status(204).send();
     } catch (err) {
       next(err);
