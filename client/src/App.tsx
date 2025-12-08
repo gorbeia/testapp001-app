@@ -11,6 +11,7 @@ import { useAuth } from "@/lib/auth";
 import { LoginForm } from "@/components/LoginForm";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Dashboard } from "@/components/Dashboard";
 import { ReservationsPage } from "@/components/ReservationsPage";
 import { ConsumptionsPage } from "@/components/ConsumptionsPage";
@@ -32,10 +33,34 @@ function AppRoutes() {
       <Route path="/zorrak" component={CreditsPage} />
       <Route path="/oharrak" component={AnnouncementsPage} />
       <Route path="/txata" component={ChatPage} />
-      <Route path="/erabiltzaileak" component={UsersPage} />
-      <Route path="/produktuak" component={ProductsPage} />
-      <Route path="/elkartea" component={SocietyPage} />
-      <Route path="/sepa" component={SepaExportPage} />
+      <Route path="/erabiltzaileak">
+        {() => (
+          <ProtectedRoute requiredAccess="admin">
+            <UsersPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/produktuak">
+        {() => (
+          <ProtectedRoute requiredAccess="cellarman">
+            <ProductsPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/elkartea">
+        {() => (
+          <ProtectedRoute requiredAccess="treasurer">
+            <SocietyPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/sepa">
+        {() => (
+          <ProtectedRoute requiredAccess="treasurer">
+            <SepaExportPage />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route component={NotFound} />
     </Switch>
   );

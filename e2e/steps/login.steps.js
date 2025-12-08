@@ -1,20 +1,21 @@
 import { Given, When, Then, BeforeAll, AfterAll, setDefaultTimeout } from '@cucumber/cucumber';
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
+import { getBrowser, setBrowser, getPage, setPage } from './shared-state.js';
 
 setDefaultTimeout(60 * 1000);
 
-let browser;
-let page;
 let lastRandomUserEmail;
 
 BeforeAll(async () => {
-  browser = await chromium.launch();
+  const browserInstance = await chromium.launch();
+  setBrowser(browserInstance);
 });
 
 AfterAll(async () => {
-  if (browser) {
-    await browser.close();
+  const browserInstance = getBrowser();
+  if (browserInstance) {
+    await browserInstance.close();
   }
 });
 
@@ -24,11 +25,14 @@ Given('the application is running', async function () {
 });
 
 When('I open the login page', async function () {
-  page = await browser.newPage();
-  await page.goto('http://localhost:5000/', { waitUntil: 'networkidle' });
+  const browserInstance = getBrowser();
+  const pageInstance = await browserInstance.newPage();
+  setPage(pageInstance);
+  await pageInstance.goto('http://localhost:5000/', { waitUntil: 'networkidle' });
 });
 
 Then('I should see the login form', async function () {
+  const page = getPage();
   assert.ok(page, 'Page was not initialized');
   // Check for email and password inputs by data-testid
   const emailInput = await page.$('[data-testid="input-email"]');
@@ -38,6 +42,7 @@ Then('I should see the login form', async function () {
 });
 
 When('I log in as a {word} user', async function (role) {
+  const page = getPage();
   assert.ok(page, 'Page was not initialized');
 
   const emailByRole = {
@@ -59,6 +64,7 @@ When('I log in as a {word} user', async function (role) {
 });
 
 When('I try to log in as a bazkide user with a wrong password', async function () {
+  const page = getPage();
   assert.ok(page, 'Page was not initialized');
 
   await page.fill('[data-testid="input-email"]', 'bazkidea@txokoa.eus');
@@ -71,6 +77,7 @@ When('I try to log in as a bazkide user with a wrong password', async function (
 });
 
 Then('I should see the dashboard instead of the login form', async function () {
+  const page = getPage();
   assert.ok(page, 'Page was not initialized');
 
   // Wait for the login form to disappear after a successful SPA login
@@ -81,6 +88,7 @@ Then('I should see the dashboard instead of the login form', async function () {
 });
 
 Then('I should see a login error message and still see the login form', async function () {
+  const page = getPage();
   assert.ok(page, 'Page was not initialized');
 
   // Error banner should be visible with the invalid credentials message
@@ -95,6 +103,7 @@ Then('I should see a login error message and still see the login form', async fu
 });
 
 When('I open the users management page', async function () {
+  const page = getPage();
   assert.ok(page, 'Page was not initialized');
   await page.goto('http://localhost:5000/erabiltzaileak', { waitUntil: 'networkidle' });
 
@@ -103,6 +112,7 @@ When('I open the users management page', async function () {
 });
 
 When('I create a new random user', async function () {
+  const page = getPage();
   assert.ok(page, 'Page was not initialized');
 
   const suffix = Date.now().toString();
@@ -125,6 +135,7 @@ When('I create a new random user', async function () {
 });
 
 Then('I should see a success notification for the new user', async function () {
+  const page = getPage();
   assert.ok(page, 'Page was not initialized');
 
   // Wait for toast with the success message used in UsersPage
