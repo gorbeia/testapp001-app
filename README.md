@@ -118,6 +118,4 @@ You should see output similar to:
 - `pnpm docker:db:reset` – Reset PostgreSQL volume
 - `pnpm test:e2e` – Run E2E tests (Playwright + Cucumber)
 
-## License
 
-MIT
