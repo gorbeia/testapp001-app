@@ -84,8 +84,8 @@ export function ChatPage() {
   }, [currentMessages]);
 
   return (
-    <div className="flex h-[calc(100vh-4rem)]">
-      <div className="w-80 border-r flex flex-col">
+    <div className="flex flex-col md:flex-row h-[calc(100vh-4rem)]">
+      <div className="w-full md:w-80 border-b md:border-b-0 md:border-r flex flex-col max-h-[40vh] md:max-h-none">
         <div className="p-4 border-b">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

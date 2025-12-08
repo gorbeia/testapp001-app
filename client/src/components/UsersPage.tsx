@@ -68,7 +68,7 @@ export function UsersPage() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">{t('users')}</h2>
@@ -86,7 +86,7 @@ export function UsersPage() {
               <DialogTitle>{t('newUser')}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Izena / Nombre</Label>
                   <Input placeholder="Izena..." data-testid="input-user-name" />
@@ -97,7 +97,7 @@ export function UsersPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t('phone')}</Label>
                   <Input placeholder="+34..." data-testid="input-user-phone" />
@@ -116,7 +116,7 @@ export function UsersPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t('function')}</Label>
                   <Select>
@@ -188,7 +188,8 @@ export function UsersPage() {
         </Select>
       </div>
 
-      <Card>
+      <Card className="overflow-hidden">
+        <div className="overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
@@ -271,6 +272,7 @@ export function UsersPage() {
             )}
           </TableBody>
         </Table>
+        </div>
       </Card>
     </div>
   );

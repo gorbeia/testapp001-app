@@ -36,10 +36,10 @@ export function Dashboard() {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">{t('welcome')}, {user?.name?.split(' ')[0]}!</h2>
-        <p className="text-muted-foreground">
+        <h2 className="text-xl sm:text-2xl font-bold">{t('welcome')}, {user?.name?.split(' ')[0]}!</h2>
+        <p className="text-sm sm:text-base text-muted-foreground">
           {new Date().toLocaleDateString('eu-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </p>
       </div>
@@ -94,7 +94,7 @@ export function Dashboard() {
         )}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -108,7 +108,7 @@ export function Dashboard() {
               {mockUpcomingReservations.map((reservation) => (
                 <div
                   key={reservation.id}
-                  className="flex items-center justify-between gap-4 p-3 rounded-md bg-muted/50"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 p-3 rounded-md bg-muted/50"
                   data-testid={`reservation-item-${reservation.id}`}
                 >
                   <div className="flex-1 min-w-0">
@@ -117,7 +117,7 @@ export function Dashboard() {
                       {reservation.date} - {reservation.time}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 flex-wrap justify-end">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="secondary" className="text-xs">
                       {t('table')} {reservation.table}
                     </Badge>
