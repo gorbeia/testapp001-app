@@ -15,9 +15,9 @@
 - Upon successful login, user is redirected to dashboard
 - Error messages appear for invalid credentials
 - Session is maintained across the application
-- **Implementation**: Real API endpoint `/api/auth/login` with database-backed credentials
-- **Testing**: E2E tests validate complete login flow
-- **Note**: Profile data remains mocked on client side
+- **Implementation**: Real API endpoint `/api/login` with database-backed credentials and bcrypt password hashing
+- **Testing**: E2E tests validate complete login flow and role-based access control
+- **Note**: User data (name, role, function, etc.) is now real from database; session management implemented
 
 ### Story 2: Role-Based Access Control
 **As a** system  
@@ -29,7 +29,10 @@
 - For Bazkidea, checks for administrative functions (Administratzailea, Diruzaina, Sotolaria)
 - Menu adapts based on detected role
 - Access restrictions enforced for different functionalities
-- **Implementation**: UI Only / Mock - role-aware menus exist but backend integration pending
+- Direct URL access blocked for unauthorized users
+- **Implementation**: Fully implemented - frontend route protection + backend API middleware + database roles
+- **Testing**: E2E tests validate role-based menu visibility and access restrictions
+- **Security**: Both frontend routes and backend endpoints protected by role middleware
 
 ## Epic: User Management (Administratzailea)
 

@@ -14,7 +14,7 @@ Status legend:
 1. **User Login** – Login form & auth context
    - **Status**: ✅ Implemented (real API + DB-backed credentials, E2E tested; profile data still mocked on client)
 2. **Role-Based Access Control** – role-aware menus
-   - **Status**: 🟡 UI Only / Mock
+   - **Status**: ✅ Implemented 
 3. **View Personal Profile** – self profile view
    - **Status**: ❌ Not Implemented
 4. **Update Password** – change password flow

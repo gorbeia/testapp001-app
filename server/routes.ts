@@ -1,13 +1,68 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import bcrypt from "bcrypt";
 import { db } from "./db";
-import { users } from "@shared/schema";
+import { users, type User } from "@shared/schema";
 import { eq } from "drizzle-orm";
+
+// Simple session storage (in production, use Redis or proper session store)
+const sessions = new Map<string, { user: User; timestamp: number }>();
+
+// Session middleware
+const sessionMiddleware = (req: Request, res: Response, next: NextFunction) => {
+  const sessionId = req.headers.authorization?.replace('Bearer ', '');
+  
+  if (!sessionId) {
+    return next();
+  }
+
+  const session = sessions.get(sessionId);
+  if (session && Date.now() - session.timestamp < 24 * 60 * 60 * 1000) { // 24 hour expiry
+    req.user = session.user;
+    session.timestamp = Date.now(); // Update timestamp
+  }
+  
+  next();
+};
+
+// Role-based middleware
+const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  if (req.user.function !== 'administratzailea') {
+    return res.status(403).json({ message: "Admin access required" });
+  }
+  
+  next();
+};
+
+// Reusable validation middleware
+const validateUserId = (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(400).json({ message: "User id is required" });
+  }
+  next();
+};
+
+// Extend Express Request type
+declare global {
+  namespace Express {
+    interface Request {
+      user?: User;
+    }
+  }
+}
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  // Apply session middleware to all routes
+  app.use(sessionMiddleware);
+
   // Authentication: login using database-backed users table
   app.post("/api/login", async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -21,29 +76,69 @@ export async function registerRoutes(
         where: (u, { eq }) => eq(u.username, email.toLowerCase()),
       });
 
-      if (!dbUser || dbUser.password !== password) {
+      if (!dbUser) {
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // For now we only confirm credentials; profile/roles are managed on the client.
+      // Check if password is hashed (starts with $2b$) or plain text
+      let passwordValid = false;
+      if (dbUser.password.startsWith('$2b$')) {
+        // Hashed password - use bcrypt compare
+        passwordValid = await bcrypt.compare(password, dbUser.password);
+      } else {
+        // Plain text password - direct comparison (for backward compatibility)
+        passwordValid = dbUser.password === password;
+      }
+
+      if (!passwordValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Create a simple session token
+      const sessionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+      sessions.set(sessionId, {
+        user: dbUser,
+        timestamp: Date.now()
+      });
+
+      // Return user data and session token
+      const { password: _, ...userWithoutPassword } = dbUser;
+      return res.status(200).json({ 
+        user: userWithoutPassword,
+        token: sessionId
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Logout endpoint
+  app.post("/api/logout", (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const sessionId = req.headers.authorization?.replace('Bearer ', '');
+      if (sessionId) {
+        sessions.delete(sessionId);
+      }
       return res.status(200).json({ ok: true });
     } catch (err) {
       next(err);
     }
   });
 
-  // Users: list all users from the database
-  app.get("/api/users", async (_req: Request, res: Response, next: NextFunction) => {
+  // Users: list all users from the database (admin only)
+  app.get("/api/users", requireAdmin, async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const allUsers = await db.query.users.findMany();
-      return res.status(200).json(allUsers);
+      // Remove passwords from response
+      const usersWithoutPasswords = allUsers.map(({ password, ...user }) => user);
+      return res.status(200).json(usersWithoutPasswords);
     } catch (err) {
       next(err);
     }
   });
 
-  // Users: create a new user in the database
-  app.post("/api/users", async (req: Request, res: Response, next: NextFunction) => {
+  // Users: create a new user in the database (admin only)
+  app.post("/api/users", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { username, password } = req.body as { username?: string; password?: string };
 
@@ -51,9 +146,10 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Username and password are required" });
       }
 
+      const hashedPassword = await bcrypt.hash(password, 10);
       const [created] = await db
         .insert(users)
-        .values({ username: username.toLowerCase(), password })
+        .values({ username: username.toLowerCase(), password: hashedPassword })
         .returning();
 
       return res.status(201).json(created);
@@ -62,14 +158,10 @@ export async function registerRoutes(
     }
   });
 
-  // Users: update an existing user
-  app.put("/api/users/:id", async (req: Request, res: Response, next: NextFunction) => {
+  // Users: update an existing user (admin only)
+  app.put("/api/users/:id", requireAdmin, validateUserId, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-
-      if (!id) {
-        return res.status(400).json({ message: "User id is required" });
-      }
 
       const {
         name,
@@ -118,14 +210,10 @@ export async function registerRoutes(
     }
   });
 
-  // Users: delete a user by id
-  app.delete("/api/users/:id", async (req: Request, res: Response, next: NextFunction) => {
+  // Users: delete a user by id (admin only)
+  app.delete("/api/users/:id", requireAdmin, validateUserId, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-
-      if (!id) {
-        return res.status(400).json({ message: "User id is required" });
-      }
 
       const result = await db.delete(users).where(eq(users.id, id)).returning();
 

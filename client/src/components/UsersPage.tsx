@@ -1,17 +1,18 @@
-import { useEffect, useRef, useState } from 'react';
-import { Plus, Search, Users, Link2, Edit, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useState, useEffect, useRef } from 'react';
 import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
+import { authFetch } from '@/lib/api';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Search, Plus, Edit, Trash2, MoreHorizontal, Link2 } from 'lucide-react';
 
 type UsersPageUser = {
   id: string;
@@ -43,7 +44,7 @@ export function UsersPage() {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const response = await fetch('/api/users');
+        const response = await authFetch('/api/users');
         if (!response.ok) return;
         const data: {
           id: string;
@@ -118,7 +119,7 @@ export function UsersPage() {
     };
 
     try {
-      const response = await fetch(`/api/users/${encodeURIComponent(editingUser.id)}`, {
+      const response = await authFetch(`/api/users/${encodeURIComponent(editingUser.id)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -173,7 +174,7 @@ export function UsersPage() {
     if (!confirmed) return;
 
     try {
-      const response = await fetch(`/api/users/${encodeURIComponent(user.id)}`, {
+      const response = await authFetch(`/api/users/${encodeURIComponent(user.id)}`, {
         method: 'DELETE',
       });
 
@@ -219,7 +220,7 @@ export function UsersPage() {
     }
 
     try {
-      const response = await fetch('/api/users', {
+      const response = await authFetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: email, password: 'demo' }),
