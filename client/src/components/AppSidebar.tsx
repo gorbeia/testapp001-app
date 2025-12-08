@@ -139,17 +139,19 @@ export function AppSidebar() {
       <SidebarFooter className="p-4 border-t">
         {user && (
           <div className="flex items-center gap-3">
-            <Avatar className="h-9 w-9">
-              <AvatarFallback className="text-xs bg-accent">
-                {getInitials(user.name)}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{user.name}</p>
-              <Badge variant={getRoleBadgeVariant()} className="text-[10px] px-1.5 py-0">
-                {getRoleLabel()}
-              </Badge>
-            </div>
+            <Link href="/profila" className="flex items-center gap-3 flex-1 min-w-0 hover-elevate active-elevate-2 rounded-md p-1 -m-1" data-testid="link-profile">
+              <Avatar className="h-9 w-9">
+                <AvatarFallback className="text-xs bg-accent">
+                  {getInitials(user.name)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{user.name}</p>
+                <Badge variant={getRoleBadgeVariant()} className="text-[10px] px-1.5 py-0">
+                  {getRoleLabel()}
+                </Badge>
+              </div>
+            </Link>
             <button
               onClick={logout}
               className="p-2 hover-elevate active-elevate-2 rounded-md"

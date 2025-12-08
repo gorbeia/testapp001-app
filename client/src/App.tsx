@@ -22,6 +22,7 @@ import { UsersPage } from "@/components/UsersPage";
 import { ProductsPage } from "@/components/ProductsPage";
 import { SocietyPage } from "@/components/SocietyPage";
 import { SepaExportPage } from "@/components/SepaExportPage";
+import { UserProfile } from "@/components/UserProfile";
 import NotFound from "@/pages/not-found";
 
 function AppRoutes() {
@@ -33,6 +34,7 @@ function AppRoutes() {
       <Route path="/zorrak" component={CreditsPage} />
       <Route path="/oharrak" component={AnnouncementsPage} />
       <Route path="/txata" component={ChatPage} />
+      <Route path="/profila" component={UserProfile} />
       <Route path="/erabiltzaileak">
         {() => (
           <ProtectedRoute requiredAccess="admin">
