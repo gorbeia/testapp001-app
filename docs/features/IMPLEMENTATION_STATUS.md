@@ -5,7 +5,7 @@ Status legend:
 - 🟡 UI Only / Mock (front-end prototype, mock data, no real backend)
 - ❌ Not Implemented
 
-> Note: Most domain features still use frontend mock data, but **authentication login is now wired to a real API and PostgreSQL users table**, with a seed script and E2E tests. Other areas that talk about credits/reservations/etc. remain mock-only unless noted.
+> Note: Authentication, user management, reservations, consumptions, and products are now backed by real Express + Drizzle + PostgreSQL APIs (with seed scripts). Other areas (credits/SEPA, announcements, chat, society config) still rely on mock/front-end only behavior unless noted.
 
 ---
 
@@ -42,18 +42,16 @@ Status legend:
 ## 3. Reservations (Erreserbak) (`reservations.md`)
 
 1. **Create Reservation** – date/time, event type, resources, cost
-   - **Status**: 🟡 UI Only / Mock
+   - **Status**: ✅ Implemented (form posts to `/api/reservations`, stored in DB with auth)
 2. **View My Reservations** – list & filters
-   - **Status**: 🟡 UI Only / Mock
-3. **Reservation Calendar** – calendar overview
+   - **Status**: ✅ Implemented (fetches `/api/reservations`, server filters by user vs admin)
+3. **Manage All Reservations (Admin)** – global management
+   - **Status**: 🟡 Partial (admins can list/create/update/delete via API; UI is list/create only, no approval tools)
+4. **Resource Configuration** – tables, equipment, pricing
    - **Status**: ❌ Not Implemented
-4. **Manage All Reservations (Admin)** – global management
-   - **Status**: ❌ Not Implemented
-5. **Resource Configuration** – tables, equipment, pricing
-   - **Status**: ❌ Not Implemented
-6. **Cost Calculation** – breakdown per resource
-   - **Status**: 🟡 UI Only / Mock (static example)
-7. **Cost Integration with Credits** – push to Zorrak
+5. **Cost Calculation** – breakdown per resource
+   - **Status**: 🟡 Partial (simple per-guest/kitchen formula in UI; stored with reservation, no backend validation)
+6. **Cost Integration with Credits** – push to Zorrak
    - **Status**: ❌ Not Implemented
 
 ---
@@ -61,20 +59,18 @@ Status legend:
 ## 4. Consumptions (Kontsumoak) (`consumptions.md`)
 
 1. **Register Bar Consumption** – product grid + cart
-   - **Status**: 🟡 UI Only / Mock
-2. **Register Event Consumption** – tied to reservation
-   - **Status**: 🟡 UI Only / Mock (no real event linkage)
-3. **View Consumption History** – historical list
-   - **Status**: ❌ Not Implemented
-4. **Manage All Consumptions (Sotolaria)** – global view
-   - **Status**: ❌ Not Implemented
-5. **Close Event Account** – summarize & close
-   - **Status**: 🟡 UI Only / Mock (toast, no persistence)
-6. **Consumption Categories** – category filters & reports
-   - **Status**: 🟡 UI Only / Mock (basic category filter only)
-7. **Inventory Update from Consumptions** – stock decrement
-   - **Status**: ❌ Not Implemented
-8. **Consumption Analytics** – trends, peaks, revenue
+   - **Status**: ✅ Implemented (real products list, creates consumptions + items + closes via API, updates stock)
+2. **View Consumption History** – historical list
+   - **Status**: 🟡 Partial (admin list/detail via `/kontsumoak-zerrenda`; no member self-history UI)
+3. **Manage All Consumptions (Sotolaria)** – global view
+   - **Status**: ✅ Implemented (admin list/detail + API auth for role-based access)
+4. **Close Consumption Session** – summarize & close
+   - **Status**: ✅ Implemented (consumption close endpoint persists status/closedAt)
+5. **Consumption Categories** – category filters & reports
+   - **Status**: 🟡 Partial (category filters on products; no analytics/reporting)
+6. **Inventory Update from Consumptions** – stock decrement
+   - **Status**: ✅ Implemented (consumption items decrement stock and create stock movement records)
+7. **Consumption Analytics** – trends, peaks, revenue
    - **Status**: ❌ Not Implemented
 
 ---
@@ -136,9 +132,9 @@ Status legend:
 Most stories here require real products/stock tables and movement logs, which are not present yet.
 
 1. **Add / Update / View Products**
-   - **Status**: 🟡 UI Only / Mock (product page over mock data)
+   - **Status**: ✅ Implemented (ProductsPage backed by `/api/products` CRUD + PostgreSQL)
 2. **Stock Management & Movements**
-   - **Status**: ❌ Not Implemented
+   - **Status**: 🟡 Partial (stock decremented and movements recorded on consumptions; no UI for movements, no purchase/adjust flows)
 3. **Purchases & Suppliers**
    - **Status**: ❌ Not Implemented
 4. **Inventory Analytics & Optimization**
@@ -176,7 +172,7 @@ All these stories depend on dedicated tables and admin UIs; currently only envir
 
 ## Notes for Future Work
 
-- Back-end API & database models need to be implemented for all domains: users, reservations, consumptions, credits, announcements, chat, products, society, SEPA.
-- Once real endpoints and tables exist, this file should be updated story by story from 🟡/❌ towards ✅.
+- Back-end API & database models still needed for credits/SEPA, announcements, chat, and society configuration; existing domains (auth, users, reservations, consumptions, products) should continue to be hardened and expanded.
+- Once additional endpoints and tables exist, update each story here from 🟡/❌ toward ✅.
 - Keeping this file in sync with `docs/features/*.md` will provide a clear roadmap and progress tracker.
 

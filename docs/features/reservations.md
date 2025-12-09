@@ -10,12 +10,15 @@
 **So that** I can organize events and ensure availability  
 
 **Acceptance Criteria:**
-- Calendar view showing available dates and times
+- List view (table) of upcoming reservations; no calendar UI
+- Button to open a form for a new reservation
 - Select table(s) for reservation
 - Select kitchen equipment (cooking surface, griddle, ovens)
 - Choose event type: hamaiketako, comida, merienda, cena, cumpleaños
+- A table reserved for an event type is unavailable for additional reservations of that event type on the same day
 - Automatic cost calculation based on selected resources
 - Confirmation of reservation with details
+- Event-day consumptions are **not** logged within the reservation flow; they are recorded later as standard consumptions (bar tab) with no special “event consumption” feature.
 
 ### Story 2: View My Reservations
 **As a** Bazkidea or Laguna  
@@ -23,23 +26,16 @@
 **So that** I can manage my planned events  
 
 **Acceptance Criteria:**
-- List of current/future reservations with dates
+- List of current/future reservations with dates (table view)
 - Historical view of past reservations
-- Ability to cancel upcoming reservations (with time limits)
+- Ability for the creator to cancel their upcoming reservations (with time limits)
 - View reservation details including costs
-- Export personal reservation calendar
+- Export personal reservation list (no calendar export)
 
 ### Story 3: Reservation Calendar
 **As a** Bazkidea or Laguna  
 **I want to** see a calendar of all reservations  
 **So that** I can plan around existing bookings  
-
-**Acceptance Criteria:**
-- Monthly/weekly calendar view
-- Color-coded reservations by type
-- Filter by event type
-- Show availability status for different time slots
-- Quick access to create new reservation from calendar
 
 ## Epic: Reservation Management (Sotolaria/Administratzailea)
 
