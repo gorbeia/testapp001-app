@@ -71,10 +71,18 @@ When('I log in as a {word} user', async function (role: string) {
   // Use the actual seeded password from the database
   await page.fill('[data-testid="input-password"]', 'demo');
 
+  // Click login and wait for navigation
   await Promise.all([
     page.waitForLoadState('networkidle'),
     page.click('[data-testid="button-login"]'),
   ]);
+
+  // Wait a moment for the app to store the token
+  await page.waitForTimeout(1000);
+  
+  // Verify we're logged in by checking we're no longer on login page
+  const currentUrl = page.url();
+  assert.ok(!currentUrl.includes('/login'), 'Should be redirected from login page');
 });
 
 When('I try to log in as a bazkide user with a wrong password', async function () {

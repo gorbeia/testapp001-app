@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Building2, Save, CreditCard } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Building2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,28 +7,102 @@ import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 
-// todo: remove mock functionality - replace with real API data
-const mockSocietyData = {
-  name: 'Gure Txokoa',
-  iban: 'ES91 2100 0418 4502 0005 1330',
-  creditorId: 'ES45000B12345678',
-  address: 'Kale Nagusia 15, 20001 Donostia',
-  phone: '+34 943 111 222',
-  email: 'info@guretxokoa.eus',
-};
+interface Society {
+  id: string;
+  name: string;
+  iban: string;
+  creditorId: string;
+  address: string;
+  phone: string;
+  email: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export function SocietyPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [formData, setFormData] = useState(mockSocietyData);
+  const [society, setSociety] = useState<Society | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handleSave = () => {
-    console.log('Saving society data:', formData);
-    toast({
-      title: t('success'),
-      description: 'Datuak gordeta / Datos guardados',
-    });
+  // Load current society from API
+  useEffect(() => {
+    const fetchSociety = async () => {
+      try {
+        const token = localStorage.getItem('auth:token');
+        
+        const response = await fetch('/api/societies/user', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setSociety(data);
+        } else {
+          const errorText = await response.text();
+          console.error('API error:', response.status, errorText);
+        }
+      } catch (error) {
+        console.error('Error fetching society:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to load society data',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSociety();
+  }, [toast]);
+
+  const handleSave = async () => {
+    if (!society) return;
+
+    try {
+      const token = localStorage.getItem('auth:token');
+      const { id, createdAt, updatedAt, ...updateData } = society; // Remove timestamps
+      
+      const response = await fetch(`/api/societies/${society.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (response.ok) {
+        const savedSociety = await response.json();
+        setSociety(savedSociety);
+        toast({
+          title: t('success'),
+          description: 'Elkartearen datuak eguneratua / Datos de la sociedad actualizados',
+        });
+      } else {
+        throw new Error('Failed to save society');
+      }
+    } catch (error) {
+      console.error('Error saving society:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to save society data',
+        variant: 'destructive',
+      });
+    }
   };
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!society) {
+    return <div>No society data available</div>;
+  }
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -50,16 +124,16 @@ export function SocietyPage() {
             <div className="space-y-2">
               <Label>{t('societyName')}</Label>
               <Input
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                value={society.name}
+                onChange={(e) => setSociety({ ...society, name: e.target.value })}
                 data-testid="input-society-name"
               />
             </div>
             <div className="space-y-2">
               <Label>Helbidea / Dirección</Label>
               <Input
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                value={society.address}
+                onChange={(e) => setSociety({ ...society, address: e.target.value })}
                 data-testid="input-society-address"
               />
             </div>
@@ -67,8 +141,8 @@ export function SocietyPage() {
               <div className="space-y-2">
                 <Label>{t('phone')}</Label>
                 <Input
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  value={society.phone}
+                  onChange={(e) => setSociety({ ...society, phone: e.target.value })}
                   data-testid="input-society-phone"
                 />
               </div>
@@ -76,8 +150,8 @@ export function SocietyPage() {
                 <Label>{t('email')}</Label>
                 <Input
                   type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  value={society.email}
+                  onChange={(e) => setSociety({ ...society, email: e.target.value })}
                   data-testid="input-society-email"
                 />
               </div>
@@ -88,7 +162,7 @@ export function SocietyPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5" />
+              <Building2 className="h-5 w-5" />
               SEPA Konfigurazioa
             </CardTitle>
             <CardDescription>Ordainketa zuzenerako beharrezko datuak</CardDescription>
@@ -97,8 +171,8 @@ export function SocietyPage() {
             <div className="space-y-2">
               <Label>{t('societyIban')}</Label>
               <Input
-                value={formData.iban}
-                onChange={(e) => setFormData({ ...formData, iban: e.target.value })}
+                value={society.iban}
+                onChange={(e) => setSociety({ ...society, iban: e.target.value })}
                 placeholder="ES00 0000 0000 0000 0000 0000"
                 data-testid="input-society-iban"
               />
@@ -109,8 +183,8 @@ export function SocietyPage() {
             <div className="space-y-2">
               <Label>{t('creditorId')}</Label>
               <Input
-                value={formData.creditorId}
-                onChange={(e) => setFormData({ ...formData, creditorId: e.target.value })}
+                value={society.creditorId}
+                onChange={(e) => setSociety({ ...society, creditorId: e.target.value })}
                 placeholder="ES00000X00000000"
                 data-testid="input-creditor-id"
               />

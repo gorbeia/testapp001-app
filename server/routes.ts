@@ -910,6 +910,31 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/societies/user", sessionMiddleware, requireAuth, async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      
+      const user = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
+      
+      if (user.length === 0 || !user[0].societyId) {
+        return res.status(404).json({ message: "User society not found" });
+      }
+      
+      const society = await db.select().from(societies).where(eq(societies.id, user[0].societyId)).limit(1);
+      
+      if (society.length === 0) {
+        return res.status(404).json({ message: "Society not found" });
+      }
+      
+      res.json(society[0]);
+    } catch (error) {
+      console.error('Error in /api/societies/user:', error);
+      next(error);
+    }
+  });
+
   app.get("/api/societies/:id", requireAuth, async (req, res, next) => {
     try {
       const { id } = req.params;
@@ -945,11 +970,19 @@ export async function registerRoutes(
   app.put("/api/societies/:id", requireAdmin, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const updateData = req.body;
+      const { name, iban, creditorId, address, phone, email } = req.body;
       
       const [updatedSociety] = await db
         .update(societies)
-        .set({ ...updateData, updatedAt: new Date() })
+        .set({ 
+          name, 
+          iban, 
+          creditorId, 
+          address, 
+          phone, 
+          email,
+          updatedAt: new Date() 
+        })
         .where(eq(societies.id, id))
         .returning();
       
@@ -959,6 +992,7 @@ export async function registerRoutes(
       
       res.json(updatedSociety);
     } catch (error) {
+      console.error('Error updating society:', error);
       next(error);
     }
   });
