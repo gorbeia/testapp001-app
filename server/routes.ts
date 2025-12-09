@@ -626,10 +626,7 @@ export async function registerRoutes(
         const currentStock = parseInt(product[0].stock);
         const newStock = currentStock - item.quantity;
         
-        if (newStock < 0) {
-          return res.status(400).json({ message: `Insufficient stock for product ${product[0].name}` });
-        }
-        
+        // Allow negative stocks since consumption represents actual usage
         await db.update(products)
           .set({ stock: newStock.toString(), updatedAt: new Date() })
           .where(eq(products.id, item.productId));

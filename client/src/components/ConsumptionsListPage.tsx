@@ -205,8 +205,8 @@ export function ConsumptionsListPage() {
                 </TableRow>
               ) : (
                 filteredConsumptions.map((consumption) => (
-                  <TableRow key={consumption.id}>
-                    <TableCell className="font-mono text-xs">
+                  <TableRow key={consumption.id} data-testid="consumption-row">
+                    <TableCell className="font-mono text-xs" data-testid="consumption-id">
                       {consumption.id.slice(0, 8)}...
                     </TableCell>
                     <TableCell>
@@ -228,7 +228,7 @@ export function ConsumptionsListPage() {
                         {statusLabels[consumption.status] || consumption.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium" data-testid="consumption-total">
                       {parseFloat(consumption.totalAmount).toFixed(2)}€
                     </TableCell>
                     <TableCell>

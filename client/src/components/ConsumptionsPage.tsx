@@ -253,9 +253,8 @@ export function ConsumptionsPage() {
                 return (
                   <Card
                     key={product.id}
-                    className="hover-elevate active-elevate-2 cursor-pointer"
-                    onClick={() => addToCart(product)}
-                    data-testid={`card-product-${product.id}`}
+                    className="hover-elevate"
+                    data-testid={`product-card`}
                   >
                     <CardContent className="p-4">
                       <div className="flex flex-col gap-2">
@@ -276,6 +275,18 @@ export function ConsumptionsPage() {
                             </Badge>
                           )}
                         </div>
+                        <Button
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            addToCart(product);
+                          }}
+                          className="w-full mt-2"
+                          data-testid="button-add-to-cart"
+                        >
+                          <Plus className="h-4 w-4 mr-1" />
+                          Gehitu
+                        </Button>
                       </div>
                     </CardContent>
                   </Card>
@@ -292,7 +303,7 @@ export function ConsumptionsPage() {
             <ShoppingCart className="h-4 w-4" />
             {t('cart')}
             {cartCount > 0 && (
-              <Badge variant="secondary" className="ml-auto">
+              <Badge variant="secondary" className="ml-auto" data-testid="cart-count">
                 {cartCount}
               </Badge>
             )}
@@ -311,7 +322,7 @@ export function ConsumptionsPage() {
                 <div
                   key={item.productId}
                   className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50"
-                  data-testid={`cart-item-${item.productId}`}
+                  data-testid={`cart-item`}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{item.name}</p>
@@ -325,7 +336,7 @@ export function ConsumptionsPage() {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => updateQuantity(item.productId, -1)}
-                      data-testid={`button-decrease-${item.productId}`}
+                      data-testid={`button-decrease-quantity`}
                     >
                       <Minus className="h-3 w-3" />
                     </Button>
@@ -335,7 +346,7 @@ export function ConsumptionsPage() {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => updateQuantity(item.productId, 1)}
-                      data-testid={`button-increase-${item.productId}`}
+                      data-testid={`button-increase-quantity`}
                     >
                       <Plus className="h-3 w-3" />
                     </Button>
@@ -374,7 +385,7 @@ export function ConsumptionsPage() {
 
       {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl" data-testid="confirmation-dialog">
           <DialogHeader>
             <DialogTitle className="text-xl">Kontsumoa Baieztatu</DialogTitle>
           </DialogHeader>
@@ -385,11 +396,11 @@ export function ConsumptionsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">Kidea</p>
-                  <p className="text-lg font-bold">{user?.name || user?.email || 'Ezezaguna'}</p>
+                  <p className="text-lg font-bold" data-testid="member-name">{user?.name || user?.email || 'Ezezaguna'}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm font-medium text-muted-foreground">Guztira</p>
-                  <p className="text-2xl font-bold text-primary">{cartTotal.toFixed(2)}€</p>
+                  <p className="text-2xl font-bold text-primary" data-testid="total-amount">{cartTotal.toFixed(2)}€</p>
                 </div>
               </div>
             </div>
@@ -398,7 +409,7 @@ export function ConsumptionsPage() {
             <div>
               <h3 className="text-lg font-semibold mb-3">Produktuak</h3>
               <ScrollArea className="h-48 border rounded-md">
-                <Table>
+                <Table data-testid="confirmation-items-table">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Produktua</TableHead>
@@ -437,6 +448,7 @@ export function ConsumptionsPage() {
               variant="outline"
               onClick={() => setShowConfirmDialog(false)}
               disabled={isClosingAccount}
+              data-testid="button-cancel-consumption"
             >
               Utzi
             </Button>
@@ -444,6 +456,7 @@ export function ConsumptionsPage() {
               onClick={confirmCloseAccount}
               disabled={isClosingAccount}
               className="bg-green-600 hover:bg-green-700"
+              data-testid="button-confirm-consumption"
             >
               <Receipt className="mr-2 h-4 w-4" />
               {isClosingAccount ? 'Gordetzen...' : 'Baieztatu eta Gorde'}
