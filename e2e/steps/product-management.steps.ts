@@ -1,6 +1,6 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import assert from 'node:assert/strict';
-import { getPage } from './shared-state.js';
+import { getPage } from './shared-state';
 
 // Helper function to generate dynamic product names
 function generateProductName(baseName: string): string {

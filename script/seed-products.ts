@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Client } from 'pg';
-import { products } from '../shared/schema';
+import { products, societies } from '../shared/schema';
+import { eq } from 'drizzle-orm';
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -12,6 +13,21 @@ async function main() {
   const client = new Client({ connectionString: databaseUrl });
   await client.connect();
   const db = drizzle(client);
+
+  // Get the active society or the first one
+  let societyId = '';
+  const activeSociety = await db.select().from(societies).where(eq(societies.isActive, true)).limit(1);
+  if (activeSociety.length === 0) {
+    const firstSociety = await db.select().from(societies).limit(1);
+    if (firstSociety.length === 0) {
+      throw new Error('No societies found in database');
+    }
+    societyId = firstSociety[0].id;
+  } else {
+    societyId = activeSociety[0].id;
+  }
+
+  console.log('Using society ID for products:', societyId);
 
   const demoProducts = [
     // Beverages
@@ -160,7 +176,10 @@ async function main() {
   console.log('Seeding demo products...');
 
   for (const product of demoProducts) {
-    await db.insert(products).values(product);
+    await db.insert(products).values({
+      ...product,
+      societyId,
+    });
   }
 
   console.log('Done.');

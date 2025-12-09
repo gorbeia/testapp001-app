@@ -1,6 +1,6 @@
 import { Given, When, Then } from '@cucumber/cucumber';
 import assert from 'node:assert/strict';
-import { getPage } from './shared-state.js';
+import { getPage } from './shared-state';
 
 Given('I navigate to the profile page', async function () {
   const page = getPage();

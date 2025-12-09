@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { db } from "./db";
-import { users, products, consumptions, consumptionItems, stockMovements, reservations, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation } from "@shared/schema";
+import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 
 // Simple session storage (in production, use Redis or proper session store)
@@ -64,6 +64,20 @@ declare global {
     }
   }
 }
+
+// Helper function to get active society ID
+const getActiveSocietyId = async (): Promise<string> => {
+  const activeSociety = await db.select().from(societies).where(eq(societies.isActive, true)).limit(1);
+  if (activeSociety.length === 0) {
+    // If no active society, get the first one
+    const firstSociety = await db.select().from(societies).limit(1);
+    if (firstSociety.length === 0) {
+      throw new Error('No societies found in database. Please seed societies first.');
+    }
+    return firstSociety[0].id;
+  }
+  return activeSociety[0].id;
+};
 
 export async function registerRoutes(
   httpServer: Server,
@@ -156,9 +170,14 @@ export async function registerRoutes(
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
+      const activeSocietyId = await getActiveSocietyId();
       const [created] = await db
         .insert(users)
-        .values({ username: username.toLowerCase(), password: hashedPassword })
+        .values({ 
+          username: username.toLowerCase(), 
+          password: hashedPassword,
+          societyId: activeSocietyId,
+        })
         .returning();
 
       return res.status(201).json(created);
@@ -346,7 +365,8 @@ export async function registerRoutes(
   // Products: get all products
   app.get("/api/products", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const allProducts = await db.select().from(products);
+      const activeSocietyId = await getActiveSocietyId();
+      const allProducts = await db.select().from(products).where(eq(products.societyId, activeSocietyId));
       return res.status(200).json(allProducts);
     } catch (err) {
       next(err);
@@ -357,7 +377,13 @@ export async function registerRoutes(
   app.get("/api/products/:id", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const product = await db.select().from(products).where(eq(products.id, id)).limit(1);
+      const activeSocietyId = await getActiveSocietyId();
+      const product = await db.select().from(products)
+        .where(and(
+          eq(products.id, id),
+          eq(products.societyId, activeSocietyId)
+        ))
+        .limit(1);
       
       if (!product.length) {
         return res.status(404).json({ message: "Product not found" });
@@ -380,7 +406,13 @@ export async function registerRoutes(
       }
 
       const productData = req.body;
-      const [newProduct] = await db.insert(products).values(productData).returning();
+      const activeSocietyId = await getActiveSocietyId();
+      
+      // Auto-assign the active society ID
+      const [newProduct] = await db.insert(products).values({
+        ...productData,
+        societyId: activeSocietyId,
+      }).returning();
       
       return res.status(201).json(newProduct);
     } catch (err) {
@@ -446,9 +478,11 @@ export async function registerRoutes(
   app.post("/api/consumptions", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user!;
+      const activeSocietyId = await getActiveSocietyId();
       const consumptionData = {
         ...req.body,
         userId: user.id,
+        societyId: activeSocietyId,
       };
       
       const [newConsumption] = await db.insert(consumptions).values(consumptionData).returning();
@@ -463,6 +497,7 @@ export async function registerRoutes(
   app.get("/api/consumptions", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user!;
+      const activeSocietyId = await getActiveSocietyId();
       
       let allConsumptions;
       if (['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
@@ -483,7 +518,8 @@ export async function registerRoutes(
             closedBy: consumptions.closedBy,
           })
           .from(consumptions)
-          .leftJoin(users, eq(consumptions.userId, users.id));
+          .leftJoin(users, eq(consumptions.userId, users.id))
+          .where(eq(consumptions.societyId, activeSocietyId));
       } else {
         // Regular users can only see their own consumptions
         allConsumptions = await db
@@ -503,7 +539,10 @@ export async function registerRoutes(
           })
           .from(consumptions)
           .leftJoin(users, eq(consumptions.userId, users.id))
-          .where(eq(consumptions.userId, user.id));
+          .where(and(
+            eq(consumptions.userId, user.id),
+            eq(consumptions.societyId, activeSocietyId)
+          ));
       }
       
       return res.status(200).json(allConsumptions);
@@ -519,6 +558,7 @@ export async function registerRoutes(
       const user = req.user!;
       
       // Get consumption with user info
+      const activeSocietyId = await getActiveSocietyId();
       const consumptionData = await db
         .select({
           id: consumptions.id,
@@ -536,7 +576,10 @@ export async function registerRoutes(
         })
         .from(consumptions)
         .leftJoin(users, eq(consumptions.userId, users.id))
-        .where(eq(consumptions.id, id))
+        .where(and(
+          eq(consumptions.id, id),
+          eq(consumptions.societyId, activeSocietyId)
+        ))
         .limit(1);
       
       if (!consumptionData.length) {
@@ -581,7 +624,13 @@ export async function registerRoutes(
       const { items } = req.body; // Array of { productId, quantity, notes }
       
       // Verify consumption exists and user has access
-      const consumption = await db.select().from(consumptions).where(eq(consumptions.id, id)).limit(1);
+      const activeSocietyId = await getActiveSocietyId();
+      const consumption = await db.select().from(consumptions)
+        .where(and(
+          eq(consumptions.id, id),
+          eq(consumptions.societyId, activeSocietyId)
+        ))
+        .limit(1);
       
       if (!consumption.length) {
         return res.status(404).json({ message: "Consumption not found" });
@@ -632,8 +681,10 @@ export async function registerRoutes(
           .where(eq(products.id, item.productId));
         
         // Create stock movement
+        const activeSocietyId = await getActiveSocietyId();
         await db.insert(stockMovements).values({
           productId: item.productId,
+          societyId: activeSocietyId,
           type: 'consumption',
           quantity: -item.quantity,
           reason: 'Bar consumption',
@@ -661,7 +712,13 @@ export async function registerRoutes(
       const { id } = req.params;
       const user = req.user!;
       
-      const consumption = await db.select().from(consumptions).where(eq(consumptions.id, id)).limit(1);
+      const activeSocietyId = await getActiveSocietyId();
+      const consumption = await db.select().from(consumptions)
+        .where(and(
+          eq(consumptions.id, id),
+          eq(consumptions.societyId, activeSocietyId)
+        ))
+        .limit(1);
       
       if (!consumption.length) {
         return res.status(404).json({ message: "Consumption not found" });
@@ -695,13 +752,18 @@ export async function registerRoutes(
   app.get("/api/reservations", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user!;
+      const activeSocietyId = await getActiveSocietyId();
       
       // Users can see their own reservations, admins can see all
       let reservationsList;
       if (['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
-        reservationsList = await db.select().from(reservations);
+        reservationsList = await db.select().from(reservations).where(eq(reservations.societyId, activeSocietyId));
       } else {
-        reservationsList = await db.select().from(reservations).where(eq(reservations.userId, user.id));
+        reservationsList = await db.select().from(reservations)
+          .where(and(
+            eq(reservations.userId, user.id),
+            eq(reservations.societyId, activeSocietyId)
+          ));
       }
       
       res.json(reservationsList);
@@ -715,7 +777,13 @@ export async function registerRoutes(
       const { id } = req.params;
       const user = req.user!;
       
-      const reservation = await db.select().from(reservations).where(eq(reservations.id, id)).limit(1);
+      const activeSocietyId = await getActiveSocietyId();
+      const reservation = await db.select().from(reservations)
+        .where(and(
+          eq(reservations.id, id),
+          eq(reservations.societyId, activeSocietyId)
+        ))
+        .limit(1);
       
       if (!reservation.length) {
         return res.status(404).json({ message: "Reservation not found" });
@@ -735,9 +803,12 @@ export async function registerRoutes(
   app.post("/api/reservations", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user!;
+      const activeSocietyId = await getActiveSocietyId();
+      
       const reservationData = {
         ...req.body,
         userId: user.id,
+        societyId: activeSocietyId,
         status: 'pending',
         totalAmount: '0',
         depositAmount: '0',
@@ -755,7 +826,13 @@ export async function registerRoutes(
       const { id } = req.params;
       const user = req.user!;
       
-      const reservation = await db.select().from(reservations).where(eq(reservations.id, id)).limit(1);
+      const activeSocietyId = await getActiveSocietyId();
+      const reservation = await db.select().from(reservations)
+        .where(and(
+          eq(reservations.id, id),
+          eq(reservations.societyId, activeSocietyId)
+        ))
+        .limit(1);
       
       if (!reservation.length) {
         return res.status(404).json({ message: "Reservation not found" });
@@ -782,7 +859,13 @@ export async function registerRoutes(
       const { id } = req.params;
       const user = req.user!;
       
-      const reservation = await db.select().from(reservations).where(eq(reservations.id, id)).limit(1);
+      const activeSocietyId = await getActiveSocietyId();
+      const reservation = await db.select().from(reservations)
+        .where(and(
+          eq(reservations.id, id),
+          eq(reservations.societyId, activeSocietyId)
+        ))
+        .limit(1);
       
       if (!reservation.length) {
         return res.status(404).json({ message: "Reservation not found" });
@@ -796,6 +879,137 @@ export async function registerRoutes(
       // Delete reservation
       await db.delete(reservations).where(eq(reservations.id, id));
       
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Society management routes
+  app.get("/api/societies", requireAuth, async (req, res, next) => {
+    try {
+      const allSocieties = await db.select().from(societies).orderBy(societies.createdAt);
+      res.json(allSocieties);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/societies/active", requireAuth, async (req, res, next) => {
+    try {
+      const activeSociety = await db.select().from(societies).where(eq(societies.isActive, true)).limit(1);
+      if (activeSociety.length === 0) {
+        // If no active society, return the first one
+        const firstSociety = await db.select().from(societies).limit(1);
+        res.json(firstSociety[0] || null);
+      } else {
+        res.json(activeSociety[0]);
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/societies/:id", requireAuth, async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const society = await db.select().from(societies).where(eq(societies.id, id));
+      
+      if (society.length === 0) {
+        return res.status(404).json({ message: "Society not found" });
+      }
+      
+      res.json(society[0]);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/societies", requireAdmin, async (req, res, next) => {
+    try {
+      const societyData = req.body;
+      
+      // If this is the first society, make it active
+      const existingSocieties = await db.select().from(societies);
+      if (existingSocieties.length === 0) {
+        societyData.isActive = true;
+      }
+      
+      const [newSociety] = await db.insert(societies).values(societyData).returning();
+      res.status(201).json(newSociety);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/societies/:id", requireAdmin, async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      const [updatedSociety] = await db
+        .update(societies)
+        .set({ ...updateData, updatedAt: new Date() })
+        .where(eq(societies.id, id))
+        .returning();
+      
+      if (!updatedSociety) {
+        return res.status(404).json({ message: "Society not found" });
+      }
+      
+      res.json(updatedSociety);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/societies/:id/toggle", requireAdmin, async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      
+      // Get current society
+      const [currentSociety] = await db.select().from(societies).where(eq(societies.id, id));
+      if (!currentSociety) {
+        return res.status(404).json({ message: "Society not found" });
+      }
+      
+      // If activating this society, deactivate all others first
+      if (!currentSociety.isActive) {
+        await db.update(societies).set({ isActive: false }).where(eq(societies.isActive, true));
+      }
+      
+      // Toggle the society
+      const [updatedSociety] = await db
+        .update(societies)
+        .set({ 
+          isActive: !currentSociety.isActive,
+          updatedAt: new Date()
+        })
+        .where(eq(societies.id, id))
+        .returning();
+      
+      res.json(updatedSociety);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/societies/:id", requireAdmin, async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      
+      // Check if society exists
+      const [existingSociety] = await db.select().from(societies).where(eq(societies.id, id));
+      if (!existingSociety) {
+        return res.status(404).json({ message: "Society not found" });
+      }
+      
+      // Don't allow deletion of active society
+      if (existingSociety.isActive) {
+        return res.status(400).json({ message: "Cannot delete active society" });
+      }
+      
+      await db.delete(societies).where(eq(societies.id, id));
       res.status(204).send();
     } catch (error) {
       next(error);

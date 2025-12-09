@@ -3,6 +3,19 @@ import { pgTable, text, varchar, timestamp, boolean, integer, decimal } from "dr
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const societies = pgTable("societies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  iban: text("iban"),
+  creditorId: text("creditor_id"),
+  address: text("address"),
+  phone: text("phone"),
+  email: text("email"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
@@ -14,6 +27,17 @@ export const users = pgTable("users", {
   iban: text("iban"),
   linkedMemberId: varchar("linked_member_id"),
   linkedMemberName: text("linked_member_name"),
+  societyId: varchar("society_id").notNull().references(() => societies.id),
+});
+
+export const insertSocietySchema = createInsertSchema(societies).pick({
+  name: true,
+  iban: true,
+  creditorId: true,
+  address: true,
+  phone: true,
+  email: true,
+  isActive: true,
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -32,6 +56,7 @@ export const products = pgTable("products", {
   minStock: text("min_stock").notNull().default("0"), // Alert threshold
   supplier: text("supplier"),
   isActive: boolean("is_active").notNull().default(true),
+  societyId: varchar("society_id").notNull().references(() => societies.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -46,12 +71,14 @@ export const insertProductSchema = createInsertSchema(products).pick({
   minStock: true,
   supplier: true,
   isActive: true,
+  societyId: true,
 });
 
 // Consumption sessions/events (e.g., a bar tab, event consumption)
 export const consumptions = pgTable("consumptions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(), // Who made the consumption
+  societyId: varchar("society_id").notNull().references(() => societies.id),
   eventId: varchar("event_id"), // Optional: linked to a reservation/event
   type: text("type").notNull().default("bar"), // "bar", "event", "kitchen"
   status: text("status").notNull().default("open"), // "open", "closed", "cancelled"
@@ -78,6 +105,7 @@ export const consumptionItems = pgTable("consumption_items", {
 export const stockMovements = pgTable("stock_movements", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   productId: varchar("product_id").notNull(),
+  societyId: varchar("society_id").notNull().references(() => societies.id),
   type: text("type").notNull(), // "consumption", "purchase", "adjustment", "damage"
   quantity: integer("quantity").notNull(), // Negative for consumption, positive for purchase
   reason: text("reason"),
@@ -92,6 +120,7 @@ export const stockMovements = pgTable("stock_movements", {
 export const reservations = pgTable("reservations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(), // Who made the reservation
+  societyId: varchar("society_id").notNull().references(() => societies.id),
   name: text("name").notNull(), // Event/reservation name
   type: text("type").notNull().default("event"), // "event", "meeting", "private", "other"
   status: text("status").notNull().default("pending"), // "pending", "confirmed", "cancelled", "completed"
@@ -105,6 +134,7 @@ export const reservations = pgTable("reservations", {
 
 export const insertConsumptionSchema = createInsertSchema(consumptions).pick({
   userId: true,
+  societyId: true,
   eventId: true,
   type: true,
   notes: true,
@@ -121,6 +151,7 @@ export const insertConsumptionItemSchema = createInsertSchema(consumptionItems).
 
 export const insertStockMovementSchema = createInsertSchema(stockMovements).pick({
   productId: true,
+  societyId: true,
   type: true,
   quantity: true,
   reason: true,
@@ -132,6 +163,7 @@ export const insertStockMovementSchema = createInsertSchema(stockMovements).pick
 
 export const insertReservationSchema = createInsertSchema(reservations).pick({
   userId: true,
+  societyId: true,
   name: true,
   type: true,
   startDate: true,
@@ -140,6 +172,8 @@ export const insertReservationSchema = createInsertSchema(reservations).pick({
   notes: true,
 });
 
+export type InsertSociety = z.infer<typeof insertSocietySchema>;
+export type Society = typeof societies.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;

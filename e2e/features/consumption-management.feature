@@ -1,3 +1,4 @@
+@consumption-management
 Feature: Consumption Management
   As a user
   I want to add consumptions

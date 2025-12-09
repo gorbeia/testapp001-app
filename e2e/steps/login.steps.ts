@@ -1,7 +1,7 @@
 import { Given, When, Then, BeforeAll, AfterAll, setDefaultTimeout } from '@cucumber/cucumber';
 import { chromium, Browser, Page } from 'playwright';
 import assert from 'node:assert/strict';
-import { getBrowser, setBrowser, getPage, setPage } from './shared-state.js';
+import { getBrowser, setBrowser, getPage, setPage } from './shared-state';
 
 setDefaultTimeout(60 * 1000);
 

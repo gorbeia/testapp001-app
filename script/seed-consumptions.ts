@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Client } from 'pg';
-import { consumptions, consumptionItems, users, products } from '../shared/schema';
+import { consumptions, consumptionItems, users, products, societies } from '../shared/schema';
+import { eq } from 'drizzle-orm';
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -12,6 +13,21 @@ async function main() {
   const client = new Client({ connectionString: databaseUrl });
   await client.connect();
   const db = drizzle(client);
+
+  // Get the active society or the first one
+  let societyId = '';
+  const activeSociety = await db.select().from(societies).where(eq(societies.isActive, true)).limit(1);
+  if (activeSociety.length === 0) {
+    const firstSociety = await db.select().from(societies).limit(1);
+    if (firstSociety.length === 0) {
+      throw new Error('No societies found in database');
+    }
+    societyId = firstSociety[0].id;
+  } else {
+    societyId = activeSociety[0].id;
+  }
+
+  console.log('Using society ID for consumptions:', societyId);
 
   console.log('Seeding demo consumptions...');
 
@@ -55,7 +71,10 @@ async function main() {
   ];
 
   for (const consumptionData of demoConsumptions) {
-    const [consumption] = await db.insert(consumptions).values(consumptionData).returning();
+    const [consumption] = await db.insert(consumptions).values({
+      ...consumptionData,
+      societyId,
+    }).returning();
     
     // Add some consumption items for closed consumptions
     if (consumption.status === 'closed') {

@@ -1,6 +1,6 @@
 import { When, Then } from '@cucumber/cucumber';
 import assert from 'node:assert/strict';
-import { getPage } from './shared-state.js';
+import { getPage } from './shared-state';
 
 // Main menu entries that all users should see
 const MAIN_MENU_ENTRIES = [

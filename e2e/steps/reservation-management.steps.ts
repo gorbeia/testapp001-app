@@ -1,5 +1,5 @@
 import { Given, When, Then } from '@cucumber/cucumber';
-import { getPage } from './shared-state.js';
+import { getPage } from './shared-state';
 import assert from 'node:assert/strict';
 
 Given('I navigate to the reservations page', async function () {
@@ -69,9 +69,7 @@ When('I select the reservation date', async function () {
   // Wait for calendar to appear with longer timeout
   await page.waitForSelector('.rdp', { timeout: 15000 });
   
-  // Take a screenshot for debugging
-  await page.screenshot({ path: 'debug-date-picker.png' });
-  
+    
   // Try a simpler approach - just click the first available day
   try {
     // Look for any clickable day that's not disabled
@@ -79,7 +77,6 @@ When('I select the reservation date', async function () {
     await availableDay.waitFor({ state: 'visible', timeout: 5000 });
     await availableDay.click();
   } catch (error) {
-    console.log('Error selecting date:', error);
     // As a last resort, try pressing Escape to close and continue
     await page.keyboard.press('Escape');
   }
@@ -182,8 +179,7 @@ Then('I should see the updated cost with kitchen', async function () {
   await costCard.waitFor({ state: 'visible', timeout: 5000 });
   
   const cardText = await costCard.textContent();
-  console.log('Cost card text:', cardText);
-  
+    
   // Verify kitchen charge appears (10 guests × 3€ = 30€)
   assert.ok(cardText?.includes('30.00€'), 'Kitchen charge should be 30.00€ for 10 guests');
   
