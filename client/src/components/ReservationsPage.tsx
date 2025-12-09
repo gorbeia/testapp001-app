@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Calendar as CalendarIcon, Search, Filter, Users, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,14 +15,18 @@ import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { eu, es } from 'date-fns/locale';
+import type { Reservation } from '@shared/schema';
 
-// todo: remove mock functionality - replace with real API data
-const mockReservations = [
-  { id: '1', memberId: '1', memberName: 'Mikel Etxeberria', date: '2024-12-05', time: '13:00', eventType: 'bazkaria', table: 2, kitchen: true, guests: 8, notes: 'Urtebetetze afaria', status: 'confirmed', tableCost: 10, kitchenCost: 15 },
-  { id: '2', memberId: '2', memberName: 'Ane Zelaia', date: '2024-12-05', time: '21:00', eventType: 'afaria', table: 1, kitchen: true, guests: 12, notes: '', status: 'confirmed', tableCost: 10, kitchenCost: 15 },
-  { id: '3', memberId: '3', memberName: 'Jon Agirre', date: '2024-12-06', time: '11:00', eventType: 'hamaiketako', table: 3, kitchen: false, guests: 6, notes: 'Lagun artekoa', status: 'pending', tableCost: 10, kitchenCost: 0 },
-  { id: '4', memberId: '4', memberName: 'Miren Urrutia', date: '2024-12-07', time: '14:00', eventType: 'bazkaria', table: 1, kitchen: true, guests: 10, notes: '', status: 'confirmed', tableCost: 10, kitchenCost: 15 },
-];
+const authFetch = async (url: string, options: RequestInit = {}) => {
+  const token = localStorage.getItem('auth:token');
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(token && { Authorization: `Bearer ${token}` }),
+    ...options.headers,
+  };
+
+  return fetch(url, { ...options, headers });
+};
 
 export function ReservationsPage() {
   const { t, language } = useLanguage();
@@ -30,37 +34,152 @@ export function ReservationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Form state
+  const [formData, setFormData] = useState({
+    name: '',
+    type: 'lunch',
+    startDate: new Date(),
+    expectedGuests: 10,
+    totalAmount: '0',
+    notes: ''
+  });
+
   const [useKitchen, setUseKitchen] = useState(false);
+
+  // Calculate total amount
+  const calculateTotal = (guests: number, kitchen: boolean) => {
+    const guestCharge = guests * 2; // 2 euros per person
+    const kitchenCharge = kitchen ? guests * 3 : 0; // 3 euros per person if kitchen is used
+    return (guestCharge + kitchenCharge).toString();
+  };
+
+  // Update total amount when guests or kitchen changes
+  useEffect(() => {
+    const total = calculateTotal(formData.expectedGuests, useKitchen);
+    setFormData(prev => ({ ...prev, totalAmount: total }));
+  }, [formData.expectedGuests, useKitchen]);
 
   const eventTypeLabels: Record<string, string> = {
     hamaiketako: t('hamaiketako'),
-    bazkaria: t('lunch'),
-    askaria: t('snack'),
-    afaria: t('dinner'),
-    urtebetetzea: t('birthday'),
+    lunch: t('lunch'),
+    snack: t('snack'),
+    dinner: t('dinner'),
+    birthday: t('birthday'),
   };
 
-  const filteredReservations = mockReservations.filter((r) => {
-    const matchesSearch = r.memberName.toLowerCase().includes(searchTerm.toLowerCase());
+  const statusLabels: Record<string, string> = {
+    pending: t('pending'),
+    confirmed: t('confirmed'),
+    cancelled: t('cancelled'),
+    completed: t('completed'),
+  };
+
+  // Load reservations
+  useEffect(() => {
+    loadReservations();
+  }, []);
+
+  const loadReservations = async () => {
+    try {
+      const response = await authFetch('/api/reservations');
+      if (response.ok) {
+        const data = await response.json();
+        setReservations(data);
+      }
+    } catch (error) {
+      console.error('Error loading reservations:', error);
+      toast({
+        title: t('error'),
+        description: 'Errorea erreserbak kargatzean',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredReservations = reservations.filter((r) => {
+    const matchesSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (r.notes && r.notes.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesStatus = filterStatus === 'all' || r.status === filterStatus;
     return matchesSearch && matchesStatus;
   });
 
-  const handleCreateReservation = () => {
-    toast({
-      title: t('success'),
-      description: 'Erreserba sortua / Reserva creada',
-    });
-    setIsDialogOpen(false);
+  const handleCreateReservation = async () => {
+    try {
+      const reservationData = {
+        ...formData,
+        startDate: formData.startDate.toISOString(),
+      };
+
+      const response = await authFetch('/api/reservations', {
+        method: 'POST',
+        body: JSON.stringify(reservationData),
+      });
+
+      if (response.ok) {
+        const newReservation = await response.json();
+        setReservations([...reservations, newReservation]);
+        
+        toast({
+          title: t('success'),
+          description: 'Erreserba sortua / Reserva creada',
+        });
+        
+        // Reset form
+        setFormData({
+          name: '',
+          type: 'lunch',
+          startDate: new Date(),
+          expectedGuests: 10,
+          totalAmount: '0',
+          notes: ''
+        });
+        
+        setIsDialogOpen(false);
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Errorea erreserba sortzean');
+      }
+    } catch (error) {
+      console.error('Error creating reservation:', error);
+      toast({
+        title: t('error'),
+        description: error instanceof Error ? error.message : 'Errorea erreserba sortzean',
+        variant: 'destructive',
+      });
+    }
   };
+
+  const getStatusVariant = (status: string) => {
+    switch (status) {
+      case 'confirmed': return 'default';
+      case 'pending': return 'secondary';
+      case 'cancelled': return 'destructive';
+      case 'completed': return 'outline';
+      default: return 'secondary';
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="text-center py-12">
+          <p>{t('loading')}...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">{t('reservations')}</h2>
-          <p className="text-muted-foreground">Kudeatu mahai eta sukalde erreserbak</p>
+          <p className="text-muted-foreground">Kudeatu erreserbak</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -73,76 +192,63 @@ export function ReservationsPage() {
             <DialogHeader>
               <DialogTitle>{t('newReservation')}</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 pt-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t('date')}</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {selectedDate ? format(selectedDate, 'PPP', { locale: language === 'eu' ? eu : es }) : t('selectDate')}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={setSelectedDate}
-                        locale={language === 'eu' ? eu : es}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="space-y-2">
-                  <Label>{t('time')}</Label>
-                  <Select>
-                    <SelectTrigger data-testid="select-time">
-                      <SelectValue placeholder={t('selectTime')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {['10:00', '11:00', '12:00', '13:00', '14:00', '19:00', '20:00', '21:00', '22:00'].map((time) => (
-                        <SelectItem key={time} value={time}>{time}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
+            <div className="space-y-6">
               <div className="space-y-2">
-                <Label>{t('eventType')}</Label>
-                <Select>
-                  <SelectTrigger data-testid="select-event-type">
-                    <SelectValue placeholder={t('selectEvent')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="hamaiketako">{t('hamaiketako')}</SelectItem>
-                    <SelectItem value="bazkaria">{t('lunch')}</SelectItem>
-                    <SelectItem value="askaria">{t('snack')}</SelectItem>
-                    <SelectItem value="afaria">{t('dinner')}</SelectItem>
-                    <SelectItem value="urtebetetzea">{t('birthday')}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label>{t('name')}</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Erreserbaren izena"
+                  data-testid="input-reservation-name"
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>{t('tableNumber')}</Label>
-                  <Select>
-                    <SelectTrigger data-testid="select-table">
-                      <SelectValue placeholder={t('table')} />
+                  <Label>{t('type')}</Label>
+                  <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                    <SelectTrigger data-testid="select-reservation-type">
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {[1, 2, 3, 4, 5].map((num) => (
-                        <SelectItem key={num} value={num.toString()}>{t('table')} {num}</SelectItem>
-                      ))}
+                      <SelectItem value="hamaiketako">{t('hamaiketako')}</SelectItem>
+                      <SelectItem value="lunch">{t('lunch')}</SelectItem>
+                      <SelectItem value="snack">{t('snack')}</SelectItem>
+                      <SelectItem value="dinner">{t('dinner')}</SelectItem>
+                      <SelectItem value="birthday">{t('birthday')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>{t('guests')}</Label>
-                  <Input type="number" min="1" max="20" defaultValue="6" data-testid="input-guests" />
+                  <Input
+                    type="number"
+                    min="1"
+                    value={formData.expectedGuests}
+                    onChange={(e) => setFormData({ ...formData, expectedGuests: parseInt(e.target.value) || 0 })}
+                    data-testid="input-expected-guests"
+                  />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t('date')}</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal" data-testid="date-picker-button">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {formData.startDate ? format(formData.startDate, 'PPP', { locale: language === 'eu' ? eu : es }) : t('selectDate')}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={formData.startDate}
+                      onSelect={(date) => date && setFormData({ ...formData, startDate: date })}
+                      locale={language === 'eu' ? eu : es}
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="flex items-center space-x-2">
@@ -158,35 +264,40 @@ export function ReservationsPage() {
                 </Label>
               </div>
 
-              <div className="space-y-2">
-                <Label>{t('notes')}</Label>
-                <Textarea placeholder="Ohar gehigarriak..." data-testid="textarea-notes" />
-              </div>
-
               <Card className="bg-muted/50">
                 <CardContent className="pt-4">
                   <div className="flex justify-between text-sm">
-                    <span>{t('tableCost')}:</span>
-                    <span>10.00€</span>
+                    <span>{t('guests')} ({formData.expectedGuests} × 2€):</span>
+                    <span>{(formData.expectedGuests * 2).toFixed(2)}€</span>
                   </div>
                   {useKitchen && (
                     <div className="flex justify-between text-sm mt-1">
-                      <span>{t('kitchenCost')}:</span>
-                      <span>15.00€</span>
+                      <span>{t('kitchenCost')} ({formData.expectedGuests} × 3€):</span>
+                      <span>{(formData.expectedGuests * 3).toFixed(2)}€</span>
                     </div>
                   )}
                   <div className="flex justify-between font-medium mt-2 pt-2 border-t">
                     <span>{t('totalCost')}:</span>
-                    <span>{useKitchen ? '25.00€' : '10.00€'}</span>
+                    <span>{formData.totalAmount}€</span>
                   </div>
                 </CardContent>
               </Card>
+
+              <div className="space-y-2">
+                <Label>{t('notes')}</Label>
+                <Textarea
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  placeholder="Ohar gehigarriak..."
+                  data-testid="textarea-reservation-notes"
+                />
+              </div>
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   {t('cancel')}
                 </Button>
-                <Button onClick={handleCreateReservation} data-testid="button-save-reservation">
+                <Button onClick={handleCreateReservation} data-testid="button-save-reservation" disabled={!formData.name}>
                   {t('reserve')}
                 </Button>
               </div>
@@ -212,9 +323,11 @@ export function ReservationsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">{t('allTime')}</SelectItem>
-            <SelectItem value="confirmed">{t('confirmed')}</SelectItem>
+            <SelectItem value="all">{t('all')}</SelectItem>
             <SelectItem value="pending">{t('pending')}</SelectItem>
+            <SelectItem value="confirmed">{t('confirmed')}</SelectItem>
+            <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
+            <SelectItem value="completed">{t('completed')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -233,41 +346,31 @@ export function ReservationsPage() {
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
                   <div>
-                    <CardTitle className="text-lg">{reservation.memberName}</CardTitle>
+                    <CardTitle className="text-lg">{reservation.name}</CardTitle>
                     <p className="text-sm text-muted-foreground">
-                      {reservation.date} - {reservation.time}
+                      {format(new Date(reservation.startDate), 'PPP', { locale: language === 'eu' ? eu : es })}
                     </p>
                   </div>
-                  <Badge variant={reservation.status === 'confirmed' ? 'default' : 'secondary'}>
-                    {reservation.status === 'confirmed' ? t('confirmed') : t('pending')}
+                  <Badge variant={getStatusVariant(reservation.status)}>
+                    {statusLabels[reservation.status]}
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 mb-3">
                   <Badge variant="outline">
-                    <CalendarIcon className="mr-1 h-3 w-3" />
-                    {eventTypeLabels[reservation.eventType]}
+                    {eventTypeLabels[reservation.type]}
                   </Badge>
-                  <Badge variant="outline">
-                    {t('table')} {reservation.table}
-                  </Badge>
-                  {reservation.kitchen && (
-                    <Badge variant="outline">
-                      <Utensils className="mr-1 h-3 w-3" />
-                      {t('kitchen')}
-                    </Badge>
-                  )}
                   <Badge variant="outline">
                     <Users className="mr-1 h-3 w-3" />
-                    {reservation.guests}
+                    {reservation.expectedGuests}
                   </Badge>
                   <Badge variant="secondary">
-                    {(reservation.tableCost + reservation.kitchenCost).toFixed(2)}€
+                    {parseFloat(reservation.totalAmount).toFixed(2)}€
                   </Badge>
                 </div>
                 {reservation.notes && (
-                  <p className="mt-3 text-sm text-muted-foreground">{reservation.notes}</p>
+                  <p className="text-sm text-muted-foreground">{reservation.notes}</p>
                 )}
               </CardContent>
             </Card>

@@ -8,7 +8,6 @@ Feature: User management table
     When I open the login page
     And I log in as a admin user
 
-  @only
   Scenario: Add a new random user
     When I open the users management page
     And I create a new random user

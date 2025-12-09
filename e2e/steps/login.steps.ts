@@ -1,21 +1,25 @@
 import { Given, When, Then, BeforeAll, AfterAll, setDefaultTimeout } from '@cucumber/cucumber';
-import { chromium } from 'playwright';
+import { chromium, Browser, Page } from 'playwright';
 import assert from 'node:assert/strict';
 import { getBrowser, setBrowser, getPage, setPage } from './shared-state.js';
 
 setDefaultTimeout(60 * 1000);
 
-let lastRandomUserEmail;
+let lastRandomUserEmail: string | undefined;
 
-BeforeAll(async () => {
-  const browserInstance = await chromium.launch();
+BeforeAll(async function () {
+  const browserInstance: Browser = await chromium.launch({ headless: true });
   setBrowser(browserInstance);
 });
 
-AfterAll(async () => {
+AfterAll(async function () {
   const browserInstance = getBrowser();
   if (browserInstance) {
     await browserInstance.close();
+  }
+  const page = getPage();
+  if (page) {
+    await page.close().catch(() => {});
   }
 });
 
@@ -26,7 +30,15 @@ Given('the application is running', async function () {
 
 When('I open the login page', async function () {
   const browserInstance = getBrowser();
-  const pageInstance = await browserInstance.newPage();
+  if (!browserInstance) throw new Error('Browser not initialized');
+  
+  // Close existing page if any
+  const existingPage = getPage();
+  if (existingPage) {
+    await existingPage.close().catch(() => {});
+  }
+  
+  const pageInstance: Page = await browserInstance.newPage();
   setPage(pageInstance);
   await pageInstance.goto('http://localhost:5000/', { waitUntil: 'networkidle' });
 });
@@ -41,11 +53,11 @@ Then('I should see the login form', async function () {
   assert.ok(passwordInput, 'Password input not found');
 });
 
-When('I log in as a {word} user', async function (role) {
+When('I log in as a {word} user', async function (role: string) {
   const page = getPage();
   assert.ok(page, 'Page was not initialized');
 
-  const emailByRole = {
+  const emailByRole: Record<string, string> = {
     bazkide: 'bazkidea@txokoa.eus',
     admin: 'admin@txokoa.eus',
     sotolaria: 'sotolaria@txokoa.eus',

@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { db } from "./db";
-import { users, products, consumptions, consumptionItems, stockMovements, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement } from "@shared/schema";
+import { users, products, consumptions, consumptionItems, stockMovements, reservations, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 
 // Simple session storage (in production, use Redis or proper session store)
@@ -688,6 +688,117 @@ export async function registerRoutes(
       return res.status(200).json(updatedConsumption);
     } catch (err) {
       next(err);
+    }
+  });
+
+  // Reservations API
+  app.get("/api/reservations", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      
+      // Users can see their own reservations, admins can see all
+      let reservationsList;
+      if (['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
+        reservationsList = await db.select().from(reservations);
+      } else {
+        reservationsList = await db.select().from(reservations).where(eq(reservations.userId, user.id));
+      }
+      
+      res.json(reservationsList);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/reservations/:id", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+      
+      const reservation = await db.select().from(reservations).where(eq(reservations.id, id)).limit(1);
+      
+      if (!reservation.length) {
+        return res.status(404).json({ message: "Reservation not found" });
+      }
+      
+      // Check access permissions
+      if (reservation[0].userId !== user.id && !['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      res.json(reservation[0]);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/reservations", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      const reservationData = {
+        ...req.body,
+        userId: user.id,
+        status: 'pending',
+        totalAmount: '0',
+        depositAmount: '0',
+      };
+      
+      const newReservation = await db.insert(reservations).values(reservationData).returning();
+      res.status(201).json(newReservation[0]);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/reservations/:id", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+      
+      const reservation = await db.select().from(reservations).where(eq(reservations.id, id)).limit(1);
+      
+      if (!reservation.length) {
+        return res.status(404).json({ message: "Reservation not found" });
+      }
+      
+      // Check access permissions
+      if (reservation[0].userId !== user.id && !['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      const updatedReservation = await db.update(reservations)
+        .set({ ...req.body, updatedAt: new Date() })
+        .where(eq(reservations.id, id))
+        .returning();
+        
+      res.json(updatedReservation[0]);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/reservations/:id", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+      
+      const reservation = await db.select().from(reservations).where(eq(reservations.id, id)).limit(1);
+      
+      if (!reservation.length) {
+        return res.status(404).json({ message: "Reservation not found" });
+      }
+      
+      // Check access permissions
+      if (reservation[0].userId !== user.id && !['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Delete reservation
+      await db.delete(reservations).where(eq(reservations.id, id));
+      
+      res.status(204).send();
+    } catch (error) {
+      next(error);
     }
   });
 

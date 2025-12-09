@@ -88,6 +88,21 @@ export const stockMovements = pgTable("stock_movements", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+// Reservations (events, bookings, etc.)
+export const reservations = pgTable("reservations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull(), // Who made the reservation
+  name: text("name").notNull(), // Event/reservation name
+  type: text("type").notNull().default("event"), // "event", "meeting", "private", "other"
+  status: text("status").notNull().default("pending"), // "pending", "confirmed", "cancelled", "completed"
+  startDate: timestamp("start_date").notNull(),
+  expectedGuests: integer("expected_guests").default(0),
+  totalAmount: text("total_amount").notNull().default("0"), // Using text for decimal precision
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const insertConsumptionSchema = createInsertSchema(consumptions).pick({
   userId: true,
   eventId: true,
@@ -115,6 +130,16 @@ export const insertStockMovementSchema = createInsertSchema(stockMovements).pick
   createdBy: true,
 });
 
+export const insertReservationSchema = createInsertSchema(reservations).pick({
+  userId: true,
+  name: true,
+  type: true,
+  startDate: true,
+  expectedGuests: true,
+  totalAmount: true,
+  notes: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertProduct = z.infer<typeof insertProductSchema>;
@@ -125,3 +150,5 @@ export type InsertConsumptionItem = z.infer<typeof insertConsumptionItemSchema>;
 export type ConsumptionItem = typeof consumptionItems.$inferSelect;
 export type InsertStockMovement = z.infer<typeof insertStockMovementSchema>;
 export type StockMovement = typeof stockMovements.$inferSelect;
+export type InsertReservation = z.infer<typeof insertReservationSchema>;
+export type Reservation = typeof reservations.$inferSelect;
