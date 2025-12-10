@@ -17,6 +17,7 @@ Feature: Reservation Management
     And I fill in the reservation details
     And I select the reservation date
     And I set the number of guests to 15
+    And I select a table
     And I enable kitchen equipment
     Then I should see the correct cost calculation
     And I save the reservation
@@ -29,6 +30,7 @@ Feature: Reservation Management
     And I fill in the reservation details
     And I select the reservation date
     And I set the number of guests to 8
+    And I select a table
     And I keep kitchen equipment disabled
     Then I should see the correct cost calculation without kitchen
     And I save the reservation

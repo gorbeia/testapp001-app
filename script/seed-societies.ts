@@ -31,6 +31,8 @@ async function main() {
       address: 'Kale Nagusia 15, 20001 Donostia',
       phone: '+34 943 111 222',
       email: 'info@guretxokoa.eus',
+      reservationPricePerMember: '2.00',
+      kitchenPricePerMember: '3.00',
       isActive: true,
     },
   ];

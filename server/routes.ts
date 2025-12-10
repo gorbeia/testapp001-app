@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { db } from "./db";
 import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gte } from "drizzle-orm";
 
 // Simple session storage (in production, use Redis or proper session store)
 const sessions = new Map<string, { user: User; timestamp: number }>();
@@ -754,17 +754,33 @@ export async function registerRoutes(
       const user = req.user!;
       const activeSocietyId = await getActiveSocietyId();
       
-      // Users can see their own reservations, admins can see all
-      let reservationsList;
-      if (['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
-        reservationsList = await db.select().from(reservations).where(eq(reservations.societyId, activeSocietyId));
-      } else {
-        reservationsList = await db.select().from(reservations)
-          .where(and(
-            eq(reservations.userId, user.id),
-            eq(reservations.societyId, activeSocietyId)
-          ));
-      }
+      // All users can see all reservations for the society (only future dates)
+      const now = new Date();
+      const reservationsList = await db
+        .select({
+          id: reservations.id,
+          userId: reservations.userId,
+          societyId: reservations.societyId,
+          name: reservations.name,
+          type: reservations.type,
+          status: reservations.status,
+          startDate: reservations.startDate,
+          guests: reservations.guests,
+          useKitchen: reservations.useKitchen,
+          table: reservations.table,
+          totalAmount: reservations.totalAmount,
+          notes: reservations.notes,
+          createdAt: reservations.createdAt,
+          updatedAt: reservations.updatedAt,
+          userName: users.name,
+        })
+        .from(reservations)
+        .leftJoin(users, eq(reservations.userId, users.id))
+        .where(and(
+          eq(reservations.societyId, activeSocietyId),
+          gte(reservations.startDate, now)
+        ))
+        .orderBy(reservations.startDate);
       
       res.json(reservationsList);
     } catch (error) {
@@ -805,18 +821,57 @@ export async function registerRoutes(
       const user = req.user!;
       const activeSocietyId = await getActiveSocietyId();
       
+      console.log('Request body:', req.body);
+      console.log('startDate type:', typeof req.body.startDate);
+      console.log('startDate value:', req.body.startDate);
+      
+      // Convert startDate to Date if it's a string
+      let startDate = req.body.startDate;
+      if (typeof startDate === 'string') {
+        startDate = new Date(startDate);
+        // Validate the date
+        if (isNaN(startDate.getTime())) {
+          return res.status(400).json({ message: "Invalid date format" });
+        }
+      }
+      
+      // Check if reservation date is in the past
+      const now = new Date();
+      if (startDate < now) {
+        return res.status(400).json({ message: "Reservations cannot be created for past dates" });
+      }
+      
+      // Check if table is already reserved for the same date and event type
+      const existingReservation = await db
+        .select()
+        .from(reservations)
+        .where(and(
+          eq(reservations.table, req.body.table),
+          eq(reservations.startDate, startDate),
+          eq(reservations.type, req.body.type)
+        ))
+        .limit(1);
+      
+      if (existingReservation.length > 0) {
+        return res.status(400).json({ 
+          message: `Table ${req.body.table} is already reserved for this date and event type` 
+        });
+      }
+      
       const reservationData = {
         ...req.body,
+        startDate,
         userId: user.id,
         societyId: activeSocietyId,
         status: 'pending',
-        totalAmount: '0',
-        depositAmount: '0',
       };
+      
+      console.log('Final reservation data:', reservationData);
       
       const newReservation = await db.insert(reservations).values(reservationData).returning();
       res.status(201).json(newReservation[0]);
     } catch (error) {
+      console.error('Error creating reservation:', error);
       next(error);
     }
   });
@@ -970,7 +1025,7 @@ export async function registerRoutes(
   app.put("/api/societies/:id", requireAdmin, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { name, iban, creditorId, address, phone, email } = req.body;
+      const { name, iban, creditorId, address, phone, email, reservationPricePerMember, kitchenPricePerMember } = req.body;
       
       const [updatedSociety] = await db
         .update(societies)
@@ -981,6 +1036,8 @@ export async function registerRoutes(
           address, 
           phone, 
           email,
+          reservationPricePerMember,
+          kitchenPricePerMember,
           updatedAt: new Date() 
         })
         .where(eq(societies.id, id))

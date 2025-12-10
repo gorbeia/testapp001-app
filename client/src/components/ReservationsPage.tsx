@@ -17,6 +17,10 @@ import { format } from 'date-fns';
 import { eu, es } from 'date-fns/locale';
 import type { Reservation } from '@shared/schema';
 
+interface ReservationWithUser extends Reservation {
+  userName?: string;
+}
+
 const authFetch = async (url: string, options: RequestInit = {}) => {
   const token = localStorage.getItem('auth:token');
   const headers = {
@@ -34,40 +38,58 @@ export function ReservationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [reservations, setReservations] = useState<ReservationWithUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [society, setSociety] = useState<any>(null);
   
   // Form state
   const [formData, setFormData] = useState({
     name: '',
-    type: 'lunch',
+    type: 'bazkaria',
     startDate: new Date(),
-    expectedGuests: 10,
+    guests: 10,
+    useKitchen: false,
+    table: '',
     totalAmount: '0',
     notes: ''
   });
 
-  const [useKitchen, setUseKitchen] = useState(false);
-
-  // Calculate total amount
+  // Calculate total amount using society pricing
   const calculateTotal = (guests: number, kitchen: boolean) => {
-    const guestCharge = guests * 2; // 2 euros per person
-    const kitchenCharge = kitchen ? guests * 3 : 0; // 3 euros per person if kitchen is used
+    if (!society) return '0';
+    
+    const reservationPrice = parseFloat(society.reservationPricePerMember) || 2;
+    const kitchenPrice = parseFloat(society.kitchenPricePerMember) || 3;
+    
+    const guestCharge = guests * reservationPrice;
+    const kitchenCharge = kitchen ? guests * kitchenPrice : 0;
     return (guestCharge + kitchenCharge).toString();
+  };
+
+  // Load society data
+  const loadSociety = async () => {
+    try {
+      const response = await authFetch('/api/societies/user');
+      if (response.ok) {
+        const data = await response.json();
+        setSociety(data);
+      }
+    } catch (error) {
+      console.error('Error loading society:', error);
+    }
   };
 
   // Update total amount when guests or kitchen changes
   useEffect(() => {
-    const total = calculateTotal(formData.expectedGuests, useKitchen);
+    const total = calculateTotal(formData.guests, formData.useKitchen);
     setFormData(prev => ({ ...prev, totalAmount: total }));
-  }, [formData.expectedGuests, useKitchen]);
+  }, [formData.guests, formData.useKitchen, society]);
 
   const eventTypeLabels: Record<string, string> = {
-    hamaiketako: t('hamaiketako'),
-    lunch: t('lunch'),
-    snack: t('snack'),
-    dinner: t('dinner'),
-    birthday: t('birthday'),
+    bazkaria: t('bazkaria'),
+    afaria: t('afaria'),
+    askaria: t('askaria'),
+    hamaiketakoa: t('hamaiketakoa'),
   };
 
   const statusLabels: Record<string, string> = {
@@ -77,9 +99,10 @@ export function ReservationsPage() {
     completed: t('completed'),
   };
 
-  // Load reservations
+  // Load reservations and society data
   useEffect(() => {
     loadReservations();
+    loadSociety();
   }, []);
 
   const loadReservations = async () => {
@@ -110,10 +133,25 @@ export function ReservationsPage() {
 
   const handleCreateReservation = async () => {
     try {
+      // Ensure we have a valid Date object
+      let startDate: Date;
+      if (formData.startDate instanceof Date) {
+        startDate = formData.startDate;
+      } else {
+        startDate = new Date(formData.startDate);
+      }
+      
+      // Check if the date is valid
+      if (isNaN(startDate.getTime())) {
+        throw new Error('Invalid date selected');
+      }
+      
       const reservationData = {
         ...formData,
-        startDate: formData.startDate.toISOString(),
+        startDate: startDate.toISOString(),
       };
+
+      console.log('Sending reservation data:', reservationData);
 
       const response = await authFetch('/api/reservations', {
         method: 'POST',
@@ -132,9 +170,11 @@ export function ReservationsPage() {
         // Reset form
         setFormData({
           name: '',
-          type: 'lunch',
+          type: 'bazkaria',
           startDate: new Date(),
-          expectedGuests: 10,
+          guests: 10,
+          useKitchen: false,
+          table: '',
           totalAmount: '0',
           notes: ''
         });
@@ -211,11 +251,10 @@ export function ReservationsPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="hamaiketako">{t('hamaiketako')}</SelectItem>
-                      <SelectItem value="lunch">{t('lunch')}</SelectItem>
-                      <SelectItem value="snack">{t('snack')}</SelectItem>
-                      <SelectItem value="dinner">{t('dinner')}</SelectItem>
-                      <SelectItem value="birthday">{t('birthday')}</SelectItem>
+                      <SelectItem value="bazkaria">{t('bazkaria')}</SelectItem>
+                      <SelectItem value="afaria">{t('afaria')}</SelectItem>
+                      <SelectItem value="askaria">{t('askaria')}</SelectItem>
+                      <SelectItem value="hamaiketakoa">{t('hamaiketakoa')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -224,9 +263,9 @@ export function ReservationsPage() {
                   <Input
                     type="number"
                     min="1"
-                    value={formData.expectedGuests}
-                    onChange={(e) => setFormData({ ...formData, expectedGuests: parseInt(e.target.value) || 0 })}
-                    data-testid="input-expected-guests"
+                    value={formData.guests}
+                    onChange={(e) => setFormData({ ...formData, guests: parseInt(e.target.value) || 0 })}
+                    data-testid="input-guests"
                   />
                 </div>
               </div>
@@ -237,7 +276,7 @@ export function ReservationsPage() {
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="w-full justify-start text-left font-normal" data-testid="date-picker-button">
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.startDate ? format(formData.startDate, 'PPP', { locale: language === 'eu' ? eu : es }) : t('selectDate')}
+                      {formData.startDate ? format(formData.startDate instanceof Date ? formData.startDate : new Date(formData.startDate), 'PPP', { locale: language === 'eu' ? eu : es }) : t('selectDate')}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -246,16 +285,33 @@ export function ReservationsPage() {
                       selected={formData.startDate}
                       onSelect={(date) => date && setFormData({ ...formData, startDate: date })}
                       locale={language === 'eu' ? eu : es}
+                      disabled={(date) => date < new Date()}
                     />
                   </PopoverContent>
                 </Popover>
               </div>
 
+              <div className="space-y-2">
+                <Label>{t('table')}</Label>
+                <Select value={formData.table} onValueChange={(value) => setFormData({ ...formData, table: value })}>
+                  <SelectTrigger data-testid="select-table">
+                    <SelectValue placeholder={t('selectTable')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {['Mahaia 1', 'Mahaia 2', 'Mahaia 3', 'Mahaia 4', 'Mahaia 5', 'Mahaia 6'].map((table) => (
+                      <SelectItem key={table} value={table}>
+                        {table}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="kitchen"
-                  checked={useKitchen}
-                  onCheckedChange={(checked) => setUseKitchen(checked as boolean)}
+                  checked={formData.useKitchen}
+                  onCheckedChange={(checked) => setFormData({ ...formData, useKitchen: checked as boolean })}
                   data-testid="checkbox-kitchen"
                 />
                 <Label htmlFor="kitchen" className="flex items-center gap-2">
@@ -266,14 +322,22 @@ export function ReservationsPage() {
 
               <Card className="bg-muted/50">
                 <CardContent className="pt-4">
-                  <div className="flex justify-between text-sm">
-                    <span>{t('guests')} ({formData.expectedGuests} × 2€):</span>
-                    <span>{(formData.expectedGuests * 2).toFixed(2)}€</span>
-                  </div>
-                  {useKitchen && (
-                    <div className="flex justify-between text-sm mt-1">
-                      <span>{t('kitchenCost')} ({formData.expectedGuests} × 3€):</span>
-                      <span>{(formData.expectedGuests * 3).toFixed(2)}€</span>
+                  {society ? (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span>{t('guests')} ({formData.guests} × {society.reservationPricePerMember}€):</span>
+                        <span>{(formData.guests * parseFloat(society.reservationPricePerMember)).toFixed(2)}€</span>
+                      </div>
+                      {formData.useKitchen && (
+                        <div className="flex justify-between text-sm mt-1">
+                          <span>{t('kitchenCost')} ({formData.guests} × {society.kitchenPricePerMember}€):</span>
+                          <span>{(formData.guests * parseFloat(society.kitchenPricePerMember)).toFixed(2)}€</span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex justify-between text-sm">
+                      <span>{t('loading')}...</span>
                     </div>
                   )}
                   <div className="flex justify-between font-medium mt-2 pt-2 border-t">
@@ -348,6 +412,7 @@ export function ReservationsPage() {
                   <div>
                     <CardTitle className="text-lg">{reservation.name}</CardTitle>
                     <p className="text-sm text-muted-foreground">
+                      {reservation.userName && `${reservation.userName} • `}
                       {format(new Date(reservation.startDate), 'PPP', { locale: language === 'eu' ? eu : es })}
                     </p>
                   </div>
@@ -363,7 +428,10 @@ export function ReservationsPage() {
                   </Badge>
                   <Badge variant="outline">
                     <Users className="mr-1 h-3 w-3" />
-                    {reservation.expectedGuests}
+                    {reservation.guests}
+                  </Badge>
+                  <Badge variant="outline">
+                    {reservation.table || 'No table'}
                   </Badge>
                   <Badge variant="secondary">
                     {parseFloat(reservation.totalAmount).toFixed(2)}€

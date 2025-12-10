@@ -1,5 +1,5 @@
 import { db } from '../server/db';
-import { reservations, societies, type Reservation } from '../shared/schema';
+import { reservations, societies, users, type Reservation } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 
 export async function seedReservations() {
@@ -21,56 +21,68 @@ export async function seedReservations() {
 
     console.log('Using society ID for reservations:', societyId);
 
+    // Get the first user (admin) for reservations
+    const [firstUser] = await db.select().from(users).limit(1);
+    if (!firstUser) {
+      throw new Error('No users found in database');
+    }
+    
+    console.log('Using user ID for reservations:', firstUser.id);
+
     const dummyReservations: Omit<Reservation, 'createdAt' | 'updatedAt'>[] = [
       {
         id: '550e8400-e29b-4d69-a516-31095a414aa6',
-        userId: 'c7829a2b-4f96-413f-86b5-8f08fbb98f30',
+        userId: firstUser.id,
         name: 'Urte Berria',
-        description: 'Urte berriko ekitaldia',
-        type: 'event',
+        type: 'bazkaria',
         status: 'pending',
         startDate: new Date('2025-12-25T18:00:00Z'),
-        expectedGuests: 50,
+        guests: 50,
+        useKitchen: true,
+        table: 'Mahaia 1',
         totalAmount: '250.00',
         notes: 'Janariak 25eko urte berria',
         societyId,
       },
       {
         id: '660f9b20-1a3c-4e7b-9f8d-2d3e8c9f5a1b',
-        userId: 'c7829a2b-4f96-413f-86b5-8f08fbb98f30',
+        userId: firstUser.id,
         name: 'Bilera Familiarra',
-        description: 'Familientzatko biltzarketa',
-        type: 'private',
+        type: 'afaria',
         status: 'confirmed',
         startDate: new Date('2025-12-31T20:00:00Z'),
-        expectedGuests: 20,
-        totalAmount: '150.00',
-        notes: 'Ezkonteko familia biltzarra',
+        guests: 20,
+        useKitchen: false,
+        table: 'Mahaia 2',
+        totalAmount: '40.00',
+        notes: 'Ezkontzeko familia biltzarra',
         societyId,
       },
       {
         id: '770b8c30-2d4d-4f8e-9c9e-3e4f9d0a6b2c',
-        userId: 'c7829a2b-4f96-413f-86b5-8f08fbb98f30',
+        userId: firstUser.id,
         name: 'Bilera Enpresa',
-        description: 'Enpresako bilera',
-        type: 'event',
+        type: 'bazkaria',
         status: 'pending',
         startDate: new Date('2026-01-15T19:00:00Z'),
-        expectedGuests: 100,
+        guests: 100,
+        useKitchen: true,
+        table: 'Mahaia 3',
         totalAmount: '500.00',
         notes: 'Enpresako bilera ofiziala',
         societyId,
       },
       {
         id: '880c9d40-3e5e-4f9f-9d0f-4f5a0b7c8d3d',
-        userId: 'c7829a2b-4f96-413f-86b5-8f08fbb98f30',
+        userId: firstUser.id,
         name: 'Batzarra',
-        description: 'Batzar gaueko',
-        type: 'meeting',
+        type: 'hamaiketakoa',
         status: 'confirmed',
         startDate: new Date('2025-12-20T12:00:00Z'),
-        expectedGuests: 15,
-        totalAmount: '75.00',
+        guests: 15,
+        useKitchen: false,
+        table: 'Mahaia 4',
+        totalAmount: '30.00',
         notes: 'Batzar gaueko batzarra',
         societyId,
       }

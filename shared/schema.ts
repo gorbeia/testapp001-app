@@ -11,6 +11,9 @@ export const societies = pgTable("societies", {
   address: text("address"),
   phone: text("phone"),
   email: text("email"),
+  // Reservation pricing
+  reservationPricePerMember: decimal("reservation_price_per_member", { precision: 10, scale: 2 }).default("25.00"),
+  kitchenPricePerMember: decimal("kitchen_price_per_member", { precision: 10, scale: 2 }).default("10.00"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -37,6 +40,8 @@ export const insertSocietySchema = createInsertSchema(societies).pick({
   address: true,
   phone: true,
   email: true,
+  reservationPricePerMember: true,
+  kitchenPricePerMember: true,
   isActive: true,
 });
 
@@ -125,7 +130,9 @@ export const reservations = pgTable("reservations", {
   type: text("type").notNull().default("event"), // "event", "meeting", "private", "other"
   status: text("status").notNull().default("pending"), // "pending", "confirmed", "cancelled", "completed"
   startDate: timestamp("start_date").notNull(),
-  expectedGuests: integer("expected_guests").default(0),
+  guests: integer("guests").default(0),
+  useKitchen: boolean("use_kitchen").default(false),
+  table: text("table").notNull(), // Table name (e.g., "Mahaia 1", "Mahaia 2", etc.)
   totalAmount: text("total_amount").notNull().default("0"), // Using text for decimal precision
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -167,7 +174,8 @@ export const insertReservationSchema = createInsertSchema(reservations).pick({
   name: true,
   type: true,
   startDate: true,
-  expectedGuests: true,
+  guests: true,
+  useKitchen: true,
   totalAmount: true,
   notes: true,
 });

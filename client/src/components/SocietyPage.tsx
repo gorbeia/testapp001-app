@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, Save } from 'lucide-react';
+import { Building2, Save, DollarSign } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,8 @@ interface Society {
   address: string;
   phone: string;
   email: string;
+  reservationPricePerMember: string;
+  kitchenPricePerMember: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -111,7 +113,7 @@ export function SocietyPage() {
         <p className="text-muted-foreground">Elkartearen datuak eta SEPA konfigurazioa</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -191,6 +193,40 @@ export function SocietyPage() {
               <p className="text-xs text-muted-foreground">
                 SEPA hartzekodun identifikatzailea / Identificador de acreedor SEPA
               </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              {t('reservationPricing')}
+            </CardTitle>
+            <CardDescription>Erreserben prezioak ezartzeko</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t('reservationPricePerMember')}</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={society.reservationPricePerMember}
+                  onChange={(e) => setSociety({ ...society, reservationPricePerMember: e.target.value })}
+                  data-testid="input-reservation-price-per-member"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>{t('kitchenPricePerMember')}</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={society.kitchenPricePerMember}
+                  onChange={(e) => setSociety({ ...society, kitchenPricePerMember: e.target.value })}
+                  data-testid="input-kitchen-price-per-member"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
