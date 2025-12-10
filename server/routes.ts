@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import { db } from "./db";
 import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society } from "@shared/schema";
-import { eq, and, gte } from "drizzle-orm";
+import { eq, and, gte, ne } from "drizzle-orm";
 
 // Simple session storage (in production, use Redis or proper session store)
 const sessions = new Map<string, { user: User; timestamp: number }>();
@@ -778,7 +778,8 @@ export async function registerRoutes(
         .leftJoin(users, eq(reservations.userId, users.id))
         .where(and(
           eq(reservations.societyId, activeSocietyId),
-          gte(reservations.startDate, now)
+          gte(reservations.startDate, now),
+          ne(reservations.status, 'cancelled')
         ))
         .orderBy(reservations.startDate);
       
@@ -841,14 +842,15 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Reservations cannot be created for past dates" });
       }
       
-      // Check if table is already reserved for the same date and event type
+      // Check if table is already reserved for the same date and event type (excluding cancelled reservations)
       const existingReservation = await db
         .select()
         .from(reservations)
         .where(and(
           eq(reservations.table, req.body.table),
           eq(reservations.startDate, startDate),
-          eq(reservations.type, req.body.type)
+          eq(reservations.type, req.body.type),
+          ne(reservations.status, 'cancelled')
         ))
         .limit(1);
       
@@ -863,7 +865,7 @@ export async function registerRoutes(
         startDate,
         userId: user.id,
         societyId: activeSocietyId,
-        status: 'pending',
+        status: 'confirmed',
       };
       
       console.log('Final reservation data:', reservationData);
@@ -893,13 +895,19 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Reservation not found" });
       }
       
-      // Check access permissions
-      if (reservation[0].userId !== user.id && !['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
-        return res.status(403).json({ message: "Access denied" });
+      // Check access permissions - users can only cancel their own reservations
+      if (reservation[0].userId !== user.id) {
+        return res.status(403).json({ message: "You can only cancel your own reservations" });
       }
       
+      // Check if reservation can be cancelled (not already cancelled or completed)
+      if (['cancelled', 'completed'].includes(reservation[0].status)) {
+        return res.status(400).json({ message: "Reservation cannot be cancelled" });
+      }
+      
+      // Update status to cancelled
       const updatedReservation = await db.update(reservations)
-        .set({ ...req.body, updatedAt: new Date() })
+        .set({ status: 'cancelled', updatedAt: new Date() })
         .where(eq(reservations.id, id))
         .returning();
         

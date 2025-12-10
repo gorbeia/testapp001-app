@@ -21,9 +21,9 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
   const { t } = useLanguage();
-  const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -39,7 +39,7 @@ export function LoginForm() {
     try {
       await login(data.email, data.password);
     } catch {
-      setError('Kredentzi okerrak / Credenciales incorrectas');
+      setError(t('invalidCredentials'));
     } finally {
       setIsLoading(false);
     }

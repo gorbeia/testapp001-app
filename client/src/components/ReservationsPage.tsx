@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Plus, Calendar as CalendarIcon, Search, Filter, Users, Utensils } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Search, Filter, Users, Utensils, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -41,6 +42,8 @@ export function ReservationsPage() {
   const [reservations, setReservations] = useState<ReservationWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [society, setSociety] = useState<any>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [reservationToCancel, setReservationToCancel] = useState<string | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -116,7 +119,7 @@ export function ReservationsPage() {
       console.error('Error loading reservations:', error);
       toast({
         title: t('error'),
-        description: 'Errorea erreserbak kargatzean',
+        description: t('errorLoadingReservations'),
         variant: 'destructive',
       });
     } finally {
@@ -143,7 +146,7 @@ export function ReservationsPage() {
       
       // Check if the date is valid
       if (isNaN(startDate.getTime())) {
-        throw new Error('Invalid date selected');
+        throw new Error(t('invalidDate'));
       }
       
       const reservationData = {
@@ -182,13 +185,52 @@ export function ReservationsPage() {
         setIsDialogOpen(false);
       } else {
         const error = await response.json();
-        throw new Error(error.message || 'Errorea erreserba sortzean');
+        throw new Error(error.message || t('errorCreatingReservation'));
       }
     } catch (error) {
       console.error('Error creating reservation:', error);
       toast({
         title: t('error'),
-        description: error instanceof Error ? error.message : 'Errorea erreserba sortzean',
+        description: error instanceof Error ? error.message : t('errorCreatingReservation'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCancelReservation = (reservationId: string) => {
+    setReservationToCancel(reservationId);
+    setCancelDialogOpen(true);
+  };
+
+  const confirmCancelReservation = async () => {
+    if (!reservationToCancel) return;
+    
+    try {
+      const response = await authFetch(`/api/reservations/${reservationToCancel}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'cancelled' }),
+      });
+
+      if (response.ok) {
+        const updatedReservation = await response.json();
+        setReservations(reservations.map(r => r.id === reservationToCancel ? updatedReservation : r));
+        
+        toast({
+          title: t('success'),
+          description: 'Erreserba bertan behera utzita / Reserva cancelada', 
+        });
+        
+        setCancelDialogOpen(false);
+        setReservationToCancel(null);
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || t('errorCancellingReservation'));
+      }
+    } catch (error) {
+      console.error('Error cancelling reservation:', error);
+      toast({
+        title: t('error'),
+        description: error instanceof Error ? error.message : t('errorCancellingReservation'),
         variant: 'destructive',
       });
     }
@@ -409,16 +451,28 @@ export function ReservationsPage() {
             <Card key={reservation.id} data-testid={`card-reservation-${reservation.id}`}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-4 flex-wrap">
-                  <div>
+                  <div className="flex-1">
                     <CardTitle className="text-lg">{reservation.name}</CardTitle>
                     <p className="text-sm text-muted-foreground">
                       {reservation.userName && `${reservation.userName} • `}
                       {format(new Date(reservation.startDate), 'PPP', { locale: language === 'eu' ? eu : es })}
                     </p>
                   </div>
-                  <Badge variant={getStatusVariant(reservation.status)}>
-                    {statusLabels[reservation.status]}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={getStatusVariant(reservation.status)}>
+                      {statusLabels[reservation.status]}
+                    </Badge>
+                    {reservation.status === 'confirmed' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCancelReservation(reservation.id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -445,6 +499,25 @@ export function ReservationsPage() {
           ))
         )}
       </div>
+      
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('cancelReservation')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('cancelReservationConfirm')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCancelDialogOpen(false)}>
+              {t('cancel')}
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmCancelReservation} className="bg-red-600 hover:bg-red-700">
+              {t('confirm')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
