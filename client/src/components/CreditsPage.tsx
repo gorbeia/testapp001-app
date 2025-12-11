@@ -51,11 +51,13 @@ export function CreditsPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6" data-testid="credits-page">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">{isTreasurer ? t('allCredits') : t('myCredits')}</h2>
-          <p className="text-muted-foreground">
+          <h2 className="text-2xl font-bold" data-testid="credits-page-title">
+            {isTreasurer ? t('allCredits') : t('myCredits')}
+          </h2>
+          <p className="text-muted-foreground" data-testid="credits-page-subtitle">
             {isTreasurer ? 'Kudeatu bazkideen zorrak' : 'Zure zor metatuak'}
           </p>
         </div>
@@ -68,33 +70,39 @@ export function CreditsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <Card>
+        <Card data-testid="card-pending">
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
             <CardTitle className="text-sm font-medium">{t('pending')}</CardTitle>
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{totalPending.toFixed(2)}€</div>
+            <div className="text-2xl font-bold text-destructive" data-testid="total-pending">
+              {totalPending.toFixed(2)}€
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-testid="card-paid">
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
             <CardTitle className="text-sm font-medium">{t('paid')}</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{totalPaid.toFixed(2)}€</div>
+            <div className="text-2xl font-bold text-primary" data-testid="total-paid">
+              {totalPaid.toFixed(2)}€
+            </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card data-testid="card-total">
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
             <CardTitle className="text-sm font-medium">{t('total')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{(totalPending + totalPaid).toFixed(2)}€</div>
+            <div className="text-2xl font-bold" data-testid="total-grand">
+              {(totalPending + totalPaid).toFixed(2)}€
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -136,7 +144,7 @@ export function CreditsPage() {
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">
-        <Table>
+        <Table data-testid="credits-table">
           <TableHeader>
             <TableRow>
               {isTreasurer && <TableHead>{t('member')}</TableHead>}
@@ -148,17 +156,17 @@ export function CreditsPage() {
           <TableBody>
             {filteredCredits.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={isTreasurer ? 4 : 3} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={isTreasurer ? 4 : 3} className="text-center py-8 text-muted-foreground" data-testid="no-results-message">
                   {t('noResults')}
                 </TableCell>
               </TableRow>
             ) : (
               filteredCredits.map((credit) => (
                 <TableRow key={credit.id} data-testid={`row-credit-${credit.id}`}>
-                  {isTreasurer && <TableCell className="font-medium">{credit.memberName}</TableCell>}
-                  <TableCell>{credit.month}</TableCell>
-                  <TableCell className="text-right font-medium">{credit.amount.toFixed(2)}€</TableCell>
-                  <TableCell className="text-right">
+                  {isTreasurer && <TableCell className="font-medium" data-testid={`credit-member-${credit.id}`}>{credit.memberName}</TableCell>}
+                  <TableCell data-testid={`credit-month-${credit.id}`}>{credit.month}</TableCell>
+                  <TableCell className="text-right font-medium" data-testid={`credit-amount-${credit.id}`}>{credit.amount.toFixed(2)}€</TableCell>
+                  <TableCell className="text-right" data-testid={`credit-status-${credit.id}`}>
                     <Badge variant={credit.status === 'paid' ? 'default' : 'destructive'}>
                       {credit.status === 'paid' ? t('paid') : t('pending')}
                     </Badge>
