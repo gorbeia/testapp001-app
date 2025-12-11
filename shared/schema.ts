@@ -200,6 +200,25 @@ export const credits = pgTable("credits", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const oharrak = pgTable("oharrak", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: varchar("created_by").notNull().references(() => users.id),
+  societyId: varchar("society_id").notNull().references(() => societies.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertOharrakSchema = createInsertSchema(oharrak).pick({
+  title: true,
+  content: true,
+  isActive: true,
+  createdBy: true,
+  societyId: true,
+});
+
 export type InsertSociety = z.infer<typeof insertSocietySchema>;
 export type Society = typeof societies.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -216,3 +235,5 @@ export type InsertReservation = z.infer<typeof insertReservationSchema>;
 export type Reservation = typeof reservations.$inferSelect;
 export type Credit = typeof credits.$inferSelect;
 export type InsertCredit = typeof credits.$inferSelect;
+export type Oharrak = typeof oharrak.$inferSelect;
+export type InsertOharrak = z.infer<typeof insertOharrakSchema>;

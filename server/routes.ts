@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "./db";
-import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit } from "@shared/schema";
+import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak } from "@shared/schema";
 import { eq, and, gte, ne, sum, between, sql, desc } from "drizzle-orm";
 import { debtCalculationService } from "./cron-jobs";
 
@@ -1434,6 +1434,91 @@ export async function registerRoutes(
         message: `Updated ${updatedCredits.length} credits`,
         updatedCredits 
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Oharrak (Notes) routes - Admin only
+  app.get("/api/oharrak", requireAuth, async (req, res, next) => {
+    try {
+      const societyId = getUserSocietyId(req.user);
+      const notes = await db.select().from(oharrak)
+        .where(eq(oharrak.societyId, societyId))
+        .orderBy(desc(oharrak.createdAt));
+      res.json(notes);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post("/api/oharrak", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const societyId = getUserSocietyId(req.user);
+      const { title, content } = req.body;
+      
+      const [newNote] = await db.insert(oharrak).values({
+        title,
+        content,
+        isActive: true,
+        createdBy: req.user!.id,
+        societyId,
+      }).returning();
+      
+      res.status(201).json(newNote);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.put("/api/oharrak/:id", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { title, content, isActive } = req.body;
+      const societyId = getUserSocietyId(req.user);
+      
+      const [updatedNote] = await db
+        .update(oharrak)
+        .set({ 
+          title, 
+          content, 
+          isActive,
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(oharrak.id, id),
+          eq(oharrak.societyId, societyId)
+        ))
+        .returning();
+      
+      if (!updatedNote) {
+        return res.status(404).json({ message: "Note not found" });
+      }
+      
+      res.json(updatedNote);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.delete("/api/oharrak/:id", requireAuth, requireAdmin, async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const societyId = getUserSocietyId(req.user);
+      
+      const deletedNote = await db
+        .delete(oharrak)
+        .where(and(
+          eq(oharrak.id, id),
+          eq(oharrak.societyId, societyId)
+        ))
+        .returning();
+      
+      if (!deletedNote[0]) {
+        return res.status(404).json({ message: "Note not found" });
+      }
+      
+      res.status(204).send();
     } catch (error) {
       next(error);
     }
