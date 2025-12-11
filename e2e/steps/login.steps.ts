@@ -114,7 +114,7 @@ Then('I should see a login error message and still see the login form', async fu
   assert.ok(page, 'Page was not initialized');
 
   // Error banner should be visible with the invalid credentials message
-  const errorText = await page.textContent('text=Kredentzi okerrak');
+  const errorText = await page.textContent('text=Kredentzial okerrak');
   assert.ok(errorText, 'Expected login error message was not found');
 
   // Login form should still be visible

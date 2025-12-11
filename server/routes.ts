@@ -1,25 +1,60 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { db } from "./db";
 import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society } from "@shared/schema";
 import { eq, and, gte, ne } from "drizzle-orm";
 
-// Simple session storage (in production, use Redis or proper session store)
-const sessions = new Map<string, { user: User; timestamp: number }>();
+// JWT Configuration
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_EXPIRES_IN = '24h';
 
-// Session middleware
+// JWT Functions
+const generateToken = (user: User) => {
+  const { password: _, ...userWithoutPassword } = user;
+  return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+};
+
+const verifyToken = (token: string): User | null => {
+  try {
+    return jwt.verify(token, JWT_SECRET) as User;
+  } catch (error) {
+    return null;
+  }
+};
+
+// Set JWT cookie helper
+const setAuthCookie = (res: Response, token: string) => {
+  res.cookie('auth-token', token, {
+    httpOnly: true,    // Prevent XSS
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    sameSite: 'strict', // Prevent CSRF
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  });
+};
+
+// Clear auth cookie helper
+const clearAuthCookie = (res: Response) => {
+  res.clearCookie('auth-token');
+};
+
+// JWT Authentication middleware
 const sessionMiddleware = (req: Request, res: Response, next: NextFunction) => {
-  const sessionId = req.headers.authorization?.replace('Bearer ', '');
+  // Try to get token from cookie first, then from Authorization header
+  const token = req.cookies?.['auth-token'] || req.headers.authorization?.replace('Bearer ', '');
   
-  if (!sessionId) {
+  if (!token) {
     return next();
   }
 
-  const session = sessions.get(sessionId);
-  if (session && Date.now() - session.timestamp < 24 * 60 * 60 * 1000) { // 24 hour expiry
-    req.user = session.user;
-    session.timestamp = Date.now(); // Update timestamp
+  try {
+    const user = verifyToken(token);
+    if (user) {
+      req.user = user;
+    }
+  } catch (error) {
+    console.error('JWT verification error:', error);
   }
   
   next();
@@ -117,18 +152,15 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Create a simple session token
-      const sessionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
-      sessions.set(sessionId, {
-        user: dbUser,
-        timestamp: Date.now()
-      });
-
-      // Return user data and session token
+      // Create JWT token and set in httpOnly cookie
+      const token = generateToken(dbUser);
+      setAuthCookie(res, token);
+      
+      // Return user data and token (for backward compatibility)
       const { password: _, ...userWithoutPassword } = dbUser;
       return res.status(200).json({ 
         user: userWithoutPassword,
-        token: sessionId
+        token
       });
     } catch (err) {
       next(err);
@@ -138,10 +170,8 @@ export async function registerRoutes(
   // Logout endpoint
   app.post("/api/logout", (req: Request, res: Response, next: NextFunction) => {
     try {
-      const sessionId = req.headers.authorization?.replace('Bearer ', '');
-      if (sessionId) {
-        sessions.delete(sessionId);
-      }
+      // Clear the httpOnly cookie
+      clearAuthCookie(res);
       return res.status(200).json({ ok: true });
     } catch (err) {
       next(err);
@@ -232,14 +262,9 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
 
-      // Update session with new user data
-      const sessionId = req.headers.authorization?.replace('Bearer ', '');
-      if (sessionId) {
-        const currentSession = sessions.get(sessionId);
-        if (currentSession) {
-          currentSession.user = updatedUser;
-        }
-      }
+      // Update JWT with new user data
+      const token = generateToken(updatedUser);
+      setAuthCookie(res, token);
       
       // Transform username to email for frontend compatibility
       const responseUser = {
@@ -278,14 +303,10 @@ export async function registerRoutes(
         .set({ password: newPassword })
         .where(eq(users.id, user.id));
 
-      // Update session with new password
-      const sessionId = req.headers.authorization?.replace('Bearer ', '');
-      if (sessionId) {
-        const currentSession = sessions.get(sessionId);
-        if (currentSession) {
-          currentSession.user.password = newPassword;
-        }
-      }
+      // Update JWT with new password (remove password from token for security)
+      const userWithoutPassword = { ...user, password: newPassword };
+      const token = generateToken(userWithoutPassword);
+      setAuthCookie(res, token);
 
       return res.status(200).json({ message: "Password updated successfully" });
     } catch (err) {

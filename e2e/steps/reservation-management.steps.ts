@@ -340,7 +340,6 @@ Then('the reservation should appear in the list', async function () {
   
   // Check that some reservation name is present (it might be truncated)
   const cardText = await reservationCard.textContent();
-  console.log('Card content for amount check:', cardText);
   assert.ok(cardText && cardText.length > 0, 'Reservation name should be present');
   
   // Check that a user name is present (using the actual user from test data)
