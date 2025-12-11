@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { debtCalculationService } from "./cron-jobs";
 
 const app = express();
 const httpServer = createServer(app);
@@ -64,6 +65,9 @@ app.use((req, res, next) => {
 (async () => {
   await registerRoutes(httpServer, app);
 
+  // Start the cron job service for automatic debt calculations
+  debtCalculationService.startMonthlyCalculationCron();
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -87,7 +91,7 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(
+  const server = httpServer.listen(
     {
       port,
       host: "0.0.0.0",
@@ -95,6 +99,27 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      // Run catch-up calculation after server starts
+      debtCalculationService.checkAndRunCatchupCalculation();
     },
   );
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    log('SIGTERM received, shutting down gracefully');
+    debtCalculationService.stopCronJobs();
+    server.close(() => {
+      log('Server closed');
+      process.exit(0);
+    });
+  });
+
+  process.on('SIGINT', () => {
+    log('SIGINT received, shutting down gracefully');
+    debtCalculationService.stopCronJobs();
+    server.close(() => {
+      log('Server closed');
+      process.exit(0);
+    });
+  });
 })();

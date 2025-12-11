@@ -346,10 +346,8 @@ Then('the reservation should appear in the list', async function () {
   assert.ok(cardText?.includes('Mikel Etxeberria'), 'User name should be present in reservation');
   
   // Check that the correct amount is present (should be 75.00€ for 15 guests with kitchen)
-  // Let's first check what amount is actually there
   const amountMatch = cardText?.match(/(\d+\.?\d*)€/);
   const actualAmount = amountMatch ? amountMatch[1] : 'No amount found';
-  console.log('Expected: 75.00€, Actual:', actualAmount + '€');
   
   // For now, let's check that the amount is greater than 0 to ensure calculation is working
   const amount = parseFloat(actualAmount);

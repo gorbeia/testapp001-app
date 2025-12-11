@@ -3,8 +3,9 @@ import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "./db";
-import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society } from "@shared/schema";
-import { eq, and, gte, ne } from "drizzle-orm";
+import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit } from "@shared/schema";
+import { eq, and, gte, ne, sum, between } from "drizzle-orm";
+import { debtCalculationService } from "./cron-jobs";
 
 // JWT Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
@@ -22,6 +23,15 @@ const verifyToken = (token: string): User | null => {
   } catch (error) {
     return null;
   }
+};
+
+// Access control helpers
+const hasAdminAccess = (user: User): boolean => {
+  return user.function === 'administratzailea';
+};
+
+const hasTreasurerAccess = (user: User): boolean => {
+  return user.function === 'diruzaina' || user.function === 'administratzailea';
 };
 
 // Set JWT cookie helper
@@ -73,6 +83,18 @@ const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
   next();
 };
 
+const requireTreasurer = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  
+  if (!hasTreasurerAccess(req.user)) {
+    return res.status(403).json({ message: "Treasurer access required" });
+  }
+  
+  next();
+};
+
 // Authentication middleware
 const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
@@ -106,20 +128,6 @@ const getUserSocietyId = (user: User): string => {
     throw new Error('User societyId not found in JWT');
   }
   return user.societyId;
-};
-
-// Helper function to get active society ID (fallback for cases where no user context)
-const getActiveSocietyId = async (): Promise<string> => {
-  const activeSociety = await db.select().from(societies).where(eq(societies.isActive, true)).limit(1);
-  if (activeSociety.length === 0) {
-    // If no active society, get the first one
-    const firstSociety = await db.select().from(societies).limit(1);
-    if (firstSociety.length === 0) {
-      throw new Error('No societies found in database. Please seed societies first.');
-    }
-    return firstSociety[0].id;
-  }
-  return activeSociety[0].id;
 };
 
 export async function registerRoutes(
@@ -201,7 +209,15 @@ export async function registerRoutes(
   // Users: create a new user in the database (admin only)
   app.post("/api/users", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { username, password } = req.body as { username?: string; password?: string };
+      const { username, password, name, phone, iban, role, function: userFunction } = req.body as { 
+        username?: string; 
+        password?: string; 
+        name?: string;
+        phone?: string;
+        iban?: string;
+        role?: string;
+        function?: string;
+      };
 
       if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required" });
@@ -214,7 +230,12 @@ export async function registerRoutes(
         .values({ 
           username,
           password: hashedPassword,
-          societyId
+          societyId,
+          name: name || null,
+          phone: phone || null,
+          iban: iban || null,
+          role: role || null,
+          function: userFunction || null
         })
         .returning();
 
@@ -494,6 +515,10 @@ export async function registerRoutes(
       
       const [newConsumption] = await db.insert(consumptions).values(consumptionData).returning();
       
+      // Trigger real-time debt calculation for current month
+      console.log(`[CONSUMPTION-CREATED] Triggering debt calculation for user ${user.id}`);
+      await debtCalculationService.calculateCurrentMonthDebts();
+      
       return res.status(201).json(newConsumption);
     } catch (err) {
       next(err);
@@ -707,6 +732,10 @@ export async function registerRoutes(
         .set({ totalAmount: totalAmount.toString() })
         .where(eq(consumptions.id, id));
       
+      // Trigger real-time debt calculation for current month
+      console.log(`[CONSUMPTION-ITEMS-ADDED] Triggering debt calculation for user ${user.id}, total: ${totalAmount}`);
+      await debtCalculationService.calculateCurrentMonthDebts();
+      
       return res.status(201).json({ items: addedItems, totalAmount: totalAmount.toString() });
     } catch (err) {
       next(err);
@@ -878,6 +907,10 @@ export async function registerRoutes(
       console.log('Final reservation data:', reservationData);
       
       const newReservation = await db.insert(reservations).values(reservationData).returning();
+      
+      // Trigger real-time debt calculation for current month
+      await debtCalculationService.calculateCurrentMonthDebts();
+      
       res.status(201).json(newReservation[0]);
     } catch (error) {
       console.error('Error creating reservation:', error);
@@ -917,6 +950,9 @@ export async function registerRoutes(
         .set({ status: 'cancelled', updatedAt: new Date() })
         .where(eq(reservations.id, id))
         .returning();
+      
+      // Trigger real-time debt calculation for current month
+      await debtCalculationService.calculateCurrentMonthDebts();
         
       res.json(updatedReservation[0]);
     } catch (error) {
@@ -1112,6 +1148,219 @@ export async function registerRoutes(
       
       await db.delete(societies).where(eq(societies.id, id));
       res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Helper function to calculate monthly debts
+  const calculateMonthlyDebts = async (year: number, month: number) => {
+    const monthString = month.toString().padStart(2, '0');
+    const monthLabel = `${year}-${monthString}`;
+    
+    // Get active society
+    const [activeSociety] = await db.select().from(societies).where(eq(societies.isActive, true));
+    if (!activeSociety) {
+      throw new Error('No active society found');
+    }
+
+    // Get all members
+    const members = await db.select().from(users).where(eq(users.societyId, activeSociety.id));
+
+    // Calculate start and end dates for the month
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Last day of month
+
+    for (const member of members) {
+      // Calculate consumption amounts for the month
+      const consumptionResults = await db
+        .select({
+          total: sum(consumptions.totalAmount).mapWith(Number)
+        })
+        .from(consumptions)
+        .where(and(
+          eq(consumptions.userId, member.id),
+          eq(consumptions.societyId, activeSociety.id),
+          gte(consumptions.createdAt, startDate),
+          ne(consumptions.status, 'cancelled')
+        ));
+
+      const consumptionAmount = consumptionResults[0]?.total || 0;
+
+      // Calculate reservation amounts for the month
+      const reservationResults = await db
+        .select({
+          total: sum(reservations.totalAmount).mapWith(Number)
+        })
+        .from(reservations)
+        .where(and(
+          eq(reservations.userId, member.id),
+          eq(reservations.societyId, activeSociety.id),
+          gte(reservations.startDate, startDate),
+          ne(reservations.status, 'cancelled')
+        ));
+
+      const reservationAmount = reservationResults[0]?.total || 0;
+
+      // Calculate kitchen usage fees for reservations with kitchen
+      const kitchenReservations = await db
+        .select()
+        .from(reservations)
+        .where(and(
+          eq(reservations.userId, member.id),
+          eq(reservations.societyId, activeSociety.id),
+          eq(reservations.useKitchen, true),
+          gte(reservations.startDate, startDate),
+          ne(reservations.status, 'cancelled')
+        ));
+
+      const kitchenAmount = kitchenReservations.length * Number(activeSociety.kitchenPricePerMember || 0);
+
+      // Calculate total amount
+      const totalAmount = consumptionAmount + reservationAmount + kitchenAmount;
+
+      // Check if credit already exists for this member and month
+      const [existingCredit] = await db
+        .select()
+        .from(credits)
+        .where(and(
+          eq(credits.memberId, member.id),
+          eq(credits.societyId, activeSociety.id),
+          eq(credits.month, monthLabel)
+        ));
+
+      if (existingCredit) {
+        // Update existing credit
+        await db
+          .update(credits)
+          .set({
+            consumptionAmount: consumptionAmount.toString(),
+            reservationAmount: reservationAmount.toString(),
+            kitchenAmount: kitchenAmount.toString(),
+            totalAmount: totalAmount.toString(),
+            updatedAt: new Date()
+          })
+          .where(eq(credits.id, existingCredit.id));
+      } else {
+        // Create new credit
+        await db.insert(credits).values({
+          memberId: member.id,
+          societyId: activeSociety.id,
+          month: monthLabel,
+          year,
+          monthNumber: month,
+          consumptionAmount: consumptionAmount.toString(),
+          reservationAmount: reservationAmount.toString(),
+          kitchenAmount: kitchenAmount.toString(),
+          totalAmount: totalAmount.toString(),
+          status: 'pending'
+        });
+      }
+    }
+
+    return { message: `Calculated debts for ${monthLabel}` };
+  };
+
+  // API endpoint to calculate monthly debts
+  app.post("/api/credits/calculate/:year/:month", requireTreasurer, async (req, res, next) => {
+    try {
+      const { year, month } = req.params;
+      const yearNum = parseInt(year);
+      const monthNum = parseInt(month);
+
+      if (isNaN(yearNum) || isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
+        return res.status(400).json({ message: "Invalid year or month" });
+      }
+
+      const result = await calculateMonthlyDebts(yearNum, monthNum);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get credits for a member
+  app.get("/api/credits/member/:memberId", requireAuth, async (req, res, next) => {
+    try {
+      const { memberId } = req.params;
+      const user = req.user!;
+      
+      // Users can only see their own credits unless they have treasurer access
+      if (memberId !== user.id && !hasTreasurerAccess(user)) {
+        return res.status(403).json({ message: "Access denied" });
+      }
+
+      const memberCredits = await db
+        .select()
+        .from(credits)
+        .where(eq(credits.memberId, memberId))
+        .orderBy(credits.year, credits.monthNumber);
+
+      res.json(memberCredits);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Get all credits (treasurer only)
+  app.get("/api/credits", requireTreasurer, async (req, res, next) => {
+    try {
+      const { month, status } = req.query;
+      
+      let query = db.select().from(credits);
+      
+      if (month) {
+        query = query.where(eq(credits.month, month as string));
+      }
+      
+      if (status) {
+        query = query.where(eq(credits.status, status as string));
+      }
+
+      const allCredits = await query.orderBy(credits.year, credits.monthNumber, credits.memberId);
+      
+      // Get member names
+      const creditsWithNames = await Promise.all(
+        allCredits.map(async (credit) => {
+          const [member] = await db.select().from(users).where(eq(users.id, credit.memberId));
+          return {
+            ...credit,
+            memberName: member?.name || 'Unknown'
+          };
+        })
+      );
+
+      res.json(creditsWithNames);
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Update credit status (mark as paid, etc.)
+  app.put("/api/credits/:id/status", requireTreasurer, async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { status, paidAmount } = req.body;
+
+      if (!['pending', 'paid', 'partial'].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+
+      const [updatedCredit] = await db
+        .update(credits)
+        .set({
+          status,
+          paidAmount: paidAmount || "0",
+          updatedAt: new Date()
+        })
+        .where(eq(credits.id, id))
+        .returning();
+
+      if (!updatedCredit) {
+        return res.status(404).json({ message: "Credit not found" });
+      }
+
+      res.json(updatedCredit);
     } catch (error) {
       next(error);
     }

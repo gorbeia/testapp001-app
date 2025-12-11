@@ -201,7 +201,7 @@ export function ConsumptionsPage() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]">
+    <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]" data-testid="bar-page">
       <div className="flex-1 p-4 sm:p-6 overflow-auto">
         <div className="space-y-6">
           <div>

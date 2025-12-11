@@ -2,7 +2,6 @@ Feature: Zorrak Debts Management
   As an administrator
   I want to view all user debts for the current month
   So that I can track outstanding payments and verify totals
-  @only
   Scenario: Admin views Zorrak debts page and verifies total sum
     Given the application is running
     When I open the login page
@@ -15,7 +14,6 @@ Feature: Zorrak Debts Management
     When I calculate the sum of all individual debts
     Then the calculated sum should match the displayed total
 
-  @only
   Scenario: Non-admin user cannot access Zorrak debts page
     Given the application is running
     When I open the login page

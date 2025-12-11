@@ -180,6 +180,24 @@ export const insertReservationSchema = createInsertSchema(reservations).pick({
   notes: true,
 });
 
+// Credits/Debts (monthly calculated debts for members)
+export const credits = pgTable("credits", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  memberId: varchar("member_id").notNull().references(() => users.id),
+  societyId: varchar("society_id").notNull().references(() => societies.id),
+  month: text("month").notNull(), // Format: "YYYY-MM" (e.g., "2024-12")
+  year: integer("year").notNull(),
+  monthNumber: integer("month_number").notNull(), // 1-12
+  consumptionAmount: decimal("consumption_amount", { precision: 10, scale: 2 }).default("0"),
+  reservationAmount: decimal("reservation_amount", { precision: 10, scale: 2 }).default("0"),
+  kitchenAmount: decimal("kitchen_amount", { precision: 10, scale: 2 }).default("0"),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).default("0"),
+  status: text("status").notNull().default("pending"), // "pending", "paid", "partial"
+  paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default("0"),
+  calculatedAt: timestamp("calculated_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export type InsertSociety = z.infer<typeof insertSocietySchema>;
 export type Society = typeof societies.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -194,3 +212,5 @@ export type InsertStockMovement = z.infer<typeof insertStockMovementSchema>;
 export type StockMovement = typeof stockMovements.$inferSelect;
 export type InsertReservation = z.infer<typeof insertReservationSchema>;
 export type Reservation = typeof reservations.$inferSelect;
+export type Credit = typeof credits.$inferSelect;
+export type InsertCredit = typeof credits.$inferSelect;
