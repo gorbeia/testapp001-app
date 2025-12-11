@@ -13,6 +13,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLanguage } from '@/lib/i18n';
+import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { eu, es } from 'date-fns/locale';
@@ -35,6 +36,7 @@ const authFetch = async (url: string, options: RequestInit = {}) => {
 
 export function ReservationsPage() {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -462,7 +464,9 @@ export function ReservationsPage() {
                     <Badge variant={getStatusVariant(reservation.status)}>
                       {statusLabels[reservation.status]}
                     </Badge>
-                    {reservation.status === 'confirmed' && (
+                    {reservation.status === 'confirmed' && 
+                      (reservation.userId === user?.id || 
+                       ['administratzailea', 'diruzaina', 'sotolaria'].includes(user?.function || '')) && (
                       <Button
                         variant="outline"
                         size="sm"
