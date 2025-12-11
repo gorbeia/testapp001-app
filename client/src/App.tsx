@@ -25,7 +25,7 @@ import { ProductsPage } from "@/components/ProductsPage";
 import { SocietyPage } from "@/components/SocietyPage";
 import { SepaExportPage } from "@/components/SepaExportPage";
 import { UserProfile } from "@/components/UserProfile";
-import OharrakPage from "@/components/OharrakPage";
+import OharrakPage from "@/components/oharrak";
 import NotFound from "@/pages/not-found";
 
 function AppRoutes() {
