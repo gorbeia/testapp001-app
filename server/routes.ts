@@ -100,7 +100,15 @@ declare global {
   }
 }
 
-// Helper function to get active society ID
+// Helper function to get society ID from JWT (no DB query needed)
+const getUserSocietyId = (user: User): string => {
+  if (!user.societyId) {
+    throw new Error('User societyId not found in JWT');
+  }
+  return user.societyId;
+};
+
+// Helper function to get active society ID (fallback for cases where no user context)
 const getActiveSocietyId = async (): Promise<string> => {
   const activeSociety = await db.select().from(societies).where(eq(societies.isActive, true)).limit(1);
   if (activeSociety.length === 0) {
@@ -200,13 +208,13 @@ export async function registerRoutes(
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
-      const activeSocietyId = await getActiveSocietyId();
+      const societyId = getUserSocietyId(req.user!);
       const [created] = await db
         .insert(users)
         .values({ 
-          username: username.toLowerCase(), 
+          username,
           password: hashedPassword,
-          societyId: activeSocietyId,
+          societyId
         })
         .returning();
 
@@ -386,37 +394,15 @@ export async function registerRoutes(
   // Products: get all products
   app.get("/api/products", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const activeSocietyId = await getActiveSocietyId();
-      const allProducts = await db.select().from(products).where(eq(products.societyId, activeSocietyId));
+      const societyId = getUserSocietyId(req.user!);
+      const allProducts = await db.select().from(products).where(eq(products.societyId, societyId));
       return res.status(200).json(allProducts);
     } catch (err) {
       next(err);
     }
   });
 
-  // Products: get product by id
-  app.get("/api/products/:id", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { id } = req.params;
-      const activeSocietyId = await getActiveSocietyId();
-      const product = await db.select().from(products)
-        .where(and(
-          eq(products.id, id),
-          eq(products.societyId, activeSocietyId)
-        ))
-        .limit(1);
-      
-      if (!product.length) {
-        return res.status(404).json({ message: "Product not found" });
-      }
-      
-      return res.status(200).json(product[0]);
-    } catch (err) {
-      next(err);
-    }
-  });
-
-  // Products: create new product (admin only)
+// Products: create new product (admin only)
   app.post("/api/products", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user!;
@@ -427,12 +413,12 @@ export async function registerRoutes(
       }
 
       const productData = req.body;
-      const activeSocietyId = await getActiveSocietyId();
+      const societyId = getUserSocietyId(user);
       
-      // Auto-assign the active society ID
+      // Auto-assign the user's society ID
       const [newProduct] = await db.insert(products).values({
         ...productData,
-        societyId: activeSocietyId,
+        societyId,
       }).returning();
       
       return res.status(201).json(newProduct);
@@ -499,11 +485,11 @@ export async function registerRoutes(
   app.post("/api/consumptions", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user!;
-      const activeSocietyId = await getActiveSocietyId();
+      const societyId = getUserSocietyId(user);
       const consumptionData = {
         ...req.body,
         userId: user.id,
-        societyId: activeSocietyId,
+        societyId,
       };
       
       const [newConsumption] = await db.insert(consumptions).values(consumptionData).returning();
@@ -518,7 +504,7 @@ export async function registerRoutes(
   app.get("/api/consumptions", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user!;
-      const activeSocietyId = await getActiveSocietyId();
+      const societyId = getUserSocietyId(user);
       
       let allConsumptions;
       if (['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
@@ -540,7 +526,7 @@ export async function registerRoutes(
           })
           .from(consumptions)
           .leftJoin(users, eq(consumptions.userId, users.id))
-          .where(eq(consumptions.societyId, activeSocietyId));
+          .where(eq(consumptions.societyId, societyId));
       } else {
         // Regular users can only see their own consumptions
         allConsumptions = await db
@@ -562,7 +548,7 @@ export async function registerRoutes(
           .leftJoin(users, eq(consumptions.userId, users.id))
           .where(and(
             eq(consumptions.userId, user.id),
-            eq(consumptions.societyId, activeSocietyId)
+            eq(consumptions.societyId, societyId)
           ));
       }
       
@@ -579,7 +565,7 @@ export async function registerRoutes(
       const user = req.user!;
       
       // Get consumption with user info
-      const activeSocietyId = await getActiveSocietyId();
+      const societyId = getUserSocietyId(user);
       const consumptionData = await db
         .select({
           id: consumptions.id,
@@ -599,7 +585,7 @@ export async function registerRoutes(
         .leftJoin(users, eq(consumptions.userId, users.id))
         .where(and(
           eq(consumptions.id, id),
-          eq(consumptions.societyId, activeSocietyId)
+          eq(consumptions.societyId, societyId)
         ))
         .limit(1);
       
@@ -645,11 +631,11 @@ export async function registerRoutes(
       const { items } = req.body; // Array of { productId, quantity, notes }
       
       // Verify consumption exists and user has access
-      const activeSocietyId = await getActiveSocietyId();
+      const societyId = getUserSocietyId(user);
       const consumption = await db.select().from(consumptions)
         .where(and(
           eq(consumptions.id, id),
-          eq(consumptions.societyId, activeSocietyId)
+          eq(consumptions.societyId, societyId)
         ))
         .limit(1);
       
@@ -702,10 +688,10 @@ export async function registerRoutes(
           .where(eq(products.id, item.productId));
         
         // Create stock movement
-        const activeSocietyId = await getActiveSocietyId();
+        const societyId = getUserSocietyId(user);
         await db.insert(stockMovements).values({
           productId: item.productId,
-          societyId: activeSocietyId,
+          societyId,
           type: 'consumption',
           quantity: -item.quantity,
           reason: 'Bar consumption',
@@ -733,11 +719,11 @@ export async function registerRoutes(
       const { id } = req.params;
       const user = req.user!;
       
-      const activeSocietyId = await getActiveSocietyId();
+      const societyId = getUserSocietyId(user);
       const consumption = await db.select().from(consumptions)
         .where(and(
           eq(consumptions.id, id),
-          eq(consumptions.societyId, activeSocietyId)
+          eq(consumptions.societyId, societyId)
         ))
         .limit(1);
       
@@ -773,7 +759,7 @@ export async function registerRoutes(
   app.get("/api/reservations", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user!;
-      const activeSocietyId = await getActiveSocietyId();
+      const societyId = getUserSocietyId(user);
       
       // All users can see all reservations for the society (only future dates)
       const now = new Date();
@@ -798,7 +784,7 @@ export async function registerRoutes(
         .from(reservations)
         .leftJoin(users, eq(reservations.userId, users.id))
         .where(and(
-          eq(reservations.societyId, activeSocietyId),
+          eq(reservations.societyId, societyId),
           gte(reservations.startDate, now),
           ne(reservations.status, 'cancelled')
         ))
@@ -815,11 +801,11 @@ export async function registerRoutes(
       const { id } = req.params;
       const user = req.user!;
       
-      const activeSocietyId = await getActiveSocietyId();
+      const societyId = getUserSocietyId(user);
       const reservation = await db.select().from(reservations)
         .where(and(
           eq(reservations.id, id),
-          eq(reservations.societyId, activeSocietyId)
+          eq(reservations.societyId, societyId)
         ))
         .limit(1);
       
@@ -841,7 +827,7 @@ export async function registerRoutes(
   app.post("/api/reservations", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user!;
-      const activeSocietyId = await getActiveSocietyId();
+      const societyId = getUserSocietyId(user);
       
       console.log('Request body:', req.body);
       console.log('startDate type:', typeof req.body.startDate);
@@ -885,7 +871,7 @@ export async function registerRoutes(
         ...req.body,
         startDate,
         userId: user.id,
-        societyId: activeSocietyId,
+        societyId: societyId,
         status: 'confirmed',
       };
       
@@ -904,11 +890,11 @@ export async function registerRoutes(
       const { id } = req.params;
       const user = req.user!;
       
-      const activeSocietyId = await getActiveSocietyId();
+      const societyId = getUserSocietyId(user);
       const reservation = await db.select().from(reservations)
         .where(and(
           eq(reservations.id, id),
-          eq(reservations.societyId, activeSocietyId)
+          eq(reservations.societyId, societyId)
         ))
         .limit(1);
       
@@ -943,11 +929,11 @@ export async function registerRoutes(
       const { id } = req.params;
       const user = req.user!;
       
-      const activeSocietyId = await getActiveSocietyId();
+      const societyId = getUserSocietyId(user);
       const reservation = await db.select().from(reservations)
         .where(and(
           eq(reservations.id, id),
-          eq(reservations.societyId, activeSocietyId)
+          eq(reservations.societyId, societyId)
         ))
         .limit(1);
       
@@ -1000,13 +986,8 @@ export async function registerRoutes(
         return res.status(401).json({ message: "User not authenticated" });
       }
       
-      const user = await db.select().from(users).where(eq(users.id, req.user.id)).limit(1);
-      
-      if (user.length === 0 || !user[0].societyId) {
-        return res.status(404).json({ message: "User society not found" });
-      }
-      
-      const society = await db.select().from(societies).where(eq(societies.id, user[0].societyId)).limit(1);
+      const societyId = getUserSocietyId(req.user);
+      const society = await db.select().from(societies).where(eq(societies.id, societyId)).limit(1);
       
       if (society.length === 0) {
         return res.status(404).json({ message: "Society not found" });
