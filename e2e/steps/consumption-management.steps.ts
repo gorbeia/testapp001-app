@@ -9,16 +9,20 @@ Given('I navigate to the consumptions page', async function () {
   
   await page.click('text=Kontsumoak');
   await page.waitForLoadState('networkidle');
+  // Additional wait to ensure all API calls complete after cache removal
+  await page.waitForTimeout(1000);
 });
 
 When('I add {string} to the cart', async function (productName: string) {
   const page = getPage();
   if (!page) throw new Error('Page not available');
-  // Wait for products to load
-  await page.waitForSelector('[data-testid="product-card"]', { timeout: 10000 });
+  
+  // Wait for products to load (reduced timeout - 5s is sufficient)
+  await page.waitForSelector('[data-testid="product-card"]', { timeout: 5000 });
   
   // Find the first product card that contains the product name and click its add button
   const productCard = page.locator(`[data-testid="product-card"]:has-text("${productName}")`).first();
+  
   await productCard.locator('[data-testid="button-add-to-cart"]').click();
   
   // Wait a moment for the cart to update
@@ -29,11 +33,11 @@ When('I increase the quantity of {string} to {int}', async function (productName
   const page = getPage();
   if (!page) throw new Error('Page not available');
   // Find the item in the cart and increase quantity
-  const cartItem = page.locator(`[data-testid="cart-item"]:has-text("${productName}")`);
+  const cartItem = page.locator(`[data-testid^="cart-item-"]:has-text("${productName}")`);
   
   // Click the plus button until we reach the desired quantity
   for (let i = 1; i < quantity; i++) {
-    await cartItem.locator('[data-testid="button-increase-quantity"]').click();
+    await cartItem.locator('[data-testid^="button-increase-quantity-"]').click();
     await page.waitForTimeout(200);
   }
 });
@@ -167,8 +171,11 @@ Then('the cart should be empty', async function () {
 Then('the cart should still contain {string}', async function (productName: string) {
   const page = getPage();
   if (!page) throw new Error('Page not available');
-  const cartItem = page.locator(`[data-testid="cart-item"]:has-text("${productName}")`);
-  assert.ok(await cartItem.isVisible(), `Cart should still contain ${productName}`);
+  
+  const cartItem = page.locator(`[data-testid^="cart-item-"]:has-text("${productName}")`);
+  const isVisible = await cartItem.isVisible();
+  
+  assert.ok(isVisible, `Cart should still contain ${productName}`);
 });
 
 Then('the consumption should be saved in the database', async function () {
@@ -227,14 +234,12 @@ Then('the consumption should appear in the consumption list', async function () 
   // Verify the total amount is displayed correctly
   const totalAmount = await firstConsumptionRow.locator('[data-testid="consumption-total"]').textContent();
   assert.ok(totalAmount?.includes('€'), 'Total should include currency symbol');
-  
-  console.log('Found consumption in list:', consumptionText);
 });
 
 Then('no consumption should be saved in the database', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
   // Verify that we're still on the consumptions page and the cart still has items
-  const cartItems = await page.locator('[data-testid="cart-item"]').count();
+  const cartItems = await page.locator('[data-testid^="cart-item-"]').count();
   assert.ok(cartItems > 0, 'Cart should still have items, indicating no consumption was saved');
 });

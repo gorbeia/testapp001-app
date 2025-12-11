@@ -322,7 +322,7 @@ export function ConsumptionsPage() {
                 <div
                   key={item.productId}
                   className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50"
-                  data-testid={`cart-item`}
+                  data-testid={`cart-item-${item.productId}`}
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate">{item.name}</p>
@@ -336,7 +336,7 @@ export function ConsumptionsPage() {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => updateQuantity(item.productId, -1)}
-                      data-testid={`button-decrease-quantity`}
+                      data-testid={`button-decrease-quantity-${item.productId}`}
                     >
                       <Minus className="h-3 w-3" />
                     </Button>
@@ -346,7 +346,7 @@ export function ConsumptionsPage() {
                       size="icon"
                       className="h-7 w-7"
                       onClick={() => updateQuantity(item.productId, 1)}
-                      data-testid={`button-increase-quantity`}
+                      data-testid={`button-increase-quantity-${item.productId}`}
                     >
                       <Plus className="h-3 w-3" />
                     </Button>

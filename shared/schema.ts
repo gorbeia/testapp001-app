@@ -194,6 +194,8 @@ export const credits = pgTable("credits", {
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).default("0"),
   status: text("status").notNull().default("pending"), // "pending", "paid", "partial"
   paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default("0"),
+  markedAsPaidBy: varchar("marked_as_paid_by").references(() => users.id), // User who marked as paid
+  markedAsPaidAt: timestamp("marked_as_paid_at"), // When it was marked as paid
   calculatedAt: timestamp("calculated_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

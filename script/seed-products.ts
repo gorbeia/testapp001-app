@@ -176,10 +176,20 @@ async function main() {
   console.log('Seeding demo products...');
 
   for (const product of demoProducts) {
-    await db.insert(products).values({
-      ...product,
-      societyId,
-    });
+    // Check if product already exists
+    const existingProduct = await db.select().from(products)
+      .where(eq(products.name, product.name))
+      .limit(1);
+    
+    if (existingProduct.length === 0) {
+      await db.insert(products).values({
+        ...product,
+        societyId,
+      });
+      console.log(`Added product: ${product.name}`);
+    } else {
+      console.log(`Product already exists: ${product.name}`);
+    }
   }
 
   console.log('Done.');

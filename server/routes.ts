@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "./db";
 import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit } from "@shared/schema";
-import { eq, and, gte, ne, sum, between } from "drizzle-orm";
+import { eq, and, gte, ne, sum, between, sql, desc } from "drizzle-orm";
 import { debtCalculationService } from "./cron-jobs";
 
 // JWT Configuration
@@ -47,6 +47,14 @@ const setAuthCookie = (res: Response, token: string) => {
 // Clear auth cookie helper
 const clearAuthCookie = (res: Response) => {
   res.clearCookie('auth-token');
+};
+
+// No-cache middleware for sensitive endpoints
+const noCache = (req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
 };
 
 // JWT Authentication middleware
@@ -136,6 +144,9 @@ export async function registerRoutes(
 ): Promise<Server> {
   // Apply session middleware to all routes
   app.use(sessionMiddleware);
+  
+  // Apply no-cache to all API routes
+  app.use("/api", noCache);
 
   // Authentication: login using database-backed users table
   app.post("/api/login", async (req: Request, res: Response, next: NextFunction) => {
@@ -992,7 +1003,7 @@ export async function registerRoutes(
   });
 
   // Society management routes
-  app.get("/api/societies", requireAuth, async (req, res, next) => {
+  app.get("/api/societies", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const allSocieties = await db.select().from(societies).orderBy(societies.createdAt);
       res.json(allSocieties);
@@ -1036,7 +1047,7 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/societies/:id", requireAuth, async (req, res, next) => {
+  app.get("/api/societies/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const { id } = req.params;
       const society = await db.select().from(societies).where(eq(societies.id, id));
@@ -1219,61 +1230,72 @@ export async function registerRoutes(
       // Calculate total amount
       const totalAmount = consumptionAmount + reservationAmount + kitchenAmount;
 
-      // Check if credit already exists for this member and month
-      const [existingCredit] = await db
-        .select()
-        .from(credits)
-        .where(and(
-          eq(credits.memberId, member.id),
-          eq(credits.societyId, activeSociety.id),
-          eq(credits.month, monthLabel)
-        ));
+      // Only process credits if member has actual debts
+      if (totalAmount > 0) {
+        // Check if credit already exists for this member and month
+        const [existingCredit] = await db
+          .select()
+          .from(credits)
+          .where(and(
+            eq(credits.memberId, member.id),
+            eq(credits.societyId, activeSociety.id),
+            eq(credits.month, monthLabel)
+          ));
 
-      if (existingCredit) {
-        // Update existing credit
-        await db
-          .update(credits)
-          .set({
+        if (existingCredit) {
+          // Update existing credit
+          await db
+            .update(credits)
+            .set({
+              consumptionAmount: consumptionAmount.toString(),
+              reservationAmount: reservationAmount.toString(),
+              kitchenAmount: kitchenAmount.toString(),
+              totalAmount: totalAmount.toString(),
+              updatedAt: new Date()
+            })
+            .where(eq(credits.id, existingCredit.id));
+        } else {
+          // Create new credit
+          await db.insert(credits).values({
+            memberId: member.id,
+            societyId: activeSociety.id,
+            month: monthLabel,
+            year,
+            monthNumber: month,
             consumptionAmount: consumptionAmount.toString(),
             reservationAmount: reservationAmount.toString(),
             kitchenAmount: kitchenAmount.toString(),
             totalAmount: totalAmount.toString(),
-            updatedAt: new Date()
-          })
-          .where(eq(credits.id, existingCredit.id));
-      } else {
-        // Create new credit
-        await db.insert(credits).values({
-          memberId: member.id,
-          societyId: activeSociety.id,
-          month: monthLabel,
-          year,
-          monthNumber: month,
-          consumptionAmount: consumptionAmount.toString(),
-          reservationAmount: reservationAmount.toString(),
-          kitchenAmount: kitchenAmount.toString(),
-          totalAmount: totalAmount.toString(),
-          status: 'pending'
-        });
+            status: 'pending'
+          });
+        }
       }
     }
 
     return { message: `Calculated debts for ${monthLabel}` };
   };
 
-  // API endpoint to calculate monthly debts
-  app.post("/api/credits/calculate/:year/:month", requireTreasurer, async (req, res, next) => {
+  // Get current user's credits (authenticated users only)
+  app.get("/api/credits/member/current", sessionMiddleware, requireAuth, async (req, res, next) => {
     try {
-      const { year, month } = req.params;
-      const yearNum = parseInt(year);
-      const monthNum = parseInt(month);
-
-      if (isNaN(yearNum) || isNaN(monthNum) || monthNum < 1 || monthNum > 12) {
-        return res.status(400).json({ message: "Invalid year or month" });
+      const { month, status } = req.query;
+      const userId = req.user!.id;
+      
+      const conditions = [eq(credits.memberId, userId)];
+      
+      if (month) {
+        conditions.push(eq(credits.month, month as string));
       }
-
-      const result = await calculateMonthlyDebts(yearNum, monthNum);
-      res.json(result);
+      
+      if (status && status !== 'all') {
+        conditions.push(eq(credits.status, status as string));
+      }
+      
+      let query = db.select().from(credits).where(and(...conditions));
+      
+      const userCredits = await query.orderBy(desc(credits.year), desc(credits.monthNumber));
+      
+      res.json(userCredits);
     } catch (error) {
       next(error);
     }
@@ -1307,25 +1329,43 @@ export async function registerRoutes(
     try {
       const { month, status } = req.query;
       
-      let query = db.select().from(credits);
+      const conditions = [];
       
       if (month) {
-        query = query.where(eq(credits.month, month as string));
+        conditions.push(eq(credits.month, month as string));
       }
       
       if (status) {
-        query = query.where(eq(credits.status, status as string));
+        conditions.push(eq(credits.status, status as string));
       }
+
+      const baseQuery = db.select().from(credits);
+      const query = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
 
       const allCredits = await query.orderBy(credits.year, credits.monthNumber, credits.memberId);
       
-      // Get member names
+      // Get member names and payment tracking info
       const creditsWithNames = await Promise.all(
         allCredits.map(async (credit) => {
           const [member] = await db.select().from(users).where(eq(users.id, credit.memberId));
+          let markedByUser = null;
+          
+          if (credit.markedAsPaidBy) {
+            const [markedBy] = await db.select().from(users).where(eq(users.id, credit.markedAsPaidBy));
+            markedByUser = markedBy?.name || null;
+            if (!markedBy) {
+              console.log(`User not found for markedAsPaidBy: ${credit.markedAsPaidBy} for credit ${credit.id}`);
+            }
+          } else if (credit.status === 'paid') {
+            // Credit was marked as paid before tracking was implemented
+            markedByUser = 'Ezezaguna (aurreko sistema)';
+          }
+          
           return {
             ...credit,
-            memberName: member?.name || 'Unknown'
+            memberName: member?.name || 'Unknown',
+            markedByUser: markedByUser,
+            markedByUserName: markedByUser
           };
         })
       );
@@ -1336,31 +1376,64 @@ export async function registerRoutes(
     }
   });
 
-  // Update credit status (mark as paid, etc.)
-  app.put("/api/credits/:id/status", requireTreasurer, async (req, res, next) => {
+  // Batch update credit status
+  app.put("/api/credits/batch-status", requireTreasurer, async (req, res, next) => {
     try {
-      const { id } = req.params;
-      const { status, paidAmount } = req.body;
+      const { creditIds, status } = req.body;
 
       if (!['pending', 'paid', 'partial'].includes(status)) {
         return res.status(400).json({ message: "Invalid status" });
       }
 
-      const [updatedCredit] = await db
-        .update(credits)
-        .set({
-          status,
-          paidAmount: paidAmount || "0",
-          updatedAt: new Date()
-        })
-        .where(eq(credits.id, id))
-        .returning();
-
-      if (!updatedCredit) {
-        return res.status(404).json({ message: "Credit not found" });
+      if (!Array.isArray(creditIds) || creditIds.length === 0) {
+        return res.status(400).json({ message: "Invalid credit IDs" });
       }
 
-      res.json(updatedCredit);
+      // Get all credits to validate and check current month restriction
+      const creditsToUpdate = await db
+        .select()
+        .from(credits)
+        .where(sql`${credits.id} = ANY(${creditIds})`);
+
+      if (creditsToUpdate.length === 0) {
+        return res.status(404).json({ message: "No credits found" });
+      }
+
+      // Check if any are for current month (only when marking as paid)
+      if (status === 'paid') {
+        const currentDate = new Date();
+        const currentMonthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        
+        const currentMonthCredits = creditsToUpdate.filter(credit => credit.month === currentMonthString);
+        if (currentMonthCredits.length > 0) {
+          return res.status(400).json({ 
+            message: "Ezin da uneko hilabetea itxi. Itxaron hilabetea amaitu arte." 
+          });
+        }
+      }
+
+      // Update all credits
+      const updateData: any = {
+        status,
+        updatedAt: new Date()
+      };
+
+      // Add payment tracking if marking as paid
+      if (status === 'paid') {
+        updateData.markedAsPaidBy = req.user!.id;
+        updateData.markedAsPaidAt = new Date();
+      }
+
+      const updatedCredits = await db
+        .update(credits)
+        .set(updateData)
+        .where(sql`${credits.id} = ANY(${creditIds})`)
+        .returning();
+
+      res.json({ 
+        message: `Updated ${updatedCredits.length} credits`,
+        updatedCredits 
+      });
     } catch (error) {
       next(error);
     }

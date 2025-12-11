@@ -1,4 +1,3 @@
-@only
 Feature: Real-time Debt Calculation
   As a treasurer/admin, I want to see that debts are updated in real-time when users make consumptions, so that I always have accurate financial information.
 
@@ -12,7 +11,7 @@ Feature: Real-time Debt Calculation
     When I open the login page
     And I log in as a bazkide user
     And I navigate to the consumptions page
-    And I add "Garagardoa" to the cart
+    And I add "Kalea Garagardoa" to the cart
     And I add "Ardoa" to the cart
     And I click the close account button
     And I should see the confirmation dialog

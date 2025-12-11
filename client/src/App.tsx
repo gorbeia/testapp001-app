@@ -17,6 +17,7 @@ import { ReservationsPage } from "@/components/ReservationsPage";
 import { ConsumptionsPage } from "@/components/ConsumptionsPage";
 import { ConsumptionsListPage } from "@/components/ConsumptionsListPage";
 import { CreditsPage } from "@/components/CreditsPage";
+import { MyDebtsPage } from "@/components/MyDebtsPage";
 import { AnnouncementsPage } from "@/components/AnnouncementsPage";
 import { ChatPage } from "@/components/ChatPage";
 import { UsersPage } from "@/components/UsersPage";
@@ -40,6 +41,7 @@ function AppRoutes() {
         )}
       </Route>
       <Route path="/zorrak" component={CreditsPage} />
+      <Route path="/nire-zorrak" component={MyDebtsPage} />
       <Route path="/oharrak" component={AnnouncementsPage} />
       <Route path="/txata" component={ChatPage} />
       <Route path="/profila" component={UserProfile} />

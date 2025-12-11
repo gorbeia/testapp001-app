@@ -95,45 +95,46 @@ class DebtCalculationService {
           // Calculate total amount
           const totalAmount = consumptionAmount + reservationAmount + kitchenAmount;
 
-          // Check if credit already exists for this member and month
-          const [existingCredit] = await db
-            .select()
-            .from(credits)
-            .where(and(
-              eq(credits.memberId, member.id),
-              eq(credits.societyId, activeSociety.id),
-              eq(credits.month, monthLabel)
-            ));
+          // Only process credits if member has actual debts
+          if (totalAmount > 0) {
+            // Check if credit already exists for this member and month
+            const [existingCredit] = await db
+              .select()
+              .from(credits)
+              .where(and(
+                eq(credits.memberId, member.id),
+                eq(credits.societyId, activeSociety.id),
+                eq(credits.month, monthLabel)
+              ));
 
-          if (existingCredit) {
-            // Update existing credit
-            await db
-              .update(credits)
-              .set({
+            if (existingCredit) {
+              // Update existing credit
+              await db
+                .update(credits)
+                .set({
+                  consumptionAmount: consumptionAmount.toString(),
+                  reservationAmount: reservationAmount.toString(),
+                  kitchenAmount: kitchenAmount.toString(),
+                  totalAmount: totalAmount.toString(),
+                  updatedAt: new Date()
+                })
+                .where(eq(credits.id, existingCredit.id));
+            } else {
+              // Create new credit
+              await db.insert(credits).values({
+                memberId: member.id,
+                societyId: activeSociety.id,
+                month: monthLabel,
+                year,
+                monthNumber: month,
                 consumptionAmount: consumptionAmount.toString(),
                 reservationAmount: reservationAmount.toString(),
                 kitchenAmount: kitchenAmount.toString(),
                 totalAmount: totalAmount.toString(),
-                updatedAt: new Date()
-              })
-              .where(eq(credits.id, existingCredit.id));
-          } else {
-            // Create new credit
-            await db.insert(credits).values({
-              memberId: member.id,
-              societyId: activeSociety.id,
-              month: monthLabel,
-              year,
-              monthNumber: month,
-              consumptionAmount: consumptionAmount.toString(),
-              reservationAmount: reservationAmount.toString(),
-              kitchenAmount: kitchenAmount.toString(),
-              totalAmount: totalAmount.toString(),
-              status: 'pending'
-            });
-          }
+                status: 'pending'
+              });
+            }
 
-          if (totalAmount > 0) {
             console.log(`Updated ${member.name}: ${totalAmount.toFixed(2)}€ (consumption: ${consumptionAmount.toFixed(2)}€, reservation: ${reservationAmount.toFixed(2)}€, kitchen: ${kitchenAmount.toFixed(2)}€)`);
           }
 

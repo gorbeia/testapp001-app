@@ -7,7 +7,7 @@ const MAIN_MENU_ENTRIES = [
   'link-home',           // Dashboard
   'link-erreserbak',     // Reservations
   'link-kontsumoak',     // Consumptions
-  'link-zorrak',         // Credits
+  'link-nire-zorrak',    // Personal Debts
   'link-oharrak',        // Announcements
   'link-txata',          // Chat
 ];

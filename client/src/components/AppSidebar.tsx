@@ -60,7 +60,7 @@ export function AppSidebar() {
     { title: t('dashboard'), url: '/', icon: Home },
     { title: t('reservations'), url: '/erreserbak', icon: Calendar },
     { title: t('consumptions'), url: '/kontsumoak', icon: ShoppingCart },
-    { title: t('credits'), url: '/zorrak', icon: CreditCard },
+    { title: t('credits'), url: '/nire-zorrak', icon: CreditCard },
     { title: t('announcements'), url: '/oharrak', icon: Megaphone },
     { title: t('chat'), url: '/txata', icon: MessageCircle },
   ];
@@ -68,6 +68,7 @@ export function AppSidebar() {
   const adminMenuItems = [
     ...(hasAdminAccess(user) ? [{ title: t('users'), url: '/erabiltzaileak', icon: Users }] : []),
     ...(hasAdminAccess(user) ? [{ title: 'Kontsumo Zerrenda', url: '/kontsumoak-zerrenda', icon: Receipt }] : []),
+    ...(hasAdminAccess(user) ? [{ title: t('credits'), url: '/zorrak', icon: CreditCard }] : []),
     ...(hasCellarmanAccess(user) ? [{ title: t('products'), url: '/produktuak', icon: Package }] : []),
     ...(hasTreasurerAccess(user) ? [
       { title: t('society'), url: '/elkartea', icon: Building2 },
