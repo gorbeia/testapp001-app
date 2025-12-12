@@ -477,6 +477,59 @@ export async function registerRoutes(
     try {
       const { id } = req.params;
 
+      // Check for dependencies before deletion
+      const [
+        consumptionsCount,
+        reservationsCount,
+        creditsCount,
+        oharrakCount,
+        chatRoomsAsUser1,
+        chatRoomsAsUser2,
+        chatMessagesCount,
+        markedAsPaidByCount
+      ] = await Promise.all([
+        db.select({ count: count() }).from(consumptions).where(eq(consumptions.userId, id)),
+        db.select({ count: count() }).from(reservations).where(eq(reservations.userId, id)),
+        db.select({ count: count() }).from(credits).where(eq(credits.memberId, id)),
+        db.select({ count: count() }).from(oharrak).where(eq(oharrak.createdBy, id)),
+        db.select({ count: count() }).from(chatRooms).where(eq(chatRooms.user1Id, id)),
+        db.select({ count: count() }).from(chatRooms).where(eq(chatRooms.user2Id, id)),
+        db.select({ count: count() }).from(chatMessages).where(eq(chatMessages.senderId, id)),
+        db.select({ count: count() }).from(credits).where(eq(credits.markedAsPaidBy, id)),
+      ]);
+
+      const dependencies = [];
+      
+      if (consumptionsCount[0]?.count > 0) {
+        dependencies.push(`${consumptionsCount[0].count} kontsumo`);
+      }
+      if (reservationsCount[0]?.count > 0) {
+        dependencies.push(`${reservationsCount[0].count} erreserba`);
+      }
+      if (creditsCount[0]?.count > 0) {
+        dependencies.push(`${creditsCount[0].count} zorra/kreditu`);
+      }
+      if (oharrakCount[0]?.count > 0) {
+        dependencies.push(`${oharrakCount[0].count} ohar`);
+      }
+      if (chatRoomsAsUser1[0]?.count > 0 || chatRoomsAsUser2[0]?.count > 0) {
+        dependencies.push(`${(chatRoomsAsUser1[0]?.count || 0) + (chatRoomsAsUser2[0]?.count || 0)} txat-gela`);
+      }
+      if (chatMessagesCount[0]?.count > 0) {
+        dependencies.push(`${chatMessagesCount[0].count} txat-mezu`);
+      }
+      if (markedAsPaidByCount[0]?.count > 0) {
+        dependencies.push(`${markedAsPaidByCount[0].count} ordainketa-markatze`);
+      }
+
+      if (dependencies.length > 0) {
+        return res.status(400).json({ 
+          message: "Ezin izan da erabiltzailea ezabatu",
+          details: `Erabiltzaileak erlazionatutako datuak ditu: ${dependencies.join(', ')}. Lehenengo datu horiek ezabatu edo erabiltzailea desaktibatu.`,
+          dependencies
+        });
+      }
+
       const result = await db.delete(users).where(eq(users.id, id)).returning();
 
       if (result.length === 0) {

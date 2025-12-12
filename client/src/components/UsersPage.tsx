@@ -245,14 +245,27 @@ export function UsersPage() {
       });
 
       if (!response.ok && response.status !== 204) {
-        throw new Error('Failed to delete user');
+        const errorData = response.status === 400 ? await response.json() : null;
+        
+        if (errorData?.dependencies) {
+          // User has dependencies, show detailed error
+          toast({
+            title: 'Ezin da erabiltzailea ezabatu',
+            description: errorData.details || 'Erabiltzaileak erlazionatutako datuak ditu',
+            variant: 'destructive',
+            duration: 8000,
+          });
+        } else {
+          throw new Error('Failed to delete user');
+        }
+        return;
       }
 
       setUsers((prev) => prev.filter((u) => u.id !== user.id));
 
       toast({
         title: t('success'),
-        description: `${user.name} (${user.email})`,
+        description: `${user.name} (${user.email}) ezabatua`,
       });
     } catch {
       toast({
