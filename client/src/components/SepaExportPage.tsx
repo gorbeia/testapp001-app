@@ -9,14 +9,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import { authFetch } from '@/lib/api';
+import { SepaDirectDebitGenerator, defaultSepaConfig } from '@/lib/sepaGenerator';
 
 // todo: remove mock functionality - replace with real API data
 const mockCreditsForExport = [
-  { id: '1', memberId: '1', memberName: 'Mikel Etxeberria', iban: 'ES91 2100 0418 4502 0005 1332', amount: 125.50, selected: true },
-  { id: '2', memberId: '2', memberName: 'Ane Zelaia', iban: 'ES91 2100 0418 4502 0005 1333', amount: 87.00, selected: true },
-  { id: '3', memberId: '3', memberName: 'Jon Agirre', iban: 'ES91 2100 0418 4502 0005 1334', amount: 210.25, selected: true },
-  { id: '4', memberId: '4', memberName: 'Miren Urrutia', iban: 'ES91 2100 0418 4502 0005 1335', amount: 45.00, selected: true },
-  { id: '5', memberId: '5', memberName: 'Andoni Garcia', iban: null, amount: 32.00, selected: false },
+  { id: '1', memberId: '1', memberName: 'Mikel Etxeberria', iban: 'ES91 2100 0418 4502 0005 1332', amount: 125.50, selected: true, status: 'pending' },
+  { id: '2', memberId: '2', memberName: 'Ane Zelaia', iban: 'ES91 2100 0418 4502 0005 1333', amount: 87.00, selected: true, status: 'pending' },
+  { id: '3', memberId: '3', memberName: 'Jon Agirre', iban: 'ES91 2100 0418 4502 0005 1334', amount: 210.25, selected: true, status: 'pending' },
+  { id: '4', memberId: '4', memberName: 'Miren Urrutia', iban: 'ES91 2100 0418 4502 0005 1335', amount: 45.00, selected: true, status: 'pending' },
+  { id: '5', memberId: '5', memberName: 'Andoni Garcia', iban: null, amount: 32.00, selected: false, status: 'pending' },
 ];
 
 export function SepaExportPage() {
@@ -114,12 +115,64 @@ export function SepaExportPage() {
   const totalAmount = selectedCredits.reduce((sum, c) => sum + c.amount, 0);
   const invalidCredits = credits.filter((c) => !c.iban);
 
-  const handleExport = () => {
-    console.log('Exporting SEPA file for:', selectedCredits);
-    toast({
-      title: t('success'),
-      description: `SEPA fitxategia sortuta ${selectedCredits.length} kobrantzekin / Archivo SEPA generado con ${selectedCredits.length} cobros`,
-    });
+  const handleExport = (type: 'sepa' | 'csv') => {
+    try {
+      if (type === 'sepa') {
+        // Generate SEPA XML
+        const sepaGenerator = new SepaDirectDebitGenerator(defaultSepaConfig);
+        const executionDate = new Date();
+        executionDate.setDate(executionDate.getDate() + 2); // Set execution date to 2 days from now
+        
+        const xml = sepaGenerator.generateXML(credits, executionDate);
+        const filename = `sepa-direct-debit-${selectedMonth}-${new Date().toISOString().split('T')[0]}.xml`;
+        sepaGenerator.downloadXML(xml, filename);
+        
+        toast({
+          title: t('success'),
+          description: `SEPA XML fitxategia sortuta ${selectedCredits.length} kobrantzekin`,
+        });
+      } else if (type === 'csv') {
+        // Generate CSV (placeholder for now)
+        const csvContent = generateCSV(selectedCredits);
+        downloadCSV(csvContent, `credits-${selectedMonth}.csv`);
+        
+        toast({
+          title: t('success'),
+          description: `CSV fitxategia sortuta ${selectedCredits.length} kobrantzekin`,
+        });
+      }
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Errorea",
+        description: "Fitxategia sortzean errorea gertatu da",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateCSV = (credits: any[]) => {
+    const headers = ['ID', 'Bazkidea', 'IBAN', 'Kopurua'];
+    const rows = credits.map(credit => [
+      credit.id,
+      credit.memberName,
+      credit.iban || '',
+      credit.amount.toFixed(2)
+    ]);
+    
+    return [headers, ...rows].map(row => row.join(',')).join('\n');
+  };
+
+  const downloadCSV = (content: string, filename: string) => {
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -305,11 +358,11 @@ export function SepaExportPage() {
                 Atzera
               </Button>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={handleExport} data-testid="button-export-csv">
+                <Button variant="outline" onClick={() => handleExport('csv')} data-testid="button-export-csv">
                   <Download className="mr-2 h-4 w-4" />
                   CSV Deskargatu
                 </Button>
-                <Button onClick={handleExport} data-testid="button-export-sepa">
+                <Button onClick={() => handleExport('sepa')} data-testid="button-export-sepa">
                   <Download className="mr-2 h-4 w-4" />
                   SEPA XML Deskargatu
                 </Button>
