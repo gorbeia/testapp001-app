@@ -263,7 +263,7 @@ export function ReservationsPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">{t('reservations')}</h2>
-          <p className="text-muted-foreground">Kudeatu erreserbak</p>
+          <p className="text-muted-foreground">{t('manageReservations')}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>

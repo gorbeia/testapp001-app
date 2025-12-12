@@ -206,7 +206,7 @@ export function ConsumptionsPage() {
         <div className="space-y-6">
           <div>
             <h2 className="text-2xl font-bold">{t('consumptions')}</h2>
-            <p className="text-muted-foreground">Erregistratu kontsumoak</p>
+            <p className="text-muted-foreground">{t('manageConsumptions')}</p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
@@ -315,7 +315,7 @@ export function ConsumptionsPage() {
             {cart.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Saskia hutsik dago</p>
+                <p className="text-sm">{t('cartEmpty')}</p>
               </div>
             ) : (
               cart.map((item) => (

@@ -174,7 +174,7 @@ export function ConsumptionsListPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Receipt className="h-5 w-5" />
-            Kontsumo Zerrenda
+            {t('consumptionList')}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -182,25 +182,25 @@ export function ConsumptionsListPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>Erabiltzailea</TableHead>
-                <TableHead>Mota</TableHead>
-                <TableHead>Egoera</TableHead>
-                <TableHead>Totala</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Ekintzak</TableHead>
+                <TableHead>{t('user')}</TableHead>
+                <TableHead>{t('type')}</TableHead>
+                <TableHead>{t('status')}</TableHead>
+                <TableHead>{t('total')}</TableHead>
+                <TableHead>{t('date')}</TableHead>
+                <TableHead>{t('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    Kargatzen...
+                    {t('loading')}
                   </TableCell>
                 </TableRow>
               ) : filteredConsumptions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    Ez da kontsumorik aurkitu
+                    {t('noResults')}
                   </TableCell>
                 </TableRow>
               ) : (

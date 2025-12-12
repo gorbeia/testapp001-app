@@ -269,7 +269,7 @@ export function UsersPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">{t('users')}</h2>
-          <p className="text-muted-foreground">Kudeatu bazkideak eta lagunak</p>
+          <p className="text-muted-foreground">{t('manageUsers')}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -487,7 +487,7 @@ export function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Izena</TableHead>
+              <TableHead>{t('name')}</TableHead>
               <TableHead>{t('role')}</TableHead>
               <TableHead>{t('function')}</TableHead>
               <TableHead>{t('phone')}</TableHead>

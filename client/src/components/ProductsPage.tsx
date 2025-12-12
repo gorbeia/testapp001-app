@@ -256,7 +256,7 @@ export function ProductsPage() {
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
-                <Label>Izena</Label>
+                <Label>{t('name')}</Label>
                 <Input 
                   placeholder="Produktuaren izena..." 
                   value={newProduct.name}
@@ -411,10 +411,10 @@ export function ProductsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Produktua</TableHead>
+              <TableHead>{t('name')}</TableHead>
               <TableHead>{t('category')}</TableHead>
-              <TableHead className="text-right">{t('price')}</TableHead>
-              <TableHead className="text-right">{t('stock')}</TableHead>
+              <TableHead>{t('stock')}</TableHead>
+              <TableHead>{t('price')}</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
@@ -510,7 +510,7 @@ export function ProductsPage() {
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
-              <Label>Izena</Label>
+              <Label>{t('name')}</Label>
               <Input 
                 placeholder="Produktuaren izena..." 
                 value={editProduct.name}
