@@ -1268,6 +1268,62 @@ export async function registerRoutes(
     }
   });
 
+  // Get debt data for SEPA export by month
+  app.get("/api/credits/sepa-export", requireTreasurer, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { month } = req.query;
+      
+      if (!month) {
+        return res.status(400).json({ message: "Month parameter is required" });
+      }
+      
+      console.log('SEPA export request for month:', month);
+      
+      // First, let's check if there are any credits at all
+      const allCredits = await db.select().from(credits);
+      console.log('Total credits in database:', allCredits.length);
+      
+      // Check credits for the specific month
+      const monthCredits = await db.select().from(credits).where(eq(credits.month, month as string));
+      console.log('Credits for month', month, ':', monthCredits.length);
+      
+      // Get all credits for the specified month with user information
+      const creditsData = await db
+        .select({
+          id: credits.id,
+          memberId: credits.memberId,
+          memberName: users.name,
+          totalAmount: credits.totalAmount,
+          status: credits.status,
+          userIban: users.iban,
+        })
+        .from(credits)
+        .innerJoin(users, eq(credits.memberId, users.id))
+        .where(and(
+          eq(credits.month, month as string),
+          eq(credits.status, 'pending') // Only include pending debts
+        ));
+      
+      console.log('Credits data with user info:', creditsData.length);
+      
+      // Transform data for SEPA export
+      const sepaCredits = creditsData.map(credit => ({
+        id: credit.id,
+        memberId: credit.memberId,
+        memberName: credit.memberName,
+        iban: credit.userIban, // Using user's IBAN
+        amount: parseFloat(credit.totalAmount || '0'),
+        selected: true, // Default to selected
+        status: credit.status
+      }));
+      
+      console.log('Final SEPA credits:', sepaCredits);
+      res.json(sepaCredits);
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Society management routes
   app.get("/api/societies", requireAuth, requireAdmin, async (req, res, next) => {
     try {

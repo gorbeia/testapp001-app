@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileSpreadsheet, Download, CheckCircle, AlertCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
+import { authFetch } from '@/lib/api';
 
 // todo: remove mock functionality - replace with real API data
 const mockCreditsForExport = [
@@ -22,8 +23,79 @@ export function SepaExportPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
-  const [selectedMonth, setSelectedMonth] = useState('2024-12');
+  
+  // Generate previous six months (excluding current month)
+  const generatePreviousSixMonths = () => {
+    const months = [];
+    const now = new Date();
+    
+    for (let i = 1; i <= 6; i++) { // Start from 1 to exclude current month
+      const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = targetDate.getFullYear();
+      const monthIndex = targetDate.getMonth(); // 0-11
+      const monthNumber = monthIndex + 1; // 1-12 for human readable
+      const monthString = `${year}-${monthNumber.toString().padStart(2, '0')}`;
+      
+      const monthNames = ['Urtarrila', 'Otsaila', 'Martxoa', 'Apirila', 'Maiatza', 'Ekaina', 
+                          'Uztaila', 'Abuztua', 'Iraila', 'Urria', 'Azaroa', 'Abendua'];
+      const monthName = monthNames[monthIndex];
+      
+      console.log(`Month ${i}:`, {
+        year: year,
+        monthIndex: monthIndex,
+        monthNumber: monthNumber,
+        monthString: monthString,
+        monthName: monthName
+      });
+      
+      months.push({
+        value: monthString,
+        label: `${monthString} (${monthName})`
+      });
+    }
+    
+    return months;
+  };
+
+  const availableMonths = generatePreviousSixMonths();
+  const [selectedMonth, setSelectedMonth] = useState(availableMonths[0]?.value || ''); // Previous month (first in list)
   const [credits, setCredits] = useState(mockCreditsForExport);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch debt data for selected month
+  const fetchDebtData = async (month: string) => {
+    setLoading(true);
+    try {
+      const response = await authFetch(`/api/credits/sepa-export?month=${month}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCredits(data);
+      } else {
+        console.error('Failed to fetch debt data');
+        toast({
+          title: "Errorea",
+          description: "Zorrak kargatzean errorea gertatu da",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching debt data:', error);
+      toast({
+        title: "Errorea",
+        description: "Zorrak kargatzean errorea gertatu da",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch data when moving to step 2 or when month changes
+  useEffect(() => {
+    if (step === 2 && selectedMonth) {
+      fetchDebtData(selectedMonth);
+    }
+  }, [step, selectedMonth]);
 
   const toggleCredit = (id: string) => {
     setCredits((prev) =>
@@ -87,9 +159,11 @@ export function SepaExportPage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="2024-12">2024-12 (Abendua)</SelectItem>
-                <SelectItem value="2024-11">2024-11 (Azaroa)</SelectItem>
-                <SelectItem value="2024-10">2024-10 (Urria)</SelectItem>
+                {availableMonths.map((month) => (
+                  <SelectItem key={month.value} value={month.value}>
+                    {month.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <div className="flex justify-end">
@@ -111,15 +185,21 @@ export function SepaExportPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {invalidCredits.length > 0 && (
-              <div className="flex items-start gap-2 p-3 mb-4 rounded-md bg-destructive/10 text-destructive">
-                <AlertCircle className="h-4 w-4 mt-0.5" />
-                <div className="text-sm">
-                  <p className="font-medium">IBAN gabeko erabiltzaileak:</p>
-                  <p>{invalidCredits.map((c) => c.memberName).join(', ')}</p>
-                </div>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-sm text-muted-foreground">Zorrak kargatzen...</div>
               </div>
-            )}
+            ) : (
+              <>
+                {invalidCredits.length > 0 && (
+                  <div className="flex items-start gap-2 p-3 mb-4 rounded-md bg-destructive/10 text-destructive">
+                    <AlertCircle className="h-4 w-4 mt-0.5" />
+                    <div className="text-sm">
+                      <p className="font-medium">IBAN gabeko erabiltzaileak:</p>
+                      <p>{invalidCredits.map((c) => c.memberName).join(', ')}</p>
+                    </div>
+                  </div>
+                )}
 
             <div className="overflow-x-auto">
             <Table>
@@ -179,6 +259,8 @@ export function SepaExportPage() {
                 </Button>
               </div>
             </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}
