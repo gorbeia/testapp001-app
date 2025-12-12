@@ -181,7 +181,6 @@ export function ConsumptionsListPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>ID</TableHead>
                 <TableHead>{t('user')}</TableHead>
                 <TableHead>{t('type')}</TableHead>
                 <TableHead>{t('status')}</TableHead>
@@ -193,22 +192,19 @@ export function ConsumptionsListPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     {t('loading')}
                   </TableCell>
                 </TableRow>
               ) : filteredConsumptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     {t('noResults')}
                   </TableCell>
                 </TableRow>
               ) : (
                 filteredConsumptions.map((consumption) => (
                   <TableRow key={consumption.id} data-testid="consumption-row">
-                    <TableCell className="font-mono text-xs" data-testid="consumption-id">
-                      {consumption.id.slice(0, 8)}...
-                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <User className="h-4 w-4" />
@@ -256,10 +252,6 @@ export function ConsumptionsListPage() {
                           {selectedConsumption && (
                             <div className="space-y-4">
                               <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <p className="text-sm font-medium">ID</p>
-                                  <p className="font-mono text-xs">{selectedConsumption.consumption.id}</p>
-                                </div>
                                 <div>
                                   <p className="text-sm font-medium">Mota</p>
                                   <p>{typeLabels[selectedConsumption.consumption.type]}</p>

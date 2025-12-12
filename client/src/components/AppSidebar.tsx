@@ -56,10 +56,11 @@ export function AppSidebar() {
     }
   };
 
-  const mainMenuItems = [
+  const menuItems = [
     { title: t('dashboard'), url: '/', icon: Home },
     { title: t('reservations'), url: '/erreserbak', icon: Calendar },
     { title: t('consumptions'), url: '/kontsumoak', icon: ShoppingCart },
+    { title: t('myConsumptions'), url: '/nire-konsumoak', icon: Receipt },
     { title: t('credits'), url: '/nire-zorrak', icon: CreditCard },
     { title: t('announcements'), url: '/oharrak', icon: Megaphone },
     { title: t('chat'), url: '/txata', icon: MessageCircle },
@@ -68,7 +69,7 @@ export function AppSidebar() {
   const adminMenuItems = [
     ...(hasAdminAccess(user) ? [{ title: t('users'), url: '/erabiltzaileak', icon: Users }] : []),
     ...(hasAdminAccess(user) ? [{ title: t('consumptionList'), url: '/kontsumoak-zerrenda', icon: Receipt }] : []),
-    ...(hasAdminAccess(user) ? [{ title: t('credits'), url: '/zorrak', icon: CreditCard }] : []),
+    ...(hasAdminAccess(user) ? [{ title: t('adminCredits'), url: '/zorrak', icon: CreditCard }] : []),
     ...(hasCellarmanAccess(user) ? [{ title: t('products'), url: '/produktuak', icon: Package }] : []),
     ...(hasTreasurerAccess(user) ? [
       { title: t('society'), url: '/elkartea', icon: Building2 },
@@ -104,7 +105,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainMenuItems.map((item) => (
+              {menuItems.map((item: any) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
                     <Link href={item.url} data-testid={`link-${item.url.replace('/', '') || 'home'}`}>

@@ -582,6 +582,67 @@ export async function registerRoutes(
     }
   });
 
+  // Consumptions: get user's own consumptions with filtering
+  app.get("/api/consumptions/user", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      const { search, status, type, month } = req.query;
+      const societyId = getUserSocietyId(user);
+      
+      let conditions = [
+        eq(consumptions.userId, user.id),
+        eq(consumptions.societyId, societyId)
+      ];
+      
+      // Add status filter
+      if (status && status !== 'all') {
+        conditions.push(eq(consumptions.status, status as string));
+      }
+      
+      // Add type filter
+      if (type && type !== 'all') {
+        conditions.push(eq(consumptions.type, type as string));
+      }
+      
+      // Add month filter
+      if (month && month !== 'all') {
+        conditions.push(sql`EXTRACT(MONTH FROM ${consumptions.createdAt}) = ${month}`);
+      }
+      
+      // Add search filter (search by notes or date)
+      if (search) {
+        const searchTerm = `%${search}%`;
+        conditions.push(or(
+          like(consumptions.notes, searchTerm),
+          like(consumptions.createdAt, searchTerm)
+        ));
+      }
+      
+      const userConsumptions = await db
+        .select({
+          id: consumptions.id,
+          userId: consumptions.userId,
+          eventId: consumptions.eventId,
+          type: consumptions.type,
+          status: consumptions.status,
+          totalAmount: consumptions.totalAmount,
+          notes: consumptions.notes,
+          createdAt: consumptions.createdAt,
+          closedAt: consumptions.closedAt,
+          closedBy: consumptions.closedBy,
+        })
+        .from(consumptions)
+        .where(and(...conditions))
+        .orderBy(desc(consumptions.createdAt));
+      
+      res.json(userConsumptions);
+    } catch (error) {
+      console.error('Error fetching user consumptions:', error);
+      res.status(500).json({ message: "Internal server error" });
+      next(error);
+    }
+  });
+
   // Consumptions: get all consumptions (admin) or user's consumptions
   app.get("/api/consumptions", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -701,6 +762,51 @@ export async function registerRoutes(
       
       return res.status(200).json({ consumption, items });
     } catch (err) {
+      next(err);
+    }
+  });
+
+  // Consumption Items: get items for a consumption
+  app.get("/api/consumptions/:id/items", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      // Verify user has access to this consumption
+      const consumption = await db.select().from(consumptions)
+        .where(and(
+          eq(consumptions.id, id),
+          eq(consumptions.societyId, societyId),
+          ['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '') 
+            ? undefined 
+            : eq(consumptions.userId, user.id)
+        ))
+        .limit(1);
+      
+      if (consumption.length === 0) {
+        return res.status(404).json({ message: "Consumption not found or access denied" });
+      }
+      
+      const items = await db
+        .select({
+          id: consumptionItems.id,
+          consumptionId: consumptionItems.consumptionId,
+          productId: consumptionItems.productId,
+          quantity: consumptionItems.quantity,
+          unitPrice: consumptionItems.unitPrice,
+          totalPrice: consumptionItems.totalPrice,
+          notes: consumptionItems.notes,
+          productName: products.name,
+        })
+        .from(consumptionItems)
+        .leftJoin(products, eq(consumptionItems.productId, products.id))
+        .where(eq(consumptionItems.consumptionId, id));
+      
+      res.json(items);
+    } catch (error) {
+      console.error('Error fetching consumption items:', error);
+      res.status(500).json({ message: "Internal server error" });
       next(err);
     }
   });
