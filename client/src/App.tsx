@@ -16,7 +16,8 @@ import { Dashboard } from '@/components/dashboard';
 import { ReservationsPage } from "@/components/ReservationsPage";
 import { ConsumptionsPage } from "@/components/ConsumptionsPage";
 import { ConsumptionsListPage } from "@/components/ConsumptionsListPage";
-import { MyConsumptionsPage } from "@/components/MyConsumptionsPage";
+import { MyConsumptionsPage } from '@/components/MyConsumptionsPage';
+import { MyReservationsPage } from '@/components/MyReservationsPage';
 import { CreditsPage } from "@/components/CreditsPage";
 import { MyDebtsPage } from "@/components/MyDebtsPage";
 import { AnnouncementsPage } from "@/components/AnnouncementsPage";
@@ -36,6 +37,7 @@ function AppRoutes() {
       <Route path="/erreserbak" component={ReservationsPage} />
       <Route path="/kontsumoak" component={ConsumptionsPage} />
       <Route path="/nire-konsumoak" component={MyConsumptionsPage} />
+      <Route path="/nire-erreserbak" component={MyReservationsPage} />
       <Route path="/kontsumoak-zerrenda">
         {() => (
           <ProtectedRoute requiredAccess="admin">

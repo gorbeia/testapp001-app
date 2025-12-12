@@ -58,8 +58,9 @@ export function AppSidebar() {
 
   const menuItems = [
     { title: t('dashboard'), url: '/', icon: Home },
-    { title: t('reservations'), url: '/erreserbak', icon: Calendar },
     { title: t('consumptions'), url: '/kontsumoak', icon: ShoppingCart },
+    { title: t('reservations'), url: '/erreserbak', icon: Calendar },
+    { title: t('myReservations'), url: '/nire-erreserbak', icon: Calendar },
     { title: t('myConsumptions'), url: '/nire-konsumoak', icon: Receipt },
     { title: t('credits'), url: '/nire-zorrak', icon: CreditCard },
     { title: t('announcements'), url: '/oharrak', icon: Megaphone },

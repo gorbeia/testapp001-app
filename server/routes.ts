@@ -1,10 +1,10 @@
 import type { Express, Request, Response, NextFunction } from "express";
-import { createServer, type Server } from "http";
+import { type Server } from "http";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "./db";
 import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak } from "@shared/schema";
-import { eq, and, gte, ne, sum, between, sql, desc, count, inArray } from "drizzle-orm";
+import { eq, and, gte, ne, sum, between, sql, desc, count, inArray, like, or } from "drizzle-orm";
 import { debtCalculationService } from "./cron-jobs";
 import { getChatRooms, getChatRoomMessages, createChatRoom, createChatMessage } from "./chat-routes";
 
@@ -27,10 +27,6 @@ const verifyToken = (token: string): User | null => {
 };
 
 // Access control helpers
-const hasAdminAccess = (user: User): boolean => {
-  return user.function === 'administratzailea';
-};
-
 const hasTreasurerAccess = (user: User): boolean => {
   return user.function === 'diruzaina' || user.function === 'administratzailea';
 };
@@ -612,10 +608,13 @@ export async function registerRoutes(
       // Add search filter (search by notes or date)
       if (search) {
         const searchTerm = `%${search}%`;
-        conditions.push(or(
+        const searchCondition = or(
           like(consumptions.notes, searchTerm),
           like(consumptions.createdAt, searchTerm)
-        ));
+        );
+        if (searchCondition) {
+          conditions.push(searchCondition);
+        }
       }
       
       const userConsumptions = await db
@@ -807,7 +806,7 @@ export async function registerRoutes(
     } catch (error) {
       console.error('Error fetching consumption items:', error);
       res.status(500).json({ message: "Internal server error" });
-      next(err);
+      next(error);
     }
   });
 
@@ -1003,7 +1002,7 @@ export async function registerRoutes(
       
       // Calculate total sum
       const totalSum = items.reduce((sum, item) => {
-        return sum + (parseFloat(item.quantity || '0') * parseFloat(item.unitPrice || '0'));
+        return sum + (parseFloat(item.quantity.toString()) * parseFloat(item.unitPrice || '0'));
       }, 0);
       
       res.json({ sum: totalSum });
@@ -1043,7 +1042,7 @@ export async function registerRoutes(
       
       // Calculate total sum
       const totalSum = items.reduce((sum, item) => {
-        return sum + (parseFloat(item.quantity || '0') * parseFloat(item.unitPrice || '0'));
+        return sum + (parseFloat(item.quantity.toString()) * parseFloat(item.unitPrice || '0'));
       }, 0);
       
       res.json({ sum: totalSum });
@@ -1089,6 +1088,74 @@ export async function registerRoutes(
       
       res.json(reservationsList);
     } catch (error) {
+      next(error);
+    }
+  });
+
+  // Reservations: get user's own reservations (including old and cancelled ones)
+  app.get("/api/reservations/user", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      const { search, status, type, month } = req.query;
+      const societyId = getUserSocietyId(user);
+      
+      let conditions = [
+        eq(reservations.userId, user.id),
+        eq(reservations.societyId, societyId)
+      ];
+      
+      // Add status filter
+      if (status && status !== 'all') {
+        conditions.push(eq(reservations.status, status as string));
+      }
+      
+      // Add type filter
+      if (type && type !== 'all') {
+        conditions.push(eq(reservations.type, type as string));
+      }
+      
+      // Add month filter
+      if (month && month !== 'all') {
+        conditions.push(sql`EXTRACT(MONTH FROM ${reservations.startDate}) = ${month}`);
+      }
+      
+      // Add search filter (search by name or table)
+      if (search) {
+        const searchTerm = `%${search}%`;
+        const searchCondition = or(
+          like(reservations.name, searchTerm),
+          like(reservations.table, searchTerm)
+        );
+        if (searchCondition) {
+          conditions.push(searchCondition);
+        }
+      }
+      
+      const userReservations = await db
+        .select({
+          id: reservations.id,
+          userId: reservations.userId,
+          societyId: reservations.societyId,
+          name: reservations.name,
+          type: reservations.type,
+          status: reservations.status,
+          startDate: reservations.startDate,
+          guests: reservations.guests,
+          useKitchen: reservations.useKitchen,
+          table: reservations.table,
+          totalAmount: reservations.totalAmount,
+          notes: reservations.notes,
+          createdAt: reservations.createdAt,
+          updatedAt: reservations.updatedAt,
+        })
+        .from(reservations)
+        .where(and(...conditions))
+        .orderBy(desc(reservations.startDate));
+      
+      res.json(userReservations);
+    } catch (error) {
+      console.error('Error fetching user reservations:', error);
+      res.status(500).json({ message: "Internal server error" });
       next(error);
     }
   });
