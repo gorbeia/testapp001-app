@@ -2,6 +2,8 @@ import { ReactNode } from 'react';
 import { useAuth, hasAdminAccess, hasCellarmanAccess, hasTreasurerAccess } from '@/lib/auth';
 import { useLocation } from 'wouter';
 import { useEffect } from 'react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Shield } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -34,11 +36,12 @@ export function ProtectedRoute({ children, requiredAccess }: ProtectedRouteProps
     }
 
     if (!hasAccess) {
-      setLocation('/'); // Redirect to dashboard
+      // Don't redirect, just show access denied
+      // This prevents hanging in E2E tests
     }
   }, [isAuthenticated, user, requiredAccess, setLocation]);
 
-  // Don't render children while checking access or redirecting
+  // Don't render children while checking access
   if (!isAuthenticated || !user) {
     return null;
   }
@@ -58,5 +61,18 @@ export function ProtectedRoute({ children, requiredAccess }: ProtectedRouteProps
       hasAccess = true;
   }
 
-  return hasAccess ? <>{children}</> : null;
+  if (!hasAccess) {
+    return (
+      <div className="p-6">
+        <Alert className="max-w-md">
+          <Shield className="h-4 w-4" />
+          <AlertDescription>
+            Ez duzu baimenik orri hau ikusteko. Administratzailearekin harremanetan jarri behar duzu.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
 }

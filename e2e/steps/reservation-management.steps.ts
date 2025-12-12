@@ -14,8 +14,8 @@ Given('I navigate to the reservations page', async function () {
   if (await navReservations.isVisible()) {
     await navReservations.click();
   } else {
-    // Fallback: try to find by text content
-    const reservationsLink = page.locator('a:has-text("Erreserbak")');
+    // Fallback: try to find by text content - use the admin reservations link
+    const reservationsLink = page.locator('[data-testid="link-erreserbak"]');
     await reservationsLink.click();
   }
   

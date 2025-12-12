@@ -5,8 +5,10 @@ import { getPage } from './shared-state';
 // Main menu entries that all users should see
 const MAIN_MENU_ENTRIES = [
   'link-home',           // Dashboard
-  'link-erreserbak',     // Reservations
-  'link-kontsumoak',     // Consumptions
+  'link-erreserbak',    // General Reservations (shown to all users)
+  'link-nire-erreserbak', // My Reservations (user view)
+  'link-kontsumoak',    // General Consumptions (shown to all users)
+  'link-nire-konsumoak', // My Consumptions
   'link-nire-zorrak',    // Personal Debts
   'link-oharrak',        // Announcements
   'link-txata',          // Chat
@@ -24,7 +26,7 @@ Then('I should see the main menu entries', async function () {
   const page = getPage();
   assert.ok(page, 'Page was not initialized');
 
-  // Check that all main menu entries are visible
+  // Check that main menu entries are visible
   for (const entry of MAIN_MENU_ENTRIES) {
     const element = await page.$(`[data-testid="${entry}"]`);
     assert.ok(element, `Main menu entry ${entry} should be visible`);
@@ -79,19 +81,17 @@ Then('I should not be able to access admin pages directly', async function () {
   ];
 
   for (const pagePath of adminPages) {
-    await page.goto(`http://localhost:5000${pagePath}`, { waitUntil: 'networkidle' });
+    await page.goto(`http://localhost:5000${pagePath}`, { waitUntil: 'domcontentloaded' });
     
-    // Check that we're either redirected back to dashboard or shown an error
-    // For now, we'll check if we're redirected to dashboard (URL becomes '/')
-    const currentUrl = page.url();
+    // Wait a moment for the protected route to render
+    await page.waitForTimeout(1000);
     
-    // Either we're back at dashboard or we see some kind of access denied message
-    const isAtDashboard = currentUrl.endsWith('http://localhost:5000/') || currentUrl.endsWith('http://localhost:5000');
-    const hasAccessDenied = await page.$('text=Access Denied') || await page.$('text=Access denied') || await page.$('text=No autorizado');
+    // Check for the access denied message in Basque
+    const accessDeniedMessage = await page.$('text=Ez duzu baimenik orri hau ikusteko');
     
     assert.ok(
-      isAtDashboard || hasAccessDenied,
-      `Access to admin page ${pagePath} should be blocked for bazkide user. Current URL: ${currentUrl}`
+      accessDeniedMessage,
+      `Access to admin page ${pagePath} should show access denied message for bazkide user`
     );
   }
 });
