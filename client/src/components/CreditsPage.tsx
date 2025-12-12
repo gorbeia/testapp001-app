@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, CreditCard, TrendingUp, Download, CheckCircle, Check } from 'lucide-react';
+import { Search, CreditCard, TrendingUp, CheckCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -99,11 +99,6 @@ export function CreditsPage() {
     credit.status.includes(searchTerm)
   );
 
-  const handleExportCSV = async () => {
-    // TODO: Implement CSV export functionality
-    console.log('Exporting CSV...');
-  };
-
   const handleSelectCredit = (creditId: string) => {
     setSelectedCredits(prev => {
       const newSet = new Set(prev);
@@ -188,18 +183,13 @@ export function CreditsPage() {
         <div className="flex gap-2">
           <Button 
             onClick={handleMarkAsPaid} 
-            disabled={isMarkingAsPaid || selectedCredits.size === 0}
+            disabled={selectedCredits.size === 0 || isMarkingAsPaid}
             data-testid="button-mark-as-paid"
-            variant={selectedCredits.size > 0 ? "default" : "secondary"}
           >
             <Check className="mr-2 h-4 w-4" />
             {isMarkingAsPaid ? t('marking') : 
              selectedCredits.size === 0 ? t('selectDebtsToPay') : 
              `${t('markAsPaid')} (${selectedCredits.size})`}
-          </Button>
-          <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-csv">
-            <Download className="mr-2 h-4 w-4" />
-            CSV {t('exportSepa')}
           </Button>
         </div>
       </div>
