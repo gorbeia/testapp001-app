@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Edit, Trash2, MoreHorizontal, Link2 } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, MoreHorizontal, Link2, UserX, UserCheck } from 'lucide-react';
 
 type UsersPageUser = {
   id: string;
@@ -23,6 +23,7 @@ type UsersPageUser = {
   phone: string;
   iban: string | null;
   linkedMember: string | null;
+  isActive: boolean;
 };
 
 export function UsersPage() {
@@ -31,6 +32,7 @@ export function UsersPage() {
   const [users, setUsers] = useState<UsersPageUser[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('active');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UsersPageUser | null>(null);
@@ -44,7 +46,9 @@ export function UsersPage() {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const response = await authFetch('/api/users');
+        // Fetch all users (including inactive) with status parameter
+        const statusParam = statusFilter === 'all' ? '' : `?status=${statusFilter}`;
+        const response = await authFetch(`/api/users${statusParam}`);
         if (!response.ok) return;
         const data: {
           id: string;
@@ -57,6 +61,7 @@ export function UsersPage() {
           iban: string | null;
           linkedMemberId: string | null;
           linkedMemberName: string | null;
+          isActive: boolean;
         }[] = await response.json();
 
         setUsers((prev) => {
@@ -72,6 +77,7 @@ export function UsersPage() {
               phone: dbUser.phone ?? '',
               iban: dbUser.iban ?? null,
               linkedMember: dbUser.linkedMemberName,
+              isActive: dbUser.isActive,
             }));
 
           return [...prev, ...mapped];
@@ -82,13 +88,16 @@ export function UsersPage() {
     };
 
     void loadUsers();
-  }, []);
+  }, [statusFilter]);
 
   const filteredUsers = users.filter((u) => {
     const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           u.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
-    return matchesSearch && matchesRole;
+    const matchesStatus = statusFilter === 'all' || 
+                          (statusFilter === 'active' && u.isActive) || 
+                          (statusFilter === 'inactive' && !u.isActive);
+    return matchesSearch && matchesRole && matchesStatus;
   });
 
   const getRoleLabel = (role: string) => {
@@ -138,6 +147,7 @@ export function UsersPage() {
         phone: string | null;
         iban: string | null;
         linkedMemberName: string | null;
+        isActive: boolean;
       };
 
       const updatedUser: UsersPageUser = {
@@ -149,6 +159,7 @@ export function UsersPage() {
         phone: updated.phone ?? '',
         iban: updated.iban ?? null,
         linkedMember: updated.linkedMemberName ?? editingUser.linkedMember,
+        isActive: updated.isActive,
       };
 
       setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
@@ -164,6 +175,55 @@ export function UsersPage() {
       toast({
         title: t('error'),
         description: 'Ezin izan da erabiltzailea eguneratu',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleToggleUserStatus = async (user: UsersPageUser) => {
+    try {
+      const response = await authFetch(`/api/users/${encodeURIComponent(user.id)}/toggle-active`, {
+        method: 'PATCH',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to toggle user status');
+      }
+
+      const updated = await response.json() as {
+        id: string;
+        username: string;
+        name: string | null;
+        role: string | null;
+        function: string | null;
+        phone: string | null;
+        iban: string | null;
+        linkedMemberName: string | null;
+        isActive: boolean;
+      };
+
+      const updatedUser: UsersPageUser = {
+        id: updated.id,
+        name: updated.name ?? updated.username,
+        email: updated.username,
+        role: updated.role ?? user.role,
+        function: updated.function ?? user.function,
+        phone: updated.phone ?? '',
+        iban: updated.iban ?? null,
+        linkedMember: updated.linkedMemberName ?? user.linkedMember,
+        isActive: updated.isActive,
+      };
+
+      setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+
+      toast({
+        title: t('success'),
+        description: `${updatedUser.name} ${updatedUser.isActive ? 'aktibatua' : 'desaktibatua'}`,
+      });
+    } catch {
+      toast({
+        title: t('error'),
+        description: 'Ezin izan da erabiltzailearen egoera aldatu',
         variant: 'destructive',
       });
     }
@@ -246,6 +306,7 @@ export function UsersPage() {
         phone: '',
         iban: null,
         linkedMember: null,
+        isActive: true,
       };
 
       setUsers((prev) => [...prev, newUser]);
@@ -480,6 +541,16 @@ export function UsersPage() {
             <SelectItem value="laguna">{t('companion')}</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-48">
+            <SelectValue placeholder="Egoera" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Guztiak</SelectItem>
+            <SelectItem value="active">Aktiboak</SelectItem>
+            <SelectItem value="inactive">Inaktiboak</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <Card className="overflow-hidden">
@@ -490,6 +561,7 @@ export function UsersPage() {
               <TableHead>{t('name')}</TableHead>
               <TableHead>{t('role')}</TableHead>
               <TableHead>{t('function')}</TableHead>
+              <TableHead>Egoera</TableHead>
               <TableHead>{t('phone')}</TableHead>
               <TableHead>{t('linkedMember')}</TableHead>
               <TableHead className="w-12"></TableHead>
@@ -498,7 +570,7 @@ export function UsersPage() {
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   {t('noResults')}
                 </TableCell>
               </TableRow>
@@ -525,6 +597,15 @@ export function UsersPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">{getFunctionLabel(user.function)}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={user.isActive ? 'default' : 'destructive'} className="gap-1">
+                      {user.isActive ? (
+                        <><UserCheck className="h-3 w-3" /> Aktibo</>
+                      ) : (
+                        <><UserX className="h-3 w-3" /> Inaktibo</>
+                      )}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-sm">{user.phone}</TableCell>
                   <TableCell>
@@ -553,6 +634,13 @@ export function UsersPage() {
                         <DropdownMenuItem onClick={() => handleOpenEditUser(user)}>
                           <Edit className="mr-2 h-4 w-4" />
                           {t('edit')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleToggleUserStatus(user)}>
+                          {user.isActive ? (
+                            <><UserX className="mr-2 h-4 w-4" /> Desaktibatu</>
+                          ) : (
+                            <><UserCheck className="mr-2 h-4 w-4" /> Aktibatu</>
+                          )}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive"

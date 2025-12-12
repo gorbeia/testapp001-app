@@ -203,9 +203,23 @@ export async function registerRoutes(
   });
 
   // Users: list all users from the database (admin only)
-  app.get("/api/users", requireAdmin, async (_req: Request, res: Response, next: NextFunction) => {
+  app.get("/api/users", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const allUsers = await db.query.users.findMany();
+      const { status } = req.query;
+      
+      let whereCondition;
+      if (status === 'active') {
+        whereCondition = eq(users.isActive, true);
+      } else if (status === 'inactive') {
+        whereCondition = eq(users.isActive, false);
+      } else {
+        // 'all' or undefined - return all users
+        whereCondition = undefined;
+      }
+      
+      const allUsers = await db.query.users.findMany({
+        where: whereCondition
+      });
       // Remove passwords from response
       const usersWithoutPasswords = allUsers.map(({ password, ...user }) => user);
       return res.status(200).json(usersWithoutPasswords);
@@ -228,12 +242,13 @@ export async function registerRoutes(
           username: users.username,
         })
         .from(users)
-        .where(eq(users.societyId, societyId));
+        .where(and(
+          eq(users.societyId, societyId),
+          eq(users.isActive, true),
+          ne(users.id, user.id) // Exclude current user
+        ));
       
-      // Remove current user from the list
-      const availableUsers = allUsers.filter(u => u.id !== user.id);
-      
-      return res.status(200).json(availableUsers);
+      return res.status(200).json(allUsers);
     } catch (err) {
       next(err);
     }
@@ -246,12 +261,18 @@ export async function registerRoutes(
       const societyId = getUserSocietyId(user);
       const { status } = req.query;
       
-      // Since users table doesn't have isActive field, we count all users for now
-      // TODO: Add isActive field to users table and enable status filtering
+      // Filter users by status if provided
+      let whereCondition = eq(users.societyId, societyId);
+      if (status === 'active') {
+        whereCondition = and(whereCondition, eq(users.isActive, true))!;
+      } else if (status === 'inactive') {
+        whereCondition = and(whereCondition, eq(users.isActive, false))!;
+      }
+      
       const userCount = await db
         .select({ count: count() })
         .from(users)
-        .where(eq(users.societyId, societyId));
+        .where(whereCondition);
       
       return res.status(200).json({ count: userCount[0]?.count || 0 });
     } catch (err) {
@@ -460,6 +481,34 @@ export async function registerRoutes(
       }
 
       return res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Users: toggle user active status (admin only)
+  app.patch("/api/users/:id/toggle-active", requireAdmin, validateUserId, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const [updatedUser] = await db
+        .update(users)
+        .set({ 
+          isActive: !user.isActive,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, id))
+        .returning();
+
+      // Remove password from response
+      const { password, ...userWithoutPassword } = updatedUser;
+      
+      return res.status(200).json(userWithoutPassword);
     } catch (err) {
       next(err);
     }
@@ -1670,8 +1719,11 @@ export async function registerRoutes(
       throw new Error('No active society found');
     }
 
-    // Get all members
-    const members = await db.select().from(users).where(eq(users.societyId, activeSociety.id));
+    // Get all active members
+    const members = await db.select().from(users).where(and(
+      eq(users.societyId, activeSociety.id),
+      eq(users.isActive, true)
+    ));
 
     // Calculate start and end dates for the month
     const startDate = new Date(year, month - 1, 1);

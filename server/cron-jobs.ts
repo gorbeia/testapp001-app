@@ -35,8 +35,11 @@ class DebtCalculationService {
         throw new Error('No active society found');
       }
 
-      // Get all members
-      const members = await db.select().from(users).where(eq(users.societyId, activeSociety.id));
+      // Get all active members
+      const members = await db.select().from(users).where(and(
+        eq(users.societyId, activeSociety.id),
+        eq(users.isActive, true)
+      ));
       console.log(`Found ${members.length} members to process`);
 
       // Calculate start and end dates for the month

@@ -31,6 +31,9 @@ export const users = pgTable("users", {
   linkedMemberId: varchar("linked_member_id"),
   linkedMemberName: text("linked_member_name"),
   societyId: varchar("society_id").notNull().references(() => societies.id),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const insertSocietySchema = createInsertSchema(societies).pick({
@@ -56,6 +59,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   linkedMemberId: true,
   linkedMemberName: true,
   societyId: true,
+  isActive: true,
 });
 
 export const products = pgTable("products", {
