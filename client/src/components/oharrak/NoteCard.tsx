@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { es, eu } from 'date-fns/locale';
 import { Edit, Trash2, Eye, EyeOff } from 'lucide-react';
+import { useLanguage } from '@/lib/i18n';
 import { Oharrak } from './types';
 
 interface NoteCardProps {
@@ -16,6 +17,9 @@ interface NoteCardProps {
 }
 
 export function NoteCard({ note, isAdmin, onEdit, onDelete, onToggleActive }: NoteCardProps) {
+  const { t, language } = useLanguage();
+  const locale = language === 'eu' ? eu : es;
+
   return (
     <Card className={!note.isActive ? 'opacity-60' : ''}>
       <CardHeader>
@@ -23,11 +27,13 @@ export function NoteCard({ note, isAdmin, onEdit, onDelete, onToggleActive }: No
           <div className="flex-1">
             <CardTitle className="text-xl">{note.title}</CardTitle>
             <div className="flex items-center space-x-2 mt-2">
-              <Badge variant={note.isActive ? 'default' : 'secondary'}>
-                {note.isActive ? 'Activa' : 'Inactiva'}
-              </Badge>
+              {isAdmin && (
+                <Badge variant={note.isActive ? 'default' : 'secondary'}>
+                  {note.isActive ? t('active') : t('inactive')}
+                </Badge>
+              )}
               <span className="text-sm text-muted-foreground">
-                {format(new Date(note.createdAt), 'PPP', { locale: es })}
+                {format(new Date(note.createdAt), 'PPP', { locale })}
               </span>
             </div>
           </div>

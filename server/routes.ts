@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "./db";
 import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak } from "@shared/schema";
-import { eq, and, gte, ne, sum, between, sql, desc } from "drizzle-orm";
+import { eq, and, gte, ne, sum, between, sql, desc, count } from "drizzle-orm";
 import { debtCalculationService } from "./cron-jobs";
 
 // JWT Configuration
@@ -212,6 +212,26 @@ export async function registerRoutes(
       // Remove passwords from response
       const usersWithoutPasswords = allUsers.map(({ password, ...user }) => user);
       return res.status(200).json(usersWithoutPasswords);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Users: count users by status (authenticated users)
+  app.get("/api/users/count", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      const { status } = req.query;
+      
+      // Since users table doesn't have isActive field, we count all users for now
+      // TODO: Add isActive field to users table and enable status filtering
+      const userCount = await db
+        .select({ count: count() })
+        .from(users)
+        .where(eq(users.societyId, societyId));
+      
+      return res.status(200).json({ count: userCount[0]?.count || 0 });
     } catch (err) {
       next(err);
     }
@@ -1442,7 +1462,7 @@ export async function registerRoutes(
   // Oharrak (Notes) routes - Admin only
   app.get("/api/oharrak", requireAuth, async (req, res, next) => {
     try {
-      const societyId = getUserSocietyId(req.user);
+      const societyId = getUserSocietyId(req.user!);
       const notes = await db.select().from(oharrak)
         .where(eq(oharrak.societyId, societyId))
         .orderBy(desc(oharrak.createdAt));
@@ -1454,7 +1474,7 @@ export async function registerRoutes(
 
   app.post("/api/oharrak", requireAuth, requireAdmin, async (req, res, next) => {
     try {
-      const societyId = getUserSocietyId(req.user);
+      const societyId = getUserSocietyId(req.user!);
       const { title, content } = req.body;
       
       const [newNote] = await db.insert(oharrak).values({
@@ -1475,7 +1495,7 @@ export async function registerRoutes(
     try {
       const { id } = req.params;
       const { title, content, isActive } = req.body;
-      const societyId = getUserSocietyId(req.user);
+      const societyId = getUserSocietyId(req.user!);
       
       const [updatedNote] = await db
         .update(oharrak)
@@ -1504,7 +1524,7 @@ export async function registerRoutes(
   app.delete("/api/oharrak/:id", requireAuth, requireAdmin, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const societyId = getUserSocietyId(req.user);
+      const societyId = getUserSocietyId(req.user!);
       
       const deletedNote = await db
         .delete(oharrak)

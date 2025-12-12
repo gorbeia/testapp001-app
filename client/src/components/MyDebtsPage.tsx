@@ -80,10 +80,10 @@ export function MyDebtsPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold" data-testid="my-debts-page-title">
-            Nire Zorrak
+            {t('myDebts')}
           </h2>
           <p className="text-muted-foreground" data-testid="my-debts-page-subtitle">
-            Zure zor metatuak
+            {t('yourAccumulatedDebts')}
           </p>
         </div>
       </div>
@@ -100,7 +100,7 @@ export function MyDebtsPage() {
             </div>
             {currentMonthDebt && (
               <div className="text-sm text-muted-foreground mt-2" data-testid="current-month-debt">
-                Current month: {currentMonthDebt.totalAmount || '0'}€
+                {t('currentMonth')}: {currentMonthDebt.totalAmount || '0'}€
               </div>
             )}
           </CardContent>
@@ -120,7 +120,7 @@ export function MyDebtsPage() {
 
         <Card data-testid="card-total">
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-            <CardTitle className="text-sm font-medium">Guztira</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('total')}</CardTitle>
             <TrendingUp className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
@@ -160,7 +160,7 @@ export function MyDebtsPage() {
             <TableRow>
               <TableHead>{t('month')}</TableHead>
               <TableHead className="text-right">{t('amount')}</TableHead>
-              <TableHead className="text-right">Status</TableHead>
+              <TableHead className="text-right">{t('status')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

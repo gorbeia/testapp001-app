@@ -3,6 +3,7 @@ import { Calendar } from 'lucide-react';
 import * as Popover from '@radix-ui/react-popover';
 import * as Select from '@radix-ui/react-select';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/lib/i18n';
 
 interface MonthGridProps {
   selectedMonth?: string;
@@ -11,6 +12,7 @@ interface MonthGridProps {
 }
 
 const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) => {
+  const { t, language } = useLanguage();
   const [open, setOpen] = useState(false);
 
   // Generate year and month options
@@ -31,9 +33,12 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
   };
 
   const generateMonthOptions = () => {
-    const monthNames = [
+    const monthNames = language === 'eu' ? [
       'Urtarrila', 'Otsaila', 'Martxoa', 'Apirila', 'Maiatza', 'Ekaina',
       'Uztaila', 'Abuztua', 'Iraila', 'Urria', 'Azaroa', 'Abendua'
+    ] : [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
     
     return monthNames.map((name, index) => ({
@@ -43,11 +48,14 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
   };
 
   const getSelectedDisplay = () => {
-    if (!selectedMonth) return 'Hilabete guztiak';
+    if (!selectedMonth) return t('allMonths');
     const [year, month] = selectedMonth.split('-');
-    const monthNames = [
+    const monthNames = language === 'eu' ? [
       'Urtarrila', 'Otsaila', 'Martxoa', 'Apirila', 'Maiatza', 'Ekaina',
       'Uztaila', 'Abuztua', 'Iraila', 'Urria', 'Azaroa', 'Abendua'
+    ] : [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
     ];
     return `${monthNames[parseInt(month) - 1]} ${year}`;
   };
@@ -98,7 +106,7 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
           <div className="space-y-4">
             {/* Year Selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Urtea</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('year')}</label>
               <Select.Root 
                 value={currentYear} 
                 onValueChange={(year) => {
@@ -135,7 +143,7 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
 
             {/* Month Selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Hilabetea</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('month')}</label>
               <Select.Root 
                 value={currentMonth} 
                 onValueChange={(month) => {

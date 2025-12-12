@@ -1,7 +1,7 @@
 import { LanguageProvider } from '../LanguageProvider';
 import { AuthProvider } from '../AuthProvider';
 import { ThemeProvider } from '../ThemeProvider';
-import { Dashboard } from '../Dashboard';
+import { Dashboard } from '../dashboard';
 
 export default function DashboardExample() {
   return (

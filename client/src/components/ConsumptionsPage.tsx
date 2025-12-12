@@ -399,7 +399,7 @@ export function ConsumptionsPage() {
                   <p className="text-lg font-bold" data-testid="member-name">{user?.name || user?.email || 'Ezezaguna'}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-muted-foreground">Guztira</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('total')}</p>
                   <p className="text-2xl font-bold text-primary" data-testid="total-amount">{cartTotal.toFixed(2)}€</p>
                 </div>
               </div>

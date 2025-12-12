@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ReactNode } from 'react';
+import { useLanguage } from '@/lib/i18n';
 
 interface NoteFormProps {
   isOpen: boolean;
@@ -28,6 +29,8 @@ export function NoteForm({
   isEditing = false,
   children
 }: NoteFormProps) {
+  const { t } = useLanguage();
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       {children && (
@@ -37,7 +40,7 @@ export function NoteForm({
       )}
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Nota' : 'Crear Nueva Nota'}</DialogTitle>
+          <DialogTitle>{isEditing ? t('editNote') : t('createNewNote')}</DialogTitle>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
           <div>
@@ -69,7 +72,7 @@ export function NoteForm({
               onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
               className="rounded"
             />
-            <Label htmlFor={isEditing ? 'edit-isActive' : 'isActive'}>Activa</Label>
+            <Label htmlFor={isEditing ? 'edit-isActive' : 'isActive'}>{t('active')}</Label>
           </div>
           <div className="flex justify-end space-x-2">
             <Button type="button" variant="outline" onClick={onClose}>

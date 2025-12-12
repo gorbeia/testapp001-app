@@ -241,7 +241,7 @@ export function ProductsPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">{t('products')}</h2>
-          <p className="text-muted-foreground">Kudeatu produktuak eta stock-a</p>
+          <p className="text-muted-foreground">{t('manageProductsAndStock')}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -370,7 +370,7 @@ export function ProductsPage() {
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-destructive mt-0.5" />
               <div>
-                <p className="font-medium text-destructive">Stock baxua / Stock bajo</p>
+                <p className="font-medium text-destructive">{t('lowStock')}</p>
                 <p className="text-sm text-muted-foreground mt-1">
                   {lowStockProducts.map((p) => p.name).join(', ')}
                 </p>

@@ -12,7 +12,7 @@ import { LoginForm } from "@/components/LoginForm";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { Dashboard } from "@/components/Dashboard";
+import { Dashboard } from '@/components/dashboard';
 import { ReservationsPage } from "@/components/ReservationsPage";
 import { ConsumptionsPage } from "@/components/ConsumptionsPage";
 import { ConsumptionsListPage } from "@/components/ConsumptionsListPage";

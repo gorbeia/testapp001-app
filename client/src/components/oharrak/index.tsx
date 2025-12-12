@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth, hasAdminAccess } from '@/lib/auth';
+import { useLanguage } from '@/lib/i18n';
 import { Plus } from 'lucide-react';
 import { Oharrak } from './types';
 import { NoteCard } from './NoteCard';
@@ -11,6 +16,7 @@ import { LoadingState } from './LoadingState';
 import { OharrakAPI } from './api';
 
 export default function OharrakPage() {
+  const { t } = useLanguage();
   const [notes, setNotes] = useState<Oharrak[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -137,21 +143,52 @@ export default function OharrakPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Oharrak (Notas)</h1>
+        <h1 className="text-3xl font-bold">{t('announcements')}</h1>
         {isAdmin && (
-          <NoteForm
-            isOpen={isCreateDialogOpen}
-            onClose={() => setIsCreateDialogOpen(false)}
-            onSubmit={handleSubmit}
-            formData={formData}
-            setFormData={setFormData}
-            isEditing={false}
-          >
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Nueva Nota
-            </Button>
-          </NoteForm>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                {t('newNote')}
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{t('createNewNote')}</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="title">{t('title')}</Label>
+                  <Input
+                    id="title"
+                    value={formData.title}
+                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                    placeholder={t('noteTitlePlaceholder')}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="content">{t('content')}</Label>
+                  <Textarea
+                    id="content"
+                    value={formData.content}
+                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                    placeholder={t('noteContentPlaceholder')}
+                    rows={4}
+                    required
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                    {t('cancel')}
+                  </Button>
+                  <Button type="submit">
+                    {t('save')}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         )}
       </div>
 
