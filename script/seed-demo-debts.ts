@@ -1,92 +1,58 @@
+import 'dotenv/config';
 import { db } from '../server/db';
-import { credits } from '../shared/schema';
+import { credits, users, societies } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 
 async function seedDemoDebts() {
   console.log('=== Seeding Demo Debts ===\n');
 
   try {
-    // Demo debt data for testing and demonstration
-    const demoDebts = [
-      {
-        memberId: '05312e3b-b893-4800-a154-e0ea49f40839', // Ane Zelaia
-        societyId: 'b2cf15b6-6a42-42b9-afb9-1379482a32e7',
-        month: '2025-11',
-        year: 2025,
-        monthNumber: 11,
-        consumptionAmount: '45.50',
-        reservationAmount: '120.00',
-        kitchenAmount: '12.00',
-        totalAmount: '177.50',
-        status: 'pending',
-        paidAmount: '0.00',
-        memberName: 'Ane Zelaia'
-      },
-      {
-        memberId: '57698777-1fd5-4236-abab-b32b59391e85', // Miren Urrutia
-        societyId: 'b2cf15b6-6a42-42b9-afb9-1379482a32e7',
-        month: '2025-11',
-        year: 2025,
-        monthNumber: 11,
-        consumptionAmount: '89.25',
-        reservationAmount: '50.00',
-        kitchenAmount: '6.00',
-        totalAmount: '145.25',
-        status: 'pending',
-        paidAmount: '0.00',
-        memberName: 'Miren Urrutia'
-      },
-      {
-        memberId: '3b736e92-6298-4c3a-8a4e-9da43482d582', // Mikel Etxeberria
-        societyId: 'b2cf15b6-6a42-42b9-afb9-1379482a32e7',
-        month: '2025-11',
-        year: 2025,
-        monthNumber: 11,
-        consumptionAmount: '156.75',
-        reservationAmount: '840.00',
-        kitchenAmount: '18.00',
-        totalAmount: '1014.75',
-        status: 'pending',
-        paidAmount: '0.00',
-        memberName: 'Mikel Etxeberria'
-      },
-      {
-        memberId: '7d66d4b8-345f-4193-a5ad-1fa8d7c3078e', // Jon Agirre
-        societyId: 'b2cf15b6-6a42-42b9-afb9-1379482a32e7',
-        month: '2025-11',
-        year: 2025,
-        monthNumber: 11,
-        consumptionAmount: '32.00',
-        reservationAmount: '0.00',
-        kitchenAmount: '3.00',
-        totalAmount: '35.00',
-        status: 'pending',
-        paidAmount: '0.00',
-        memberName: 'Jon Agirre'
-      },
-      {
-        memberId: 'b04163d6-783e-42e9-9232-b1316117d19a', // Andoni Garcia
-        societyId: 'b2cf15b6-6a42-42b9-afb9-1379482a32e7',
-        month: '2025-11',
-        year: 2025,
-        monthNumber: 11,
-        consumptionAmount: '67.50',
-        reservationAmount: '75.00',
-        kitchenAmount: '9.00',
-        totalAmount: '151.50',
-        status: 'pending',
-        paidAmount: '0.00',
-        memberName: 'Andoni Garcia'
-      }
-    ];
+    // Get the active society
+    const activeSociety = await db.select().from(societies).where(eq(societies.isActive, true)).limit(1);
+    if (activeSociety.length === 0) {
+      console.log('No active society found, skipping demo debts seeding');
+      return;
+    }
+    
+    const societyId = activeSociety[0].id;
+    console.log('Using society ID for demo debts:', societyId);
+
+    // Get all users for the society
+    const societyUsers = await db.select().from(users).where(eq(users.societyId, societyId));
+    if (societyUsers.length === 0) {
+      console.log('No users found for society, skipping demo debts seeding');
+      return;
+    }
+
+    console.log(`Found ${societyUsers.length} users for demo debts`);
 
     // Clear existing demo debts for November 2025
     console.log('Clearing existing November 2025 debts...');
     await db.delete(credits)
-      .where(and(
-        eq(credits.month, '2025-11'),
-        eq(credits.year, 2025)
-      ));
+      .where(eq(credits.month, '2025-11'));
+
+    // Create demo debts for each user with different amounts
+    const demoDebts = societyUsers.map((user, index) => {
+      const baseAmount = 50 + (index * 25); // Different amounts for each user
+      const reservationAmount = (baseAmount * 0.6).toFixed(2);
+      const consumptionAmount = (baseAmount * 0.3).toFixed(2);
+      const kitchenAmount = (baseAmount * 0.1).toFixed(2);
+      const totalAmount = (parseFloat(reservationAmount) + parseFloat(consumptionAmount) + parseFloat(kitchenAmount)).toFixed(2);
+
+      return {
+        memberId: user.id,
+        societyId,
+        month: '2025-11',
+        year: 2025,
+        monthNumber: 11,
+        consumptionAmount,
+        reservationAmount,
+        kitchenAmount,
+        totalAmount,
+        status: 'pending' as const,
+        paidAmount: '0.00',
+      };
+    });
 
     // Insert demo debts
     console.log('Inserting demo debts for November 2025...');
@@ -96,7 +62,8 @@ async function seedDemoDebts() {
         calculatedAt: new Date(),
         updatedAt: new Date()
       });
-      console.log(`  ✓ ${debt.memberName}: ${debt.totalAmount}€`);
+      const user = societyUsers.find(u => u.id === debt.memberId);
+      console.log(`  ✓ ${user?.name || user?.username}: ${debt.totalAmount}€`);
     }
 
     console.log('\n=== Demo Debts Seeded Successfully ===');
@@ -112,9 +79,6 @@ async function seedDemoDebts() {
     process.exit(1);
   }
 }
-
-// Import required functions
-import { and } from 'drizzle-orm';
 
 seedDemoDebts().then(() => {
   console.log('\nScript completed successfully!');
