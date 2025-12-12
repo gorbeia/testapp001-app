@@ -134,30 +134,22 @@ Then('I should be able to access all admin pages', async function () {
 When('I try to access the users management page directly', async function () {
   const page = getPage();
   assert.ok(page, 'Page was not initialized');
-  await page.goto('http://localhost:5000/erabiltzaileak', { waitUntil: 'networkidle' });
+  await page.goto('http://localhost:5000/erabiltzaileak', { waitUntil: 'domcontentloaded' });
 });
 
 Then('I should be redirected or shown an access denied message', async function () {
   const page = getPage();
   assert.ok(page, 'Page was not initialized');
 
-  // Wait a bit for any redirect to happen
+  // Wait a bit for the protected route to render
   await page.waitForTimeout(1000);
 
-  const currentUrl = page.url();
-  
-  // Check if we're redirected to dashboard
-  const isAtDashboard = currentUrl.endsWith('http://localhost:5000/') || currentUrl.endsWith('http://localhost:5000');
-  
-  // Check for access denied messages
-  const hasAccessDenied = await page.$('text=Access Denied') || 
-                         await page.$('text=Access denied') || 
-                         await page.$('text=No autorizado') ||
-                         await page.$('text=Acceso denegado');
+  // Check for the access denied message in Basque
+  const accessDeniedMessage = await page.$('text=Ez duzu baimenik orri hau ikusteko');
 
   assert.ok(
-    isAtDashboard || hasAccessDenied,
-    `Bazkide user should be blocked from users page. Current URL: ${currentUrl}`
+    accessDeniedMessage,
+    'Bazkide user should be blocked from users page'
   );
 });
 
