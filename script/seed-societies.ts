@@ -25,6 +25,7 @@ async function main() {
 
   const demoSocieties = [
     {
+      alphabeticId: 'GT001',
       name: 'Gure Txokoa',
       iban: 'ES91 2100 0418 4502 0005 1330',
       creditorId: 'ES45000B12345678',

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Mail, Lock, LogIn, AlertCircle } from 'lucide-react';
+import { Mail, Lock, LogIn, AlertCircle, Building } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,7 @@ import { LanguageToggle } from './LanguageToggle';
 import { ThemeToggle } from './ThemeToggle';
 
 const loginSchema = z.object({
+  societyId: z.string().min(1),
   email: z.string().email(),
   password: z.string().min(1),
 });
@@ -28,6 +29,7 @@ export function LoginForm() {
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
+      societyId: 'GT001',
       email: '',
       password: '',
     },
@@ -37,7 +39,7 @@ export function LoginForm() {
     setIsLoading(true);
     setError(null);
     try {
-      await login(data.email, data.password);
+      await login(data.email, data.password, data.societyId);
     } catch {
       setError(t('invalidCredentials'));
     } finally {
@@ -69,6 +71,28 @@ export function LoginForm() {
                   {error}
                 </div>
               )}
+              
+              <FormField
+                control={form.control}
+                name="societyId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('societyId')}</FormLabel>
+                    <FormControl>
+                      <div className="relative">
+                        <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          {...field}
+                          placeholder="GT001"
+                          className="pl-10"
+                          data-testid="input-society-id"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <FormField
                 control={form.control}

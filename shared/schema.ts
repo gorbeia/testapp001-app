@@ -5,6 +5,7 @@ import { z } from "zod";
 
 export const societies = pgTable("societies", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  alphabeticId: varchar("alphabetic_id").notNull().unique(),
   name: text("name").notNull(),
   iban: text("iban"),
   creditorId: text("creditor_id"),

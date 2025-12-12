@@ -18,14 +18,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   });
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (email: string, password: string, societyId: string): Promise<void> => {
     const lowerEmail = email.toLowerCase();
 
     // Authenticate with the backend
     const response = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: lowerEmail, password }),
+      body: JSON.stringify({ email: lowerEmail, password, societyId }),
     });
 
     if (!response.ok) {

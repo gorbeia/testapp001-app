@@ -148,10 +148,19 @@ export async function registerRoutes(
   // Authentication: login using database-backed users table
   app.post("/api/login", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, password } = req.body as { email?: string; password?: string };
+      const { email, password, societyId } = req.body as { email?: string; password?: string; societyId?: string };
 
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      if (!email || !password || !societyId) {
+        return res.status(400).json({ message: "Email, password, and society ID are required" });
+      }
+
+      // Verify society exists by alphabeticId
+      const society = await db.query.societies.findFirst({
+        where: (s, { eq }) => eq(s.alphabeticId, societyId),
+      });
+
+      if (!society) {
+        return res.status(401).json({ message: "Invalid society ID" });
       }
 
       const dbUser = await db.query.users.findFirst({
@@ -160,6 +169,11 @@ export async function registerRoutes(
 
       if (!dbUser) {
         return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Verify user belongs to the specified society
+      if (dbUser.societyId !== society.id) {
+        return res.status(401).json({ message: "User does not belong to this society" });
       }
 
       // Check if password is hashed (starts with $2b$) or plain text
