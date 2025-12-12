@@ -906,6 +906,46 @@ export async function registerRoutes(
     }
   });
 
+  // Member consumption statistics for dashboard
+  app.get("/api/consumptions/member/sum", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { startDate } = req.query;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const conditions = [eq(consumptions.societyId, societyId), eq(consumptions.userId, user.id)];
+      
+      if (startDate) {
+        conditions.push(gte(consumptions.createdAt, new Date(startDate as string)));
+      }
+      
+      // Get all consumption items that match the date criteria for this member
+      const consumptionItemsQuery = db
+        .select({
+          consumptionId: consumptionItems.consumptionId,
+          quantity: consumptionItems.quantity,
+          unitPrice: consumptionItems.unitPrice,
+        })
+        .from(consumptionItems)
+        .innerJoin(
+          consumptions,
+          eq(consumptionItems.consumptionId, consumptions.id)
+        )
+        .where(and(...conditions));
+      
+      const items = await consumptionItemsQuery;
+      
+      // Calculate total sum
+      const totalSum = items.reduce((sum, item) => {
+        return sum + (parseFloat(item.quantity || '0') * parseFloat(item.unitPrice || '0'));
+      }, 0);
+      
+      res.json({ sum: totalSum });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Reservations API
   app.get("/api/reservations", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {

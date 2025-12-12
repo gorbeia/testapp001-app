@@ -17,6 +17,7 @@ export interface DashboardStats {
   todayReservationsAmount: number;
   monthlyConsumptions: number;
   monthlyConsumptionsAmount: number;
+  memberMonthlyConsumptionsAmount: number;
   pendingCredits: number;
   activeMembers: number;
 }
@@ -38,6 +39,7 @@ export const mockStats: DashboardStats = {
   todayReservationsAmount: 245.00,
   monthlyConsumptions: 245,
   monthlyConsumptionsAmount: 1250.75,
+  memberMonthlyConsumptionsAmount: 85.50,
   pendingCredits: 1250.50,
   activeMembers: 48,
 };
@@ -71,12 +73,13 @@ export const fetchNotes = async (): Promise<Note[]> => {
 export const fetchDashboardStats = async (): Promise<DashboardStats> => {
   try {
     // Fetch real stats from database
-    const [reservationsCount, peopleCount, reservationsAmount, consumptionsCount, consumptionsAmount, creditsSum, usersCount] = await Promise.all([
+    const [reservationsCount, peopleCount, reservationsAmount, consumptionsCount, consumptionsAmount, memberConsumptionsAmount, creditsSum, usersCount] = await Promise.all([
       fetchTodayReservationsCount(),
       fetchTodayPeopleCount(),
       fetchTodayReservationsAmount(),
       fetchMonthlyConsumptionsCount(),
       fetchMonthlyConsumptionsAmount(),
+      fetchMemberMonthlyConsumptionsAmount(),
       fetchPendingCreditsSum(),
       fetchActiveUsersCount()
     ]);
@@ -87,6 +90,7 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
       todayReservationsAmount: reservationsAmount,
       monthlyConsumptions: consumptionsCount,
       monthlyConsumptionsAmount: consumptionsAmount,
+      memberMonthlyConsumptionsAmount: memberConsumptionsAmount,
       pendingCredits: creditsSum,
       activeMembers: usersCount,
     };
@@ -170,6 +174,22 @@ const fetchMonthlyConsumptionsAmount = async (): Promise<number> => {
   } catch (error) {
     console.error('Error fetching monthly consumptions amount:', error);
     return mockStats.monthlyConsumptionsAmount;
+  }
+};
+
+const fetchMemberMonthlyConsumptionsAmount = async (): Promise<number> => {
+  try {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const response = await authFetch(`/api/consumptions/member/sum?startDate=${firstDayOfMonth}`);
+    if (response.ok) {
+      const data = await response.json();
+      return data.sum || 0;
+    }
+    return mockStats.memberMonthlyConsumptionsAmount;
+  } catch (error) {
+    console.error('Error fetching member monthly consumptions amount:', error);
+    return mockStats.memberMonthlyConsumptionsAmount;
   }
 };
 

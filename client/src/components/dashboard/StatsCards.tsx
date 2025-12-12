@@ -36,10 +36,10 @@ export function StatsCards({ stats }: StatsCardsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {hasAdminAccess(user) ? `${(stats.monthlyConsumptionsAmount || 0).toFixed(2)}€` : stats.monthlyConsumptions}
+            {hasAdminAccess(user) ? `${(stats.monthlyConsumptionsAmount || 0).toFixed(2)}€` : `${(stats.memberMonthlyConsumptionsAmount || 0).toFixed(2)}€`}
           </div>
           <p className="text-xs text-muted-foreground">
-            {hasAdminAccess(user) ? t('thisMonth') : t('thisMonth')}
+            {t('thisMonth')}
           </p>
         </CardContent>
       </Card>

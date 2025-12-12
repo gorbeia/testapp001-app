@@ -22,6 +22,7 @@ export function Dashboard() {
     todayReservationsAmount: 0,
     monthlyConsumptions: 0,
     monthlyConsumptionsAmount: 0,
+    memberMonthlyConsumptionsAmount: 0,
     pendingCredits: 0,
     activeMembers: 0,
   });
