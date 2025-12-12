@@ -17,7 +17,7 @@ import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { eu, es } from 'date-fns/locale';
-import type { Reservation } from '@shared/schema';
+import type { Reservation, Table } from '@shared/schema';
 
 interface ReservationWithUser extends Reservation {
   userName?: string;
@@ -46,6 +46,7 @@ export function ReservationsPage() {
   const [society, setSociety] = useState<any>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [reservationToCancel, setReservationToCancel] = useState<string | null>(null);
+  const [tables, setTables] = useState<Table[]>([]);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -59,7 +60,17 @@ export function ReservationsPage() {
     notes: ''
   });
 
-  // Calculate total amount using society pricing
+  // Get all active tables
+  const getAllTables = () => {
+    return tables.filter(table => table.isActive);
+  };
+
+  // Check if selected table can accommodate guests
+  const isTableSuitable = (tableName: string) => {
+    const table = tables.find(t => t.name === tableName);
+    if (!table || table.minCapacity === null || table.maxCapacity === null) return false;
+    return formData.guests >= table.minCapacity && formData.guests <= table.maxCapacity;
+  };
   const calculateTotal = (guests: number, kitchen: boolean) => {
     if (!society) return '0';
     
@@ -108,7 +119,20 @@ export function ReservationsPage() {
   useEffect(() => {
     loadReservations();
     loadSociety();
+    loadTables();
   }, []);
+
+  const loadTables = async () => {
+    try {
+      const response = await authFetch('/api/tables');
+      if (response.ok) {
+        const data = await response.json();
+        setTables(data);
+      }
+    } catch (error) {
+      console.error('Error loading tables:', error);
+    }
+  };
 
   const loadReservations = async () => {
     try {
@@ -138,6 +162,11 @@ export function ReservationsPage() {
 
   const handleCreateReservation = async () => {
     try {
+      // Validate table capacity
+      if (formData.table && !isTableSuitable(formData.table)) {
+        throw new Error(`Hautatutako mahaiak ez ditu ${formData.guests} pertsona hartzeko kapazitaterik. Mesedez, hautatu mahaia egoki bat.`);
+      }
+
       // Ensure we have a valid Date object
       let startDate: Date;
       if (formData.startDate instanceof Date) {
@@ -342,13 +371,39 @@ export function ReservationsPage() {
                     <SelectValue placeholder={t('selectTable')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {['Mahaia 1', 'Mahaia 2', 'Mahaia 3', 'Mahaia 4', 'Mahaia 5', 'Mahaia 6'].map((table) => (
-                      <SelectItem key={table} value={table}>
-                        {table}
+                    {getAllTables().length > 0 ? (
+                      getAllTables().map((table) => {
+                        const isSuitable = table.minCapacity !== null && table.maxCapacity !== null && 
+                                        formData.guests >= table.minCapacity && formData.guests <= table.maxCapacity;
+                        return (
+                          <SelectItem 
+                            key={table.id} 
+                            value={table.name}
+                            disabled={!isSuitable}
+                          >
+                            <div className="flex flex-col">
+                              <span>{table.name}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {table.minCapacity ?? '?'}-{table.maxCapacity ?? '?'} pertsona
+                                {!isSuitable && ` (Ez egokia ${formData.guests} pertsonentzat)`}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        );
+                      })
+                    ) : (
+                      <SelectItem value="" disabled>
+                        Ez dago mahairik eskuragarri
                       </SelectItem>
-                    ))}
+                    )}
                   </SelectContent>
                 </Select>
+                {formData.table && !isTableSuitable(formData.table) && (
+                  <p className="text-sm text-amber-600">
+                    {formData.table} mahaiak ez ditu {formData.guests} pertsona hartzeko kapazitaterik.
+                    Mahaiaren kapazitatea: {tables.find(t => t.name === formData.table)?.minCapacity ?? '?'}-{tables.find(t => t.name === formData.table)?.maxCapacity ?? '?'} pertsona.
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center space-x-2">

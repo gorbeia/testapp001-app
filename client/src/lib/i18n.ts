@@ -60,6 +60,7 @@ export const translations = {
     actions: 'Ekintzak',
     user: 'Erabiltzailea',
     table: 'Mahaia',
+    selectTable: 'Hautatu mahaia',
     time: 'Ordua',
     guests: 'Gonbidatuak',
     year: 'Urtea',

@@ -3,7 +3,7 @@ import { type Server } from "http";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "./db";
-import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak, tables, type Table, type InsertTable } from "@shared/schema";
+import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, tables, chatRooms, chatMessages, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak, type Table, type InsertTable } from "@shared/schema";
 import { eq, and, gte, ne, sum, between, sql, desc, count, inArray, like, or } from "drizzle-orm";
 import { debtCalculationService } from "./cron-jobs";
 import { getChatRooms, getChatRoomMessages, createChatRoom, createChatMessage } from "./chat-routes";
@@ -687,7 +687,7 @@ export async function registerRoutes(
   app.put("/api/tables/:id", sessionMiddleware, requireAuth, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
-      const updateData: Partial<InsertTable> = req.body;
+      const updateData: Partial<Table> = req.body;
       
       // Always update the updatedAt timestamp
       updateData.updatedAt = new Date();
@@ -713,16 +713,32 @@ export async function registerRoutes(
     try {
       const { id } = req.params;
       
-      // Check if table has any reservations
-      const [reservationCount] = await db
+      // Get table name first
+      const [tableInfo] = await db
+        .select({ name: tables.name })
+        .from(tables)
+        .where(eq(tables.id, id));
+      
+      if (!tableInfo) {
+        return res.status(404).json({ message: "Table not found" });
+      }
+      
+      // Check if table has any active or future reservations (not cancelled or completed)
+      const now = new Date();
+      const [activeReservationCount] = await db
         .select({ count: count() })
         .from(reservations)
-        .where(eq(reservations.table, id));
+        .where(and(
+          eq(reservations.table, tableInfo.name),
+          gte(reservations.startDate, now),
+          ne(reservations.status, 'cancelled'),
+          ne(reservations.status, 'completed')
+        ));
       
-      if (reservationCount.count > 0) {
+      if (activeReservationCount.count > 0) {
         return res.status(400).json({ 
           message: "Ezin izan da mahaia ezabatu",
-          details: `Mahaiak ${reservationCount.count} erreserba ditu. Lehenengo erreserbak ezabatu edo mahaia desaktibatu.`
+          details: `Mahaiak ${activeReservationCount.count} erreserba aktibo edo etorkizunekoak ditu. Lehenengo erreserbak ezabatu edo mahaia desaktibatu.`
         });
       }
       
@@ -731,9 +747,7 @@ export async function registerRoutes(
         .where(eq(tables.id, id))
         .returning();
       
-      if (!deletedTable) {
-        return res.status(404).json({ message: "Table not found" });
-      }
+      console.log(`[TABLE-DELETED] Table '${tableInfo.name}' deleted by admin`);
       
       return res.status(204).send();
     } catch (err) {

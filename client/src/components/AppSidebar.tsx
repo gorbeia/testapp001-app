@@ -70,12 +70,12 @@ export function AppSidebar() {
 
   const adminMenuItems = [
     ...(hasAdminAccess(user) ? [{ title: t('users'), url: '/erabiltzaileak', icon: Users }] : []),
-    ...(hasAdminAccess(user) ? [{ title: t('tables'), url: '/mahaiak', icon: TableIcon }] : []),
     ...(hasAdminAccess(user) ? [{ title: t('consumptionList'), url: '/kontsumoak-zerrenda', icon: Receipt }] : []),
     ...(hasAdminAccess(user) ? [{ title: t('adminCredits'), url: '/zorrak', icon: CreditCard }] : []),
     ...(hasCellarmanAccess(user) ? [{ title: t('products'), url: '/produktuak', icon: Package }] : []),
     ...(hasTreasurerAccess(user) ? [
       { title: t('society'), url: '/elkartea', icon: Building2 },
+      ...(hasAdminAccess(user) ? [{ title: t('tables'), url: '/mahaiak', icon: TableIcon }] : []),
       { title: t('sepaExport'), url: '/sepa', icon: FileSpreadsheet },
     ] : []),
   ];
