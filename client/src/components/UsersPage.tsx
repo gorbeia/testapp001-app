@@ -42,6 +42,8 @@ export function UsersPage() {
   const editNameRef = useRef<HTMLInputElement | null>(null);
   const editPhoneRef = useRef<HTMLInputElement | null>(null);
   const editIbanRef = useRef<HTMLInputElement | null>(null);
+  const [editRole, setEditRole] = useState<string>('');
+  const [editFunction, setEditFunction] = useState<string>('');
 
   useEffect(() => {
     const loadUsers = async () => {
@@ -115,6 +117,8 @@ export function UsersPage() {
 
   const handleOpenEditUser = (user: UsersPageUser) => {
     setEditingUser(user);
+    setEditRole(user.role);
+    setEditFunction(user.function);
     setIsEditDialogOpen(true);
   };
 
@@ -125,6 +129,8 @@ export function UsersPage() {
       name: editNameRef.current?.value.trim() || editingUser.name,
       phone: editPhoneRef.current?.value.trim() || editingUser.phone,
       iban: editIbanRef.current?.value.trim() ?? editingUser.iban ?? null,
+      role: editRole,
+      function: editFunction,
     };
 
     try {
@@ -459,7 +465,7 @@ export function UsersPage() {
                   </div>
                   <div className="space-y-2">
                     <Label>{t('role')}</Label>
-                    <Select defaultValue={editingUser.role} disabled>
+                    <Select value={editRole} onValueChange={setEditRole}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -474,7 +480,7 @@ export function UsersPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t('function')}</Label>
-                    <Select defaultValue={editingUser.function} disabled>
+                    <Select value={editFunction} onValueChange={setEditFunction}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>

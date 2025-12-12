@@ -453,6 +453,9 @@ export async function registerRoutes(
         return res.status(400).json({ message: "No updatable fields provided" });
       }
 
+      // Always update the updatedAt timestamp
+      updateData.updatedAt = new Date();
+
       const updated = await db
         .update(users)
         .set(updateData)
