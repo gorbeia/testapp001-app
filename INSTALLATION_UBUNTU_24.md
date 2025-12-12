@@ -27,7 +27,7 @@ sudo apt update && sudo apt upgrade -y
 
 ```bash
 # Install Node.js and npm
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
 sudo apt install -y nodejs
 
 # Install PostgreSQL
@@ -38,7 +38,12 @@ sudo apt install -y git
 
 # Install build tools
 sudo apt install -y build-essential
+
+# Install Playwright browsers for E2E testing (optional)
+npx playwright install --with-deps
 ```
+
+**Note**: Playwright installation is only needed for E2E testing. If you don't need automated testing, you can skip this step.
 
 ### 3. Configure PostgreSQL
 
@@ -65,7 +70,7 @@ ALTER USER guretxokoa_user CREATEDB;
 
 ```bash
 # Clone the repository (replace with your actual repository URL)
-git clone https://github.com/your-username/testapp001-app.git
+git clone https://github.com/gorbeia/testapp001-app.git
 cd testapp001-app
 
 # Install Node.js dependencies
@@ -105,17 +110,17 @@ JWT_SECRET="your_jwt_secret_key_here"
 
 ```bash
 # Reset database and apply consolidated migration
-NODE_OPTIONS='--import tsx' node script/reset-database.ts
+pnpm db:reset
 
 # Seed the database with initial data
-npm run db:seed
+pnpm db:seed
 ```
 
 ### 7. Build the Application
 
 ```bash
 # Build the application
-npm run build
+pnpm build
 ```
 
 ### 8. Start the Application
@@ -123,13 +128,13 @@ npm run build
 #### Development Mode:
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
 #### Production Mode:
 
 ```bash
-npm start
+pnpm start
 ```
 
 ### 9. Verify Installation
