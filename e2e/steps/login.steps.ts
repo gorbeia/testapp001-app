@@ -105,8 +105,8 @@ Then('I should see the dashboard instead of the login form', async function () {
   // Wait for the login form to disappear after a successful SPA login
   await page.waitForSelector('[data-testid="input-email"]', { state: 'detached', timeout: 5000 });
 
-  // Then wait for a known dashboard element to appear
-  await page.waitForSelector('[data-testid="reservation-item-1"]', { timeout: 5000 });
+  // Then wait for a known dashboard element to appear - the welcome header
+  await page.waitForSelector('text=Ongi etorri', { timeout: 5000 });
 });
 
 Then('I should see a login error message and still see the login form', async function () {
