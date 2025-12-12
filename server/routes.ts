@@ -6,6 +6,7 @@ import { db } from "./db";
 import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak } from "@shared/schema";
 import { eq, and, gte, ne, sum, between, sql, desc, count } from "drizzle-orm";
 import { debtCalculationService } from "./cron-jobs";
+import { getChatRooms, getChatRoomMessages, createChatRoom, createChatMessage } from "./chat-routes";
 
 // JWT Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
@@ -131,7 +132,7 @@ declare global {
 }
 
 // Helper function to get society ID from JWT (no DB query needed)
-const getUserSocietyId = (user: User): string => {
+export const getUserSocietyId = (user: User): string => {
   if (!user.societyId) {
     throw new Error('User societyId not found in JWT');
   }
@@ -212,6 +213,31 @@ export async function registerRoutes(
       // Remove passwords from response
       const usersWithoutPasswords = allUsers.map(({ password, ...user }) => user);
       return res.status(200).json(usersWithoutPasswords);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Users: Get available users for chat conversations
+  app.get("/api/users/available-for-chat", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const allUsers = await db
+        .select({
+          id: users.id,
+          name: users.name,
+          role: users.role,
+          username: users.username,
+        })
+        .from(users)
+        .where(eq(users.societyId, societyId));
+      
+      // Remove current user from the list
+      const availableUsers = allUsers.filter(u => u.id !== user.id);
+      
+      return res.status(200).json(availableUsers);
     } catch (err) {
       next(err);
     }
@@ -1543,6 +1569,12 @@ export async function registerRoutes(
       next(error);
     }
   });
+
+  // Chat API endpoints
+  app.get("/api/chat/rooms", requireAuth, getChatRooms);
+  app.get("/api/chat/rooms/:roomId/messages", requireAuth, getChatRoomMessages);
+  app.post("/api/chat/rooms", requireAuth, createChatRoom);
+  app.post("/api/chat/rooms/:roomId/messages", requireAuth, createChatMessage);
 
   return httpServer;
 }
