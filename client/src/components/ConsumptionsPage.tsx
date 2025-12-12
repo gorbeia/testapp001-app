@@ -407,15 +407,15 @@ export function ConsumptionsPage() {
 
             {/* Items Table */}
             <div>
-              <h3 className="text-lg font-semibold mb-3">Produktuak</h3>
+              <h3 className="text-lg font-semibold mb-3">{t('products')}</h3>
               <ScrollArea className="h-48 border rounded-md">
                 <Table data-testid="confirmation-items-table">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Produktua</TableHead>
-                      <TableHead className="text-center">Kantitatea</TableHead>
-                      <TableHead className="text-right">Unitateko Prezioa</TableHead>
-                      <TableHead className="text-right">Totala</TableHead>
+                      <TableHead>{t('product')}</TableHead>
+                      <TableHead className="text-center">{t('quantity')}</TableHead>
+                      <TableHead className="text-right">{t('unitPrice')}</TableHead>
+                      <TableHead className="text-right">{t('total')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

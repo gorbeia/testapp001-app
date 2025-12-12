@@ -167,7 +167,7 @@ export function SocietyPage() {
               <Building2 className="h-5 w-5" />
               SEPA Konfigurazioa
             </CardTitle>
-            <CardDescription>Ordainketa zuzenerako beharrezko datuak</CardDescription>
+            <CardDescription>{t('paymentDataRequired')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">

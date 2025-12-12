@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "./db";
 import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak } from "@shared/schema";
-import { eq, and, gte, ne, sum, between, sql, desc, count } from "drizzle-orm";
+import { eq, and, gte, ne, sum, between, sql, desc, count, inArray } from "drizzle-orm";
 import { debtCalculationService } from "./cron-jobs";
 import { getChatRooms, getChatRoomMessages, createChatRoom, createChatMessage } from "./chat-routes";
 
@@ -841,6 +841,71 @@ export async function registerRoutes(
     }
   });
 
+  // Consumption statistics for dashboard
+  app.get("/api/consumptions/count", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { startDate } = req.query;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const conditions = [eq(consumptions.societyId, societyId)];
+      
+      if (startDate) {
+        conditions.push(gte(consumptions.createdAt, new Date(startDate as string)));
+      }
+      
+      const result = await db
+        .select({
+          count: count()
+        })
+        .from(consumptions)
+        .where(and(...conditions));
+      
+      res.json({ count: result[0]?.count || 0 });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/consumptions/sum", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { startDate } = req.query;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const conditions = [eq(consumptions.societyId, societyId)];
+      
+      if (startDate) {
+        conditions.push(gte(consumptions.createdAt, new Date(startDate as string)));
+      }
+      
+      // Get all consumption items that match the date criteria
+      const consumptionItemsQuery = db
+        .select({
+          consumptionId: consumptionItems.consumptionId,
+          quantity: consumptionItems.quantity,
+          unitPrice: consumptionItems.unitPrice,
+        })
+        .from(consumptionItems)
+        .innerJoin(
+          consumptions,
+          eq(consumptionItems.consumptionId, consumptions.id)
+        )
+        .where(and(...conditions));
+      
+      const items = await consumptionItemsQuery;
+      
+      // Calculate total sum
+      const totalSum = items.reduce((sum, item) => {
+        return sum + (parseFloat(item.quantity || '0') * parseFloat(item.unitPrice || '0'));
+      }, 0);
+      
+      res.json({ sum: totalSum });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Reservations API
   app.get("/api/reservations", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -1043,6 +1108,121 @@ export async function registerRoutes(
       await db.delete(reservations).where(eq(reservations.id, id));
       
       res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Reservation statistics for dashboard
+  app.get("/api/reservations/count", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { date, status } = req.query;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const conditions = [eq(reservations.societyId, societyId)];
+      
+      if (date) {
+        const startOfDay = new Date(date as string);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(date as string);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        conditions.push(between(reservations.startDate, startOfDay, endOfDay));
+      }
+      
+      if (status) {
+        conditions.push(eq(reservations.status, status as string));
+      }
+      
+      const result = await db
+        .select({
+          count: count()
+        })
+        .from(reservations)
+        .where(and(...conditions));
+      
+      res.json({ count: result[0]?.count || 0 });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/reservations/sum", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { date, status } = req.query;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const conditions = [eq(reservations.societyId, societyId)];
+      
+      if (date) {
+        const startOfDay = new Date(date as string);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(date as string);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        conditions.push(between(reservations.startDate, startOfDay, endOfDay));
+      }
+      
+      if (status) {
+        conditions.push(eq(reservations.status, status as string));
+      }
+      
+      // Get all reservations that match the criteria
+      const reservationsList = await db
+        .select({
+          totalAmount: reservations.totalAmount,
+        })
+        .from(reservations)
+        .where(and(...conditions));
+      
+      // Calculate total sum
+      const totalSum = reservationsList.reduce((sum, reservation) => {
+        return sum + parseFloat(reservation.totalAmount || '0');
+      }, 0);
+      
+      res.json({ sum: totalSum });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/reservations/guests-sum", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { date, status } = req.query;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const conditions = [eq(reservations.societyId, societyId)];
+      
+      if (date) {
+        const startOfDay = new Date(date as string);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(date as string);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        conditions.push(between(reservations.startDate, startOfDay, endOfDay));
+      }
+      
+      if (status) {
+        conditions.push(eq(reservations.status, status as string));
+      }
+      
+      // Get all reservations that match the criteria
+      const reservationsList = await db
+        .select({
+          guests: reservations.guests,
+        })
+        .from(reservations)
+        .where(and(...conditions));
+      
+      // Calculate total guests (add 1 for each reservation to include the person who made it)
+      const totalGuests = reservationsList.reduce((sum, reservation) => {
+        return sum + (reservation.guests || 0) + 1; // +1 for the person who made the reservation
+      }, 0);
+      
+      res.json({ guestsSum: totalGuests });
     } catch (error) {
       next(error);
     }
@@ -1422,6 +1602,32 @@ export async function registerRoutes(
     }
   });
 
+  // Get credits sum by status (for dashboard stats)
+  app.get("/api/credits/sum", requireTreasurer, async (req, res, next) => {
+    try {
+      const { status } = req.query;
+      
+      const conditions = [];
+      
+      if (status && ['pending', 'paid', 'partial'].includes(status as string)) {
+        conditions.push(eq(credits.status, status as string));
+      }
+      
+      const result = await db
+        .select({
+          sum: sum(credits.totalAmount)
+        })
+        .from(credits)
+        .where(conditions.length > 0 ? and(...conditions) : undefined);
+      
+      const totalSum = result[0]?.sum || 0;
+      
+      res.json({ sum: parseFloat(totalSum.toString()) || 0 });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   // Batch update credit status
   app.put("/api/credits/batch-status", requireTreasurer, async (req, res, next) => {
     try {
@@ -1439,7 +1645,7 @@ export async function registerRoutes(
       const creditsToUpdate = await db
         .select()
         .from(credits)
-        .where(sql`${credits.id} = ANY(${creditIds})`);
+        .where(inArray(credits.id, creditIds));
 
       if (creditsToUpdate.length === 0) {
         return res.status(404).json({ message: "No credits found" });
@@ -1473,7 +1679,7 @@ export async function registerRoutes(
       const updatedCredits = await db
         .update(credits)
         .set(updateData)
-        .where(sql`${credits.id} = ANY(${creditIds})`)
+        .where(inArray(credits.id, creditIds))
         .returning();
 
       res.json({ 

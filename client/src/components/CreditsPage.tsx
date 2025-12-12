@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Search, CreditCard, TrendingUp, Download, CheckCircle } from 'lucide-react';
+import { Search, CreditCard, TrendingUp, Download, CheckCircle, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
 import MonthGrid from '@/components/MonthGrid';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth, hasAdminAccess } from '@/lib/auth';
@@ -51,8 +52,10 @@ const fetchCredits = async (filters?: { month?: string; status?: string }) => {
 export function CreditsPage() {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCredits, setSelectedCredits] = useState<Set<string>>(new Set());
+  const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
   const currentDate = new Date();
   const currentMonthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
   const [monthFilter, setMonthFilter] = useState<string>(currentMonthString);
@@ -125,6 +128,46 @@ export function CreditsPage() {
     }
   };
 
+  const handleMarkAsPaid = async () => {
+    if (selectedCredits.size === 0) return;
+    
+    setIsMarkingAsPaid(true);
+    try {
+      const response = await fetch('/api/credits/batch-status', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          creditIds: Array.from(selectedCredits),
+          status: 'paid'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to mark credits as paid');
+      }
+
+      // Clear selection and refresh data
+      setSelectedCredits(new Set());
+      queryClient.invalidateQueries({ queryKey: ['credits'] });
+      
+      toast({
+        title: "Eguneratuta",
+        description: `${selectedCredits.size} zorrak ordaindu gisa markatu dira`,
+      });
+    } catch (error) {
+      console.error('Error marking credits as paid:', error);
+      toast({
+        title: "Errorea",
+        description: "Zorrak markatzean errorea gertatu da",
+        variant: "destructive",
+      });
+    } finally {
+      setIsMarkingAsPaid(false);
+    }
+  };
+
   const isAllSelected = filteredCredits.filter((credit: CreditWithMemberName) => 
     credit.status === 'pending' && !isCurrentMonth(credit.month)
   ).length > 0 && selectedCredits.size === filteredCredits.filter((credit: CreditWithMemberName) => 
@@ -139,10 +182,21 @@ export function CreditsPage() {
             {t('allCredits')}
           </h2>
           <p className="text-muted-foreground" data-testid="credits-page-subtitle">
-            Kudeatu bazkideen zorrak
+            {t('manageCredits')}
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            onClick={handleMarkAsPaid} 
+            disabled={isMarkingAsPaid || selectedCredits.size === 0}
+            data-testid="button-mark-as-paid"
+            variant={selectedCredits.size > 0 ? "default" : "secondary"}
+          >
+            <Check className="mr-2 h-4 w-4" />
+            {isMarkingAsPaid ? t('marking') : 
+             selectedCredits.size === 0 ? t('selectDebtsToPay') : 
+             `${t('markAsPaid')} (${selectedCredits.size})`}
+          </Button>
           <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-csv">
             <Download className="mr-2 h-4 w-4" />
             CSV {t('exportSepa')}
@@ -239,7 +293,7 @@ export function CreditsPage() {
               <TableHead>{t('month')}</TableHead>
               <TableHead className="text-right">{t('amount')}</TableHead>
               <TableHead className="text-right">{t('status')}</TableHead>
-              <TableHead className="text-right">Ordainketa</TableHead>
+              <TableHead className="text-right">{t('payment')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

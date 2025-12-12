@@ -18,7 +18,10 @@ export function Dashboard() {
   const [loadingReservations, setLoadingReservations] = useState(true);
   const [stats, setStats] = useState<DashboardStats>({
     todayReservations: 0,
+    todayPeople: 0,
+    todayReservationsAmount: 0,
     monthlyConsumptions: 0,
+    monthlyConsumptionsAmount: 0,
     pendingCredits: 0,
     activeMembers: 0,
   });

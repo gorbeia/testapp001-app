@@ -290,7 +290,7 @@ export function ConsumptionsListPage() {
                               )}
 
                               <div>
-                                <p className="text-sm font-medium mb-2">Produktuak</p>
+                                <p className="text-sm font-medium mb-2">{t('products')}</p>
                                 <div className="space-y-2">
                                   {selectedConsumption.items.map((item) => (
                                     <div key={item.id} className="flex justify-between items-center p-2 bg-muted rounded">

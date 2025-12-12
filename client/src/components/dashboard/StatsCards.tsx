@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar, ShoppingCart, CreditCard, Users } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n';
-import { useAuth, hasTreasurerAccess, hasCellarmanAccess } from '@/lib/auth';
+import { useAuth, hasTreasurerAccess, hasCellarmanAccess, hasAdminAccess } from '@/lib/auth';
 import { DashboardStats } from './api';
 
 interface StatsCardsProps {
@@ -20,8 +20,12 @@ export function StatsCards({ stats }: StatsCardsProps) {
           <Calendar className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.todayReservations}</div>
-          <p className="text-xs text-muted-foreground">{t('today')}</p>
+          <div className="text-2xl font-bold">
+            {stats.todayPeople}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {t('today')}
+          </p>
         </CardContent>
       </Card>
 
@@ -31,12 +35,16 @@ export function StatsCards({ stats }: StatsCardsProps) {
           <ShoppingCart className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{stats.monthlyConsumptions}</div>
-          <p className="text-xs text-muted-foreground">{t('thisMonth')}</p>
+          <div className="text-2xl font-bold">
+            {hasAdminAccess(user) ? `${(stats.monthlyConsumptionsAmount || 0).toFixed(2)}€` : stats.monthlyConsumptions}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {hasAdminAccess(user) ? t('thisMonth') : t('thisMonth')}
+          </p>
         </CardContent>
       </Card>
 
-      {hasTreasurerAccess(user) && (
+      {(hasTreasurerAccess(user) || hasAdminAccess(user)) && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
             <CardTitle className="text-sm font-medium">{t('credits')}</CardTitle>

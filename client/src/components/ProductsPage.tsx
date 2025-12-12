@@ -396,7 +396,7 @@ export function ProductsPage() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Guztiak</SelectItem>
+            <SelectItem value="all">{t('all')}</SelectItem>
             <SelectItem value="edariak">Edariak</SelectItem>
             <SelectItem value="janariak">Janariak</SelectItem>
             <SelectItem value="opilekuak">Opilekuak</SelectItem>
@@ -506,7 +506,7 @@ export function ProductsPage() {
       <Dialog open={editDialog.open} onOpenChange={(open) => !open && cancelEdit()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Produktua Editatu</DialogTitle>
+            <DialogTitle>{t('editProduct')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
@@ -621,9 +621,9 @@ export function ProductsPage() {
       <AlertDialog open={deleteConfirm.open} onOpenChange={(open) => !open && cancelDelete()}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Produktua Ezabatu</AlertDialogTitle>
+            <AlertDialogTitle>{t('deleteProduct')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Ziur zaude "{deleteConfirm.product?.name}" produktua ezabatu nahi duzula? Ekintza hau ezin da desegin.
+              {t('confirmDeleteProduct').replace('{name}', deleteConfirm.product?.name || '')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

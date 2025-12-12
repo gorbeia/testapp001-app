@@ -13,7 +13,10 @@ export interface Note {
 
 export interface DashboardStats {
   todayReservations: number;
+  todayPeople: number;
+  todayReservationsAmount: number;
   monthlyConsumptions: number;
+  monthlyConsumptionsAmount: number;
   pendingCredits: number;
   activeMembers: number;
 }
@@ -31,7 +34,10 @@ export interface UpcomingReservation {
 // Mock data - TODO: replace with real API calls
 export const mockStats: DashboardStats = {
   todayReservations: 3,
+  todayPeople: 15,
+  todayReservationsAmount: 245.00,
   monthlyConsumptions: 245,
+  monthlyConsumptionsAmount: 1250.75,
   pendingCredits: 1250.50,
   activeMembers: 48,
 };
@@ -65,16 +71,22 @@ export const fetchNotes = async (): Promise<Note[]> => {
 export const fetchDashboardStats = async (): Promise<DashboardStats> => {
   try {
     // Fetch real stats from database
-    const [reservationsCount, consumptionsCount, creditsSum, usersCount] = await Promise.all([
+    const [reservationsCount, peopleCount, reservationsAmount, consumptionsCount, consumptionsAmount, creditsSum, usersCount] = await Promise.all([
       fetchTodayReservationsCount(),
+      fetchTodayPeopleCount(),
+      fetchTodayReservationsAmount(),
       fetchMonthlyConsumptionsCount(),
+      fetchMonthlyConsumptionsAmount(),
       fetchPendingCreditsSum(),
       fetchActiveUsersCount()
     ]);
 
     return {
       todayReservations: reservationsCount,
+      todayPeople: peopleCount,
+      todayReservationsAmount: reservationsAmount,
       monthlyConsumptions: consumptionsCount,
+      monthlyConsumptionsAmount: consumptionsAmount,
       pendingCredits: creditsSum,
       activeMembers: usersCount,
     };
@@ -99,6 +111,36 @@ const fetchTodayReservationsCount = async (): Promise<number> => {
   }
 };
 
+const fetchTodayPeopleCount = async (): Promise<number> => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const response = await authFetch(`/api/reservations/guests-sum?date=${today}`);
+    if (response.ok) {
+      const data = await response.json();
+      return data.guestsSum || 0;
+    }
+    return mockStats.todayPeople;
+  } catch (error) {
+    console.error('Error fetching today people count:', error);
+    return mockStats.todayPeople;
+  }
+};
+
+const fetchTodayReservationsAmount = async (): Promise<number> => {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const response = await authFetch(`/api/reservations/sum?date=${today}`);
+    if (response.ok) {
+      const data = await response.json();
+      return data.sum || 0;
+    }
+    return mockStats.todayReservationsAmount;
+  } catch (error) {
+    console.error('Error fetching today reservations amount:', error);
+    return mockStats.todayReservationsAmount;
+  }
+};
+
 const fetchMonthlyConsumptionsCount = async (): Promise<number> => {
   try {
     const now = new Date();
@@ -112,6 +154,22 @@ const fetchMonthlyConsumptionsCount = async (): Promise<number> => {
   } catch (error) {
     console.error('Error fetching monthly consumptions count:', error);
     return mockStats.monthlyConsumptions;
+  }
+};
+
+const fetchMonthlyConsumptionsAmount = async (): Promise<number> => {
+  try {
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+    const response = await authFetch(`/api/consumptions/sum?startDate=${firstDayOfMonth}`);
+    if (response.ok) {
+      const data = await response.json();
+      return data.sum || 0;
+    }
+    return mockStats.monthlyConsumptionsAmount;
+  } catch (error) {
+    console.error('Error fetching monthly consumptions amount:', error);
+    return mockStats.monthlyConsumptionsAmount;
   }
 };
 
