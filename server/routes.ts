@@ -3,7 +3,7 @@ import { type Server } from "http";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "./db";
-import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak } from "@shared/schema";
+import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak, tables, type Table, type InsertTable } from "@shared/schema";
 import { eq, and, gte, ne, sum, between, sql, desc, count, inArray, like, or } from "drizzle-orm";
 import { debtCalculationService } from "./cron-jobs";
 import { getChatRooms, getChatRoomMessages, createChatRoom, createChatMessage } from "./chat-routes";
@@ -652,6 +652,87 @@ export async function registerRoutes(
       
       if (!deletedProduct) {
         return res.status(404).json({ message: "Product not found" });
+      }
+      
+      return res.status(204).send();
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Tables: get all tables (admin only)
+  app.get("/api/tables", sessionMiddleware, requireAuth, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const allTables = await db.select().from(tables).orderBy(tables.name);
+      return res.status(200).json(allTables);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Tables: create new table (admin only)
+  app.post("/api/tables", sessionMiddleware, requireAuth, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const tableData: InsertTable = req.body;
+      
+      const [newTable] = await db.insert(tables).values(tableData).returning();
+      
+      return res.status(201).json(newTable);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Tables: update table (admin only)
+  app.put("/api/tables/:id", sessionMiddleware, requireAuth, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const updateData: Partial<InsertTable> = req.body;
+      
+      // Always update the updatedAt timestamp
+      updateData.updatedAt = new Date();
+      
+      const [updatedTable] = await db
+        .update(tables)
+        .set(updateData)
+        .where(eq(tables.id, id))
+        .returning();
+      
+      if (!updatedTable) {
+        return res.status(404).json({ message: "Table not found" });
+      }
+      
+      return res.status(200).json(updatedTable);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Tables: delete table (admin only)
+  app.delete("/api/tables/:id", sessionMiddleware, requireAuth, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      
+      // Check if table has any reservations
+      const [reservationCount] = await db
+        .select({ count: count() })
+        .from(reservations)
+        .where(eq(reservations.table, id));
+      
+      if (reservationCount.count > 0) {
+        return res.status(400).json({ 
+          message: "Ezin izan da mahaia ezabatu",
+          details: `Mahaiak ${reservationCount.count} erreserba ditu. Lehenengo erreserbak ezabatu edo mahaia desaktibatu.`
+        });
+      }
+      
+      const [deletedTable] = await db
+        .delete(tables)
+        .where(eq(tables.id, id))
+        .returning();
+      
+      if (!deletedTable) {
+        return res.status(404).json({ message: "Table not found" });
       }
       
       return res.status(204).send();

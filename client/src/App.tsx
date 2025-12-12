@@ -26,6 +26,7 @@ import { UsersPage } from "@/components/UsersPage";
 import { ProductsPage } from "@/components/ProductsPage";
 import { SocietyPage } from "@/components/SocietyPage";
 import { SepaExportPage } from "@/components/SepaExportPage";
+import { TablesPage } from "@/components/TablesPage";
 import { UserProfile } from "@/components/UserProfile";
 import OharrakPage from "@/components/announcements";
 import NotFound from "@/pages/not-found";
@@ -61,6 +62,13 @@ function AppRoutes() {
         {() => (
           <ProtectedRoute requiredAccess="cellarman">
             <ProductsPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/mahaiak">
+        {() => (
+          <ProtectedRoute requiredAccess="admin">
+            <TablesPage />
           </ProtectedRoute>
         )}
       </Route>

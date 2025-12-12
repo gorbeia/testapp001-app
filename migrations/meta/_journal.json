@@ -8,6 +8,13 @@
       "when": 1765232712932,
       "tag": "0000_spotty_magma",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1765548584389,
+      "tag": "0001_useful_stone_men",
+      "breakpoints": true
     }
   ]
 }

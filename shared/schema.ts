@@ -291,3 +291,26 @@ export type ChatRoom = typeof chatRooms.$inferSelect;
 export type InsertChatRoom = z.infer<typeof insertChatRoomSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+
+// Tables for reservations
+export const tables = pgTable("tables", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull().unique(),
+  minCapacity: integer("min_capacity").default(1),
+  maxCapacity: integer("max_capacity").notNull(),
+  description: text("description"), // Optional description of the table
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTableSchema = createInsertSchema(tables).pick({
+  name: true,
+  minCapacity: true,
+  maxCapacity: true,
+  description: true,
+  isActive: true,
+});
+
+export type Table = typeof tables.$inferSelect;
+export type InsertTable = z.infer<typeof insertTableSchema>;
