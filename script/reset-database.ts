@@ -94,6 +94,10 @@ async function applyMigration() {
 
 async function main() {
   try {
+    // Log the user running the script
+    const username = process.env.USER || process.env.USERNAME || 'unknown';
+    console.log(`Database reset and migration started by user: ${username}`);
+    
     await resetDatabase();
     await applyMigration();
     console.log('Database reset and migration completed successfully!');
