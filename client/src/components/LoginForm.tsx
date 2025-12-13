@@ -40,8 +40,16 @@ export function LoginForm() {
     setError(null);
     try {
       await login(data.email, data.password, data.societyId);
-    } catch {
-      setError(t('invalidCredentials'));
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      
+      if (errorMessage === 'Server connection failed') {
+        setError(t('serverConnectionFailed') || 'Server connection failed. Please try again later.');
+      } else if (errorMessage === 'Server error occurred') {
+        setError(t('serverErrorOccurred') || 'Server error occurred. Please try again later.');
+      } else {
+        setError(t('invalidCredentials'));
+      }
     } finally {
       setIsLoading(false);
     }
