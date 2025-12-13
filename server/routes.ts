@@ -1656,7 +1656,7 @@ export async function registerRoutes(
   });
 
   // Get debt data for SEPA export by month
-  app.get("/api/credits/sepa-export", requireTreasurer, async (req: Request, res: Response, next: NextFunction) => {
+  app.get("/api/credits/sepa-export", sessionMiddleware, requireTreasurer, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { month } = req.query;
       
@@ -2037,7 +2037,7 @@ export async function registerRoutes(
   });
 
   // Get all credits (treasurer only)
-  app.get("/api/credits", requireTreasurer, async (req, res, next) => {
+  app.get("/api/credits", sessionMiddleware, requireTreasurer, async (req, res, next) => {
     try {
       const { month, status } = req.query;
       
@@ -2089,7 +2089,7 @@ export async function registerRoutes(
   });
 
   // Get credits sum by status (for dashboard stats)
-  app.get("/api/credits/sum", requireTreasurer, async (req, res, next) => {
+  app.get("/api/credits/sum", sessionMiddleware, requireTreasurer, async (req, res, next) => {
     try {
       const { status } = req.query;
       
@@ -2115,7 +2115,7 @@ export async function registerRoutes(
   });
 
   // Batch update credit status
-  app.put("/api/credits/batch-status", requireTreasurer, async (req, res, next) => {
+  app.put("/api/credits/batch-status", sessionMiddleware, requireTreasurer, async (req, res, next) => {
     try {
       const { creditIds, status } = req.body;
 

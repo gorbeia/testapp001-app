@@ -16,8 +16,25 @@ const fetchMyCredits = async (filters?: { month?: string; status?: string }) => 
   if (filters?.month) params.append('month', filters.month);
   if (filters?.status) params.append('status', filters.status);
   
-  const response = await fetch(`/api/credits/member/current?${params}`);
-  if (!response.ok) throw new Error('Failed to fetch my credits');
+  const token = localStorage.getItem('auth:token');
+  const response = await fetch(`/api/credits/member/current?${params}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+  });
+  
+  if (!response.ok) {
+    // Handle different error types appropriately
+    if (response.status === 401) {
+      throw new Error('Authentication required');
+    } else if (response.status >= 500) {
+      throw new Error('Server error occurred');
+    } else {
+      throw new Error('Failed to fetch my credits');
+    }
+  }
+  
   return response.json();
 };
 
