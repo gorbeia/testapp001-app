@@ -94,9 +94,22 @@ async function applyMigration() {
 
 async function main() {
   try {
-    // Log the user running the script
-    const username = process.env.USER || process.env.USERNAME || 'unknown';
-    console.log(`Database reset and migration started by user: ${username}`);
+    // Log the database user from DATABASE_URL
+    const databaseUrl = process.env.DATABASE_URL;
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL is not set');
+    }
+    
+    // Parse database user from URL
+    let dbUser = 'unknown';
+    try {
+      const url = new URL(databaseUrl);
+      dbUser = url.username || 'unknown';
+    } catch (error) {
+      console.warn('Could not parse DATABASE_URL, showing unknown user');
+    }
+    
+    console.log(`Database reset and migration started by database user: ${dbUser}`);
     
     await resetDatabase();
     await applyMigration();
