@@ -65,6 +65,7 @@ async function applyMigration() {
   
   // Split the SQL into individual statements and execute them
   const statements = migrationSQL.split('--> statement-breakpoint');
+  let hasError = false;
   
   for (const statement of statements) {
     const trimmedStatement = statement.trim();
@@ -72,10 +73,19 @@ async function applyMigration() {
       try {
         await client.query(trimmedStatement);
       } catch (error) {
+        hasError = true;
         console.error('Error executing statement:', error);
         console.log('Statement was:', trimmedStatement.substring(0, 100) + '...');
+        // Don't continue processing after an error
+        break;
       }
     }
+  }
+  
+  if (hasError) {
+    console.error('Migration failed!');
+    await client.end();
+    throw new Error('Migration failed during execution');
   }
   
   console.log('Migration applied successfully.');
