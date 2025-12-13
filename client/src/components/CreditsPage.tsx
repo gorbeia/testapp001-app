@@ -44,8 +44,25 @@ const fetchCredits = async (filters?: { month?: string; status?: string }) => {
   if (filters?.month) params.append('month', filters.month);
   if (filters?.status) params.append('status', filters.status);
   
-  const response = await fetch(`/api/credits?${params}`);
-  if (!response.ok) throw new Error('Failed to fetch credits');
+  const token = localStorage.getItem('auth:token');
+  const response = await fetch(`/api/credits?${params}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { Authorization: `Bearer ${token}` }),
+    },
+  });
+  
+  if (!response.ok) {
+    // Handle different error types appropriately
+    if (response.status === 401) {
+      throw new Error('Authentication required');
+    } else if (response.status >= 500) {
+      throw new Error('Server error occurred');
+    } else {
+      throw new Error('Failed to fetch credits');
+    }
+  }
+  
   return response.json();
 };
 
@@ -78,11 +95,26 @@ export function CreditsPage() {
   const queryClient = useQueryClient();
 
   // Fetch all credits (admin only)
-  const { data: credits = [], isLoading } = useQuery({
+  const { data: credits = [], isLoading, error } = useQuery({
     queryKey: ['credits', monthFilter, statusFilter],
     queryFn: () => fetchCredits({ month: monthFilter, status: statusFilter !== 'all' ? statusFilter : undefined }),
     enabled: !!user && isAdmin
   });
+
+  // Show error state if API call fails
+  if (error) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">Errorea</h1>
+          <p className="text-gray-600">Zorrak kargatzean errorea bat gertatu da. Mesedez, saiatu berriz geroago.</p>
+          {process.env.NODE_ENV === 'development' && (
+            <p className="text-sm text-gray-500 mt-2">Error: {error.message}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // Calculate totals from real data
   const totalPending = credits
