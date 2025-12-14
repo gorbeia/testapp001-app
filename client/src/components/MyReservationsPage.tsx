@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Search, Calendar, Users, MapPin, Eye, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth';
 import { authFetch } from '@/lib/api';
 import type { Reservation } from '@shared/schema';
+import { ErrorFallback } from '@/components/ErrorBoundary';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
 
 interface ReservationWithDetails extends Reservation {
   userName?: string;
@@ -30,6 +33,7 @@ export function MyReservationsPage() {
   const [monthFilter, setMonthFilter] = useState<string>('');
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<ReservationWithDetails | null>(null);
 
   // Fetch user's reservations
@@ -48,11 +52,7 @@ export function MyReservationsPage() {
       setReservations(data);
     } catch (error) {
       console.error('Error fetching reservations:', error);
-      toast({
-        title: "Errorea",
-        description: "Erreserbak kargatzean errorea gertatu da",
-        variant: "destructive",
-      });
+      setError(error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
     }
@@ -135,8 +135,23 @@ export function MyReservationsPage() {
     return new Date(reservation.startDate) > new Date();
   };
 
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="text-center py-12">
+          <p>{t('loading')}...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ErrorDisplay error={error} />;
+  }
+
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div>
         <h2 className="text-2xl font-bold">{t('myReservations')}</h2>
         <p className="text-muted-foreground">{t('viewAllReservations')}</p>
@@ -322,5 +337,6 @@ export function MyReservationsPage() {
         </DialogContent>
       </Dialog>
     </div>
+    </ErrorBoundary>
   );
 }

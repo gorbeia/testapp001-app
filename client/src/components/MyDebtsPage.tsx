@@ -1,4 +1,5 @@
 import { CreditCard, TrendingUp, CheckCircle } from 'lucide-react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,9 +10,11 @@ import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { Credit } from '@shared/schema';
+import { ErrorFallback } from '@/components/ErrorBoundary';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
 
 // API function to fetch current user's credits
-const fetchMyCredits = async (filters?: { month?: string; status?: string }) => {
+const fetchMyCredits = async (filters?: { month?: string; status?: string }): Promise<Credit[]> => {
   const params = new URLSearchParams();
   if (filters?.month) params.append('month', filters.month);
   if (filters?.status) params.append('status', filters.status);
@@ -44,26 +47,14 @@ export function MyDebtsPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('');
 
   // Fetch current user's credits
-  const { data: credits = [], isLoading, error } = useQuery({
+  const { data: credits = [], isLoading, error } = useQuery<Credit[]>({
     queryKey: ['my-credits', selectedMonth],
     queryFn: () => fetchMyCredits(selectedMonth ? { month: selectedMonth } : undefined),
-    enabled: !!user
+    enabled: !!user,
+    throwOnError: false, // Handle errors inline instead of throwing
+    staleTime: 0, // Data is stale immediately
+    gcTime: 0, // Don't cache results (formerly cacheTime)
   });
-
-  // Show error state if API call fails
-  if (error) {
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">{t('error')}</h1>
-          <p className="text-gray-600">Zure zorrak kargatzean errorea bat gertatu da. Mesedez, saiatu berriz geroago.</p>
-          {process.env.NODE_ENV === 'development' && (
-            <p className="text-sm text-gray-500 mt-2">Error: {error.message}</p>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   // Calculate totals from real data
   const totalPending = credits
@@ -92,8 +83,23 @@ export function MyDebtsPage() {
     );
   }
 
+  if (isLoading) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="text-center py-12">
+          <p>{t('loading')}...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ErrorDisplay error={error instanceof Error ? error : new Error(String(error))} />;
+  }
+
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6" data-testid="my-debts-page">
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6" data-testid="my-debts-page">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold" data-testid="my-debts-page-title">
@@ -205,5 +211,6 @@ export function MyDebtsPage() {
         </div>
       </Card>
     </div>
+    </ErrorBoundary>
   );
 }

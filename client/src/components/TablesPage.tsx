@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { toast } from '@/hooks/use-toast';
@@ -11,6 +12,8 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Table as TableIcon, Plus, Edit, Trash2, Users, FileText } from 'lucide-react';
+import { ErrorFallback } from '@/components/ErrorBoundary';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
 
 // API helper function
 const authFetch = async (url: string, options: RequestInit = {}) => {
@@ -43,6 +46,7 @@ export function TablesPage() {
   const { user } = useAuth();
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTable, setEditingTable] = useState<Table | null>(null);
   
@@ -64,12 +68,9 @@ export function TablesPage() {
       
       const tablesData = await response.json();
       setTables(tablesData);
-    } catch {
-      toast({
-        title: t('error'),
-        description: 'Ezin izan dira mahaiak kargatu',
-        variant: 'destructive',
-      });
+    } catch (error) {
+      console.error('Error fetching tables:', error);
+      setError(error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
     }
@@ -214,8 +215,13 @@ export function TablesPage() {
     );
   }
 
+  if (error) {
+    return <ErrorDisplay error={error} />;
+  }
+
   return (
-    <div className="p-6">
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">{t('tableManagement')}</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -373,5 +379,6 @@ export function TablesPage() {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 }

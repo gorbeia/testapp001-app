@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Plus, Calendar as CalendarIcon, Search, Filter, Users, Utensils, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,8 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { eu, es } from 'date-fns/locale';
 import type { Reservation, Table } from '@shared/schema';
+import { ErrorFallback } from '@/components/ErrorBoundary';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
 
 interface ReservationWithUser extends Reservation {
   userName: string | null;
@@ -43,6 +46,7 @@ export function ReservationsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [reservations, setReservations] = useState<ReservationWithUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [society, setSociety] = useState<any>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [reservationToCancel, setReservationToCancel] = useState<string | null>(null);
@@ -92,6 +96,7 @@ export function ReservationsPage() {
       }
     } catch (error) {
       console.error('Error loading society:', error);
+      setError(error instanceof Error ? error : new Error(String(error)));
     }
   };
 
@@ -131,6 +136,7 @@ export function ReservationsPage() {
       }
     } catch (error) {
       console.error('Error loading tables:', error);
+      setError(error instanceof Error ? error : new Error(String(error)));
     }
   };
 
@@ -143,11 +149,7 @@ export function ReservationsPage() {
       }
     } catch (error) {
       console.error('Error loading reservations:', error);
-      toast({
-        title: t('error'),
-        description: t('errorLoadingReservations'),
-        variant: 'destructive',
-      });
+      setError(error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
     }
@@ -296,8 +298,13 @@ export function ReservationsPage() {
     );
   }
 
+  if (error) {
+    return <ErrorDisplay error={error} />;
+  }
+
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">{t('reservations')}</h2>
@@ -587,5 +594,6 @@ export function ReservationsPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </ErrorBoundary>
   );
 }

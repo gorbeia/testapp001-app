@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Search, Eye, Calendar, Receipt, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth';
 import type { Consumption, ConsumptionItem } from '@shared/schema';
 import { authFetch } from '@/lib/api';
+import { ErrorFallback } from '@/components/ErrorBoundary';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
 
 interface ConsumptionWithItems extends Consumption {
   items: ConsumptionItemWithProduct[];
@@ -34,6 +37,7 @@ export function MyConsumptionsPage() {
   const [monthFilter, setMonthFilter] = useState<string>(currentMonthString);
   const [consumptions, setConsumptions] = useState<Consumption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [selectedConsumption, setSelectedConsumption] = useState<ConsumptionWithItems | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
@@ -49,11 +53,7 @@ export function MyConsumptionsPage() {
       setConsumptions(data);
     } catch (error) {
       console.error('Error fetching consumptions:', error);
-      toast({
-        title: "Errorea",
-        description: "Kontsumoak kargatzean errorea gertatu da",
-        variant: "destructive",
-      });
+      setError(error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
     }
@@ -137,8 +137,13 @@ export function MyConsumptionsPage() {
     );
   }
 
+  if (error) {
+    return <ErrorDisplay error={error} />;
+  }
+
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div>
         <h2 className="text-2xl font-bold">{t('myConsumptions')}</h2>
         <p className="text-muted-foreground">{t('myConsumptionsDescription')}</p>
@@ -317,5 +322,6 @@ export function MyConsumptionsPage() {
         </div>
       </Card>
     </div>
+    </ErrorBoundary>
   );
 }

@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import { authFetch } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,7 +14,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Search, Plus, Edit, Trash2, MoreHorizontal, Link2, UserX, UserCheck } from 'lucide-react';
+import { Search, Plus, Edit, Trash2, Link2, UserX, UserCheck } from 'lucide-react';
+import { ErrorFallback } from '@/components/ErrorBoundary';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
+
+// API function to fetch users
+const fetchUsers = async (statusFilter?: string) => {
+  const statusParam = statusFilter === 'all' ? '' : `?status=${statusFilter}`;
+  const response = await authFetch(`/api/users${statusParam}`);
+  if (!response.ok) throw new Error('Failed to fetch users');
+  return response.json();
+};
 
 type UsersPageUser = {
   id: string;
@@ -29,13 +41,35 @@ type UsersPageUser = {
 export function UsersPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const [users, setUsers] = useState<UsersPageUser[]>([]);
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UsersPageUser | null>(null);
+
+  // Fetch users with React Query
+  const { data: rawUsers = [], isLoading, error } = useQuery({
+    queryKey: ['users', statusFilter],
+    queryFn: () => fetchUsers(statusFilter),
+    throwOnError: false,
+    staleTime: 0, // Data is stale immediately
+    gcTime: 0, // Don't cache results (garbage collection time)
+  });
+
+  // Transform API data to component format
+  const users: UsersPageUser[] = rawUsers.map((dbUser: any) => ({
+    id: dbUser.id,
+    name: dbUser.name ?? dbUser.username,
+    email: dbUser.username,
+    role: dbUser.role ?? 'bazkidea',
+    function: dbUser.function ?? 'arrunta',
+    phone: dbUser.phone ?? '',
+    iban: dbUser.iban ?? null,
+    linkedMember: dbUser.linkedMemberName,
+    isActive: dbUser.isActive,
+  }));
 
   const nameInputRef = useRef<HTMLInputElement | null>(null);
   const emailInputRef = useRef<HTMLInputElement | null>(null);
@@ -45,54 +79,21 @@ export function UsersPage() {
   const [editRole, setEditRole] = useState<string>('');
   const [editFunction, setEditFunction] = useState<string>('');
 
-  useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        // Fetch all users (including inactive) with status parameter
-        const statusParam = statusFilter === 'all' ? '' : `?status=${statusFilter}`;
-        const response = await authFetch(`/api/users${statusParam}`);
-        if (!response.ok) return;
-        const data: {
-          id: string;
-          username: string;
-          password: string;
-          name: string | null;
-          role: string | null;
-          function: string | null;
-          phone: string | null;
-          iban: string | null;
-          linkedMemberId: string | null;
-          linkedMemberName: string | null;
-          isActive: boolean;
-        }[] = await response.json();
+  if (isLoading) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="text-center py-12">
+          <p>{t('loading')}...</p>
+        </div>
+      </div>
+    );
+  }
 
-        setUsers((prev) => {
-          const existingEmails = new Set(prev.map((u) => u.email.toLowerCase()));
-          const mapped: UsersPageUser[] = data
-            .filter((dbUser) => !existingEmails.has(dbUser.username.toLowerCase()))
-            .map((dbUser) => ({
-              id: dbUser.id,
-              name: dbUser.name ?? dbUser.username,
-              email: dbUser.username,
-              role: dbUser.role ?? 'bazkidea',
-              function: dbUser.function ?? 'arrunta',
-              phone: dbUser.phone ?? '',
-              iban: dbUser.iban ?? null,
-              linkedMember: dbUser.linkedMemberName,
-              isActive: dbUser.isActive,
-            }));
+  if (error) {
+    return <ErrorDisplay error={error} />;
+  }
 
-          return [...prev, ...mapped];
-        });
-      } catch {
-        // ignore errors for now
-      }
-    };
-
-    void loadUsers();
-  }, [statusFilter]);
-
-  const filteredUsers = users.filter((u) => {
+  const filteredUsers = users.filter((u: UsersPageUser) => {
     const matchesSearch = u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           u.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
@@ -168,7 +169,8 @@ export function UsersPage() {
         isActive: updated.isActive,
       };
 
-      setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+      // Invalidate cache to refresh the users list
+      queryClient.invalidateQueries({ queryKey: ['users'] });
 
       toast({
         title: t('success'),
@@ -220,7 +222,8 @@ export function UsersPage() {
         isActive: updated.isActive,
       };
 
-      setUsers((prev) => prev.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+      // Invalidate cache to refresh the users list
+      queryClient.invalidateQueries({ queryKey: ['users'] });
 
       toast({
         title: t('success'),
@@ -261,7 +264,8 @@ export function UsersPage() {
         return;
       }
 
-      setUsers((prev) => prev.filter((u) => u.id !== user.id));
+      // Invalidate cache to refresh the users list
+      queryClient.invalidateQueries({ queryKey: ['users'] });
 
       toast({
         title: t('success'),
@@ -316,19 +320,8 @@ export function UsersPage() {
 
       const created: { id: number; username: string; password: string } = await response.json();
 
-      const newUser: UsersPageUser = {
-        id: String(created.id),
-        name: name || created.username,
-        email: created.username,
-        role: 'bazkidea',
-        function: 'arrunta',
-        phone: '',
-        iban: null,
-        linkedMember: null,
-        isActive: true,
-      };
-
-      setUsers((prev) => [...prev, newUser]);
+      // Invalidate cache to refresh the users list
+      queryClient.invalidateQueries({ queryKey: ['users'] });
 
       toast({
         title: t('success'),
@@ -345,7 +338,8 @@ export function UsersPage() {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">{t('users')}</h2>
@@ -594,7 +588,7 @@ export function UsersPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredUsers.map((user) => (
+              filteredUsers.map((user: UsersPageUser) => (
                 <TableRow key={user.id} data-testid={`row-user-${user.id}`}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -679,5 +673,6 @@ export function UsersPage() {
         </div>
       </Card>
     </div>
+    </ErrorBoundary>
   );
 }

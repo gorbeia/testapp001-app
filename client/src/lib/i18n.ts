@@ -274,6 +274,7 @@ export const translations = {
     pageNotFoundDescription: 'Ahaztu al duzu orria router-ean gehitzea?',
     societyUpdated: 'Elkartearen datuak eguneratua',
     errorSavingSociety: 'Errorea elkarteko datuak gordetzean',
+    tryAgain: 'Saiatu berriro',
   },
   es: {
     appName: 'Gure Txokoa',
@@ -548,6 +549,7 @@ export const translations = {
     pageNotFoundDescription: '¿Olvidaste agregar la página al router?',
     societyUpdated: 'Datos de la sociedad actualizados',
     errorSavingSociety: 'Error al guardar los datos de la sociedad',
+    tryAgain: 'Intentar de nuevo',
   },
 } as const;
 

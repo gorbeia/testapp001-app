@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Plus, Search, Package, Edit, Trash2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@shared/schema';
+import { ErrorFallback } from '@/components/ErrorBoundary';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
 
 // API helper function
 const authFetch = async (url: string, options: RequestInit = {}) => {
@@ -34,6 +37,7 @@ export function ProductsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; product: Product | null }>({ open: false, product: null });
   const [editDialog, setEditDialog] = useState<{ open: boolean; product: Product | null }>({ open: false, product: null });
 
@@ -58,18 +62,14 @@ export function ProductsPage() {
         }
       } catch (error) {
         console.error('Error fetching products:', error);
-        toast({
-          title: 'Error',
-          description: 'Produktuak ezin izan dira kargatu',
-          variant: 'destructive',
-        });
+        setError(error instanceof Error ? error : new Error(String(error)));
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [toast]);
+  }, []);
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -236,8 +236,23 @@ export function ProductsPage() {
     setEditDialog({ open: false, product: null });
   };
 
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="text-center py-12">
+          <p>{t('loading')}...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ErrorDisplay error={error} />;
+  }
+
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">{t('products')}</h2>
@@ -635,5 +650,6 @@ export function ProductsPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+    </ErrorBoundary>
   );
 }

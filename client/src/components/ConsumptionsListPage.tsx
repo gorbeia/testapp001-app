@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Search, Eye, Calendar, User, Receipt, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import type { Consumption, ConsumptionItem, User as UserType } from '@shared/schema';
+import { ErrorFallback } from '@/components/ErrorBoundary';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
 
 // API helper function
 const authFetch = async (url: string, options: RequestInit = {}) => {
@@ -45,6 +48,7 @@ export function ConsumptionsListPage() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [consumptions, setConsumptions] = useState<ConsumptionWithUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [selectedConsumption, setSelectedConsumption] = useState<ConsumptionWithItems | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
@@ -73,18 +77,14 @@ export function ConsumptionsListPage() {
         }
       } catch (error) {
         console.error('Error fetching consumptions:', error);
-        toast({
-          title: 'Error',
-          description: 'Kontsumoak ezin izan dira kargatu',
-          variant: 'destructive',
-        });
+        setError(error instanceof Error ? error : new Error(String(error)));
       } finally {
         setLoading(false);
       }
     };
 
     fetchConsumptions();
-  }, [toast]);
+  }, []);
 
   const filteredConsumptions = consumptions.filter((consumption) => {
     const matchesSearch = 
@@ -127,8 +127,23 @@ export function ConsumptionsListPage() {
     return date.toLocaleString('eu-ES');
   };
 
+  if (loading) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="text-center py-12">
+          <p>{t('loading')}...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <ErrorDisplay error={error} />;
+  }
+
   return (
-    <div className="p-4 sm:p-6 space-y-6">
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <div className="p-4 sm:p-6 space-y-6">
       <div>
         <h2 className="text-2xl font-bold">{t('consumptions')}</h2>
         <p className="text-muted-foreground">Kudeatu kontsumo guztiak</p>
@@ -312,5 +327,6 @@ export function ConsumptionsListPage() {
         </CardContent>
       </Card>
     </div>
+    </ErrorBoundary>
   );
 }
