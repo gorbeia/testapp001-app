@@ -20,15 +20,15 @@ export function RecentNotes({ notes, loading }: RecentNotesProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Megaphone className="h-5 w-5" />
-          Oharrak (Notas)
+          {t('announcements')}
         </CardTitle>
         <CardDescription>Azken ohar aktiboak</CardDescription>
       </CardHeader>
       <CardContent>
         {loading ? (
-          <div className="text-sm text-muted-foreground">Cargando notas...</div>
+          <div className="text-sm text-muted-foreground">{t('loadingNotes')}</div>
         ) : notes.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No hay notas activas</div>
+          <div className="text-sm text-muted-foreground">{t('noActiveNotes')}</div>
         ) : (
           <div className="space-y-3">
             {notes.map((note) => (

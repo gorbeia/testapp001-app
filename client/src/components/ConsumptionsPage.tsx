@@ -387,7 +387,7 @@ export function ConsumptionsPage() {
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="max-w-2xl" data-testid="confirmation-dialog">
           <DialogHeader>
-            <DialogTitle className="text-xl">Kontsumoa Baieztatu</DialogTitle>
+            <DialogTitle className="text-xl">{t('confirmConsumption')}</DialogTitle>
           </DialogHeader>
           
           <div className="space-y-6">
@@ -395,7 +395,7 @@ export function ConsumptionsPage() {
             <div className="bg-muted p-4 rounded-lg">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Kidea</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t('idea')}</p>
                   <p className="text-lg font-bold" data-testid="member-name">{user?.name || user?.email || 'Ezezaguna'}</p>
                 </div>
                 <div className="text-right">

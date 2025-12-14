@@ -83,7 +83,7 @@ export function SocietyPage() {
         setSociety(savedSociety);
         toast({
           title: t('success'),
-          description: 'Elkartearen datuak eguneratua / Datos de la sociedad actualizados',
+          description: t('societyUpdated'),
         });
       } else {
         throw new Error('Failed to save society');
@@ -91,26 +91,26 @@ export function SocietyPage() {
     } catch (error) {
       console.error('Error saving society:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to save society data',
+        title: t('error'),
+        description: t('errorSavingSociety'),
         variant: 'destructive',
       });
     }
   };
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div>{t('loading')}</div>;
   }
 
   if (!society) {
-    return <div>No society data available</div>;
+    return <div>{t('noSocietyData')}</div>;
   }
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div>
         <h2 className="text-2xl font-bold">{t('society')}</h2>
-        <p className="text-muted-foreground">Elkartearen datuak eta SEPA konfigurazioa</p>
+        <p className="text-muted-foreground">{t('societyDataAndSepaConfig')}</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
@@ -118,9 +118,9 @@ export function SocietyPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              Elkarte Datuak
+              {t('societyData')}
             </CardTitle>
-            <CardDescription>Elkartearen oinarrizko informazioa</CardDescription>
+            <CardDescription>{t('societyBasicInfo')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -132,7 +132,7 @@ export function SocietyPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Helbidea / Dirección</Label>
+              <Label>{t('address')}</Label>
               <Input
                 value={society.address}
                 onChange={(e) => setSociety({ ...society, address: e.target.value })}
@@ -165,7 +165,7 @@ export function SocietyPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Building2 className="h-5 w-5" />
-              SEPA Konfigurazioa
+              {t('sepaConfiguration')}
             </CardTitle>
             <CardDescription>{t('paymentDataRequired')}</CardDescription>
           </CardHeader>
@@ -179,7 +179,7 @@ export function SocietyPage() {
                 data-testid="input-society-iban"
               />
               <p className="text-xs text-muted-foreground">
-                Kobrantzak jasotzeko kontua / Cuenta para recibir cobros
+                {t('accountForReceivingPayments')}
               </p>
             </div>
             <div className="space-y-2">
@@ -191,7 +191,7 @@ export function SocietyPage() {
                 data-testid="input-creditor-id"
               />
               <p className="text-xs text-muted-foreground">
-                SEPA hartzekodun identifikatzailea / Identificador de acreedor SEPA
+                {t('sepaCreditorIdentifier')}
               </p>
             </div>
           </CardContent>
@@ -203,7 +203,7 @@ export function SocietyPage() {
               <DollarSign className="h-5 w-5" />
               {t('reservationPricing')}
             </CardTitle>
-            <CardDescription>Erreserben prezioak ezartzeko</CardDescription>
+            <CardDescription>{t('setReservationPrices')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

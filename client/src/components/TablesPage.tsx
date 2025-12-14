@@ -217,23 +217,23 @@ export function TablesPage() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Mahaien Kudeaketa</h1>
+        <h1 className="text-3xl font-bold">{t('tableManagement')}</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => handleOpenDialog()}>
               <Plus className="h-4 w-4 mr-2" />
-              Mahaia Berria
+              {t('newTable')}
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingTable ? 'Mahaia Editatu' : 'Mahaia Berria'}
+                {editingTable ? t('editTable') : t('newTable')}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="name">Mahaiaren Izena</Label>
+                <Label htmlFor="name">{t('tableName')}</Label>
                 <Input
                   id="name"
                   value={name}
@@ -243,7 +243,7 @@ export function TablesPage() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="minCapacity">Gutxienezko Kapazitatea</Label>
+                  <Label htmlFor="minCapacity">{t('minCapacity')}</Label>
                   <Input
                     id="minCapacity"
                     type="number"
@@ -253,7 +253,7 @@ export function TablesPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="maxCapacity">Gehienezko Kapazitatea</Label>
+                  <Label htmlFor="maxCapacity">{t('maxCapacity')}</Label>
                   <Input
                     id="maxCapacity"
                     type="number"
@@ -264,7 +264,7 @@ export function TablesPage() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="description">Deskribapena</Label>
+                <Label htmlFor="description">{t('description')}</Label>
                 <Textarea
                   id="description"
                   value={description}
@@ -279,11 +279,11 @@ export function TablesPage() {
                   checked={isActive}
                   onCheckedChange={setIsActive}
                 />
-                <Label htmlFor="isActive">Aktibo</Label>
+                <Label htmlFor="isActive">{t('active')}</Label>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={handleCloseDialog}>
-                  Utzi
+                  {t('cancel')}
                 </Button>
                 <Button onClick={handleSubmit}>
                   {editingTable ? 'Eguneratu' : 'Sortu'}
@@ -319,15 +319,15 @@ export function TablesPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Mahaia Ezabatu</AlertDialogTitle>
+                        <AlertDialogTitle>{t('deleteTable')}</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Ziur zaude {table.name} mahaia ezabatu nahi duzun? Ekintza hau ezin da desegin.
+                          {t('deleteTableConfirmation', { name: table.name })}
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Utzi</AlertDialogCancel>
+                        <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                         <AlertDialogAction onClick={() => handleDelete(table)}>
-                          Ezabatu
+                          {t('deleteTable')}
                         </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -362,13 +362,13 @@ export function TablesPage() {
       {tables.length === 0 && (
         <div className="text-center py-12">
           <TableIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium mb-2">Ez dago mahairik</h3>
+          <h3 className="text-lg font-medium mb-2">{t('noTables')}</h3>
           <p className="text-muted-foreground mb-4">
-            Sortu zure lehen mahaia erreserbak kudeatzeko.
+            {t('createFirstTable')}
           </p>
           <Button onClick={() => handleOpenDialog()}>
             <Plus className="h-4 w-4 mr-2" />
-            Mahaia Berria
+            {t('newTable')}
           </Button>
         </div>
       )}

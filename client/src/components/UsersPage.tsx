@@ -424,7 +424,7 @@ export function UsersPage() {
                       <SelectValue placeholder="Aukeratu..." />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none">Inor ez</SelectItem>
+                      <SelectItem value="none">{t('noOne')}</SelectItem>
                       {users.filter(u => u.role === 'bazkidea').map(u => (
                         <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>
                       ))}
@@ -565,9 +565,9 @@ export function UsersPage() {
             <SelectValue placeholder="Egoera" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Guztiak</SelectItem>
-            <SelectItem value="active">Aktiboak</SelectItem>
-            <SelectItem value="inactive">Inaktiboak</SelectItem>
+            <SelectItem value="all">{t('all')}</SelectItem>
+            <SelectItem value="active">{t('active')}</SelectItem>
+            <SelectItem value="inactive">{t('inactive')}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -580,7 +580,7 @@ export function UsersPage() {
               <TableHead>{t('name')}</TableHead>
               <TableHead>{t('role')}</TableHead>
               <TableHead>{t('function')}</TableHead>
-              <TableHead>Egoera</TableHead>
+              <TableHead>{t('status')}</TableHead>
               <TableHead>{t('phone')}</TableHead>
               <TableHead>{t('linkedMember')}</TableHead>
               <TableHead className="w-12"></TableHead>
@@ -641,7 +641,7 @@ export function UsersPage() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" data-testid={`button-user-menu-${user.id}`}>
-                          <span className="sr-only">Menu</span>
+                          <span className="sr-only">{t('menu')}</span>
                           <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                             <circle cx="12" cy="5" r="2" />
                             <circle cx="12" cy="12" r="2" />

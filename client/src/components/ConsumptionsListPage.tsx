@@ -49,15 +49,15 @@ export function ConsumptionsListPage() {
   const [detailsLoading, setDetailsLoading] = useState(false);
 
   const statusLabels: Record<string, string> = {
-    open: 'Irekita',
-    closed: 'Itxita',
-    cancelled: 'Baliogabetua',
+    open: t('open'),
+    closed: t('closed'),
+    cancelled: t('cancelled'),
   };
 
   const typeLabels: Record<string, string> = {
-    bar: 'Barra',
-    event: 'Ekitaldia',
-    kitchen: 'Sukaldea',
+    bar: t('bar'),
+    event: t('event'),
+    kitchen: t('kitchen'),
   };
 
   // Fetch consumptions from API (with user data from JOIN)
@@ -130,7 +130,7 @@ export function ConsumptionsListPage() {
   return (
     <div className="p-4 sm:p-6 space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Kontsumoak</h2>
+        <h2 className="text-2xl font-bold">{t('consumptions')}</h2>
         <p className="text-muted-foreground">Kudeatu kontsumo guztiak</p>
       </div>
 
@@ -150,10 +150,10 @@ export function ConsumptionsListPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Egoera guztiak</SelectItem>
-              <SelectItem value="open">Irekita</SelectItem>
-              <SelectItem value="closed">Itxita</SelectItem>
-              <SelectItem value="cancelled">Baliogabetua</SelectItem>
+              <SelectItem value="all">{t('allStatus')}</SelectItem>
+              <SelectItem value="open">{t('open')}</SelectItem>
+              <SelectItem value="closed">{t('closed')}</SelectItem>
+              <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -161,10 +161,10 @@ export function ConsumptionsListPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Mota guztiak</SelectItem>
-              <SelectItem value="bar">Barra</SelectItem>
-              <SelectItem value="event">Ekitaldia</SelectItem>
-              <SelectItem value="kitchen">Sukaldea</SelectItem>
+              <SelectItem value="all">{t('allTypes')}</SelectItem>
+              <SelectItem value="bar">{t('bar')}</SelectItem>
+              <SelectItem value="event">{t('event')}</SelectItem>
+              <SelectItem value="kitchen">{t('kitchen')}</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -103,7 +103,7 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('menu')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item: any) => (
@@ -122,7 +122,7 @@ export function AppSidebar() {
 
         {adminMenuItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>Kudeaketa</SidebarGroupLabel>
+            <SidebarGroupLabel>{t('management')}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {adminMenuItems.map((item) => (

@@ -252,7 +252,7 @@ export function ProductsPage() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Produktu Berria</DialogTitle>
+              <DialogTitle>{t('newProduct')}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
@@ -266,7 +266,7 @@ export function ProductsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Deskribapena</Label>
+                <Label>{t('productDescription')}</Label>
                 <Input 
                   placeholder="Produktuaren deskribapena..." 
                   value={newProduct.description}
@@ -276,7 +276,7 @@ export function ProductsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Kategoria</Label>
+                  <Label>{t('productCategory')}</Label>
                   <Select value={newProduct.category} onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}>
                     <SelectTrigger data-testid="select-product-category">
                       <SelectValue placeholder="Hautatu kategoria" />
@@ -306,7 +306,7 @@ export function ProductsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label>Stock</Label>
+                  <Label>{t('productStock')}</Label>
                   <Input 
                     type="number" 
                     min="0" 
@@ -317,7 +317,7 @@ export function ProductsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Unitatea</Label>
+                  <Label>{t('productUnit')}</Label>
                   <Select value={newProduct.unit} onValueChange={(value) => setNewProduct({ ...newProduct, unit: value })}>
                     <SelectTrigger>
                       <SelectValue />
@@ -330,7 +330,7 @@ export function ProductsPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Stock minimoa</Label>
+                  <Label>{t('minStock')}</Label>
                   <Input 
                     type="number" 
                     min="0" 
@@ -343,7 +343,7 @@ export function ProductsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Hornitzailea</Label>
+                <Label>{t('supplier')}</Label>
                 <Input 
                   placeholder="Hornitzailearen izena..." 
                   value={newProduct.supplier}
@@ -520,7 +520,7 @@ export function ProductsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Deskribapena</Label>
+              <Label>{t('productDescription')}</Label>
               <Input 
                 placeholder="Produktuaren deskribapena..." 
                 value={editProduct.description}
@@ -530,7 +530,7 @@ export function ProductsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Kategoria</Label>
+                <Label>{t('productCategory')}</Label>
                 <Select value={editProduct.category} onValueChange={(value) => setEditProduct({ ...editProduct, category: value })}>
                   <SelectTrigger data-testid="select-edit-product-category">
                     <SelectValue placeholder="Hautatu kategoria" />
@@ -560,7 +560,7 @@ export function ProductsPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label>Stock</Label>
+                <Label>{t('productStock')}</Label>
                 <Input 
                   type="number" 
                   min="0" 
@@ -571,7 +571,7 @@ export function ProductsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label>Unitatea</Label>
+                <Label>{t('productUnit')}</Label>
                 <Select value={editProduct.unit} onValueChange={(value) => setEditProduct({ ...editProduct, unit: value })}>
                   <SelectTrigger>
                     <SelectValue />
@@ -584,7 +584,7 @@ export function ProductsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label>Stock minimoa</Label>
+                <Label>{t('minStock')}</Label>
                 <Input 
                   type="number" 
                   min="0" 
@@ -597,7 +597,7 @@ export function ProductsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Hornitzailea</Label>
+              <Label>{t('supplier')}</Label>
               <Input 
                 placeholder="Hornitzailearen izena..." 
                 value={editProduct.supplier}

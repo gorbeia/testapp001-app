@@ -85,7 +85,7 @@ export function CreditsPage() {
     return (
       <div className="p-4 sm:p-6">
         <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Sarbidea ukatuta</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('accessDenied')}</h1>
           <p className="text-gray-600">Orri hau administratzaileentzat baino ez da eskuragarri.</p>
         </div>
       </div>
@@ -106,7 +106,7 @@ export function CreditsPage() {
     return (
       <div className="p-4 sm:p-6">
         <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">Errorea</h1>
+          <h1 className="text-2xl font-bold text-red-600 mb-4">{t('error')}</h1>
           <p className="text-gray-600">Zorrak kargatzean errorea bat gertatu da. Mesedez, saiatu berriz geroago.</p>
           {process.env.NODE_ENV === 'development' && (
             <p className="text-sm text-gray-500 mt-2">Error: {error.message}</p>
@@ -186,7 +186,7 @@ export function CreditsPage() {
     } catch (error) {
       console.error('Error marking credits as paid:', error);
       toast({
-        title: "Errorea",
+        title: t('error'),
         description: "Zorrak markatzean errorea gertatu da",
         variant: "destructive",
       });

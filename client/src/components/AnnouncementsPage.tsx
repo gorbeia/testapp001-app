@@ -92,7 +92,7 @@ export function AnnouncementsPage() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold">{t('announcements')}</h2>
-          <p className="text-muted-foreground">Elkartearen oharrak eta albisteak</p>
+          <p className="text-muted-foreground">{t('societyNotesAndNews')}</p>
         </div>
         {canPost && (
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -108,7 +108,7 @@ export function AnnouncementsPage() {
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <div className="space-y-2">
-                  <Label>Izenburua / Título</Label>
+                  <Label>{t('title')}</Label>
                   <Input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
@@ -117,7 +117,7 @@ export function AnnouncementsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label>Edukia / Contenido</Label>
+                  <Label>{t('content')}</Label>
                   <Textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
