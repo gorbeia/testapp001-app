@@ -209,6 +209,121 @@ export function registerReservationRoutes(app: Express) {
     }
   });
 
+  // Reservation statistics for dashboard
+  app.get("/api/reservations/count", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { date, status } = req.query;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const conditions = [eq(reservations.societyId, societyId)];
+      
+      if (date) {
+        const startOfDay = new Date(date as string);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(date as string);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        conditions.push(between(reservations.startDate, startOfDay, endOfDay));
+      }
+      
+      if (status) {
+        conditions.push(eq(reservations.status, status as string));
+      }
+      
+      const result = await db
+        .select({
+          count: count()
+        })
+        .from(reservations)
+        .where(and(...conditions));
+      
+      res.json({ count: result[0]?.count || 0 });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/reservations/sum", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { date, status } = req.query;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const conditions = [eq(reservations.societyId, societyId)];
+      
+      if (date) {
+        const startOfDay = new Date(date as string);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(date as string);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        conditions.push(between(reservations.startDate, startOfDay, endOfDay));
+      }
+      
+      if (status) {
+        conditions.push(eq(reservations.status, status as string));
+      }
+      
+      // Get all reservations that match the criteria
+      const reservationsList = await db
+        .select({
+          totalAmount: reservations.totalAmount,
+        })
+        .from(reservations)
+        .where(and(...conditions));
+      
+      // Calculate total sum
+      const totalSum = reservationsList.reduce((sum, reservation) => {
+        return sum + parseFloat(reservation.totalAmount || '0');
+      }, 0);
+      
+      res.json({ sum: totalSum });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/reservations/guests-sum", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { date, status } = req.query;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const conditions = [eq(reservations.societyId, societyId)];
+      
+      if (date) {
+        const startOfDay = new Date(date as string);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(date as string);
+        endOfDay.setHours(23, 59, 59, 999);
+        
+        conditions.push(between(reservations.startDate, startOfDay, endOfDay));
+      }
+      
+      if (status) {
+        conditions.push(eq(reservations.status, status as string));
+      }
+      
+      // Get all reservations that match the criteria
+      const reservationsList = await db
+        .select({
+          guests: reservations.guests,
+        })
+        .from(reservations)
+        .where(and(...conditions));
+      
+      // Calculate total guests (add 1 for each reservation to include the person who made it)
+      const totalGuests = reservationsList.reduce((sum, reservation) => {
+        return sum + (reservation.guests || 0) + 1; // +1 for the person who made the reservation
+      }, 0);
+      
+      res.json({ guestsSum: totalGuests });
+    } catch (error) {
+      next(error);
+    }
+  });
+
   app.get("/api/reservations/:id", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
@@ -420,118 +535,4 @@ export function registerReservationRoutes(app: Express) {
     }
   });
 
-  // Reservation statistics for dashboard
-  app.get("/api/reservations/count", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { date, status } = req.query;
-      const user = req.user!;
-      const societyId = getUserSocietyId(user);
-      
-      const conditions = [eq(reservations.societyId, societyId)];
-      
-      if (date) {
-        const startOfDay = new Date(date as string);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(date as string);
-        endOfDay.setHours(23, 59, 59, 999);
-        
-        conditions.push(between(reservations.startDate, startOfDay, endOfDay));
-      }
-      
-      if (status) {
-        conditions.push(eq(reservations.status, status as string));
-      }
-      
-      const result = await db
-        .select({
-          count: count()
-        })
-        .from(reservations)
-        .where(and(...conditions));
-      
-      res.json({ count: result[0]?.count || 0 });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  app.get("/api/reservations/sum", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { date, status } = req.query;
-      const user = req.user!;
-      const societyId = getUserSocietyId(user);
-      
-      const conditions = [eq(reservations.societyId, societyId)];
-      
-      if (date) {
-        const startOfDay = new Date(date as string);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(date as string);
-        endOfDay.setHours(23, 59, 59, 999);
-        
-        conditions.push(between(reservations.startDate, startOfDay, endOfDay));
-      }
-      
-      if (status) {
-        conditions.push(eq(reservations.status, status as string));
-      }
-      
-      // Get all reservations that match the criteria
-      const reservationsList = await db
-        .select({
-          totalAmount: reservations.totalAmount,
-        })
-        .from(reservations)
-        .where(and(...conditions));
-      
-      // Calculate total sum
-      const totalSum = reservationsList.reduce((sum, reservation) => {
-        return sum + parseFloat(reservation.totalAmount || '0');
-      }, 0);
-      
-      res.json({ sum: totalSum });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  app.get("/api/reservations/guests-sum", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { date, status } = req.query;
-      const user = req.user!;
-      const societyId = getUserSocietyId(user);
-      
-      const conditions = [eq(reservations.societyId, societyId)];
-      
-      if (date) {
-        const startOfDay = new Date(date as string);
-        startOfDay.setHours(0, 0, 0, 0);
-        const endOfDay = new Date(date as string);
-        endOfDay.setHours(23, 59, 59, 999);
-        
-        conditions.push(between(reservations.startDate, startOfDay, endOfDay));
-      }
-      
-      if (status) {
-        conditions.push(eq(reservations.status, status as string));
-      }
-      
-      // Get all reservations that match the criteria
-      const reservationsList = await db
-        .select({
-          guests: reservations.guests,
-        })
-        .from(reservations)
-        .where(and(...conditions));
-      
-      // Calculate total guests (add 1 for each reservation to include the person who made it)
-      const totalGuests = reservationsList.reduce((sum, reservation) => {
-        return sum + (reservation.guests || 0) + 1; // +1 for the person who made the reservation
-      }, 0);
-      
-      res.json({ guestsSum: totalGuests });
-    } catch (error) {
-      next(error);
-    }
-  });
 }

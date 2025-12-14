@@ -32,24 +32,6 @@ export interface UpcomingReservation {
   guests: number;
 }
 
-// Mock data - TODO: replace with real API calls
-export const mockStats: DashboardStats = {
-  todayReservations: 3,
-  todayPeople: 15,
-  todayReservationsAmount: 245.00,
-  monthlyConsumptions: 245,
-  monthlyConsumptionsAmount: 1250.75,
-  memberMonthlyConsumptionsAmount: 85.50,
-  pendingCredits: 1250.50,
-  activeMembers: 48,
-};
-
-export const mockUpcomingReservations: UpcomingReservation[] = [
-  { id: '1', member: 'Mikel Etxeberria', date: '2024-12-05', time: '13:00', type: 'bazkaria', table: 2, guests: 8 },
-  { id: '2', member: 'Ane Zelaia', date: '2024-12-05', time: '21:00', type: 'afaria', table: 1, guests: 12 },
-  { id: '3', member: 'Jon Agirre', date: '2024-12-06', time: '11:00', type: 'hamaiketako', table: 3, guests: 6 },
-];
-
 export const fetchNotes = async (): Promise<Note[]> => {
   try {
     const response = await authFetch('/api/oharrak');
@@ -69,7 +51,6 @@ export const fetchNotes = async (): Promise<Note[]> => {
   }
 };
 
-// TODO: Add real API functions for stats and reservations
 export const fetchDashboardStats = async (): Promise<DashboardStats> => {
   try {
     // Fetch real stats from database
@@ -96,7 +77,7 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
     };
   } catch (error) {
     console.error('Error fetching dashboard stats:', error);
-    return mockStats;
+    throw error;
   }
 };
 
@@ -108,10 +89,10 @@ const fetchTodayReservationsCount = async (): Promise<number> => {
       const data = await response.json();
       return data.count || 0;
     }
-    return mockStats.todayReservations;
+    throw new Error('Failed to fetch today reservations count');
   } catch (error) {
     console.error('Error fetching today reservations count:', error);
-    return mockStats.todayReservations;
+    throw error;
   }
 };
 
@@ -123,10 +104,10 @@ const fetchTodayPeopleCount = async (): Promise<number> => {
       const data = await response.json();
       return data.guestsSum || 0;
     }
-    return mockStats.todayPeople;
+    throw new Error('Failed to fetch today people count');
   } catch (error) {
     console.error('Error fetching today people count:', error);
-    return mockStats.todayPeople;
+    throw error;
   }
 };
 
@@ -138,10 +119,10 @@ const fetchTodayReservationsAmount = async (): Promise<number> => {
       const data = await response.json();
       return data.sum || 0;
     }
-    return mockStats.todayReservationsAmount;
+    throw new Error('Failed to fetch today reservations amount');
   } catch (error) {
     console.error('Error fetching today reservations amount:', error);
-    return mockStats.todayReservationsAmount;
+    throw error;
   }
 };
 
@@ -154,10 +135,10 @@ const fetchMonthlyConsumptionsCount = async (): Promise<number> => {
       const data = await response.json();
       return data.count || 0;
     }
-    return mockStats.monthlyConsumptions;
+    throw new Error('Failed to fetch monthly consumptions count');
   } catch (error) {
     console.error('Error fetching monthly consumptions count:', error);
-    return mockStats.monthlyConsumptions;
+    throw error;
   }
 };
 
@@ -170,10 +151,10 @@ const fetchMonthlyConsumptionsAmount = async (): Promise<number> => {
       const data = await response.json();
       return data.sum || 0;
     }
-    return mockStats.monthlyConsumptionsAmount;
+    throw new Error('Failed to fetch monthly consumptions amount');
   } catch (error) {
     console.error('Error fetching monthly consumptions amount:', error);
-    return mockStats.monthlyConsumptionsAmount;
+    throw error;
   }
 };
 
@@ -186,10 +167,10 @@ const fetchMemberMonthlyConsumptionsAmount = async (): Promise<number> => {
       const data = await response.json();
       return data.sum || 0;
     }
-    return mockStats.memberMonthlyConsumptionsAmount;
+    throw new Error('Failed to fetch member monthly consumptions amount');
   } catch (error) {
     console.error('Error fetching member monthly consumptions amount:', error);
-    return mockStats.memberMonthlyConsumptionsAmount;
+    throw error;
   }
 };
 
@@ -200,10 +181,10 @@ const fetchPendingCreditsSum = async (): Promise<number> => {
       const data = await response.json();
       return data.sum || 0;
     }
-    return mockStats.pendingCredits;
+    throw new Error('Failed to fetch pending credits sum');
   } catch (error) {
     console.error('Error fetching pending credits sum:', error);
-    return mockStats.pendingCredits;
+    throw error;
   }
 };
 
@@ -214,10 +195,10 @@ const fetchActiveUsersCount = async (): Promise<number> => {
       const data = await response.json();
       return data.count || 0;
     }
-    return mockStats.activeMembers;
+    throw new Error('Failed to fetch active users count');
   } catch (error) {
     console.error('Error fetching active users count:', error);
-    return mockStats.activeMembers;
+    throw error;
   }
 };
 
@@ -236,10 +217,10 @@ export const fetchUpcomingReservations = async (limit = 4): Promise<UpcomingRese
         guests: reservation.guests,
       }));
     }
-    return mockUpcomingReservations.slice(0, limit);
+    return [];
   } catch (error) {
     console.error('Error fetching upcoming reservations:', error);
-    return mockUpcomingReservations.slice(0, limit);
+    throw error;
   }
 };
 
@@ -250,9 +231,9 @@ export const fetchTotalReservationsCount = async (): Promise<number> => {
       const data = await response.json();
       return data.count || 0;
     }
-    return mockUpcomingReservations.length;
+    throw new Error('Failed to fetch reservations count');
   } catch (error) {
     console.error('Error fetching reservations count:', error);
-    return mockUpcomingReservations.length;
+    throw error;
   }
 };

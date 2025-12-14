@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { consumptions, consumptionItems, products, users, stockMovements, type User, type Consumption, type ConsumptionItem } from "@shared/schema";
-import { eq, and, gte, desc, count, sql, like, or, sum } from "drizzle-orm";
+import { eq, and, gte, desc, count, sql, like, or } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { debtCalculationService } from "../cron-jobs";
 
@@ -156,6 +156,111 @@ export function registerConsumptionRoutes(app: Express) {
       return res.status(200).json(allConsumptions);
     } catch (err) {
       next(err);
+    }
+  });
+
+  // Consumption statistics for dashboard
+  app.get("/api/consumptions/count", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { startDate } = req.query;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const conditions = [eq(consumptions.societyId, societyId)];
+      
+      if (startDate) {
+        conditions.push(gte(consumptions.createdAt, new Date(startDate as string)));
+      }
+      
+      const result = await db
+        .select({
+          count: count()
+        })
+        .from(consumptions)
+        .where(and(...conditions));
+      
+      res.json({ count: result[0]?.count || 0 });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.get("/api/consumptions/sum", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { startDate } = req.query;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const conditions = [eq(consumptions.societyId, societyId)];
+      
+      if (startDate) {
+        conditions.push(gte(consumptions.createdAt, new Date(startDate as string)));
+      }
+      
+      // Get all consumption items that match the date criteria
+      const consumptionItemsQuery = db
+        .select({
+          consumptionId: consumptionItems.consumptionId,
+          quantity: consumptionItems.quantity,
+          unitPrice: consumptionItems.unitPrice,
+        })
+        .from(consumptionItems)
+        .innerJoin(
+          consumptions,
+          eq(consumptionItems.consumptionId, consumptions.id)
+        )
+        .where(and(...conditions));
+      
+      const items = await consumptionItemsQuery;
+      
+      // Calculate total sum
+      const totalSum = items.reduce((sum, item) => {
+        return sum + (parseFloat(item.quantity.toString()) * parseFloat(item.unitPrice || '0'));
+      }, 0);
+      
+      res.json({ sum: totalSum });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Member consumption statistics for dashboard
+  app.get("/api/consumptions/member/sum", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { startDate } = req.query;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      
+      const conditions = [eq(consumptions.societyId, societyId), eq(consumptions.userId, user.id)];
+      
+      if (startDate) {
+        conditions.push(gte(consumptions.createdAt, new Date(startDate as string)));
+      }
+      
+      // Get all consumption items that match the date criteria for this member
+      const consumptionItemsQuery = db
+        .select({
+          consumptionId: consumptionItems.consumptionId,
+          quantity: consumptionItems.quantity,
+          unitPrice: consumptionItems.unitPrice,
+        })
+        .from(consumptionItems)
+        .innerJoin(
+          consumptions,
+          eq(consumptionItems.consumptionId, consumptions.id)
+        )
+        .where(and(...conditions));
+      
+      const items = await consumptionItemsQuery;
+      
+      // Calculate total sum
+      const totalSum = items.reduce((sum, item) => {
+        return sum + (parseFloat(item.quantity.toString()) * parseFloat(item.unitPrice || '0'));
+      }, 0);
+      
+      res.json({ sum: totalSum });
+    } catch (error) {
+      next(error);
     }
   });
 
@@ -405,108 +510,4 @@ export function registerConsumptionRoutes(app: Express) {
     }
   });
 
-  // Consumption statistics for dashboard
-  app.get("/api/consumptions/count", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { startDate } = req.query;
-      const user = req.user!;
-      const societyId = getUserSocietyId(user);
-      
-      const conditions = [eq(consumptions.societyId, societyId)];
-      
-      if (startDate) {
-        conditions.push(gte(consumptions.createdAt, new Date(startDate as string)));
-      }
-      
-      const result = await db
-        .select({
-          count: count()
-        })
-        .from(consumptions)
-        .where(and(...conditions));
-      
-      res.json({ count: result[0]?.count || 0 });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  app.get("/api/consumptions/sum", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { startDate } = req.query;
-      const user = req.user!;
-      const societyId = getUserSocietyId(user);
-      
-      const conditions = [eq(consumptions.societyId, societyId)];
-      
-      if (startDate) {
-        conditions.push(gte(consumptions.createdAt, new Date(startDate as string)));
-      }
-      
-      // Get all consumption items that match the date criteria
-      const consumptionItemsQuery = db
-        .select({
-          consumptionId: consumptionItems.consumptionId,
-          quantity: consumptionItems.quantity,
-          unitPrice: consumptionItems.unitPrice,
-        })
-        .from(consumptionItems)
-        .innerJoin(
-          consumptions,
-          eq(consumptionItems.consumptionId, consumptions.id)
-        )
-        .where(and(...conditions));
-      
-      const items = await consumptionItemsQuery;
-      
-      // Calculate total sum
-      const totalSum = items.reduce((sum, item) => {
-        return sum + (parseFloat(item.quantity.toString()) * parseFloat(item.unitPrice || '0'));
-      }, 0);
-      
-      res.json({ sum: totalSum });
-    } catch (error) {
-      next(error);
-    }
-  });
-
-  // Member consumption statistics for dashboard
-  app.get("/api/consumptions/member/sum", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const { startDate } = req.query;
-      const user = req.user!;
-      const societyId = getUserSocietyId(user);
-      
-      const conditions = [eq(consumptions.societyId, societyId), eq(consumptions.userId, user.id)];
-      
-      if (startDate) {
-        conditions.push(gte(consumptions.createdAt, new Date(startDate as string)));
-      }
-      
-      // Get all consumption items that match the date criteria for this member
-      const consumptionItemsQuery = db
-        .select({
-          consumptionId: consumptionItems.consumptionId,
-          quantity: consumptionItems.quantity,
-          unitPrice: consumptionItems.unitPrice,
-        })
-        .from(consumptionItems)
-        .innerJoin(
-          consumptions,
-          eq(consumptionItems.consumptionId, consumptions.id)
-        )
-        .where(and(...conditions));
-      
-      const items = await consumptionItemsQuery;
-      
-      // Calculate total sum
-      const totalSum = items.reduce((sum, item) => {
-        return sum + (parseFloat(item.quantity.toString()) * parseFloat(item.unitPrice || '0'));
-      }, 0);
-      
-      res.json({ sum: totalSum });
-    } catch (error) {
-      next(error);
-    }
-  });
 }
