@@ -1,9 +1,8 @@
-import { Bell } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { LanguageToggle } from './LanguageToggle';
 import { ThemeToggle } from './ThemeToggle';
+import { NotificationBell } from './NotificationBell';
 
 interface AppHeaderProps {
   title?: string;
@@ -17,12 +16,7 @@ export function AppHeader({ title }: AppHeaderProps) {
         {title && <h1 className="text-lg font-semibold">{title}</h1>}
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="relative" data-testid="button-notifications">
-          <Bell className="h-4 w-4" />
-          <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]">
-            3
-          </Badge>
-        </Button>
+        <NotificationBell data-testid="button-notifications" />
         <LanguageToggle />
         <ThemeToggle />
       </div>

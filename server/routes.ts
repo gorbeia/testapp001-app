@@ -3,7 +3,7 @@ import { type Server } from "http";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "./db";
-import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, tables, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak, type Table, type InsertTable } from "@shared/schema";
+import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, tables, notifications, notificationMessages, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak, type Table, type Notification, type NotificationMessage, type InsertTable } from "@shared/schema";
 import { eq, and, gte, ne, sum, between, sql, desc, count, inArray, like, or } from "drizzle-orm";
 import { debtCalculationService } from "./cron-jobs";
 
@@ -132,6 +132,56 @@ export const getUserSocietyId = (user: User): string => {
     throw new Error('User societyId not found in JWT');
   }
   return user.societyId;
+};
+
+// Helper function to get localized notification message
+const getLocalizedNotification = async (notification: Notification, preferredLanguage: string = 'eu') => {
+  console.log(`Getting localized notification for ID: ${notification.id}, Language: ${preferredLanguage}`);
+  
+  // Try to get message in preferred language
+  const localizedMessage = await db
+    .select()
+    .from(notificationMessages)
+    .where(and(
+      eq(notificationMessages.notificationId, notification.id),
+      eq(notificationMessages.language, preferredLanguage)
+    ))
+    .limit(1);
+
+  if (localizedMessage.length > 0) {
+    console.log(`Found ${preferredLanguage} translation:`, localizedMessage[0].title);
+    return {
+      ...notification,
+      title: localizedMessage[0].title,
+      message: localizedMessage[0].message,
+    };
+  }
+
+  console.log(`No ${preferredLanguage} translation found, trying default language: ${notification.defaultLanguage}`);
+
+  // Fallback to default language
+  const defaultMessage = await db
+    .select()
+    .from(notificationMessages)
+    .where(and(
+      eq(notificationMessages.notificationId, notification.id),
+      eq(notificationMessages.language, notification.defaultLanguage)
+    ))
+    .limit(1);
+
+  if (defaultMessage.length > 0) {
+    console.log(`Found ${notification.defaultLanguage} translation:`, defaultMessage[0].title);
+    return {
+      ...notification,
+      title: defaultMessage[0].title,
+      message: defaultMessage[0].message,
+    };
+  }
+
+  console.log(`No ${notification.defaultLanguage} translation found, using original notification fields`);
+
+  // Fallback to original notification fields
+  return notification;
 };
 
 export async function registerRoutes(
@@ -2230,6 +2280,227 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       next(error);
+    }
+  });
+
+  // Test endpoint for debugging
+  app.get("/api/test-lang", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const preferredLanguage = (req.query.lang as string) || 'eu';
+      console.log('Test endpoint - Language received:', preferredLanguage);
+      
+      res.json({ 
+        message: `Language received: ${preferredLanguage}`,
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Notifications API endpoints
+  // Get user notifications with pagination
+  app.get("/api/notifications", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const offset = (page - 1) * limit;
+      const preferredLanguage = (req.query.lang as string) || 'eu';
+      
+      console.log('Main notifications - Language received:', preferredLanguage);
+
+      const userNotifications = await db
+        .select()
+        .from(notifications)
+        .where(and(
+          eq(notifications.userId, user.id),
+          eq(notifications.societyId, societyId)
+        ))
+        .orderBy(desc(notifications.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      // Get localized notifications
+      const localizedNotifications = await Promise.all(
+        userNotifications.map(notification => getLocalizedNotification(notification, preferredLanguage))
+      );
+
+      // Get total count for pagination
+      const totalCount = await db
+        .select({ count: count() })
+        .from(notifications)
+        .where(and(
+          eq(notifications.userId, user.id),
+          eq(notifications.societyId, societyId)
+        ));
+
+      return res.status(200).json({
+        notifications: localizedNotifications,
+        pagination: {
+          page,
+          limit,
+          total: totalCount[0]?.count || 0,
+          pages: Math.ceil((totalCount[0]?.count || 0) / limit)
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Get unread notifications count
+  app.get("/api/notifications/unread-count", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+
+      const unreadCount = await db
+        .select({ count: count() })
+        .from(notifications)
+        .where(and(
+          eq(notifications.userId, user.id),
+          eq(notifications.societyId, societyId),
+          eq(notifications.isRead, false)
+        ));
+
+      return res.status(200).json({ count: unreadCount[0]?.count || 0 });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Get last 5 notifications for bell dropdown
+  app.get("/api/notifications/recent", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      const preferredLanguage = (req.query.lang as string) || 'eu';
+      
+      console.log('Recent notifications - Language received:', preferredLanguage);
+
+      const recentNotifications = await db
+        .select()
+        .from(notifications)
+        .where(and(
+          eq(notifications.userId, user.id),
+          eq(notifications.societyId, societyId)
+        ))
+        .orderBy(desc(notifications.createdAt))
+        .limit(5);
+
+      // Get localized notifications
+      const localizedNotifications = await Promise.all(
+        recentNotifications.map(notification => getLocalizedNotification(notification, preferredLanguage))
+      );
+
+      return res.status(200).json(localizedNotifications);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Mark notification as read
+  app.patch("/api/notifications/:id/read", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+
+      const updated = await db
+        .update(notifications)
+        .set({ 
+          isRead: true, 
+          readAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(notifications.id, id),
+          eq(notifications.userId, user.id),
+          eq(notifications.societyId, societyId)
+        ))
+        .returning();
+
+      if (updated.length === 0) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+
+      return res.status(200).json(updated[0]);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Mark all notifications as read
+  app.patch("/api/notifications/mark-all-read", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+
+      await db
+        .update(notifications)
+        .set({ 
+          isRead: true, 
+          readAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(notifications.userId, user.id),
+          eq(notifications.societyId, societyId),
+          eq(notifications.isRead, false)
+        ));
+
+      return res.status(200).json({ message: "All notifications marked as read" });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Create notification (for system use)
+  app.post("/api/notifications", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      const { title, message, type, targetUserId, messages, defaultLanguage = 'eu' } = req.body;
+
+      // Only admins can create notifications for other users
+      if (targetUserId && targetUserId !== user.id && user.role !== 'admin') {
+        return res.status(403).json({ message: "Only admins can create notifications for other users" });
+      }
+
+      const notificationData = {
+        userId: targetUserId || user.id,
+        societyId,
+        title: title || (messages?.eu?.title) || '',
+        message: message || (messages?.eu?.message) || '',
+        type: type || 'info',
+        isRead: false,
+        defaultLanguage
+      };
+
+      const newNotification = await db
+        .insert(notifications)
+        .values(notificationData)
+        .returning();
+
+      // Create multilingual messages if provided
+      if (messages && typeof messages === 'object') {
+        const messageEntries = Object.entries(messages).map(([lang, msg]) => ({
+          notificationId: newNotification[0].id,
+          language: lang,
+          title: (msg as any).title || title,
+          message: (msg as any).message || message,
+        }));
+
+        if (messageEntries.length > 0) {
+          await db.insert(notificationMessages).values(messageEntries);
+        }
+      }
+
+      return res.status(201).json(newNotification[0]);
+    } catch (err) {
+      next(err);
     }
   });
 

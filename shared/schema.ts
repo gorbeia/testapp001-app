@@ -271,5 +271,51 @@ export const insertTableSchema = createInsertSchema(tables).pick({
   isActive: true,
 });
 
+// Notifications for users
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  societyId: varchar("society_id").notNull().references(() => societies.id, { onDelete: "cascade" }),
+  title: varchar("title").notNull(),
+  message: text("message").notNull(),
+  type: varchar("type").notNull().default("info"), // 'info', 'success', 'warning', 'error'
+  isRead: boolean("is_read").notNull().default(false),
+  readAt: timestamp("read_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  defaultLanguage: varchar("default_language").notNull().default("eu"),
+});
+
+// Notification messages for multilingual support
+export const notificationMessages = pgTable("notification_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  notificationId: varchar("notification_id").notNull().references(() => notifications.id, { onDelete: "cascade" }),
+  language: varchar("language").notNull(),
+  title: varchar("title").notNull(),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications).pick({
+  userId: true,
+  societyId: true,
+  title: true,
+  message: true,
+  type: true,
+  isRead: true,
+});
+
+export const insertNotificationMessageSchema = createInsertSchema(notificationMessages).pick({
+  notificationId: true,
+  language: true,
+  title: true,
+  message: true,
+});
+
 export type Table = typeof tables.$inferSelect;
 export type InsertTable = z.infer<typeof insertTableSchema>;
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type NotificationMessage = typeof notificationMessages.$inferSelect;
+export type InsertNotificationMessage = z.infer<typeof insertNotificationMessageSchema>;

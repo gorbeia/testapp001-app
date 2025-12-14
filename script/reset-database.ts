@@ -21,6 +21,7 @@ async function resetDatabase() {
   
   // Drop all tables in the correct order to avoid foreign key constraints
   const tables = [
+    'notifications',
     'consumption_items',
     'consumptions',
     'credits',

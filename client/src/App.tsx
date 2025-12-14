@@ -28,6 +28,7 @@ import { SepaExportPage } from "@/components/SepaExportPage";
 import { TablesPage } from "@/components/TablesPage";
 import { UserProfile } from "@/components/UserProfile";
 import OharrakPage from "@/components/announcements";
+import NotificationsPage from "@/components/NotificationsPage";
 import NotFound from "@/pages/not-found";
 
 function AppRoutes() {
@@ -48,6 +49,7 @@ function AppRoutes() {
       <Route path="/zorrak" component={CreditsPage} />
       <Route path="/nire-zorrak" component={MyDebtsPage} />
       <Route path="/oharrak" component={OharrakPage} />
+      <Route path="/jakinarazpenak" component={NotificationsPage} />
       <Route path="/profila" component={UserProfile} />
       <Route path="/erabiltzaileak">
         {() => (
