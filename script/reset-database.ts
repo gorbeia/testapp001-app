@@ -21,8 +21,6 @@ async function resetDatabase() {
   
   // Drop all tables in the correct order to avoid foreign key constraints
   const tables = [
-    'chat_messages',
-    'chat_rooms', 
     'consumption_items',
     'consumptions',
     'credits',

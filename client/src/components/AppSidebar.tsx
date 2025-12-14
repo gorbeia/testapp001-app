@@ -4,7 +4,6 @@ import {
   ShoppingCart,
   CreditCard,
   Megaphone,
-  MessageCircle,
   Users,
   Package,
   Home,
@@ -65,7 +64,6 @@ export function AppSidebar() {
     { title: t('myConsumptions'), url: '/nire-konsumoak', icon: Receipt },
     { title: t('credits'), url: '/nire-zorrak', icon: CreditCard },
     { title: t('announcements'), url: '/oharrak', icon: Megaphone },
-    { title: t('chat'), url: '/txata', icon: MessageCircle },
   ];
 
   const adminMenuItems = [

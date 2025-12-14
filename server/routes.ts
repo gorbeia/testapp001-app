@@ -3,10 +3,9 @@ import { type Server } from "http";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "./db";
-import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, tables, chatRooms, chatMessages, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak, type Table, type InsertTable } from "@shared/schema";
+import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, tables, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak, type Table, type InsertTable } from "@shared/schema";
 import { eq, and, gte, ne, sum, between, sql, desc, count, inArray, like, or } from "drizzle-orm";
 import { debtCalculationService } from "./cron-jobs";
-import { getChatRooms, getChatRoomMessages, createChatRoom, createChatMessage } from "./chat-routes";
 
 // JWT Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
@@ -242,32 +241,6 @@ export async function registerRoutes(
     }
   });
 
-  // Users: Get available users for chat conversations
-  app.get("/api/users/available-for-chat", requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const user = req.user!;
-      const societyId = getUserSocietyId(user);
-      
-      const allUsers = await db
-        .select({
-          id: users.id,
-          name: users.name,
-          role: users.role,
-          username: users.username,
-        })
-        .from(users)
-        .where(and(
-          eq(users.societyId, societyId),
-          eq(users.isActive, true),
-          ne(users.id, user.id) // Exclude current user
-        ));
-      
-      return res.status(200).json(allUsers);
-    } catch (err) {
-      next(err);
-    }
-  });
-
   // Users: count users by status (authenticated users)
   app.get("/api/users/count", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -497,18 +470,12 @@ export async function registerRoutes(
         reservationsCount,
         creditsCount,
         oharrakCount,
-        chatRoomsAsUser1,
-        chatRoomsAsUser2,
-        chatMessagesCount,
         markedAsPaidByCount
       ] = await Promise.all([
         db.select({ count: count() }).from(consumptions).where(eq(consumptions.userId, id)),
         db.select({ count: count() }).from(reservations).where(eq(reservations.userId, id)),
         db.select({ count: count() }).from(credits).where(eq(credits.memberId, id)),
         db.select({ count: count() }).from(oharrak).where(eq(oharrak.createdBy, id)),
-        db.select({ count: count() }).from(chatRooms).where(eq(chatRooms.user1Id, id)),
-        db.select({ count: count() }).from(chatRooms).where(eq(chatRooms.user2Id, id)),
-        db.select({ count: count() }).from(chatMessages).where(eq(chatMessages.senderId, id)),
         db.select({ count: count() }).from(credits).where(eq(credits.markedAsPaidBy, id)),
       ]);
 
@@ -525,12 +492,6 @@ export async function registerRoutes(
       }
       if (oharrakCount[0]?.count > 0) {
         dependencies.push(`${oharrakCount[0].count} ohar`);
-      }
-      if (chatRoomsAsUser1[0]?.count > 0 || chatRoomsAsUser2[0]?.count > 0) {
-        dependencies.push(`${(chatRoomsAsUser1[0]?.count || 0) + (chatRoomsAsUser2[0]?.count || 0)} txat-gela`);
-      }
-      if (chatMessagesCount[0]?.count > 0) {
-        dependencies.push(`${chatMessagesCount[0].count} txat-mezu`);
       }
       if (markedAsPaidByCount[0]?.count > 0) {
         dependencies.push(`${markedAsPaidByCount[0].count} ordainketa-markatze`);
@@ -2271,12 +2232,6 @@ export async function registerRoutes(
       next(error);
     }
   });
-
-  // Chat API endpoints
-  app.get("/api/chat/rooms", requireAuth, getChatRooms);
-  app.get("/api/chat/rooms/:roomId/messages", requireAuth, getChatRoomMessages);
-  app.post("/api/chat/rooms", requireAuth, createChatRoom);
-  app.post("/api/chat/rooms/:roomId/messages", requireAuth, createChatMessage);
 
   return httpServer;
 }

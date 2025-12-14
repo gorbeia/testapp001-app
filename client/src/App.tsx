@@ -21,7 +21,6 @@ import { MyReservationsPage } from '@/components/MyReservationsPage';
 import { CreditsPage } from "@/components/CreditsPage";
 import { MyDebtsPage } from "@/components/MyDebtsPage";
 import { AnnouncementsPage } from "@/components/AnnouncementsPage";
-import { ChatPage } from "@/components/ChatPage";
 import { UsersPage } from "@/components/UsersPage";
 import { ProductsPage } from "@/components/ProductsPage";
 import { SocietyPage } from "@/components/SocietyPage";
@@ -49,7 +48,6 @@ function AppRoutes() {
       <Route path="/zorrak" component={CreditsPage} />
       <Route path="/nire-zorrak" component={MyDebtsPage} />
       <Route path="/oharrak" component={OharrakPage} />
-      <Route path="/txata" component={ChatPage} />
       <Route path="/profila" component={UserProfile} />
       <Route path="/erabiltzaileak">
         {() => (

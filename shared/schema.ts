@@ -224,50 +224,12 @@ export const oharrak = pgTable("oharrak", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-// Chat rooms/conversations (direct messages only)
-export const chatRooms = pgTable("chat_rooms", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  user1Id: varchar("user1_id").notNull().references(() => users.id), // First participant
-  user2Id: varchar("user2_id").notNull().references(() => users.id), // Second participant
-  societyId: varchar("society_id").notNull().references(() => societies.id),
-  isActive: boolean("is_active").notNull().default(true),
-  lastMessageAt: timestamp("last_message_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-// Chat messages
-export const chatMessages = pgTable("chat_messages", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  roomId: varchar("room_id").notNull().references(() => chatRooms.id),
-  senderId: varchar("sender_id").notNull().references(() => users.id),
-  content: text("content").notNull(),
-  messageType: text("message_type").notNull().default("text"), // "text", "image", "file", etc.
-  isRead: boolean("is_read").notNull().default(false),
-  readAt: timestamp("read_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
 export const insertOharrakSchema = createInsertSchema(oharrak).pick({
   title: true,
   content: true,
   isActive: true,
   createdBy: true,
   societyId: true,
-});
-
-export const insertChatRoomSchema = createInsertSchema(chatRooms).pick({
-  user1Id: true,
-  user2Id: true,
-  societyId: true,
-  isActive: true,
-});
-
-export const insertChatMessageSchema = createInsertSchema(chatMessages).pick({
-  roomId: true,
-  senderId: true,
-  content: true,
-  messageType: true,
 });
 
 export type InsertSociety = z.infer<typeof insertSocietySchema>;
@@ -288,10 +250,6 @@ export type Credit = typeof credits.$inferSelect;
 export type InsertCredit = typeof credits.$inferSelect;
 export type Oharrak = typeof oharrak.$inferSelect;
 export type InsertOharrak = z.infer<typeof insertOharrakSchema>;
-export type ChatRoom = typeof chatRooms.$inferSelect;
-export type InsertChatRoom = z.infer<typeof insertChatRoomSchema>;
-export type ChatMessage = typeof chatMessages.$inferSelect;
-export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 
 // Tables for reservations
 export const tables = pgTable("tables", {
