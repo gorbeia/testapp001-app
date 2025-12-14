@@ -111,8 +111,25 @@ JWT_SECRET="your_jwt_secret_key_here"
 ```bash
 # Reset database and apply consolidated migration
 pnpm db:reset
+```
 
-# Seed the database with initial data
+**Database Permissions**: If you encounter permission errors, grant the necessary privileges:
+
+```bash
+# Grant permissions in the correct database
+sudo -u postgres psql -d guretxokoa -c "
+GRANT ALL ON SCHEMA public TO guretxokoa_user;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO guretxokoa_user;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO guretxokoa_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO guretxokoa_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO guretxokoa_user;
+ALTER SCHEMA public OWNER TO guretxokoa_user;
+"
+```
+
+
+```bash
+# Seed database with initial data (optional)
 pnpm db:seed
 ```
 
@@ -140,8 +157,10 @@ pnpm start
 ### 9. Verify Installation
 
 Open your web browser and navigate to:
-- **Application**: http://localhost:3000
-- **API Endpoints**: http://localhost:3000/api
+- **Application**: http://YOUR_SERVER_IP:3000
+- **API Endpoints**: http://YOUR_SERVER_IP:3000/api
+
+Replace `YOUR_SERVER_IP` with your server's public IP address or domain name.
 
 ## Default Login Credentials
 
@@ -157,10 +176,7 @@ After seeding, you can use these demo accounts:
 | lagunaarca.eusH | demo |.
 | Friend |
 
-**S.
-**Society ID. ID**.
-**.
-**GT001** (for login form).
+**Society ID**: Use `GT001` for the login form.
 
 ## Firewall Configuration
 
