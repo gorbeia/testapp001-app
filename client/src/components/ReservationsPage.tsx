@@ -124,7 +124,7 @@ export function ReservationsPage() {
 
   const loadTables = async () => {
     try {
-      const response = await authFetch('/api/tables');
+      const response = await authFetch('/api/tables/available');
       if (response.ok) {
         const data = await response.json();
         setTables(data);
@@ -392,9 +392,9 @@ export function ReservationsPage() {
                         );
                       })
                     ) : (
-                      <SelectItem value="" disabled>
+                      <div className="p-2 text-sm text-muted-foreground text-center">
                         Ez dago mahairik eskuragarri
-                      </SelectItem>
+                      </div>
                     )}
                   </SelectContent>
                 </Select>

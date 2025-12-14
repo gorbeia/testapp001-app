@@ -8,7 +8,16 @@ setDefaultTimeout(60 * 1000);
 let lastRandomUserEmail: string | undefined;
 
 BeforeAll(async function () {
-  const browserInstance: Browser = await chromium.launch({ headless: true });
+  const browserInstance: Browser = await chromium.launch({ 
+    headless: process.env.E2E_HEADED === 'false',
+    slowMo: process.env.E2E_HEADED === 'false' ? 100 : 0,
+    devtools: process.env.E2E_HEADED === 'false', // Open dev tools
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage'
+    ]
+  });
   setBrowser(browserInstance);
 });
 

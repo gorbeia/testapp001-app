@@ -684,6 +684,16 @@ export async function registerRoutes(
     }
   });
 
+  // Tables: get available tables for reservations (authenticated users)
+  app.get("/api/tables/available", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const availableTables = await db.select().from(tables).where(eq(tables.isActive, true)).orderBy(tables.name);
+      return res.status(200).json(availableTables);
+    } catch (err) {
+      next(err);
+    }
+  });
+
   // Tables: create new table (admin only)
   app.post("/api/tables", sessionMiddleware, requireAuth, requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {

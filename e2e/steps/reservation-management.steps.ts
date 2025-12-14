@@ -27,16 +27,28 @@ When('I click the new reservation button', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
   
-  await page.click('[data-testid="button-new-reservation"]');
+  // Check if button exists and is visible
+  const button = page.locator('[data-testid="button-new-reservation"]');
+  await button.waitFor({ state: 'visible', timeout: 5000 });
+  
+  // Click the main button
+  await button.click();
+  
+  // Wait a moment for any dialog to appear
+  await page.waitForTimeout(2000);
 });
 
 Then('I should see the reservation dialog', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
   
-  const dialog = page.locator('[role="dialog"]');
-  await dialog.waitFor({ state: 'visible', timeout: 5000 });
+  // Wait for dialog to appear
+  await page.waitForSelector('[data-testid="dialog-content"]', { timeout: 5000 });
+  
+  // Check if dialog is visible
+  const dialog = page.locator('[data-testid="dialog-content"]');
   const isVisible = await dialog.isVisible();
+  
   assert.ok(isVisible, 'Reservation dialog should be visible');
 });
 
@@ -134,7 +146,21 @@ When('I select a table', async function () {
 
   await page.click('[data-testid="select-table"]');
   await page.waitForSelector('[role="option"]', { timeout: 5000 });
-  await page.click('[role="option"]:has-text("Mahaia 1")');
+  
+  // Select the first available (non-disabled) table option
+  try {
+    const availableOptions = await page.locator('[role="option"]:not([disabled])').all();
+    if (availableOptions.length > 0) {
+      await availableOptions[0].click();
+    } else {
+      // If no available options, try the first option anyway
+      const firstOption = await page.locator('[role="option"]').first();
+      await firstOption.click();
+    }
+  } catch (error) {
+    console.error('Failed to select table:', error);
+    throw error;
+  }
 });
 
 When('I enable kitchen equipment', async function () {
