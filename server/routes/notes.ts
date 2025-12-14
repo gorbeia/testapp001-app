@@ -13,7 +13,6 @@ const getUserSocietyId = (user: User): string => {
 };
 
 export function registerNoteRoutes(app: Express) {
-  // Oharrak (Notes) routes - Admin only
   app.get("/api/oharrak", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const societyId = getUserSocietyId(req.user!);

@@ -3,7 +3,27 @@ import { db } from "../db";
 import { users, consumptions, reservations, credits, oharrak, type User } from "@shared/schema";
 import { eq, and, count } from "drizzle-orm";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
+
+// JWT Configuration
+const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_EXPIRES_IN = '24h';
+
+// JWT Functions
+const generateToken = (user: User) => {
+  const { password: _, ...userWithoutPassword } = user;
+  return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+};
+
+const setAuthCookie = (res: Response, token: string) => {
+  res.cookie('auth-token', token, {
+    httpOnly: true,    // Prevent XSS
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    sameSite: 'strict', // Prevent CSRF
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  });
+};
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: User): string => {
@@ -11,18 +31,6 @@ const getUserSocietyId = (user: User): string => {
     throw new Error('User societyId not found in JWT');
   }
   return user.societyId;
-};
-
-// Helper functions for JWT and auth (these should be imported from a shared auth module)
-const generateToken = (user: any) => {
-  // This should be imported from the main auth utilities
-  // For now, we'll assume it's available globally or import it
-  return 'mock-token';
-};
-
-const setAuthCookie = (res: Response, token: string) => {
-  // This should be imported from the main auth utilities
-  res.cookie('auth-token', token, { httpOnly: true });
 };
 
 // Middleware to validate user ID parameter

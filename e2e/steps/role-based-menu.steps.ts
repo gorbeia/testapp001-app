@@ -163,6 +163,10 @@ Then('I should see the users management page', async function () {
     `Admin user should be on users management page. Current URL: ${currentUrl}`
   );
 
+  // Wait for the page to load and key elements to appear
+  await page.waitForSelector('[data-testid="button-new-user"]', { timeout: 5000 });
+  await page.waitForSelector('[data-testid="input-search-users"]', { timeout: 5000 });
+
   // Check for key users page elements
   const newButton = await page.$('[data-testid="button-new-user"]');
   const searchInput = await page.$('[data-testid="input-search-users"]');
