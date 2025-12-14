@@ -278,7 +278,6 @@ export const notifications = pgTable("notifications", {
   societyId: varchar("society_id").notNull().references(() => societies.id, { onDelete: "cascade" }),
   title: varchar("title").notNull(),
   message: text("message").notNull(),
-  type: varchar("type").notNull().default("info"), // 'info', 'success', 'warning', 'error'
   isRead: boolean("is_read").notNull().default(false),
   readAt: timestamp("read_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -302,7 +301,6 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
   societyId: true,
   title: true,
   message: true,
-  type: true,
   isRead: true,
 });
 

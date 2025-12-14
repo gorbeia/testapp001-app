@@ -129,7 +129,6 @@ async function seedMultilingualNotifications() {
         societyId,
         title: notificationTemplate.messages[notificationTemplate.defaultLanguage].title,
         message: notificationTemplate.messages[notificationTemplate.defaultLanguage].message,
-        type: notificationTemplate.type,
         isRead,
         readAt: isRead ? new Date() : null,
         defaultLanguage: notificationTemplate.defaultLanguage,

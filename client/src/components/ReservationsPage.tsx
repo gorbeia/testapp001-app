@@ -20,7 +20,7 @@ import { eu, es } from 'date-fns/locale';
 import type { Reservation, Table } from '@shared/schema';
 
 interface ReservationWithUser extends Reservation {
-  userName?: string;
+  userName: string | null;
 }
 
 const authFetch = async (url: string, options: RequestInit = {}) => {
@@ -193,8 +193,17 @@ export function ReservationsPage() {
       });
 
       if (response.ok) {
-        const newReservation = await response.json();
-        setReservations([...reservations, newReservation]);
+        const data = await response.json();
+        console.log('Backend response:', data);
+        
+        // Use the updated reservations list from backend (includes user names)
+        if (data && Array.isArray(data.reservations)) {
+          setReservations(data.reservations);
+        } else {
+          console.error('Invalid reservations data from backend:', data);
+          // Fallback: reload reservations from scratch
+          await loadReservations();
+        }
         
         toast({
           title: t('success'),
@@ -301,7 +310,7 @@ export function ReservationsPage() {
               {t('newReservation')}
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg" data-testid="dialog-content">
             <DialogHeader>
               <DialogTitle>{t('newReservation')}</DialogTitle>
             </DialogHeader>

@@ -32,7 +32,7 @@ Feature: Reservation Management
     And I set the number of guests to 8
     And I select a table
     And I keep kitchen equipment disabled
-    Then I should see the correct cost calculation without kitchen
+    Then I should see the correct cost calculation without kitchen for 8 guests
     And I save the reservation
     Then I should see a reservation success message
     And the reservation should appear in the list

@@ -62,7 +62,6 @@ async function seedNotifications() {
         societyId,
         title: notification.title,
         message: notification.message,
-        type: notification.type,
         isRead,
         readAt: isRead ? new Date() : null,
         createdAt: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)), // Each notification 1 day apart

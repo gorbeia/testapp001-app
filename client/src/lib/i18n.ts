@@ -201,7 +201,6 @@ export const translations = {
     new: 'Berria',
     unread: 'Irakurri gabe',
     read: 'Irakurria',
-    allTypes: 'Mota guztiak',
     notificationInfo: 'Info',
     notificationSuccess: 'Arrakasta',
     notificationWarning: 'Abisua',
@@ -277,11 +276,16 @@ export const translations = {
     askaria: 'Merienda',
     afaria: 'Cena',
     birthday: 'Cumpleaños',
+    searchConsumptions: 'Buscar consumiciones',
+    allStatus: 'Todos los estados',
     time: 'Hora',
     guests: 'Invitados',
     year: 'Año',
     month: 'Mes',
     allTypes: 'Todos los tipos',
+    noConsumptionsFound: 'No se encontraron consumiciones',
+    consumptionDetails: 'Detalles del consumo',
+    items: 'Productos',
     allMonths: 'Todos los meses',
     notes: 'Notas',
     save: 'Guardar',
@@ -406,7 +410,6 @@ export const translations = {
     new: 'Nuevo',
     unread: 'No leído',
     read: 'Leído',
-    allTypes: 'Todos los tipos',
     notificationInfo: 'Info',
     notificationSuccess: 'Éxito',
     notificationWarning: 'Advertencia',
@@ -423,13 +426,21 @@ export type TranslationKey = keyof typeof translations.eu;
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: (key: TranslationKey) => string;
+  t: (key: TranslationKey, values?: Record<string, number | string>) => string;
 }
 
 export const LanguageContext = createContext<LanguageContextType>({
   language: 'eu',
   setLanguage: () => {},
-  t: (key) => translations.eu[key],
+  t: (key, values) => {
+    let text: string = translations.eu[key as TranslationKey];
+    if (values) {
+      Object.entries(values).forEach(([placeholder, value]) => {
+        text = text.replace(new RegExp(`{${placeholder}}`, 'g'), String(value));
+      });
+    }
+    return text;
+  },
 });
 
 export const useLanguage = () => useContext(LanguageContext);

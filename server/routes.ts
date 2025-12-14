@@ -184,6 +184,92 @@ const getLocalizedNotification = async (notification: Notification, preferredLan
   return notification;
 };
 
+// Helper function to create reservation notifications
+const createReservationNotification = async (
+  userId: string,
+  societyId: string,
+  type: 'created' | 'cancelled' | 'confirmed',
+  reservationData: any
+) => {
+  const reservationName = reservationData.name || 'erreserba';
+  const reservationDate = new Date(reservationData.startDate).toLocaleDateString('eu-ES');
+  
+  let title, message;
+  
+  switch (type) {
+    case 'cancelled':
+      title = 'Erreserba ezeztatua';
+      message = `Zure "${reservationName}" erreserba ezeztatu egin da. Data: ${reservationDate}.`;
+      break;
+    case 'confirmed':
+      title = 'Erreserba konfirmatua';
+      message = `Zure "${reservationName}" erreserba konfirmatua izan da. Data: ${reservationDate}.`;
+      break;
+    case 'created':
+    default:
+      title = 'Erreserba berria';
+      message = `Zure "${reservationName}" erreserba ondo egin da. Data: ${reservationDate}.`;
+      break;
+  }
+  
+  // Create notification
+  const notification = await db.insert(notifications).values({
+    userId,
+    societyId,
+    title,
+    message,
+    isRead: false,
+    defaultLanguage: 'eu',
+  }).returning();
+
+  // Create multilingual messages
+  const messages = [];
+  
+  // Basque (default)
+  messages.push({
+    notificationId: notification[0].id,
+    language: 'eu',
+    title,
+    message,
+  });
+  
+  // Spanish
+  const spanishTitle = type === 'cancelled' ? 'Reserva cancelada' : 
+                      type === 'confirmed' ? 'Reserva confirmada' : 'Nueva reserva';
+  const spanishMessage = type === 'cancelled' ? 
+    `Tu reserva "${reservationName}" ha sido cancelada. Fecha: ${new Date(reservationData.startDate).toLocaleDateString('es-ES')}.` :
+    type === 'confirmed' ? 
+    `Tu reserva "${reservationName}" ha sido confirmada. Fecha: ${new Date(reservationData.startDate).toLocaleDateString('es-ES')}.` :
+    `Tu reserva "${reservationName}" se ha realizado correctamente. Fecha: ${new Date(reservationData.startDate).toLocaleDateString('es-ES')}.`;
+  
+  messages.push({
+    notificationId: notification[0].id,
+    language: 'es',
+    title: spanishTitle,
+    message: spanishMessage,
+  });
+  
+  // English
+  const englishTitle = type === 'cancelled' ? 'Reservation cancelled' : 
+                       type === 'confirmed' ? 'Reservation confirmed' : 'New reservation';
+  const englishMessage = type === 'cancelled' ? 
+    `Your "${reservationName}" reservation has been cancelled. Date: ${new Date(reservationData.startDate).toLocaleDateString('en-US')}.` :
+    type === 'confirmed' ? 
+    `Your "${reservationName}" reservation has been confirmed. Date: ${new Date(reservationData.startDate).toLocaleDateString('en-US')}.` :
+    `Your "${reservationName}" reservation has been successfully made. Date: ${new Date(reservationData.startDate).toLocaleDateString('en-US')}.`;
+  
+  messages.push({
+    notificationId: notification[0].id,
+    language: 'en',
+    title: englishTitle,
+    message: englishMessage,
+  });
+
+  await db.insert(notificationMessages).values(messages);
+  
+  return notification[0];
+};
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -1478,10 +1564,39 @@ export async function registerRoutes(
       
       const newReservation = await db.insert(reservations).values(reservationData).returning();
       
+      // Get updated reservations list with user names
+      const updatedReservations = await db
+        .select({
+          id: reservations.id,
+          userId: reservations.userId,
+          societyId: reservations.societyId,
+          name: reservations.name,
+          type: reservations.type,
+          status: reservations.status,
+          startDate: reservations.startDate,
+          guests: reservations.guests,
+          useKitchen: reservations.useKitchen,
+          table: reservations.table,
+          totalAmount: reservations.totalAmount,
+          notes: reservations.notes,
+          createdAt: reservations.createdAt,
+          updatedAt: reservations.updatedAt,
+          userName: users.name,
+        })
+        .from(reservations)
+        .leftJoin(users, eq(reservations.userId, users.id))
+        .where(eq(reservations.societyId, societyId))
+        .orderBy(desc(reservations.createdAt));
+      
+      console.log('Updated reservations count:', updatedReservations?.length || 0);
+      
       // Trigger real-time debt calculation for current month
       await debtCalculationService.calculateCurrentMonthDebts();
       
-      res.status(201).json(newReservation[0]);
+      res.status(201).json({
+        reservation: newReservation[0],
+        reservations: updatedReservations || []
+      });
     } catch (error) {
       console.error('Error creating reservation:', error);
       next(error);
@@ -1505,10 +1620,13 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Reservation not found" });
       }
       
-      // Check access permissions - users can only cancel their own reservations
-      if (reservation[0].userId !== user.id) {
+      // Check access permissions - users can only cancel their own reservations, but admins can cancel any
+      console.error('CANCEL DEBUG - User ID:', user.id, 'User role:', user.role, 'User function:', user.function, 'Reservation user ID:', reservation[0].userId);
+      if (user.function !== 'administratzailea' && reservation[0].userId !== user.id) {
+        console.error('CANCEL DEBUG - Permission denied - not admin and not owner');
         return res.status(403).json({ message: "You can only cancel your own reservations" });
       }
+      console.error('CANCEL DEBUG - Permission granted for cancellation');
       
       // Check if reservation can be cancelled (not already cancelled or completed)
       if (['cancelled', 'completed'].includes(reservation[0].status)) {
@@ -1520,6 +1638,14 @@ export async function registerRoutes(
         .set({ status: 'cancelled', updatedAt: new Date() })
         .where(eq(reservations.id, id))
         .returning();
+      
+      // Create cancellation notification for the user
+      await createReservationNotification(
+        reservation[0].userId,
+        societyId,
+        'cancelled',
+        updatedReservation[0]
+      );
       
       // Trigger real-time debt calculation for current month
       await debtCalculationService.calculateCurrentMonthDebts();
@@ -1550,6 +1676,16 @@ export async function registerRoutes(
       // Check access permissions
       if (reservation[0].userId !== user.id && !['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
         return res.status(403).json({ message: "Access denied" });
+      }
+      
+      // Create notification if admin is cancelling someone else's reservation
+      if (reservation[0].userId !== user.id && ['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
+        await createReservationNotification(
+          reservation[0].userId,
+          societyId,
+          'cancelled',
+          reservation[0]
+        );
       }
       
       // Delete reservation
@@ -2474,7 +2610,6 @@ export async function registerRoutes(
         societyId,
         title: title || (messages?.eu?.title) || '',
         message: message || (messages?.eu?.message) || '',
-        type: type || 'info',
         isRead: false,
         defaultLanguage
       };

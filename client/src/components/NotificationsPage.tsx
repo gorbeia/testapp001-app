@@ -104,45 +104,6 @@ export default function NotificationsPage() {
   const unreadCount = unreadData?.count || 0;
   const locale = language === 'es' ? es : eu;
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'success':
-        return <Check className="h-5 w-5 text-green-500" />;
-      case 'warning':
-        return <Bell className="h-5 w-5 text-yellow-500" />;
-      case 'error':
-        return <div className="h-5 w-5 text-red-500 rounded-full bg-red-500" />;
-      default:
-        return <Bell className="h-5 w-5 text-blue-500" />;
-    }
-  };
-
-  const getNotificationTypeText = (type: string) => {
-    switch (type) {
-      case 'success':
-        return t('notificationSuccess');
-      case 'warning':
-        return t('notificationWarning');
-      case 'error':
-        return t('notificationError');
-      default:
-        return t('notificationInfo');
-    }
-  };
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case 'success':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'warning':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'error':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-    }
-  };
-
   const formatTime = (date: Date) => {
     return formatDistanceToNow(new Date(date), { 
       addSuffix: true, 
@@ -229,15 +190,12 @@ export default function NotificationsPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4 flex-1">
                       <div className="mt-1">
-                        {getNotificationIcon(notification.type)}
+                        <Bell className="h-5 w-5 text-blue-500" />
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-lg">{notification.title}</h3>
-                          <Badge variant="outline" className={getTypeColor(notification.type)}>
-                            {getNotificationTypeText(notification.type)}
-                          </Badge>
                           {!notification.isRead && (
                             <Badge variant="default" className="bg-blue-500">
                               {t('new')}

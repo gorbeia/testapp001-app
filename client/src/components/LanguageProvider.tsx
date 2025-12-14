@@ -19,8 +19,14 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     document.documentElement.lang = language;
   }, [language]);
 
-  const t = (key: TranslationKey): string => {
-    return translations[language][key];
+  const t = (key: TranslationKey, values?: Record<string, number | string>): string => {
+    let text: string = translations[language][key];
+    if (values) {
+      Object.entries(values).forEach(([placeholder, value]) => {
+        text = text.replace(new RegExp(`{${placeholder}}`, 'g'), value.toString());
+      });
+    }
+    return text;
   };
 
   return (

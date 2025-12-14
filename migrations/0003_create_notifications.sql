@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS notifications (
     society_id VARCHAR(255) NOT NULL REFERENCES societies(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
-    type VARCHAR(50) NOT NULL DEFAULT 'info', -- 'info', 'success', 'warning', 'error'
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
     read_at TIMESTAMP,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),

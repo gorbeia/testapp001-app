@@ -11,7 +11,6 @@ const MAIN_MENU_ENTRIES = [
   'link-nire-konsumoak', // My Consumptions
   'link-nire-zorrak',    // Personal Debts
   'link-oharrak',        // Announcements
-  'link-txata',          // Chat
 ];
 
 // Admin menu entries that only authorized users should see

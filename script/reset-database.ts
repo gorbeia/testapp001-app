@@ -58,36 +58,46 @@ async function applyMigration() {
   
   console.log('Applying consolidated migration...');
   
-  // Read and execute the migration file
-  const migrationPath = path.join(__dirname, '../migrations/0000_initial_schema.sql');
-  const migrationSQL = fs.readFileSync(migrationPath, 'utf-8');
+  // Apply all migrations in order
+  const migrationFiles = [
+    '0002_remove_chat_tables.sql',  // Remove chat tables first
+    '0000_initial_schema.sql',     // Then create main schema
+    '0003_create_notifications.sql',
+    '0004_add_notification_messages.sql'
+  ];
   
-  // Split the SQL into individual statements and execute them
-  const statements = migrationSQL.split('--> statement-breakpoint');
-  let hasError = false;
-  
-  for (const statement of statements) {
-    const trimmedStatement = statement.trim();
-    if (trimmedStatement) {
-      try {
-        await client.query(trimmedStatement);
-      } catch (error) {
-        hasError = true;
-        console.error('Error executing statement:', error);
-        console.log('Statement was:', trimmedStatement.substring(0, 100) + '...');
-        // Don't continue processing after an error
-        break;
+  for (const migrationFile of migrationFiles) {
+    const migrationPath = path.join(__dirname, '../migrations', migrationFile);
+    
+    if (!fs.existsSync(migrationPath)) {
+      console.log(`Migration file ${migrationFile} not found, skipping...`);
+      continue;
+    }
+    
+    console.log(`Applying migration: ${migrationFile}`);
+    const migrationSQL = fs.readFileSync(migrationPath, 'utf-8');
+    
+    // Split the SQL into individual statements and execute them
+    const statements = migrationSQL.split('--> statement-breakpoint');
+    
+    for (const statement of statements) {
+      const trimmedStatement = statement.trim();
+      if (trimmedStatement) {
+        try {
+          await client.query(trimmedStatement);
+        } catch (error) {
+          console.error('Error executing statement:', error);
+          console.log('Statement was:', trimmedStatement.substring(0, 100) + '...');
+          // Don't continue processing after an error
+          throw new Error(`Migration failed during execution of ${migrationFile}`);
+        }
       }
     }
+    
+    console.log(`Migration ${migrationFile} applied successfully.`);
   }
   
-  if (hasError) {
-    console.error('Migration failed!');
-    await client.end();
-    throw new Error('Migration failed during execution');
-  }
-  
-  console.log('Migration applied successfully.');
+  console.log('All migrations applied successfully.');
   await client.end();
 }
 
