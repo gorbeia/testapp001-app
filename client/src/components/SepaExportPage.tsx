@@ -11,14 +11,15 @@ import { useToast } from '@/hooks/use-toast';
 import { authFetch } from '@/lib/api';
 import { SepaDirectDebitGenerator, defaultSepaConfig } from '@/lib/sepaGenerator';
 
-// todo: remove mock functionality - replace with real API data
-const mockCreditsForExport = [
-  { id: '1', memberId: '1', memberName: 'Mikel Etxeberria', iban: 'ES91 2100 0418 4502 0005 1332', amount: 125.50, selected: true, status: 'pending' },
-  { id: '2', memberId: '2', memberName: 'Ane Zelaia', iban: 'ES91 2100 0418 4502 0005 1333', amount: 87.00, selected: true, status: 'pending' },
-  { id: '3', memberId: '3', memberName: 'Jon Agirre', iban: 'ES91 2100 0418 4502 0005 1334', amount: 210.25, selected: true, status: 'pending' },
-  { id: '4', memberId: '4', memberName: 'Miren Urrutia', iban: 'ES91 2100 0418 4502 0005 1335', amount: 45.00, selected: true, status: 'pending' },
-  { id: '5', memberId: '5', memberName: 'Andoni Garcia', iban: null, amount: 32.00, selected: false, status: 'pending' },
-];
+interface Credit {
+  id: string;
+  memberId: string;
+  memberName: string;
+  iban: string | null;
+  amount: number;
+  selected: boolean;
+  status: string;
+}
 
 export function SepaExportPage() {
   const { t } = useLanguage();
@@ -60,7 +61,7 @@ export function SepaExportPage() {
 
   const availableMonths = generatePreviousSixMonths();
   const [selectedMonth, setSelectedMonth] = useState(availableMonths[0]?.value || ''); // Previous month (first in list)
-  const [credits, setCredits] = useState(mockCreditsForExport);
+  const [credits, setCredits] = useState<Credit[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Fetch debt data for selected month
