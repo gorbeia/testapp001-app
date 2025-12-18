@@ -576,6 +576,7 @@ export function UsersPage() {
               <TableHead>{t('function')}</TableHead>
               <TableHead>{t('status')}</TableHead>
               <TableHead>{t('phone')}</TableHead>
+              <TableHead>{t('iban')}</TableHead>
               <TableHead>{t('linkedMember')}</TableHead>
               <TableHead className="w-12"></TableHead>
             </TableRow>
@@ -583,7 +584,7 @@ export function UsersPage() {
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   {t('noResults')}
                 </TableCell>
               </TableRow>
@@ -621,6 +622,19 @@ export function UsersPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-sm">{user.phone}</TableCell>
+                  <TableCell>
+                    {user.iban ? (
+                      <div className="flex items-center gap-1 text-sm">
+                        <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                        {user.iban.substring(0, 4)}...{user.iban.substring(user.iban.length - 4)}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                        No IBAN
+                      </div>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {user.linkedMember ? (
                       <div className="flex items-center gap-1 text-sm">
