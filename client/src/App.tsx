@@ -29,6 +29,7 @@ import { TablesPage } from "@/components/TablesPage";
 import { UserProfile } from "@/components/UserProfile";
 import OharrakPage from "@/components/announcements";
 import NotificationsPage from "@/components/NotificationsPage";
+import { SubscriptionsPage } from "@/components/SubscriptionsPage";
 import NotFound from "@/pages/not-found";
 
 function AppRoutes() {
@@ -55,6 +56,13 @@ function AppRoutes() {
         {() => (
           <ProtectedRoute requiredAccess="admin">
             <UsersPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/subscriptions">
+        {() => (
+          <ProtectedRoute requiredAccess="admin">
+            <SubscriptionsPage />
           </ProtectedRoute>
         )}
       </Route>

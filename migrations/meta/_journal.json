@@ -29,6 +29,13 @@
       "when": 1766081138150,
       "tag": "0003_aspiring_glorian",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1766095340068,
+      "tag": "0004_sweet_firedrake",
+      "breakpoints": true
     }
   ]
 }

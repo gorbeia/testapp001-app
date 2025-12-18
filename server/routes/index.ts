@@ -3,7 +3,7 @@ import { type Server } from "http";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "../db";
-import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, oharrak, tables, notifications, notificationMessages, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Oharrak, type Table, type Notification, type NotificationMessage, type InsertTable } from "@shared/schema";
+import { users, products, consumptions, consumptionItems, stockMovements, reservations, societies, credits, notes, tables, notifications, notificationMessages, type User, type Product, type Consumption, type ConsumptionItem, type StockMovement, type Reservation, type Society, type Credit, type Note, type Table, type Notification, type NotificationMessage, type InsertTable } from "@shared/schema";
 import { eq, and, gte, ne, sum, between, sql, desc, count, inArray, like, or } from "drizzle-orm";
 import { debtCalculationService } from "../cron-jobs";
 
@@ -230,6 +230,7 @@ import { registerSepaRoutes } from "./sepa";
 import { registerDebtRoutes } from "./debts";
 import { registerSocietyRoutes } from "./societies";
 import { registerUserRoutes } from "./users";
+import { registerSubscriptionRoutes } from "./subscriptions";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -270,6 +271,9 @@ export async function registerRoutes(
   
   // Register user routes
   registerUserRoutes(app);
+  
+  // Register subscription routes
+  registerSubscriptionRoutes(app);
 
   // Authentication: login using database-backed users table
   app.post("/api/login", async (req: Request, res: Response, next: NextFunction) => {

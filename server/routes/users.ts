@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { users, consumptions, reservations, credits, notes, type User } from "@shared/schema";
+import { users, consumptions, reservations, credits, notes, subscriptionTypes, type User } from "@shared/schema";
 import { eq, and, count } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -58,12 +58,35 @@ export function registerUserRoutes(app: Express) {
         whereCondition = undefined;
       }
       
-      const allUsers = await db.query.users.findMany({
-        where: whereCondition
-      });
-      // Remove passwords from response
-      const usersWithoutPasswords = allUsers.map(({ password, ...user }) => user);
-      return res.status(200).json(usersWithoutPasswords);
+      const allUsers = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          name: users.name,
+          role: users.role,
+          function: users.function,
+          phone: users.phone,
+          iban: users.iban,
+          linkedMemberId: users.linkedMemberId,
+          linkedMemberName: users.linkedMemberName,
+          subscriptionTypeId: users.subscriptionTypeId,
+          societyId: users.societyId,
+          isActive: users.isActive,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+          subscriptionType: {
+            id: subscriptionTypes.id,
+            name: subscriptionTypes.name,
+            amount: subscriptionTypes.amount,
+            period: subscriptionTypes.period,
+          }
+        })
+        .from(users)
+        .leftJoin(subscriptionTypes, eq(users.subscriptionTypeId, subscriptionTypes.id))
+        .where(whereCondition);
+      
+      // Remove passwords from response (they're not selected anyway)
+      return res.status(200).json(allUsers);
     } catch (err) {
       next(err);
     }
@@ -98,7 +121,7 @@ export function registerUserRoutes(app: Express) {
   // Users: create a new user in the database (admin only)
   app.post("/api/users", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { username, password, name, phone, iban, role, function: userFunction } = req.body as { 
+      const { username, password, name, phone, iban, role, function: userFunction, subscriptionTypeId } = req.body as { 
         username?: string; 
         password?: string; 
         name?: string;
@@ -106,6 +129,7 @@ export function registerUserRoutes(app: Express) {
         iban?: string;
         role?: string;
         function?: string;
+        subscriptionTypeId?: string;
       };
 
       if (!username || !password) {
@@ -124,7 +148,8 @@ export function registerUserRoutes(app: Express) {
           phone: phone || null,
           iban: iban || null,
           role: role || null,
-          function: userFunction || null
+          function: userFunction || null,
+          subscriptionTypeId: subscriptionTypeId || null
         })
         .returning();
 
@@ -245,6 +270,7 @@ export function registerUserRoutes(app: Express) {
         iban,
         linkedMemberId,
         linkedMemberName,
+        subscriptionTypeId,
       } = req.body as {
         name?: string;
         role?: string;
@@ -253,6 +279,7 @@ export function registerUserRoutes(app: Express) {
         iban?: string;
         linkedMemberId?: string | null;
         linkedMemberName?: string | null;
+        subscriptionTypeId?: string | null;
       };
 
       const updateData: Partial<typeof users.$inferInsert> = {};
@@ -263,6 +290,7 @@ export function registerUserRoutes(app: Express) {
       if (typeof iban !== "undefined") updateData.iban = iban;
       if (typeof linkedMemberId !== "undefined") updateData.linkedMemberId = linkedMemberId;
       if (typeof linkedMemberName !== "undefined") updateData.linkedMemberName = linkedMemberName;
+      if (typeof subscriptionTypeId !== "undefined") updateData.subscriptionTypeId = subscriptionTypeId;
 
       if (Object.keys(updateData).length === 0) {
         return res.status(400).json({ message: "No updatable fields provided" });

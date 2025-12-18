@@ -31,6 +31,7 @@ export const users = pgTable("users", {
   iban: text("iban"),
   linkedMemberId: varchar("linked_member_id"),
   linkedMemberName: text("linked_member_name"),
+  subscriptionTypeId: varchar("subscription_type_id").references(() => subscriptionTypes.id),
   societyId: varchar("society_id").notNull().references(() => societies.id),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -59,6 +60,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   iban: true,
   linkedMemberId: true,
   linkedMemberName: true,
+  subscriptionTypeId: true,
   societyId: true,
   isActive: true,
 });
@@ -397,18 +399,55 @@ export const getDisplayContent = (
       return message;
     } else {
       // This should not happen with the fallback logic, but just in case
-      return { 
-        title: 'Izenbururik gabe', 
-        content: 'Edukirik gabe', 
-        language: 'unknown' as Language 
+      return {
+        title: 'Error',
+        content: 'Content not available',
+        language: 'unknown'
       };
     }
-  } else {
-    // Single-language fallback
+  }
+  
+  // Handle simple title/content format
+  if ('title' in content && 'content' in content) {
     return {
-      title: (content as any).title || 'Izenbururik gabe',
-      content: (content as any).content || 'Edukirik gabe',
+      title: content.title || '',
+      content: content.content || '',
       language: userLanguage
     };
   }
+  
+  // Default fallback
+  return {
+    title: '',
+    content: '',
+    language: 'unknown'
+  };
 };
+
+// Subscription types table
+export const subscriptionTypes = pgTable("subscription_types", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  period: text("period").notNull(), // 'monthly', 'quarterly', 'yearly', 'custom'
+  periodMonths: integer("period_months").notNull().default(12), // Number of months for custom periods
+  isActive: boolean("is_active").notNull().default(true),
+  autoRenew: boolean("auto_renew").notNull().default(false),
+  societyId: varchar("society_id").notNull().references(() => societies.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSubscriptionTypeSchema = createInsertSchema(subscriptionTypes).pick({
+  name: true,
+  description: true,
+  amount: true,
+  period: true,
+  periodMonths: true,
+  isActive: true,
+  autoRenew: true,
+});
+
+export type SubscriptionType = typeof subscriptionTypes.$inferSelect;
+export type InsertSubscriptionType = typeof subscriptionTypes.$inferInsert;

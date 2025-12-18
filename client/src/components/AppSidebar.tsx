@@ -12,6 +12,7 @@ import {
   LogOut,
   Receipt,
   Table as TableIcon,
+  CreditCard as SubscriptionIcon,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -80,11 +81,13 @@ export function AppSidebar() {
     ...(hasAdminAccess(user) ? [{ title: t('consumptionList'), url: '/kontsumoak-zerrenda', icon: Receipt }] : []),
     ...(hasAdminAccess(user) ? [{ title: t('adminCredits'), url: '/zorrak', icon: CreditCard }] : []),
     ...(hasCellarmanAccess(user) ? [{ title: t('products'), url: '/produktuak', icon: Package }] : []),
-    ...(hasTreasurerAccess(user) ? [
-      { title: t('society'), url: '/elkartea', icon: Building2 },
-      ...(hasAdminAccess(user) ? [{ title: t('tables'), url: '/mahaiak', icon: TableIcon }] : []),
-      { title: t('sepaExport'), url: '/sepa', icon: FileSpreadsheet },
-    ] : []),
+    ...(hasTreasurerAccess(user) ? [{ title: t('sepaExport'), url: '/sepa', icon: FileSpreadsheet }] : []),
+  ];
+
+  const configMenuItems = [
+    ...(hasAdminAccess(user) ? [{ title: t('tables'), url: '/mahaiak', icon: TableIcon }] : []),
+    ...(hasAdminAccess(user) ? [{ title: t('subscriptionTypes'), url: '/subscriptions', icon: SubscriptionIcon }] : []),
+    ...(hasTreasurerAccess(user) ? [{ title: t('society'), url: '/elkartea', icon: Building2 }] : []),
   ];
 
   const getInitials = (name: string) => {
@@ -139,6 +142,30 @@ export function AppSidebar() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {adminMenuItems.map((item) => (
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild isActive={location === item.url}>
+                      <Link 
+                        href={item.url} 
+                        data-testid={`link-${item.url.replace('/', '')}`}
+                        onClick={() => handleNavigation(item.url)}
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+        {configMenuItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>{t('configuration')}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {configMenuItems.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild isActive={location === item.url}>
                       <Link 

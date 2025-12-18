@@ -35,6 +35,13 @@ type UsersPageUser = {
   phone: string;
   iban: string | null;
   linkedMember: string | null;
+  subscriptionTypeId: string | null;
+  subscriptionType?: {
+    id: string;
+    name: string;
+    amount: string;
+    period: string;
+  } | null;
   isActive: boolean;
 };
 
@@ -58,6 +65,16 @@ export function UsersPage() {
     gcTime: 0, // Don't cache results (garbage collection time)
   });
 
+  // Fetch subscription types for dropdown
+  const { data: subscriptionTypes = [] } = useQuery({
+    queryKey: ['subscription-types'],
+    queryFn: async () => {
+      const response = await authFetch('/api/subscription-types');
+      if (!response.ok) throw new Error('Failed to fetch subscription types');
+      return response.json();
+    },
+  });
+
   // Transform API data to component format
   const users: UsersPageUser[] = rawUsers.map((dbUser: any) => ({
     id: dbUser.id,
@@ -68,6 +85,8 @@ export function UsersPage() {
     phone: dbUser.phone ?? '',
     iban: dbUser.iban ?? null,
     linkedMember: dbUser.linkedMemberName,
+    subscriptionTypeId: dbUser.subscriptionTypeId ?? null,
+    subscriptionType: dbUser.subscriptionType ?? null,
     isActive: dbUser.isActive,
   }));
 
@@ -78,6 +97,14 @@ export function UsersPage() {
   const editIbanRef = useRef<HTMLInputElement | null>(null);
   const [editRole, setEditRole] = useState<string>('');
   const [editFunction, setEditFunction] = useState<string>('');
+  const [editSubscriptionTypeId, setEditSubscriptionTypeId] = useState<string>('none');
+
+  // Create form refs
+  const createPhoneRef = useRef<HTMLInputElement | null>(null);
+  const createIbanRef = useRef<HTMLInputElement | null>(null);
+  const [createRole, setCreateRole] = useState<string>('');
+  const [createFunction, setCreateFunction] = useState<string>('');
+  const [createSubscriptionTypeId, setCreateSubscriptionTypeId] = useState<string>('none');
 
   if (isLoading) {
     return (
@@ -120,6 +147,7 @@ export function UsersPage() {
     setEditingUser(user);
     setEditRole(user.role);
     setEditFunction(user.function);
+    setEditSubscriptionTypeId(user.subscriptionTypeId || 'none');
     setIsEditDialogOpen(true);
   };
 
@@ -132,6 +160,7 @@ export function UsersPage() {
       iban: editIbanRef.current?.value.trim() ?? editingUser.iban ?? null,
       role: editRole,
       function: editFunction,
+      subscriptionTypeId: editSubscriptionTypeId === 'none' ? null : editSubscriptionTypeId || null,
     };
 
     try {
@@ -306,7 +335,12 @@ export function UsersPage() {
       const response = await authFetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: email, password: 'demo' }),
+        body: JSON.stringify({ 
+          username: email, 
+          password: 'demo',
+          name: name || undefined,
+          subscriptionTypeId: createSubscriptionTypeId === 'none' ? null : createSubscriptionTypeId || null
+        }),
       });
 
       if (!response.ok) {
@@ -432,6 +466,23 @@ export function UsersPage() {
                 <Input placeholder="ES00 0000 0000 0000 0000 0000" data-testid="input-user-iban" />
               </div>
 
+              <div className="space-y-2">
+                <Label>{t('subscription')}</Label>
+                <Select value={createSubscriptionTypeId} onValueChange={setCreateSubscriptionTypeId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('selectSubscription')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">{t('noSubscription')}</SelectItem>
+                    {subscriptionTypes.map((type: any) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        {type.name} - €{type.amount} ({t(type.period)})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   {t('cancel')}
@@ -513,6 +564,23 @@ export function UsersPage() {
                   />
                 </div>
 
+                <div className="space-y-2">
+                  <Label>{t('subscription')}</Label>
+                  <Select value={editSubscriptionTypeId} onValueChange={setEditSubscriptionTypeId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('selectSubscription')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t('noSubscription')}</SelectItem>
+                      {subscriptionTypes.map((type: any) => (
+                        <SelectItem key={type.id} value={type.id}>
+                          {type.name} - €{type.amount} ({t(type.period)})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <div className="flex justify-end gap-2 pt-2">
                   <Button
                     variant="outline"
@@ -574,6 +642,7 @@ export function UsersPage() {
               <TableHead>{t('name')}</TableHead>
               <TableHead>{t('role')}</TableHead>
               <TableHead>{t('function')}</TableHead>
+              <TableHead>{t('subscription')}</TableHead>
               <TableHead>{t('status')}</TableHead>
               <TableHead>{t('phone')}</TableHead>
               <TableHead>{t('iban')}</TableHead>
@@ -584,7 +653,7 @@ export function UsersPage() {
           <TableBody>
             {filteredUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   {t('noResults')}
                 </TableCell>
               </TableRow>
@@ -611,6 +680,18 @@ export function UsersPage() {
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline">{getFunctionLabel(user.function)}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    {user.subscriptionType ? (
+                      <div className="flex flex-col gap-1">
+                        <span className="text-sm font-medium">{user.subscriptionType.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          €{user.subscriptionType.amount} ({t(user.subscriptionType.period)})
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">{t('noSubscription')}</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant={user.isActive ? 'default' : 'destructive'} className="gap-1">
