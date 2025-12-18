@@ -24,6 +24,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
+  useSidebar,
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +35,14 @@ export function AppSidebar() {
   const { t } = useLanguage();
   const { user, logout } = useAuth();
   const [location] = useLocation();
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const handleNavigation = (href: string) => {
+    // On mobile, close the sidebar after navigation
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const getRoleBadgeVariant = () => {
     if (!user) return 'secondary';
@@ -109,7 +118,11 @@ export function AppSidebar() {
               {menuItems.map((item: any) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
-                    <Link href={item.url} data-testid={`link-${item.url.replace('/', '') || 'home'}`}>
+                    <Link 
+                      href={item.url} 
+                      data-testid={`link-${item.url.replace('/', '') || 'home'}`}
+                      onClick={() => handleNavigation(item.url)}
+                    >
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
@@ -128,7 +141,11 @@ export function AppSidebar() {
                 {adminMenuItems.map((item) => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild isActive={location === item.url}>
-                      <Link href={item.url} data-testid={`link-${item.url.replace('/', '')}`}>
+                      <Link 
+                        href={item.url} 
+                        data-testid={`link-${item.url.replace('/', '')}`}
+                        onClick={() => handleNavigation(item.url)}
+                      >
                         <item.icon className="h-4 w-4" />
                         <span>{item.title}</span>
                       </Link>
@@ -144,7 +161,12 @@ export function AppSidebar() {
       <SidebarFooter className="p-4 border-t">
         {user && (
           <div className="flex items-center gap-3">
-            <Link href="/profila" className="flex items-center gap-3 flex-1 min-w-0 hover-elevate active-elevate-2 rounded-md p-1 -m-1" data-testid="link-profile">
+            <Link 
+              href="/profila" 
+              className="flex items-center gap-3 flex-1 min-w-0 hover-elevate active-elevate-2 rounded-md p-1 -m-1" 
+              data-testid="link-profile"
+              onClick={() => handleNavigation('/profila')}
+            >
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="text-xs bg-accent">
                   {getInitials(user.name)}
