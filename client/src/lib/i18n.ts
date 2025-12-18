@@ -160,6 +160,9 @@ export const translations = {
     newNote: 'Ohar berria',
     editNote: 'Oharra editatu',
     createNewNote: 'Ohar berria sortu',
+    updateNote: 'Oharra eguneratu',
+    createNote: 'Oharra sortu',
+    manageSocietyNotes: 'Kudeatu elkartearen oharrak',
     noteTitlePlaceholder: 'Idatzi oharraren izenburua...',
     noteContentPlaceholder: 'Idatzi oharraren edukia...',
     markAsPaid: 'Markatu zorrak ordaindu gisa',
@@ -275,6 +278,7 @@ export const translations = {
     societyUpdated: 'Elkartearen datuak eguneratua',
     errorSavingSociety: 'Errorea elkarteko datuak gordetzean',
     tryAgain: 'Saiatu berriro',
+    dashboardStatsUnavailable: 'Ezin dira dashboard estatistikak kargatu',
   },
   es: {
     appName: 'Gure Txokoa',
@@ -445,6 +449,9 @@ export const translations = {
     newNote: 'Nueva Nota',
     editNote: 'Editar Nota',
     createNewNote: 'Crear Nueva Nota',
+    updateNote: 'Actualizar Nota',
+    createNote: 'Crear Nota',
+    manageSocietyNotes: 'Gestionar notas de la sociedad',
     noteTitlePlaceholder: 'Escribir el título de la nota...',
     noteContentPlaceholder: 'Escribir el contenido de la nota...',
     markAsPaid: 'Marcar deudas como pagadas',
@@ -550,6 +557,7 @@ export const translations = {
     societyUpdated: 'Datos de la sociedad actualizados',
     errorSavingSociety: 'Error al guardar los datos de la sociedad',
     tryAgain: 'Intentar de nuevo',
+    dashboardStatsUnavailable: 'No se pueden cargar las estadísticas del dashboard',
   },
 } as const;
 

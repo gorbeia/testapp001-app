@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { users, consumptions, reservations, credits, oharrak, type User } from "@shared/schema";
+import { users, consumptions, reservations, credits, notes, type User } from "@shared/schema";
 import { eq, and, count } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -297,13 +297,13 @@ export function registerUserRoutes(app: Express) {
         consumptionsCount,
         reservationsCount,
         creditsCount,
-        oharrakCount,
+        notesCount,
         markedAsPaidByCount
       ] = await Promise.all([
         db.select({ count: count() }).from(consumptions).where(eq(consumptions.userId, id)),
         db.select({ count: count() }).from(reservations).where(eq(reservations.userId, id)),
         db.select({ count: count() }).from(credits).where(eq(credits.memberId, id)),
-        db.select({ count: count() }).from(oharrak).where(eq(oharrak.createdBy, id)),
+        db.select({ count: count() }).from(notes).where(eq(notes.createdBy, id)),
         db.select({ count: count() }).from(credits).where(eq(credits.markedAsPaidBy, id)),
       ]);
 
@@ -318,8 +318,8 @@ export function registerUserRoutes(app: Express) {
       if (creditsCount[0]?.count > 0) {
         dependencies.push(`${creditsCount[0].count} zorra/kreditu`);
       }
-      if (oharrakCount[0]?.count > 0) {
-        dependencies.push(`${oharrakCount[0].count} ohar`);
+      if (notesCount[0]?.count > 0) {
+        dependencies.push(`${notesCount[0].count} ohar`);
       }
       if (markedAsPaidByCount[0]?.count > 0) {
         dependencies.push(`${markedAsPaidByCount[0].count} ordainketa-markatze`);

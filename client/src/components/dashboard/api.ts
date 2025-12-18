@@ -1,4 +1,5 @@
 import { authFetch } from '@/lib/api';
+import { Language, findMessageByLanguage, MultilingualMessage } from '@shared/schema';
 
 export interface Note {
   id: string;
@@ -9,6 +10,15 @@ export interface Note {
   societyId: string;
   createdAt: string;
   updatedAt: string;
+  language?: string; // Track the actual language displayed
+}
+
+export interface NoteWithMessages extends Note {
+  messages: Array<{
+    language: string;
+    title: string;
+    content: string;
+  }>;
 }
 
 export interface DashboardStats {
@@ -32,22 +42,36 @@ export interface UpcomingReservation {
   guests: number;
 }
 
-export const fetchNotes = async (): Promise<Note[]> => {
+export const fetchNotes = async (language?: string): Promise<Note[]> => {
   try {
-    const response = await authFetch('/api/oharrak');
+    const response = await authFetch('/api/notes');
     if (response.ok) {
-      const data = await response.json();
+      const data: NoteWithMessages[] = await response.json();
       // Get only active notes, sorted by creation date, max 4
       const activeNotes = data
-        .filter((note: Note) => note.isActive)
-        .sort((a: Note, b: Note) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 4);
+        .filter((note: NoteWithMessages) => note.isActive)
+        .sort((a: NoteWithMessages, b: NoteWithMessages) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        .slice(0, 4)
+        .map(note => {
+          // Use provided language or get user's preferred language from localStorage or default to 'eu'
+          const userLanguage = (language || (typeof window !== 'undefined' ? localStorage.getItem('language') || 'eu' : 'eu')) as Language;
+          
+          // Use shared utility for language fallback logic
+          const message = findMessageByLanguage(note.messages as MultilingualMessage[], userLanguage);
+          
+          return {
+            ...note,
+            title: message?.title || '',
+            content: message?.content || '',
+            language: message?.language || 'unknown' // Track the actual language displayed
+          };
+        });
       return activeNotes;
     }
-    return [];
+    throw new Error('Failed to fetch notes');
   } catch (error) {
     console.error('Error fetching notes:', error);
-    return [];
+    throw error;
   }
 };
 

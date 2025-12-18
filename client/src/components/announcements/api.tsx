@@ -1,10 +1,25 @@
 import { authFetch } from '@/lib/api';
-import { Oharrak } from './types';
 
-export class OharrakAPI {
-  static async fetchNotes(): Promise<Oharrak[]> {
+export interface NoteMessage {
+  language: 'eu' | 'es';
+  title: string;
+  content: string;
+}
+
+export interface Note {
+  id: string;
+  isActive: boolean;
+  createdBy: string;
+  societyId: string;
+  createdAt: string;
+  updatedAt: string;
+  messages: NoteMessage[];
+}
+
+export class NotesAPI {
+  static async fetchNotes(): Promise<Note[]> {
     try {
-      const response = await authFetch('/api/oharrak');
+      const response = await authFetch('/api/notes');
       if (!response.ok) {
         throw new Error('Failed to fetch notes');
       }
@@ -16,12 +31,11 @@ export class OharrakAPI {
   }
 
   static async createNote(noteData: {
-    title: string;
-    content: string;
+    messages: NoteMessage[];
     isActive: boolean;
-  }): Promise<Oharrak> {
+  }): Promise<Note> {
     try {
-      const response = await authFetch('/api/oharrak', {
+      const response = await authFetch('/api/notes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -33,8 +47,7 @@ export class OharrakAPI {
         throw new Error('Failed to create note');
       }
 
-      const [newNote] = await response.json();
-      return newNote;
+      return await response.json();
     } catch (error) {
       console.error('Error creating note:', error);
       throw error;
@@ -42,12 +55,11 @@ export class OharrakAPI {
   }
 
   static async updateNote(id: string, noteData: {
-    title: string;
-    content: string;
+    messages: NoteMessage[];
     isActive: boolean;
-  }): Promise<Oharrak> {
+  }): Promise<Note> {
     try {
-      const response = await authFetch(`/api/oharrak/${id}`, {
+      const response = await authFetch(`/api/notes/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -59,8 +71,7 @@ export class OharrakAPI {
         throw new Error('Failed to update note');
       }
 
-      const [updatedNote] = await response.json();
-      return updatedNote;
+      return await response.json();
     } catch (error) {
       console.error('Error updating note:', error);
       throw error;
@@ -69,7 +80,7 @@ export class OharrakAPI {
 
   static async deleteNote(id: string): Promise<void> {
     try {
-      const response = await authFetch(`/api/oharrak/${id}`, {
+      const response = await authFetch(`/api/notes/${id}`, {
         method: 'DELETE',
       });
 
@@ -82,15 +93,15 @@ export class OharrakAPI {
     }
   }
 
-  static async toggleNoteStatus(note: Oharrak): Promise<Oharrak> {
+  static async toggleNoteStatus(note: Note): Promise<Note> {
     try {
-      const response = await authFetch(`/api/oharrak/${note.id}`, {
+      const response = await authFetch(`/api/notes/${note.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...note,
+          messages: note.messages,
           isActive: !note.isActive
         }),
       });
@@ -99,8 +110,7 @@ export class OharrakAPI {
         throw new Error('Failed to toggle note status');
       }
 
-      const [updatedNote] = await response.json();
-      return updatedNote;
+      return await response.json();
     } catch (error) {
       console.error('Error toggling note status:', error);
       throw error;

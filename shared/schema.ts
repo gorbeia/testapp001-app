@@ -213,10 +213,8 @@ export const credits = pgTable("credits", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const oharrak = pgTable("oharrak", {
+export const notes = pgTable("notes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  title: text("title").notNull(),
-  content: text("content").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   societyId: varchar("society_id").notNull().references(() => societies.id),
@@ -224,12 +222,28 @@ export const oharrak = pgTable("oharrak", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertOharrakSchema = createInsertSchema(oharrak).pick({
-  title: true,
-  content: true,
+// Note messages for multilingual support
+export const noteMessages = pgTable("note_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  noteId: varchar("note_id").notNull().references(() => notes.id, { onDelete: "cascade" }),
+  language: varchar("language").notNull(),
+  title: varchar("title").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertNotesSchema = createInsertSchema(notes).pick({
   isActive: true,
   createdBy: true,
   societyId: true,
+});
+
+export const insertNoteMessageSchema = createInsertSchema(noteMessages).pick({
+  noteId: true,
+  language: true,
+  title: true,
+  content: true,
 });
 
 export type InsertSociety = z.infer<typeof insertSocietySchema>;
@@ -248,8 +262,10 @@ export type InsertReservation = z.infer<typeof insertReservationSchema>;
 export type Reservation = typeof reservations.$inferSelect;
 export type Credit = typeof credits.$inferSelect;
 export type InsertCredit = typeof credits.$inferSelect;
-export type Oharrak = typeof oharrak.$inferSelect;
-export type InsertOharrak = z.infer<typeof insertOharrakSchema>;
+export type Note = typeof notes.$inferSelect;
+export type NoteMessage = typeof noteMessages.$inferSelect;
+export type InsertNote = z.infer<typeof insertNotesSchema>;
+export type InsertNoteMessage = z.infer<typeof insertNoteMessageSchema>;
 
 // Tables for reservations
 export const tables = pgTable("tables", {
@@ -317,3 +333,74 @@ export type Notification = typeof notifications.$inferSelect;
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type NotificationMessage = typeof notificationMessages.$inferSelect;
 export type InsertNotificationMessage = z.infer<typeof insertNotificationMessageSchema>;
+
+// Shared types for multilingual content handling
+export type Language = 'eu' | 'es' | 'en';
+
+export interface MultilingualMessage {
+  language: Language;
+  title: string;
+  content: string;
+}
+
+export interface MultilingualContent {
+  messages: MultilingualMessage[];
+  defaultLanguage: Language;
+}
+
+export interface DisplayContent {
+  title: string;
+  content: string;
+  language: Language | 'unknown';
+}
+
+// Type guards
+export const isValidLanguage = (lang: string): lang is Language => {
+  return ['eu', 'es', 'en'].includes(lang);
+};
+
+export const hasMessages = (content: any): content is { messages: MultilingualMessage[] } => {
+  return content && Array.isArray(content.messages) && content.messages.length > 0;
+};
+
+export const findMessageByLanguage = (
+  messages: MultilingualMessage[], 
+  preferredLanguage: Language
+): MultilingualMessage | undefined => {
+  // Try preferred language first
+  let message = messages.find(msg => msg.language === preferredLanguage);
+  
+  // If not found, try fallback language
+  if (!message) {
+    const fallbackLanguage = preferredLanguage === 'eu' ? 'es' : 'eu';
+    message = messages.find(msg => msg.language === fallbackLanguage);
+  }
+  
+  // If still not found, return first available message
+  if (!message && messages.length > 0) {
+    message = messages[0];
+  }
+  
+  return message;
+};
+
+export const getDisplayContent = (
+  content: MultilingualContent | { messages?: MultilingualMessage[] } | { title?: string; content?: string },
+  userLanguage: Language
+): DisplayContent => {
+  if (hasMessages(content)) {
+    const message = findMessageByLanguage(content.messages, userLanguage);
+    return message || { 
+      title: 'Izenbururik gabe', 
+      content: 'Edukirik gabe', 
+      language: 'unknown' as Language 
+    };
+  } else {
+    // Single-language fallback
+    return {
+      title: (content as any).title || 'Izenbururik gabe',
+      content: (content as any).content || 'Edukirik gabe',
+      language: userLanguage
+    };
+  }
+};

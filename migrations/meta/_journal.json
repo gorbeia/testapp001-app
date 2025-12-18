@@ -15,6 +15,20 @@
       "when": 1765548584389,
       "tag": "0001_useful_stone_men",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1766080798512,
+      "tag": "0002_nosy_kang",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1766081138150,
+      "tag": "0003_aspiring_glorian",
+      "breakpoints": true
     }
   ]
 }
