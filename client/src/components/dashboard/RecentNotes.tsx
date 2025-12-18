@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Megaphone } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Megaphone, AlertCircle } from 'lucide-react';
 import { Link } from 'wouter';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -10,10 +11,22 @@ import { Note } from './api';
 interface RecentNotesProps {
   notes: Note[];
   loading: boolean;
+  error?: string | null;
 }
 
-export function RecentNotes({ notes, loading }: RecentNotesProps) {
+export function RecentNotes({ notes, loading, error }: RecentNotesProps) {
   const { t } = useLanguage();
+
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>
+          {error}
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <Card>
