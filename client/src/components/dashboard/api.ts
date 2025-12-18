@@ -1,5 +1,6 @@
 import { authFetch } from '@/lib/api';
 import { Language, findMessageByLanguage, MultilingualMessage } from '@shared/schema';
+import { useAuth } from '@/lib/auth';
 
 export interface Note {
   id: string;
@@ -76,19 +77,27 @@ export const fetchNotes = async (language?: string): Promise<Note[]> => {
   }
 };
 
-export const fetchDashboardStats = async (): Promise<DashboardStats> => {
+export const fetchDashboardStats = async (user?: any): Promise<DashboardStats> => {
   try {
-    // Fetch real stats from database
-    const [reservationsCount, peopleCount, reservationsAmount, consumptionsCount, consumptionsAmount, memberConsumptionsAmount, creditsSum, usersCount] = await Promise.all([
+    // Fetch basic stats that all users can see
+    const [reservationsCount, peopleCount, reservationsAmount, consumptionsCount, consumptionsAmount, memberConsumptionsAmount, usersCount] = await Promise.all([
       fetchTodayReservationsCount(),
       fetchTodayPeopleCount(),
       fetchTodayReservationsAmount(),
       fetchMonthlyConsumptionsCount(),
       fetchMonthlyConsumptionsAmount(),
       fetchMemberMonthlyConsumptionsAmount(),
-      fetchPendingCreditsSum(),
       fetchActiveUsersCount()
     ]);
+
+    // Fetch credits - always show total pending debt for all users
+    let creditsSum = 0;
+    try {
+      creditsSum = await fetchUserTotalPendingDebt();
+    } catch (error) {
+      console.log('Failed to fetch user total pending debt:', error);
+      creditsSum = 0;
+    }
 
     return {
       todayReservations: reservationsCount,
@@ -223,6 +232,21 @@ const fetchActiveUsersCount = async (): Promise<number> => {
     throw new Error('Failed to fetch active users count');
   } catch (error) {
     console.error('Error fetching active users count:', error);
+    throw error;
+  }
+};
+
+const fetchUserTotalPendingDebt = async (): Promise<number> => {
+  try {
+    const response = await authFetch('/api/credits/member/current?status=pending');
+    if (response.ok) {
+      const data = await response.json();
+      // Sum up all pending amounts across all months
+      return data.reduce((sum: number, credit: any) => sum + (parseFloat(credit.totalAmount) || 0), 0);
+    }
+    throw new Error('Failed to fetch user total pending debt');
+  } catch (error) {
+    console.error('Error fetching user total pending debt:', error);
     throw error;
   }
 };

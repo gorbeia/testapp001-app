@@ -69,7 +69,7 @@ export function Dashboard() {
     setLoadingStats(true);
     setStatsError(null);
     try {
-      const statsData = await fetchDashboardStats();
+      const statsData = await fetchDashboardStats(user);
       setStats(statsData);
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
