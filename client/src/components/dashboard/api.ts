@@ -19,6 +19,7 @@ export interface NoteWithMessages extends Note {
     title: string;
     content: string;
   }>;
+  notifyUsers?: boolean;
 }
 
 export interface DashboardStats {

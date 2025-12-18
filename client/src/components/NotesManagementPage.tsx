@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { Plus, Edit2, Trash2, FileText, Calendar } from 'lucide-react';
+import { Power, Edit, Trash, Bell, FileText, Plus, Send, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +38,8 @@ export function NotesManagementPage() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [confirmPushDialog, setConfirmPushDialog] = useState<{ open: boolean; noteId: string; noteTitle: string }>({ open: false, noteId: '', noteTitle: '' });
+  const [confirmRevertDialog, setConfirmRevertDialog] = useState<{ open: boolean; noteId: string; noteTitle: string }>({ open: false, noteId: '', noteTitle: '' });
 
   const [formData, setFormData] = useState({
     messages: [
@@ -53,22 +54,21 @@ export function NotesManagementPage() {
 
   // Fetch notes from API
   useEffect(() => {
-    const loadNotes = async () => {
+    if (!isAdmin) return;
+
+    const fetchNotes = async () => {
       try {
+        setLoading(true);
         const data = await fetchAdminNotes();
         setNotes(data);
-      } catch (error) {
-        console.error('Error fetching notes:', error);
-        setError(error instanceof Error ? error : new Error(String(error)));
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to fetch notes'));
       } finally {
         setLoading(false);
       }
     };
 
-    if (isAdmin) {
-      setLoading(true);
-      loadNotes();
-    }
+    fetchNotes();
   }, [isAdmin]);
 
   const resetForm = () => {
@@ -196,6 +196,76 @@ export function NotesManagementPage() {
     return getDisplayContent(note, language as Language);
   };
 
+  const handlePushNotification = async (noteId: string) => {
+    try {
+      const response = await authFetch(`/api/notes/${noteId}/notify`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notifyUsers: true }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to push notifications');
+      }
+
+      const updatedNote = await response.json();
+      
+      // Update the note in the local state
+      setNotes(prev => prev.map(note => 
+        note.id === noteId ? { ...note, notifyUsers: true } : note
+      ));
+
+      toast({
+        title: 'Jakinarazpenak bidali da',
+        description: 'Erabiltzaileei jakinarazpena bidali zaie',
+      });
+    } catch (error) {
+      console.error('Error pushing notification:', error);
+      toast({
+        title: t('error'),
+        description: 'Ezin izan da jakinarazpena bidali',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleRevertNotification = async (noteId: string) => {
+    try {
+      const response = await authFetch(`/api/notes/${noteId}/notify`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ notifyUsers: false }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to revert notifications');
+      }
+
+      const updatedNote = await response.json();
+      
+      // Update the note in the local state
+      setNotes(prev => prev.map(note => 
+        note.id === noteId ? { ...note, notifyUsers: false } : note
+      ));
+
+      toast({
+        title: 'Jakinarazpenak kendu dira',
+        description: 'Erabiltzaileei jakinarazpenak kendu zaizkie',
+      });
+    } catch (error) {
+      console.error('Error reverting notification:', error);
+      toast({
+        title: t('error'),
+        description: 'Ezin izan dira jakinarazpenak kendu',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleToggleActive = async (noteId: string, currentStatus: boolean) => {
     try {
       const note = notes.find(n => n.id === noteId);
@@ -268,7 +338,7 @@ export function NotesManagementPage() {
           </div>
           <Button onClick={openCreateDialog}>
             <Plus className="mr-2 h-4 w-4" />
-            {t('createNewNote')}
+            {t('createNote')}
           </Button>
         </div>
 
@@ -311,24 +381,94 @@ export function NotesManagementPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Switch
-                        checked={note.isActive}
-                        onCheckedChange={() => handleToggleActive(note.id, note.isActive)}
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(note)}
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(note.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <TooltipProvider>
+                        <div className="flex items-center gap-2">
+                          {note.notifyUsers ? (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="default" className="text-xs">
+                                <Bell className="h-3 w-3 mr-1" />
+                                Jakinarazpenak bidalita
+                              </Badge>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setConfirmRevertDialog({ open: true, noteId: note.id, noteTitle: getNoteDisplayContent(note).title })}
+                                    disabled={loading}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Jakinarazpenak kendu</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setConfirmPushDialog({ open: true, noteId: note.id, noteTitle: getNoteDisplayContent(note).title })}
+                                  disabled={loading}
+                                >
+                                  <Send className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Jakinarazpenak bidali</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleToggleActive(note.id, note.isActive)}
+                              disabled={loading}
+                            >
+                              <Power className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{note.isActive ? 'Desaktibatu oharra' : 'Aktibatu oharra'}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditDialog(note)}
+                              disabled={loading}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Editatu oharra</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(note.id)}
+                              disabled={loading}
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Ezabatu oharra</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   </div>
                 </CardHeader>
@@ -344,6 +484,48 @@ export function NotesManagementPage() {
           )}
         </div>
       </div>
+
+      {/* Push Notification Confirmation Dialog */}
+      <AlertDialog open={confirmPushDialog.open} onOpenChange={(open) => setConfirmPushDialog({ ...confirmPushDialog, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Jakinarazpenak bidali</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ziur zaude "{confirmPushDialog.noteTitle}" oharra erabiltzaile guztiei jakinarazpen gisa bidali nahi duzula? Geroago jakinarazpenak kendu ditzakezu.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Utzi</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              handlePushNotification(confirmPushDialog.noteId);
+              setConfirmPushDialog({ open: false, noteId: '', noteTitle: '' });
+            }}>
+              Bidali
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Revert Notification Confirmation Dialog */}
+      <AlertDialog open={confirmRevertDialog.open} onOpenChange={(open) => setConfirmRevertDialog({ ...confirmRevertDialog, open })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Jakinarazpenak kendu</AlertDialogTitle>
+            <AlertDialogDescription>
+              Ziur zaude "{confirmRevertDialog.noteTitle}" oharreko jakinarazpen guztiak kendu nahi dituzula? Erabiltzaileei jakinarazpenak kendu zaizkie.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Utzi</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              handleRevertNotification(confirmRevertDialog.noteId);
+              setConfirmRevertDialog({ open: false, noteId: '', noteTitle: '' });
+            }}>
+              Ezabatu
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ErrorBoundary>
   );
 }

@@ -2,20 +2,10 @@ import { useState, useEffect } from 'react';
 import { Check, CheckCheck, Bell, Filter } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { useLanguage } from '@/lib/i18n';
 import { authFetch } from '@/lib/api';
 import { Notification } from '@shared/schema';
@@ -27,7 +17,6 @@ export default function NotificationsPage() {
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'info' | 'success' | 'warning' | 'error'>('all');
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
 
   // Fetch notifications with pagination
   const { data: notificationsData, isLoading, refetch } = useQuery({
@@ -62,7 +51,7 @@ export default function NotificationsPage() {
   }, [language, refetch]);
 
   // Fetch unread count
-  const { data: unreadData } = useQuery({
+  const { data: unreadData, refetch: refetchUnreadCount } = useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: async () => {
       const response = await authFetch('/api/notifications/unread-count');
@@ -82,6 +71,7 @@ export default function NotificationsPage() {
     },
     onSuccess: () => {
       refetch();
+      refetchUnreadCount();
     },
   });
 
@@ -96,6 +86,7 @@ export default function NotificationsPage() {
     },
     onSuccess: () => {
       refetch();
+      refetchUnreadCount();
     },
   });
 
@@ -109,14 +100,6 @@ export default function NotificationsPage() {
       addSuffix: true, 
       locale 
     });
-  };
-
-  const handleMarkAsRead = (notificationId: string) => {
-    markAsReadMutation.mutate(notificationId);
-  };
-
-  const handleMarkAllAsRead = () => {
-    markAllAsReadMutation.mutate();
   };
 
   return (
@@ -161,7 +144,7 @@ export default function NotificationsPage() {
           {unreadCount > 0 && (
             <Button
               variant="outline"
-              onClick={handleMarkAllAsRead}
+              onClick={() => markAllAsReadMutation.mutate()}
               disabled={markAllAsReadMutation.isPending}
             >
               <CheckCheck className="h-4 w-4 mr-2" />
@@ -216,7 +199,7 @@ export default function NotificationsPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleMarkAsRead(notification.id)}
+                              onClick={() => markAsReadMutation.mutate(notification.id)}
                               disabled={markAsReadMutation.isPending}
                             >
                               <Check className="h-4 w-4 mr-2" />

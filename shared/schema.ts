@@ -215,6 +215,7 @@ export const credits = pgTable("credits", {
 
 export const notes = pgTable("notes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  notifyUsers: boolean("notify_users").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   createdBy: varchar("created_by").notNull().references(() => users.id),
   societyId: varchar("society_id").notNull().references(() => societies.id),
@@ -234,6 +235,7 @@ export const noteMessages = pgTable("note_messages", {
 });
 
 export const insertNotesSchema = createInsertSchema(notes).pick({
+  notifyUsers: true,
   isActive: true,
   createdBy: true,
   societyId: true,
@@ -292,6 +294,7 @@ export const notifications = pgTable("notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   societyId: varchar("society_id").notNull().references(() => societies.id, { onDelete: "cascade" }),
+  referenceId: varchar("reference_id"), // Reference to the original entity (note_id, debt_id, etc.)
   title: varchar("title").notNull(),
   message: text("message").notNull(),
   isRead: boolean("is_read").notNull().default(false),
@@ -390,11 +393,16 @@ export const getDisplayContent = (
 ): DisplayContent => {
   if (hasMessages(content)) {
     const message = findMessageByLanguage(content.messages, userLanguage);
-    return message || { 
-      title: 'Izenbururik gabe', 
-      content: 'Edukirik gabe', 
-      language: 'unknown' as Language 
-    };
+    if (message) {
+      return message;
+    } else {
+      // This should not happen with the fallback logic, but just in case
+      return { 
+        title: 'Izenbururik gabe', 
+        content: 'Edukirik gabe', 
+        language: 'unknown' as Language 
+      };
+    }
   } else {
     // Single-language fallback
     return {

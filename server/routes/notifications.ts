@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { notifications, notificationMessages, users, type User, type Notification } from "@shared/schema";
-import { eq, and, desc, count } from "drizzle-orm";
+import { eq, and, desc, count, isNotNull } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
 // Helper function to get society ID from JWT (no DB query needed)
@@ -29,6 +29,25 @@ const getLocalizedNotification = async (notification: Notification, preferredLan
       ...notification,
       title: localizedMessage[0].title,
       message: localizedMessage[0].message,
+    };
+  }
+
+  // Try the other available language as fallback
+  const fallbackLanguage = preferredLanguage === 'eu' ? 'es' : 'eu';
+  const fallbackMessage = await db
+    .select()
+    .from(notificationMessages)
+    .where(and(
+      eq(notificationMessages.notificationId, notification.id),
+      eq(notificationMessages.language, fallbackLanguage)
+    ))
+    .limit(1);
+
+  if (fallbackMessage.length > 0) {
+    return {
+      ...notification,
+      title: fallbackMessage[0].title,
+      message: fallbackMessage[0].message,
     };
   }
 
@@ -63,14 +82,25 @@ export const getUserNotifications = async (req: Request, res: Response, next: Ne
     const limit = parseInt(req.query.limit as string) || 20;
     const offset = (page - 1) * limit;
     const preferredLanguage = (req.query.lang as string) || 'eu';
+    const filter = (req.query.filter as string) || 'all';
+    
+    // Build the base query conditions
+    const baseConditions = [
+      eq(notifications.userId, user.id),
+      eq(notifications.societyId, societyId)
+    ];
+    
+    // Add filter conditions if specified
+    if (filter === 'unread') {
+      baseConditions.push(eq(notifications.isRead, false));
+    } else if (filter === 'read') {
+      baseConditions.push(eq(notifications.isRead, true));
+    }
     
     const userNotifications = await db
       .select()
       .from(notifications)
-      .where(and(
-        eq(notifications.userId, user.id),
-        eq(notifications.societyId, societyId)
-      ))
+      .where(and(...baseConditions))
       .orderBy(desc(notifications.createdAt))
       .limit(limit)
       .offset(offset);
@@ -80,14 +110,11 @@ export const getUserNotifications = async (req: Request, res: Response, next: Ne
       userNotifications.map(notification => getLocalizedNotification(notification, preferredLanguage))
     );
 
-    // Get total count for pagination
+    // Get total count for pagination (respecting the same filter)
     const totalCount = await db
       .select({ count: count() })
       .from(notifications)
-      .where(and(
-        eq(notifications.userId, user.id),
-        eq(notifications.societyId, societyId)
-      ));
+      .where(and(...baseConditions));
 
     return res.status(200).json({
       notifications: localizedNotifications,
@@ -261,4 +288,25 @@ export function registerNotificationRoutes(app: any) {
   app.patch("/api/notifications/:id/read", sessionMiddleware, requireAuth, markNotificationAsRead);
   app.patch("/api/notifications/mark-all-read", sessionMiddleware, requireAuth, markAllNotificationsAsRead);
   app.post("/api/notifications", sessionMiddleware, requireAuth, createNotification);
+  
+  // New endpoint to mark all note notifications as read
+  app.patch("/api/notifications/notes/mark-all-read", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const user = req.user as User;
+      
+      // Mark all unread notifications that have a referenceId (indicating they're from notes) as read for this user
+      await db
+        .update(notifications)
+        .set({ isRead: true })
+        .where(and(
+          eq(notifications.userId, user.id),
+          isNotNull(notifications.referenceId),
+          eq(notifications.isRead, false)
+        ));
+
+      res.json({ success: true });
+    } catch (error) {
+      next(error);
+    }
+  });
 }

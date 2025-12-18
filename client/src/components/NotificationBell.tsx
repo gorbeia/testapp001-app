@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
-import { Bell, Check, CheckCheck, X } from 'lucide-react';
+import { useState } from 'react';
+import { Bell, Check, CheckCheck } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { 
@@ -28,7 +27,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   // Fetch unread count
-  const { data: unreadData } = useQuery({
+  const { data: unreadData, refetch: refetchUnreadCount } = useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: async () => {
       const response = await authFetch('/api/notifications/unread-count');
@@ -42,7 +41,6 @@ export function NotificationBell({ className }: NotificationBellProps) {
   const { data: recentNotifications = [], refetch: refetchRecent } = useQuery({
     queryKey: ['notifications', 'recent', language],
     queryFn: async () => {
-      console.log('Fetching notifications with language:', language);
       const response = await authFetch(`/api/notifications/recent?lang=${language}`);
       if (!response.ok) throw new Error('Failed to fetch recent notifications');
       return response.json() as Promise<Notification[]>;
@@ -61,6 +59,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
     },
     onSuccess: () => {
       refetchRecent();
+      refetchUnreadCount();
     },
   });
 
@@ -75,37 +74,12 @@ export function NotificationBell({ className }: NotificationBellProps) {
     },
     onSuccess: () => {
       refetchRecent();
+      refetchUnreadCount();
     },
   });
 
   const unreadCount = unreadData?.count || 0;
   const locale = language === 'es' ? es : eu;
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'success':
-        return <Check className="h-4 w-4 text-green-500" />;
-      case 'warning':
-        return <Bell className="h-4 w-4 text-yellow-500" />;
-      case 'error':
-        return <X className="h-4 w-4 text-red-500" />;
-      default:
-        return <Bell className="h-4 w-4 text-blue-500" />;
-    }
-  };
-
-  const getNotificationTypeText = (type: string) => {
-    switch (type) {
-      case 'success':
-        return t('notificationSuccess');
-      case 'warning':
-        return t('notificationWarning');
-      case 'error':
-        return t('notificationError');
-      default:
-        return t('notificationInfo');
-    }
-  };
 
   const formatTime = (date: Date) => {
     return formatDistanceToNow(new Date(date), { 
@@ -119,14 +93,14 @@ export function NotificationBell({ className }: NotificationBellProps) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className={`relative ${className}`}>
           <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
-            <Badge 
-              variant="destructive" 
-              className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center"
-            >
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </Badge>
-          )}
+          <Badge 
+            variant={unreadCount > 0 ? "destructive" : "secondary"}
+            className={`absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 text-xs flex items-center justify-center transition-all ${
+              unreadCount > 0 ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            {unreadCount > 99 ? '99+' : unreadCount}
+          </Badge>
         </Button>
       </DropdownMenuTrigger>
       
@@ -161,9 +135,12 @@ export function NotificationBell({ className }: NotificationBellProps) {
                 className="p-3 cursor-pointer"
                 asChild
               >
-                <Link href="/jakinarazpenak" onClick={() => setIsOpen(false)}>
+                <Link 
+                  href={notification.referenceId ? "/oharrak" : "/jakinarazpenak"} 
+                  onClick={() => setIsOpen(false)}
+                >
                   <div className="flex items-start gap-3 w-full">
-                    {getNotificationIcon(notification.type)}
+                    <Bell className="h-4 w-4 text-blue-500" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
                         <p className="font-medium text-sm truncate">
