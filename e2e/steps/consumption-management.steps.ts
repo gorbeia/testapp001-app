@@ -32,12 +32,12 @@ When('I add {string} to the cart', async function (productName: string) {
 When('I increase the quantity of {string} to {int}', async function (productName: string, quantity: number) {
   const page = getPage();
   if (!page) throw new Error('Page not available');
-  // Find the item in the cart and increase quantity
+  // Find the item in the desktop cart and increase quantity
   const cartItem = page.locator(`[data-testid^="cart-item-"]:has-text("${productName}")`);
   
   // Click the plus button until we reach the desired quantity
   for (let i = 1; i < quantity; i++) {
-    await cartItem.locator('[data-testid^="button-increase-quantity-"]').click();
+    await cartItem.locator('[data-testid^="button-increase-quantity-"]:not([data-testid^="mobile-"])').click();
     await page.waitForTimeout(200);
   }
 });
@@ -45,7 +45,7 @@ When('I increase the quantity of {string} to {int}', async function (productName
 When('I click the close account button', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
-  await page.click('[data-testid="button-close-account"]');
+  await page.click('[data-testid="button-close-account"]:not([data-testid^="mobile-"])');
 });
 
 When('I should see the confirmation dialog', async function () {
@@ -160,11 +160,11 @@ Then('the cart should be empty', async function () {
   await page.waitForTimeout(1000);
   
   // Check that the cart shows empty state instead of looking for cart-count badge
-  const emptyCartMessage = await page.locator('text=Saskia hutsik dago').isVisible();
+  const emptyCartMessage = await page.locator('[data-testid="desktop-cart-empty"]').isVisible();
   assert.ok(emptyCartMessage, 'Cart should show empty message');
   
   // Alternatively, check that no cart items exist
-  const cartItems = await page.locator('[data-testid="cart-item"]').count();
+  const cartItems = await page.locator('[data-testid^="cart-item-"]:not([data-testid^="mobile-"])').count();
   assert.equal(cartItems, 0, 'Cart should have no items');
 });
 
@@ -172,7 +172,7 @@ Then('the cart should still contain {string}', async function (productName: stri
   const page = getPage();
   if (!page) throw new Error('Page not available');
   
-  const cartItem = page.locator(`[data-testid^="cart-item-"]:has-text("${productName}")`);
+  const cartItem = page.locator(`[data-testid^="cart-item-"]:has-text("${productName}"):not([data-testid^="mobile-"])`);
   const isVisible = await cartItem.isVisible();
   
   assert.ok(isVisible, `Cart should still contain ${productName}`);

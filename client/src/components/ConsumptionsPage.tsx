@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Minus, ShoppingCart, X, Search, Receipt } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, X, Search, Receipt, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,6 +43,7 @@ export function ConsumptionsPage() {
   const [loading, setLoading] = useState(true);
   const [isClosingAccount, setIsClosingAccount] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [isCartExpanded, setIsCartExpanded] = useState(false);
 
   const categoryLabels: Record<string, string> = {
     edariak: 'Edariak',
@@ -297,8 +298,43 @@ export function ConsumptionsPage() {
         </div>
       </div>
 
-      <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l bg-card flex flex-col max-h-[50vh] lg:max-h-none">
-        <div className="p-4 border-b">
+      <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l bg-card flex flex-col lg:max-h-none">
+        {/* Cart Header with Handle - Always Visible */}
+        <div className="p-4 border-b lg:hidden">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              <h3 className="font-semibold">{t('cart')}</h3>
+              {cartCount > 0 && (
+                <Badge variant="secondary" data-testid="cart-count">
+                  {cartCount}
+                </Badge>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsCartExpanded(!isCartExpanded)}
+              className="h-8 w-8 p-0"
+              data-testid="cart-expand-toggle"
+            >
+              {isCartExpanded ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronUp className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+          {cart.length > 0 && (
+            <div className="flex justify-between items-center mt-2">
+              <span className="font-medium text-sm">{t('total')}:</span>
+              <span className="font-bold">{cartTotal.toFixed(2)}€</span>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Cart Header */}
+        <div className="p-4 border-b hidden lg:block">
           <h3 className="font-semibold flex items-center gap-2">
             <ShoppingCart className="h-4 w-4" />
             {t('cart')}
@@ -310,63 +346,141 @@ export function ConsumptionsPage() {
           </h3>
         </div>
 
-        <ScrollArea className="flex-1">
-          <div className="p-4 space-y-3">
-            {cart.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">{t('cartEmpty')}</p>
-              </div>
-            ) : (
-              cart.map((item) => (
-                <div
-                  key={item.productId}
-                  className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50"
-                  data-testid={`cart-item-${item.productId}`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {item.price.toFixed(2)}€ x {item.quantity}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => updateQuantity(item.productId, -1)}
-                      data-testid={`button-decrease-quantity-${item.productId}`}
-                    >
-                      <Minus className="h-3 w-3" />
-                    </Button>
-                    <span className="w-6 text-center text-sm">{item.quantity}</span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => updateQuantity(item.productId, 1)}
-                      data-testid={`button-increase-quantity-${item.productId}`}
-                    >
-                      <Plus className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7"
-                      onClick={() => removeFromCart(item.productId)}
-                      data-testid={`button-remove-${item.productId}`}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
+        {/* Collapsible Cart Content - Mobile Only */}
+        <div className={`lg:hidden transition-all duration-300 ease-in-out ${isCartExpanded ? 'max-h-96' : 'max-h-0'} overflow-hidden`}>
+          <ScrollArea className="flex-1">
+            <div className="p-4 space-y-3">
+              {cart.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm" data-testid="mobile-cart-empty">{t('cartEmpty')}</p>
                 </div>
-              ))
-            )}
-          </div>
-        </ScrollArea>
+              ) : (
+                cart.map((item) => (
+                  <div
+                    key={item.productId}
+                    className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50"
+                    data-testid={`mobile-cart-item-${item.productId}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.price.toFixed(2)}€ x {item.quantity}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => updateQuantity(item.productId, -1)}
+                        data-testid={`mobile-button-decrease-quantity-${item.productId}`}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="w-6 text-center text-sm">{item.quantity}</span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => updateQuantity(item.productId, 1)}
+                        data-testid={`mobile-button-increase-quantity-${item.productId}`}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => removeFromCart(item.productId)}
+                        data-testid={`mobile-button-remove-${item.productId}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
 
-        <div className="p-4 border-t mt-auto">
+        {/* Desktop Cart Content - Always Visible */}
+        <div className="hidden lg:block">
+          <ScrollArea className="flex-1">
+            <div className="p-4 space-y-3">
+              {cart.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm" data-testid="desktop-cart-empty">{t('cartEmpty')}</p>
+                </div>
+              ) : (
+                cart.map((item) => (
+                  <div
+                    key={item.productId}
+                    className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50"
+                    data-testid={`cart-item-${item.productId}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{item.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {item.price.toFixed(2)}€ x {item.quantity}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => updateQuantity(item.productId, -1)}
+                        data-testid={`button-decrease-quantity-${item.productId}`}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                      <span className="w-6 text-center text-sm">{item.quantity}</span>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => updateQuantity(item.productId, 1)}
+                        data-testid={`button-increase-quantity-${item.productId}`}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={() => removeFromCart(item.productId)}
+                        data-testid={`button-remove-${item.productId}`}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* Cart Footer - Mobile (Collapsible) */}
+        <div className={`lg:hidden transition-all duration-300 ease-in-out ${isCartExpanded ? 'block' : 'hidden'}`}>
+          <div className="p-4 border-t">
+            <Button
+              className="w-full"
+              disabled={cart.length === 0 || isClosingAccount}
+              onClick={handleCloseAccount}
+              data-testid="mobile-button-close-account"
+            >
+              <Receipt className="mr-2 h-4 w-4" />
+              {isClosingAccount ? 'Gordetzen...' : t('closeAccount')}
+            </Button>
+          </div>
+        </div>
+
+        {/* Cart Footer - Desktop */}
+        <div className="hidden lg:block p-4 border-t mt-auto">
           <div className="flex justify-between items-center mb-4">
             <span className="font-medium">{t('total')}:</span>
             <span className="text-xl font-bold">{cartTotal.toFixed(2)}€</span>
