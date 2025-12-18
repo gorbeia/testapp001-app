@@ -378,34 +378,48 @@ export function NotesManagementPage() {
                         <Badge variant={note.isActive ? "default" : "secondary"}>
                           {note.isActive ? t('active') : t('inactive')}
                         </Badge>
+                        {note.notifyUsers && (
+                          <Badge variant="default" className="text-xs">
+                            <Bell className="h-3 w-3 mr-1" />
+                            Jakinarazpenak bidalita
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <TooltipProvider>
                         <div className="flex items-center gap-2">
-                          {note.notifyUsers ? (
-                            <div className="flex items-center gap-2">
-                              <Badge variant="default" className="text-xs">
-                                <Bell className="h-3 w-3 mr-1" />
-                                Jakinarazpenak bidalita
-                              </Badge>
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setConfirmRevertDialog({ open: true, noteId: note.id, noteTitle: getNoteDisplayContent(note).title })}
-                                    disabled={loading}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Jakinarazpenak kendu</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                          ) : (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditDialog(note)}
+                                disabled={loading}
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t('editNote')}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleActive(note.id, note.isActive)}
+                                disabled={loading}
+                              >
+                                {note.isActive ? <Power className="h-4 w-4" /> : <Power className="h-4 w-4" />}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{note.isActive ? t('deactivate') : t('activate')}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                          {!note.notifyUsers && (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
@@ -418,56 +432,43 @@ export function NotesManagementPage() {
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>Jakinarazpenak bidali</p>
+                                <p>{t('sendNotifications')}</p>
                               </TooltipContent>
                             </Tooltip>
                           )}
+                          {note.notifyUsers && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setConfirmRevertDialog({ open: true, noteId: note.id, noteTitle: getNoteDisplayContent(note).title })}
+                                  disabled={loading}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t('removeNotifications')}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(note.id)}
+                                disabled={loading}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>{t('deleteNote')}</p>
+                            </TooltipContent>
+                          </Tooltip>
                         </div>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleToggleActive(note.id, note.isActive)}
-                              disabled={loading}
-                            >
-                              <Power className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{note.isActive ? 'Desaktibatu oharra' : 'Aktibatu oharra'}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openEditDialog(note)}
-                              disabled={loading}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Editatu oharra</p>
-                          </TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDelete(note.id)}
-                              disabled={loading}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Ezabatu oharra</p>
-                          </TooltipContent>
-                        </Tooltip>
                       </TooltipProvider>
                     </div>
                   </div>
@@ -486,42 +487,46 @@ export function NotesManagementPage() {
       </div>
 
       {/* Push Notification Confirmation Dialog */}
-      <AlertDialog open={confirmPushDialog.open} onOpenChange={(open) => setConfirmPushDialog({ ...confirmPushDialog, open })}>
+      <AlertDialog open={confirmPushDialog.open} onOpenChange={(open) => !open && setConfirmPushDialog({ open: false, noteId: '', noteTitle: '' })}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Jakinarazpenak bidali</AlertDialogTitle>
+            <AlertDialogTitle>{t('sendNotifications')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Ziur zaude "{confirmPushDialog.noteTitle}" oharra erabiltzaile guztiei jakinarazpen gisa bidali nahi duzula? Geroago jakinarazpenak kendu ditzakezu.
+              {t('confirmSendNotifications').replace('{title}', confirmPushDialog.noteTitle)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Utzi</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setConfirmPushDialog({ open: false, noteId: '', noteTitle: '' })}>
+              {t('cancel')}
+            </AlertDialogCancel>
             <AlertDialogAction onClick={() => {
               handlePushNotification(confirmPushDialog.noteId);
               setConfirmPushDialog({ open: false, noteId: '', noteTitle: '' });
-            }}>
-              Bidali
+            }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t('send')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       {/* Revert Notification Confirmation Dialog */}
-      <AlertDialog open={confirmRevertDialog.open} onOpenChange={(open) => setConfirmRevertDialog({ ...confirmRevertDialog, open })}>
+      <AlertDialog open={confirmRevertDialog.open} onOpenChange={(open) => !open && setConfirmRevertDialog({ open: false, noteId: '', noteTitle: '' })}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Jakinarazpenak kendu</AlertDialogTitle>
+            <AlertDialogTitle>{t('removeNotifications')}</AlertDialogTitle>
             <AlertDialogDescription>
-              Ziur zaude "{confirmRevertDialog.noteTitle}" oharreko jakinarazpen guztiak kendu nahi dituzula? Erabiltzaileei jakinarazpenak kendu zaizkie.
+              {t('confirmRemoveNotifications').replace('{title}', confirmRevertDialog.noteTitle)}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Utzi</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setConfirmRevertDialog({ open: false, noteId: '', noteTitle: '' })}>
+              {t('cancel')}
+            </AlertDialogCancel>
             <AlertDialogAction onClick={() => {
               handleRevertNotification(confirmRevertDialog.noteId);
               setConfirmRevertDialog({ open: false, noteId: '', noteTitle: '' });
-            }}>
-              Ezabatu
+            }} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {t('remove')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

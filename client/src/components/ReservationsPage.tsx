@@ -575,7 +575,7 @@ export function ReservationsPage() {
         )}
       </div>
       
-      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+      <AlertDialog open={cancelDialogOpen} onOpenChange={(open) => !open && setCancelDialogOpen(false)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{t('cancelReservation')}</AlertDialogTitle>
@@ -587,7 +587,7 @@ export function ReservationsPage() {
             <AlertDialogCancel onClick={() => setCancelDialogOpen(false)}>
               {t('cancel')}
             </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmCancelReservation} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction onClick={confirmCancelReservation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {t('confirm')}
             </AlertDialogAction>
           </AlertDialogFooter>
