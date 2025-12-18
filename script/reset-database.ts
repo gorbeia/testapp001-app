@@ -65,9 +65,8 @@ async function applyMigration() {
     '0000_initial_schema.sql',     // Then create main schema (includes oharrak table)
     '0003_create_notifications.sql',
     '0004_add_notification_messages.sql',
-    '0003_aspiring_glorian.sql',   // Rename oharrak to notes and setup constraints
-    '0002_nosy_kang.sql',          // Create note_messages and migrate data
-    '0005_migrate_notes_multilanguage.sql', // Create multilanguage structure
+    '0002_nosy_kang.sql',          // Creates note_messages, renames oharrak to notes, sets up multilanguage
+    '0005_migrate_notes_multilanguage.sql', // Additional multilanguage setup
     '0006_remove_note_columns.sql', // Clean up old columns
     '0007_add_notify_users_to_notes.sql', // Add notify_users column
     '0008_add_notification_type_fields.sql' // Add notification type fields
