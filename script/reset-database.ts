@@ -25,7 +25,8 @@ async function resetDatabase() {
     'consumption_items',
     'consumptions',
     'credits',
-    'oharrak',
+    'note_messages',
+    'notes',
     'stock_movements',
     'reservations',
     'tables',
@@ -61,9 +62,15 @@ async function applyMigration() {
   // Apply all migrations in order
   const migrationFiles = [
     '0002_remove_chat_tables.sql',  // Remove chat tables first
-    '0000_initial_schema.sql',     // Then create main schema
+    '0000_initial_schema.sql',     // Then create main schema (includes oharrak table)
     '0003_create_notifications.sql',
-    '0004_add_notification_messages.sql'
+    '0004_add_notification_messages.sql',
+    '0003_aspiring_glorian.sql',   // Rename oharrak to notes and setup constraints
+    '0002_nosy_kang.sql',          // Create note_messages and migrate data
+    '0005_migrate_notes_multilanguage.sql', // Create multilanguage structure
+    '0006_remove_note_columns.sql', // Clean up old columns
+    '0007_add_notify_users_to_notes.sql', // Add notify_users column
+    '0008_add_notification_type_fields.sql' // Add notification type fields
   ];
   
   for (const migrationFile of migrationFiles) {
