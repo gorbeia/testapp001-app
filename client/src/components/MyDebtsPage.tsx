@@ -1,10 +1,12 @@
-import { CreditCard, TrendingUp, CheckCircle } from 'lucide-react';
+import { CreditCard, TrendingUp, CheckCircle, Eye } from 'lucide-react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MonthGrid from '@/components/MonthGrid';
+import { DebtDetailModal } from '@/components/DebtDetailModal';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
@@ -184,12 +186,13 @@ export function MyDebtsPage() {
               <TableHead>{t('month')}</TableHead>
               <TableHead className="text-right">{t('amount')}</TableHead>
               <TableHead className="text-right">{t('status')}</TableHead>
+              <TableHead className="text-center">{t('actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {credits.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-8 text-muted-foreground" data-testid="no-results-message">
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground" data-testid="no-results-message">
                   {isLoading ? 'Loading...' : (t('noResults') || 'No results')}
                 </TableCell>
               </TableRow>
@@ -202,6 +205,9 @@ export function MyDebtsPage() {
                     <Badge variant={credit.status === 'paid' ? 'default' : 'destructive'}>
                       {credit.status === 'paid' ? t('paid') : t('pending')}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <DebtDetailModal credit={credit} />
                   </TableCell>
                 </TableRow>
               ))
