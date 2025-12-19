@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, X } from 'lucide-react';
 import * as Popover from '@radix-ui/react-popover';
 import * as Select from '@radix-ui/react-select';
 import { cn } from '@/lib/utils';
@@ -101,12 +101,26 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
         >
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-gray-500" />
-            <span className="font-medium">{getSelectedDisplay()}</span>
+            <span className="font-medium whitespace-nowrap">{getSelectedDisplay()}</span>
           </div>
-          <div className="h-4 w-4 text-gray-500">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+          <div className="flex items-center gap-1">
+            {selectedMonth && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMonthChange('');
+                }}
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                data-testid="clear-month-trigger"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+            <div className="h-4 w-4 text-gray-500">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
           </div>
         </button>
       </Popover.Trigger>
