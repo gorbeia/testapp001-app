@@ -407,11 +407,10 @@ Then('I should see a reservation success message', async function () {
   // Wait for success toast to appear
   await page.waitForTimeout(2000);
   
-  // Look for the success message text in the page
+  // Look for success message text in page
   const successTexts = [
-    'Erreserba sortua / Reserva creada',
-    'Erreserba sortua',
-    'Reserva creada'
+    'Erreserba sortua' 
+
   ];
   
   let found = false;

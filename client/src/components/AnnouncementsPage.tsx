@@ -108,7 +108,7 @@ export function AnnouncementsPage() {
         setAnnouncements(prev => [newAnnouncement, ...prev]);
         toast({
           title: t('success'),
-          description: 'Oharra argitaratua / Anuncio publicado',
+          description: t('announcementCreated'),
         });
         setTitle('');
         setContent('');

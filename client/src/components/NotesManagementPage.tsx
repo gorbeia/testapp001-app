@@ -138,13 +138,13 @@ export function NotesManagementPage() {
           ));
           toast({
             title: t('success'),
-            description: 'Oharra eguneratua / Nota actualizada',
+            description: t('noteUpdated'),
           });
         } else {
           setNotes(prev => [savedNote, ...prev]);
           toast({
             title: t('success'),
-            description: 'Oharra sortua / Nota creada',
+            description: t('noteCreated'),
           });
         }
         

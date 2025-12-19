@@ -162,7 +162,7 @@ export function UserProfile() {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({
         title: t('error'),
-        description: 'Passwords do not match',
+        description: t('passwordsDoNotMatch'),
         variant: 'destructive',
       });
       return;
@@ -171,7 +171,7 @@ export function UserProfile() {
     if (passwordForm.newPassword.length < 6) {
       toast({
         title: t('error'),
-        description: 'Password must be at least 6 characters',
+        description: t('passwordMinLength'),
         variant: 'destructive',
       });
       return;
@@ -193,8 +193,8 @@ export function UserProfile() {
       }
 
       toast({
-        title: 'Password Changed',
-        description: 'Your password has been updated successfully',
+        title: t('passwordChanged'),
+        description: t('passwordUpdatedSuccessfully'),
       });
 
       // Reset password form
@@ -208,7 +208,7 @@ export function UserProfile() {
       console.error('Error changing password:', error);
       toast({
         title: t('error'),
-        description: error.message || 'Failed to change password',
+        description: error.message || t('errorChangingPassword'),
         variant: 'destructive',
       });
     }
@@ -364,7 +364,7 @@ export function UserProfile() {
                   {t('edit')}
                 </Button>
                 <Button variant="outline" onClick={() => setIsChangingPassword(true)} className="gap-2">
-                  {t('changePassword')}
+                  {t('changePasswordAction')}
                 </Button>
               </>
             )}
@@ -378,47 +378,47 @@ export function UserProfile() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <UserIcon className="h-5 w-5" />
-              {t('changePassword')}
+              {t('changePasswordAction')}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="currentPassword">{t('currentPassword')}</Label>
+              <Label htmlFor="currentPassword">{t('currentPasswordLabel')}</Label>
               <Input
                 id="currentPassword"
                 type="password"
                 value={passwordForm.currentPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                placeholder={t('currentPassword')}
+                placeholder={t('currentPasswordLabel')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="newPassword">{t('newPassword')}</Label>
+              <Label htmlFor="newPassword">{t('newPasswordLabel')}</Label>
               <Input
                 id="newPassword"
                 type="password"
                 value={passwordForm.newPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                placeholder={t('newPassword')}
+                placeholder={t('newPasswordLabel')}
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">{t('confirmPassword')}</Label>
+              <Label htmlFor="confirmPassword">{t('confirmPasswordLabel')}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={passwordForm.confirmPassword}
                 onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                placeholder={t('confirmPassword')}
+                placeholder={t('confirmPasswordLabel')}
               />
             </div>
 
             <div className="flex gap-3 pt-4">
               <Button onClick={handlePasswordChange} className="gap-2">
                 <Save className="h-4 w-4" />
-                {t('changePassword')}
+                {t('changePasswordAction')}
               </Button>
               <Button variant="outline" onClick={() => setIsChangingPassword(false)} className="gap-2">
                 <X className="h-4 w-4" />

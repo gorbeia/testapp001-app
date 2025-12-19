@@ -63,7 +63,7 @@ export function StatsCards({ stats, loading }: StatsCardsProps) {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-          <CardTitle className="text-sm font-medium">{t('consumptions')}</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('dashboardConsumptions')}</CardTitle>
           <ShoppingCart className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>

@@ -209,7 +209,7 @@ export function ReservationsPage() {
         
         toast({
           title: t('success'),
-          description: 'Erreserba sortua / Reserva creada',
+          description: t('reservationCreated'),
         });
         
         // Reset form
@@ -259,7 +259,7 @@ export function ReservationsPage() {
         
         toast({
           title: t('success'),
-          description: 'Erreserba bertan behera utzita / Reserva cancelada', 
+          description: t('reservationCancelled'), 
         });
         
         setCancelDialogOpen(false);
