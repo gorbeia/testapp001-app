@@ -108,7 +108,7 @@ export function TablesPage() {
     if (!name.trim()) {
       toast({
         title: t('error'),
-        description: 'Mahaiaren izena behar da',
+        description: t('tableNameRequired'),
         variant: 'destructive',
       });
       return;
@@ -117,7 +117,7 @@ export function TablesPage() {
     if (minCapacity < 1 || maxCapacity < minCapacity) {
       toast({
         title: t('error'),
-        description: 'Kapazitateak baliozkoak izan behar dira',
+        description: t('capacityValidation'),
         variant: 'destructive',
       });
       return;
@@ -155,13 +155,13 @@ export function TablesPage() {
         setTables((prev) => prev.map((t) => (t.id === editingTable.id ? savedTable : t)));
         toast({
           title: t('success'),
-          description: 'Mahaia eguneratua',
+          description: t('tableUpdated'),
         });
       } else {
         setTables((prev) => [...prev, savedTable]);
         toast({
           title: t('success'),
-          description: 'Mahaia sortua',
+          description: t('tableCreated'),
         });
       }
 
@@ -189,7 +189,7 @@ export function TablesPage() {
       setTables((prev) => prev.filter((t) => t.id !== table.id));
       toast({
         title: t('success'),
-        description: 'Mahaia ezabatua',
+        description: t('tableDeleted'),
       });
     } catch (error: any) {
       toast({
@@ -244,7 +244,7 @@ export function TablesPage() {
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Mahaia 1"
+                  placeholder={t('tableNamePlaceholder')}
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -275,7 +275,7 @@ export function TablesPage() {
                   id="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Mahaiaren deskribapena (aukerazkoa)"
+                  placeholder={t('tableDescriptionPlaceholder')}
                   rows={3}
                 />
               </div>
@@ -292,7 +292,7 @@ export function TablesPage() {
                   {t('cancel')}
                 </Button>
                 <Button onClick={handleSubmit}>
-                  {editingTable ? 'Eguneratu' : 'Sortu'}
+                  {editingTable ? t('update') : t('create')}
                 </Button>
               </div>
             </div>
@@ -346,7 +346,7 @@ export function TablesPage() {
                 <div className="flex items-center space-x-2">
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <span>
-                    {table.minCapacity}-{table.maxCapacity} pertsona
+                    {table.minCapacity}-{table.maxCapacity} {t('persons')}
                   </span>
                 </div>
                 {table.description && (
@@ -357,7 +357,7 @@ export function TablesPage() {
                 )}
                 <div className="flex items-center space-x-2">
                   <div className={`w-2 h-2 rounded-full ${table.isActive ? 'bg-green-500' : 'bg-red-500'}`} />
-                  <span>{table.isActive ? 'Aktibo' : 'Desaktibo'}</span>
+                  <span>{table.isActive ? t('active') : t('inactive')}</span>
                 </div>
               </div>
             </CardContent>

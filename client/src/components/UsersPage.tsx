@@ -195,6 +195,8 @@ export function UsersPage() {
         phone: updated.phone ?? '',
         iban: updated.iban ?? null,
         linkedMember: updated.linkedMemberName ?? editingUser.linkedMember,
+        subscriptionTypeId: editingUser.subscriptionTypeId,
+        subscriptionType: editingUser.subscriptionType,
         isActive: updated.isActive,
       };
 
@@ -211,7 +213,7 @@ export function UsersPage() {
     } catch {
       toast({
         title: t('error'),
-        description: 'Ezin izan da erabiltzailea eguneratu',
+        description: t('userUpdateFailed'),
         variant: 'destructive',
       });
     }
@@ -248,6 +250,8 @@ export function UsersPage() {
         phone: updated.phone ?? '',
         iban: updated.iban ?? null,
         linkedMember: updated.linkedMemberName ?? user.linkedMember,
+        subscriptionTypeId: user.subscriptionTypeId,
+        subscriptionType: user.subscriptionType,
         isActive: updated.isActive,
       };
 
@@ -256,12 +260,12 @@ export function UsersPage() {
 
       toast({
         title: t('success'),
-        description: `${updatedUser.name} ${updatedUser.isActive ? 'aktibatua' : 'desaktibatua'}`,
+        description: `${updatedUser.name} ${updatedUser.isActive ? t('userActivated') : t('userDeactivated')}`,
       });
     } catch {
       toast({
         title: t('error'),
-        description: 'Ezin izan da erabiltzailearen egoera aldatu',
+        description: t('userStatusToggleFailed'),
         variant: 'destructive',
       });
     }
@@ -282,7 +286,7 @@ export function UsersPage() {
         if (errorData?.dependencies) {
           // User has dependencies, show detailed error
           toast({
-            title: 'Ezin da erabiltzailea ezabatu',
+            title: t('userDeleteTitle'),
             description: errorData.details || 'Erabiltzaileak erlazionatutako datuak ditu',
             variant: 'destructive',
             duration: 8000,
@@ -298,12 +302,12 @@ export function UsersPage() {
 
       toast({
         title: t('success'),
-        description: `${user.name} (${user.email}) ezabatua`,
+        description: `${user.name} (${user.email}) ${t('deleted')}`,
       });
     } catch {
       toast({
         title: t('error'),
-        description: 'Ezin izan da erabiltzailea ezabatu',
+        description: t('userDeleteFailed'),
         variant: 'destructive',
       });
     }
@@ -346,7 +350,7 @@ export function UsersPage() {
       if (!response.ok) {
         toast({
           title: t('error'),
-          description: 'Ezin izan da erabiltzailea sortu',
+          description: t('userCreateFailed'),
           variant: 'destructive',
         });
         return;
@@ -359,13 +363,13 @@ export function UsersPage() {
 
       toast({
         title: t('success'),
-        description: 'Erabiltzailea sortua / Usuario creado',
+        description: t('userCreated'),
       });
       setIsDialogOpen(false);
     } catch {
       toast({
         title: t('error'),
-        description: 'Ezin izan da erabiltzailea sortu',
+        description: t('userCreateFailed'),
         variant: 'destructive',
       });
     }
@@ -393,9 +397,9 @@ export function UsersPage() {
             <div className="space-y-4 pt-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Izena / Nombre</Label>
+                  <Label>{t('nameLabel')}</Label>
                   <Input
-                    placeholder="Izena..."
+                    placeholder={t('namePlaceholder')}
                     data-testid="input-user-name"
                     ref={nameInputRef}
                   />
@@ -404,7 +408,7 @@ export function UsersPage() {
                   <Label>{t('email')}</Label>
                   <Input
                     type="email"
-                    placeholder="email@txokoa.eus"
+                    placeholder={t('emailPlaceholder')}
                     data-testid="input-user-email"
                     ref={emailInputRef}
                   />
@@ -449,7 +453,7 @@ export function UsersPage() {
                   <Label>{t('linkedMember')}</Label>
                   <Select>
                     <SelectTrigger data-testid="select-linked-member">
-                      <SelectValue placeholder="Aukeratu..." />
+                      <SelectValue placeholder={t('selectPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">{t('noOne')}</SelectItem>
@@ -504,7 +508,7 @@ export function UsersPage() {
               <div className="space-y-4 pt-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Izena / Nombre</Label>
+                    <Label>{t('nameLabel')}</Label>
                     <Input
                       defaultValue={editingUser.name}
                       ref={editNameRef}
@@ -686,7 +690,7 @@ export function UsersPage() {
                       <div className="flex flex-col gap-1">
                         <span className="text-sm font-medium">{user.subscriptionType.name}</span>
                         <span className="text-xs text-muted-foreground">
-                          €{user.subscriptionType.amount} ({t(user.subscriptionType.period)})
+                          €{user.subscriptionType.amount} ({t(user.subscriptionType.period as any)})
                         </span>
                       </div>
                     ) : (
@@ -696,9 +700,9 @@ export function UsersPage() {
                   <TableCell>
                     <Badge variant={user.isActive ? 'default' : 'destructive'} className="gap-1">
                       {user.isActive ? (
-                        <><UserCheck className="h-3 w-3" /> Aktibo</>
+                        <><UserCheck className="h-3 w-3" /> {t('active')}</>
                       ) : (
-                        <><UserX className="h-3 w-3" /> Inaktibo</>
+                        <><UserX className="h-3 w-3" /> {t('inactive')}</>
                       )}
                     </Badge>
                   </TableCell>
@@ -712,7 +716,7 @@ export function UsersPage() {
                     ) : (
                       <div className="flex items-center gap-1 text-sm text-muted-foreground">
                         <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                        No IBAN
+                        {t('noIBAN')}
                       </div>
                     )}
                   </TableCell>
@@ -745,9 +749,9 @@ export function UsersPage() {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleToggleUserStatus(user)}>
                           {user.isActive ? (
-                            <><UserX className="mr-2 h-4 w-4" /> Desaktibatu</>
+                            <><UserX className="mr-2 h-4 w-4" /> {t('deactivate')}</>
                           ) : (
-                            <><UserCheck className="mr-2 h-4 w-4" /> Aktibatu</>
+                            <><UserCheck className="mr-2 h-4 w-4" /> {t('activate')}</>
                           )}
                         </DropdownMenuItem>
                         <DropdownMenuItem

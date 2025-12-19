@@ -111,7 +111,7 @@ export function NotesManagementPage() {
     if (!hasValidContent) {
       toast({
         title: t('error'),
-        description: 'Bi hizkuntzetan ere izenburua eta edukia bete behar dira / Título y contenido requeridos en ambos idiomas',
+        description: t('validationRequired'),
         variant: 'destructive',
       });
       return;
@@ -157,7 +157,7 @@ export function NotesManagementPage() {
       console.error('Error saving note:', error);
       toast({
         title: t('error'),
-        description: 'Ezin izan da oharra gorde / No se pudo guardar la nota',
+        description: t('noteSaveFailed'),
         variant: 'destructive',
       });
     }
@@ -177,7 +177,7 @@ export function NotesManagementPage() {
         setNotes(prev => prev.filter(note => note.id !== noteId));
         toast({
           title: t('success'),
-          description: 'Oharra ezabatua / Nota eliminada',
+          description: t('noteDeleted'),
         });
       } else {
         throw new Error('Failed to delete note');
@@ -186,7 +186,7 @@ export function NotesManagementPage() {
       console.error('Error deleting note:', error);
       toast({
         title: t('error'),
-        description: 'Ezin izan da oharra ezabatu / No se pudo eliminar la nota',
+        description: t('noteDeleteFailed'),
         variant: 'destructive',
       });
     }
@@ -218,14 +218,14 @@ export function NotesManagementPage() {
       ));
 
       toast({
-        title: 'Jakinarazpenak bidali da',
-        description: 'Erabiltzaileei jakinarazpena bidali zaie',
+        title: t('notificationsSent'),
+        description: t('notificationsSentDescription'),
       });
     } catch (error) {
       console.error('Error pushing notification:', error);
       toast({
         title: t('error'),
-        description: 'Ezin izan da jakinarazpena bidali',
+        description: t('notificationsFailed'),
         variant: 'destructive',
       });
     }
@@ -253,14 +253,14 @@ export function NotesManagementPage() {
       ));
 
       toast({
-        title: 'Jakinarazpenak kendu dira',
-        description: 'Erabiltzaileei jakinarazpenak kendu zaizkie',
+        title: t('notificationsRemoved'),
+        description: t('notificationsRemovedDescription'),
       });
     } catch (error) {
       console.error('Error reverting notification:', error);
       toast({
         title: t('error'),
-        description: 'Ezin izan dira jakinarazpenak kendu',
+        description: t('notificationsRevertFailed'),
         variant: 'destructive',
       });
     }
@@ -297,7 +297,7 @@ export function NotesManagementPage() {
       console.error('Error toggling note status:', error);
       toast({
         title: t('error'),
-        description: 'Ezin izan da egoera eguneratu / No se pudo actualizar el estado',
+        description: t('statusUpdateFailed'),
         variant: 'destructive',
       });
     }

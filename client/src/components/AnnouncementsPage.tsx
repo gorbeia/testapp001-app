@@ -120,7 +120,7 @@ export function AnnouncementsPage() {
       console.error('Error creating announcement:', error);
       toast({
         title: t('error'),
-        description: 'Ezin izan da oharra sortu',
+        description: t('announcementCreateFailed'),
         variant: 'destructive',
       });
     }
@@ -166,7 +166,7 @@ export function AnnouncementsPage() {
                   <Input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Idatzi izenburua..."
+                    placeholder={t('titlePlaceholder')}
                     data-testid="input-announcement-title"
                   />
                 </div>
@@ -175,7 +175,7 @@ export function AnnouncementsPage() {
                   <Textarea
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
-                    placeholder="Idatzi mezua..."
+                    placeholder={t('contentPlaceholder')}
                     rows={5}
                     data-testid="textarea-announcement-content"
                   />
@@ -189,7 +189,7 @@ export function AnnouncementsPage() {
                     disabled={!title.trim() || !content.trim()}
                     data-testid="button-publish-announcement"
                   >
-                    Argitaratu
+                    {t('publish')}
                   </Button>
                 </div>
               </div>

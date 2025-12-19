@@ -95,11 +95,8 @@ class DebtCalculationService {
 
           const kitchenAmount = kitchenReservations.length * Number(activeSociety.kitchenPricePerMember || 0);
 
-          // Calculate subscription charges for the period
-          const subscriptionAmount = await this.calculateSubscriptionCharge(member.id, activeSociety.id, year, month);
-
           // Calculate total amount
-          const totalAmount = consumptionAmount + reservationAmount + kitchenAmount + subscriptionAmount;
+          const totalAmount = consumptionAmount + reservationAmount + kitchenAmount;
 
           // Only process credits if member has actual debts
           if (totalAmount > 0) {
@@ -121,7 +118,6 @@ class DebtCalculationService {
                   consumptionAmount: consumptionAmount.toString(),
                   reservationAmount: reservationAmount.toString(),
                   kitchenAmount: kitchenAmount.toString(),
-                  subscriptionAmount: subscriptionAmount.toString(),
                   totalAmount: totalAmount.toString(),
                   updatedAt: new Date()
                 })
@@ -137,13 +133,12 @@ class DebtCalculationService {
                 consumptionAmount: consumptionAmount.toString(),
                 reservationAmount: reservationAmount.toString(),
                 kitchenAmount: kitchenAmount.toString(),
-                subscriptionAmount: subscriptionAmount.toString(),
                 totalAmount: totalAmount.toString(),
                 status: 'pending'
               });
             }
 
-            console.log(`Updated ${member.name}: ${totalAmount.toFixed(2)}€ (consumption: ${consumptionAmount.toFixed(2)}€, reservation: ${reservationAmount.toFixed(2)}€, kitchen: ${kitchenAmount.toFixed(2)}€, subscription: ${subscriptionAmount.toFixed(2)}€)`);
+            console.log(`Updated ${member.name}: ${totalAmount.toFixed(2)}€ (consumption: ${consumptionAmount.toFixed(2)}€, reservation: ${reservationAmount.toFixed(2)}€, kitchen: ${kitchenAmount.toFixed(2)}€)`);
           }
 
           totalDebts += totalAmount;
