@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useUrlFilter } from '@/hooks/useUrlFilter';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -42,7 +43,7 @@ export function ReservationsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const filterStatus = useUrlFilter({ baseUrl: '/erreserbak', paramName: 'status', initialValue: 'all' });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [reservations, setReservations] = useState<ReservationWithUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -158,7 +159,7 @@ export function ReservationsPage() {
   const filteredReservations = reservations.filter((r) => {
     const matchesSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (r.notes && r.notes.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = filterStatus === 'all' || r.status === filterStatus;
+    const matchesStatus = filterStatus.value === 'all' || r.status === filterStatus.value;
     return matchesSearch && matchesStatus;
   });
 
@@ -496,7 +497,7 @@ export function ReservationsPage() {
             data-testid="input-search-reservations"
           />
         </div>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
+        <Select value={filterStatus.value} onValueChange={filterStatus.setValue}>
           <SelectTrigger className="w-full sm:w-48" data-testid="select-filter-status">
             <Filter className="mr-2 h-4 w-4" />
             <SelectValue />

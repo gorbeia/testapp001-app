@@ -105,16 +105,16 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
           </div>
           <div className="flex items-center gap-1">
             {selectedMonth && (
-              <button
+              <span
                 onClick={(e) => {
                   e.stopPropagation();
                   onMonthChange('');
                 }}
-                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors cursor-pointer"
                 data-testid="clear-month-trigger"
               >
                 <X className="h-3 w-3" />
-              </button>
+              </span>
             )}
             <div className="h-4 w-4 text-gray-500">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">

@@ -10,7 +10,8 @@ import { DebtDetailModal } from '@/components/DebtDetailModal';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useUrlFilter } from '@/hooks/useUrlFilter';
 import type { Credit } from '@shared/schema';
 import { ErrorFallback } from '@/components/ErrorBoundary';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
@@ -46,33 +47,48 @@ const fetchMyCredits = async (filters?: { month?: string; status?: string }): Pr
 export function MyDebtsPage() {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  
+  // Use URL filter hook for month
+  const monthFilter = useUrlFilter({ baseUrl: '/nire-zorrak', paramName: 'month', initialValue: '' });
+  const statusFilter = useUrlFilter({ baseUrl: '/nire-zorrak', paramName: 'status', initialValue: 'all' });
 
   // Fetch current user's credits
   const { data: credits = [], isLoading, error } = useQuery<Credit[]>({
-    queryKey: ['my-credits', selectedMonth],
-    queryFn: () => fetchMyCredits(selectedMonth ? { month: selectedMonth } : undefined),
+    queryKey: ['my-credits', monthFilter.value, statusFilter.value],
+    queryFn: () => fetchMyCredits({ 
+      month: monthFilter.value, 
+      status: statusFilter.value !== 'all' ? statusFilter.value : undefined 
+    }),
     enabled: !!user,
     throwOnError: false, // Handle errors inline instead of throwing
-    staleTime: 0, // Data is stale immediately
-    gcTime: 0, // Don't cache results (formerly cacheTime)
+    keepPreviousData: true, // Keep old data while loading new data
   });
 
-  // Calculate totals from real data
-  const totalPending = credits
-    .filter((c: Credit) => c.status === 'pending')
-    .reduce((sum: number, c: Credit) => sum + parseFloat(c.totalAmount || '0'), 0);
+  // Memoize calculations to prevent unnecessary re-renders
+  const calculatedValues = useMemo(() => {
+    const totalPending = credits
+      .filter((c: Credit) => c.status === 'pending')
+      .reduce((sum: number, c: Credit) => sum + parseFloat(c.totalAmount || '0'), 0);
 
-  const totalPaid = credits
-    .filter((c: Credit) => c.status === 'paid')
-    .reduce((sum: number, c: Credit) => sum + parseFloat(c.totalAmount || '0'), 0);
+    const totalPaid = credits
+      .filter((c: Credit) => c.status === 'paid')
+      .reduce((sum: number, c: Credit) => sum + parseFloat(c.totalAmount || '0'), 0);
 
-  // Calculate current date for filtering
-  const currentDate = new Date();
-  const currentMonthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
-  
-  // Get current month debt specifically
-  const currentMonthDebt = credits.find((credit: Credit) => credit.month === currentMonthString);
+    // Calculate current date for filtering
+    const currentDate = new Date();
+    const currentMonthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
+    
+    // Get current month debt specifically
+    const currentMonthDebt = credits.find((credit: Credit) => credit.month === currentMonthString);
+
+    return {
+      totalPending,
+      totalPaid,
+      currentMonthDebt,
+      currentDate,
+      currentMonthString
+    };
+  }, [credits]);
 
   if (!user) {
     return (
@@ -80,16 +96,6 @@ export function MyDebtsPage() {
         <div className="text-center py-12">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('needToLogin')}</h1>
           <p className="text-gray-600">Zure zorrak ikusteko, saioa hasi behar duzu.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="text-center py-12">
-          <p>{t('loading')}...</p>
         </div>
       </div>
     );
@@ -121,11 +127,11 @@ export function MyDebtsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive" data-testid="total-pending">
-              {totalPending.toFixed(2)}€
+              {calculatedValues.totalPending.toFixed(2)}€
             </div>
-            {currentMonthDebt && (
+            {calculatedValues.currentMonthDebt && (
               <div className="text-sm text-muted-foreground mt-2" data-testid="current-month-debt">
-                {t('currentMonth')}: {currentMonthDebt.totalAmount || '0'}€
+                {t('currentMonth')}: {calculatedValues.currentMonthDebt.totalAmount || '0'}€
               </div>
             )}
           </CardContent>
@@ -138,7 +144,7 @@ export function MyDebtsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600" data-testid="total-paid">
-              {totalPaid.toFixed(2)}€
+              {calculatedValues.totalPaid.toFixed(2)}€
             </div>
           </CardContent>
         </Card>
@@ -150,7 +156,7 @@ export function MyDebtsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600" data-testid="total-debt">
-              {(totalPending + totalPaid).toFixed(2)}€
+              {(calculatedValues.totalPending + calculatedValues.totalPaid).toFixed(2)}€
             </div>
           </CardContent>
         </Card>
@@ -160,13 +166,13 @@ export function MyDebtsPage() {
         {/* Month Grid Selector */}
         <div className="w-full sm:w-48">
           <MonthGrid 
-            selectedMonth={selectedMonth}
-            onMonthChange={setSelectedMonth}
+            selectedMonth={monthFilter.value} 
+            onMonthChange={monthFilter.setValue}
           />
         </div>
         
         {/* Status Filter */}
-        <Select defaultValue="all">
+        <Select value={statusFilter.value} onValueChange={statusFilter.setValue}>
           <SelectTrigger className="w-full sm:w-40" data-testid="select-status">
             <SelectValue />
           </SelectTrigger>
@@ -182,7 +188,7 @@ export function MyDebtsPage() {
         <div className="overflow-x-auto">
         <Table data-testid="my-debts-table">
           <TableHeader>
-            <TableRow>
+            <TableRow key="header">
               <TableHead>{t('month')}</TableHead>
               <TableHead className="text-right">{t('amount')}</TableHead>
               <TableHead className="text-right">{t('status')}</TableHead>
@@ -191,7 +197,7 @@ export function MyDebtsPage() {
           </TableHeader>
           <TableBody>
             {credits.length === 0 ? (
-              <TableRow>
+              <TableRow key="no-results">
                 <TableCell colSpan={4} className="text-center py-8 text-muted-foreground" data-testid="no-results-message">
                   {isLoading ? 'Loading...' : (t('noResults') || 'No results')}
                 </TableCell>

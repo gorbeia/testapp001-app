@@ -1,11 +1,15 @@
-import { useState } from 'react';
-import { Search, CreditCard, TrendingUp, CheckCircle, Check } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
+import { useUrlFilter } from '@/hooks/useUrlFilter';
+import { ErrorFallback } from '@/components/ErrorBoundary';
+import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, CreditCard, TrendingUp, CheckCircle, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import MonthGrid from '@/components/MonthGrid';
 import { useLanguage } from '@/lib/i18n';
@@ -73,10 +77,12 @@ export function CreditsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCredits, setSelectedCredits] = useState<Set<string>>(new Set());
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
+  
+  // Use URL filter hook for month and status
   const currentDate = new Date();
   const currentMonthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
-  const [monthFilter, setMonthFilter] = useState<string>(currentMonthString);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const monthFilter = useUrlFilter({ baseUrl: '/zorrak', paramName: 'month', initialValue: currentMonthString });
+  const statusFilter = useUrlFilter({ baseUrl: '/zorrak', paramName: 'status', initialValue: 'all' });
 
   const isAdmin = hasAdminAccess(user);
 
@@ -96,8 +102,8 @@ export function CreditsPage() {
 
   // Fetch all credits (admin only)
   const { data: credits = [], isLoading, error } = useQuery({
-    queryKey: ['credits', monthFilter, statusFilter],
-    queryFn: () => fetchCredits({ month: monthFilter, status: statusFilter !== 'all' ? statusFilter : undefined }),
+    queryKey: ['credits', monthFilter.value, statusFilter.value],
+    queryFn: () => fetchCredits({ month: monthFilter.value, status: statusFilter.value !== 'all' ? statusFilter.value : undefined }),
     enabled: !!user && isAdmin
   });
 
@@ -279,13 +285,13 @@ export function CreditsPage() {
         {/* Month Grid Selector - Inline with other filters */}
         <div className="w-full sm:w-48">
           <MonthGrid 
-            selectedMonth={monthFilter} 
-            onMonthChange={setMonthFilter}
+            selectedMonth={monthFilter.value} 
+            onMonthChange={monthFilter.setValue}
           />
         </div>
         
         {/* Status Filter */}
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter.value} onValueChange={statusFilter.setValue}>
           <SelectTrigger className="w-full sm:w-40" data-testid="select-status">
             <SelectValue />
           </SelectTrigger>
