@@ -9,12 +9,41 @@ import { debtCalculationService } from "../cron-jobs";
 
 // JWT Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
-const JWT_EXPIRES_IN = '24h';
+const JWT_EXPIRES_IN = '15m'; // Reduced to 15 minutes for better security
+const REFRESH_TOKEN_EXPIRES_IN = '7d'; // Refresh token lasts longer
 
 // JWT Functions
 const generateToken = (user: User) => {
   const { password: _, ...userWithoutPassword } = user;
   return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+};
+
+const generateRefreshToken = (user: User) => {
+  const { password: _, ...userWithoutPassword } = user;
+  return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
+};
+
+const setAuthCookie = (res: Response, token: string) => {
+  res.cookie('auth-token', token, {
+    httpOnly: true,    // Prevent XSS
+    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+    sameSite: 'strict', // Prevent CSRF
+    maxAge: 15 * 60 * 1000 // 15 minutes (matches JWT_EXPIRES_IN)
+  });
+};
+
+const setRefreshCookie = (res: Response, refreshToken: string) => {
+  res.cookie('refresh-token', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days (matches REFRESH_TOKEN_EXPIRES_IN)
+  });
+};
+
+const clearAuthCookie = (res: Response) => {
+  res.clearCookie('auth-token');
+  res.clearCookie('refresh-token');
 };
 
 const verifyToken = (token: string): User | null => {
@@ -28,21 +57,6 @@ const verifyToken = (token: string): User | null => {
 // Access control helpers
 const hasTreasurerAccess = (user: User): boolean => {
   return user.function === 'diruzaina' || user.function === 'administratzailea';
-};
-
-// Set JWT cookie helper
-const setAuthCookie = (res: Response, token: string) => {
-  res.cookie('auth-token', token, {
-    httpOnly: true,    // Prevent XSS
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'strict', // Prevent CSRF
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  });
-};
-
-// Clear auth cookie helper
-const clearAuthCookie = (res: Response) => {
-  res.clearCookie('auth-token');
 };
 
 // No-cache middleware for sensitive endpoints
@@ -320,15 +334,63 @@ export async function registerRoutes(
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
-      // Create JWT token and set in httpOnly cookie
+      // Create JWT token and refresh token, set in httpOnly cookies
       const token = generateToken(dbUser);
+      const refreshToken = generateRefreshToken(dbUser);
       setAuthCookie(res, token);
+      setRefreshCookie(res, refreshToken);
       
       // Return user data and token (for backward compatibility)
       const { password: _, ...userWithoutPassword } = dbUser;
       return res.status(200).json({ 
         user: userWithoutPassword,
-        token
+        token,
+        expiresIn: JWT_EXPIRES_IN
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Refresh token endpoint
+  app.post("/api/refresh", async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const refreshToken = req.cookies?.['refresh-token'];
+      
+      if (!refreshToken) {
+        return res.status(401).json({ message: "No refresh token provided" });
+      }
+
+      // Verify refresh token
+      const user = verifyToken(refreshToken);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid refresh token" });
+      }
+
+      // Check if user still exists and is active in database
+      const dbUser = await db.query.users.findFirst({
+        where: (u, { eq }) => eq(u.id, user.id),
+      });
+
+      if (!dbUser) {
+        return res.status(401).json({ message: "User not found" });
+      }
+
+      // Check if user is active (not disabled)
+      if (!dbUser.isActive) {
+        return res.status(401).json({ message: "User account is disabled" });
+      }
+
+      // Generate new access token
+      const newToken = generateToken(dbUser);
+      setAuthCookie(res, newToken);
+      
+      // Return new token info
+      const { password: _, ...userWithoutPassword } = dbUser;
+      return res.status(200).json({ 
+        user: userWithoutPassword,
+        token: newToken,
+        expiresIn: JWT_EXPIRES_IN
       });
     } catch (err) {
       next(err);
