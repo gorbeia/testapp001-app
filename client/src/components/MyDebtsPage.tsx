@@ -2,7 +2,6 @@ import { CreditCard, TrendingUp, CheckCircle, Eye } from 'lucide-react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MonthGrid from '@/components/MonthGrid';
@@ -10,7 +9,7 @@ import { DebtDetailModal } from '@/components/DebtDetailModal';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useUrlFilter } from '@/hooks/useUrlFilter';
 import type { Credit } from '@shared/schema';
 import { ErrorFallback } from '@/components/ErrorBoundary';
@@ -61,7 +60,6 @@ export function MyDebtsPage() {
     }),
     enabled: !!user,
     throwOnError: false, // Handle errors inline instead of throwing
-    keepPreviousData: true, // Keep old data while loading new data
   });
 
   // Memoize calculations to prevent unnecessary re-renders
@@ -74,18 +72,15 @@ export function MyDebtsPage() {
       .filter((c: Credit) => c.status === 'paid')
       .reduce((sum: number, c: Credit) => sum + parseFloat(c.totalAmount || '0'), 0);
 
-    // Calculate current date for filtering
+    // Calculate current month debt specifically
     const currentDate = new Date();
     const currentMonthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
-    
-    // Get current month debt specifically
     const currentMonthDebt = credits.find((credit: Credit) => credit.month === currentMonthString);
 
     return {
       totalPending,
       totalPaid,
       currentMonthDebt,
-      currentDate,
       currentMonthString
     };
   }, [credits]);

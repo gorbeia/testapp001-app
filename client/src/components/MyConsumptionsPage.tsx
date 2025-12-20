@@ -37,6 +37,7 @@ export function MyConsumptionsPage() {
   const [monthFilter, setMonthFilter] = useState<string>(currentMonthString);
   const [consumptions, setConsumptions] = useState<Consumption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [selectedConsumption, setSelectedConsumption] = useState<ConsumptionWithItems | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
@@ -56,6 +57,7 @@ export function MyConsumptionsPage() {
       setError(error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   };
 
@@ -125,7 +127,7 @@ export function MyConsumptionsPage() {
     return sum + parseFloat(consumption.totalAmount || '0');
   }, 0);
 
-  if (loading) {
+  if (isInitialLoad && loading) {
     return (
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
         <div className="flex items-center space-x-2">

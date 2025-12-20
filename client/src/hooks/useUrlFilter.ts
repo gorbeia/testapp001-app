@@ -14,12 +14,13 @@ export function useUrlFilter({ baseUrl, paramName = 'filter', initialValue = '' 
     // Get initial value from URL on first render only
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search.split('?')[1] || '');
-      const urlValue = urlParams.get(paramName) || initialValue;
+      const urlValue = urlParams.get(paramName);
+      const finalValue = urlValue !== null ? urlValue : (initialValue || '');
       currentUrlRef.current = window.location.pathname + window.location.search;
-      console.log(`[useUrlFilter] Initialized ${paramName} with value:`, urlValue);
-      return urlValue;
+      console.log(`[useUrlFilter] Initialized ${paramName} with value:`, finalValue);
+      return finalValue;
     }
-    return initialValue;
+    return initialValue || '';
   });
 
   // Update URL when value changes

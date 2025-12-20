@@ -3,7 +3,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { Search, Calendar, Users, MapPin, Eye, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -11,30 +11,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import MonthGrid from '@/components/MonthGrid';
 import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/lib/auth';
 import { authFetch } from '@/lib/api';
 import type { Reservation } from '@shared/schema';
 import { ErrorFallback } from '@/components/ErrorBoundary';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
 
-interface ReservationWithDetails extends Reservation {
-  userName?: string;
-}
-
 export function MyReservationsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const currentDate = new Date();
-  const currentMonthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
   const [monthFilter, setMonthFilter] = useState<string>('');
+
+  // Fetch user's reservations
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [selectedReservation, setSelectedReservation] = useState<ReservationWithDetails | null>(null);
 
   // Fetch user's reservations
   const fetchReservations = async () => {
@@ -44,7 +39,11 @@ export function MyReservationsPage() {
       if (searchTerm) params.append('search', searchTerm);
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (typeFilter !== 'all') params.append('type', typeFilter);
-      if (monthFilter) params.append('month', monthFilter);
+      if (monthFilter) {
+        // Extract month number from YYYY-MM format for API
+        const monthParam = monthFilter.split('-')[1];
+        params.append('month', monthParam);
+      }
       
       const response = await authFetch(`/api/reservations/user?${params}`);
       if (!response.ok) throw new Error('Failed to fetch reservations');
@@ -55,6 +54,7 @@ export function MyReservationsPage() {
       setError(error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   };
 
@@ -97,7 +97,7 @@ export function MyReservationsPage() {
   const filteredReservations = reservations.filter((reservation) => {
     const matchesSearch = reservation.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (reservation.table && reservation.table.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = statusFilter === 'all' || reservation.status === statusFilter;
+    const matchesStatus = !statusFilter || statusFilter === 'all' || reservation.status === statusFilter;
     const matchesType = typeFilter === 'all' || reservation.type === typeFilter;
     return matchesSearch && matchesStatus && matchesType;
   });
@@ -135,7 +135,7 @@ export function MyReservationsPage() {
     return new Date(reservation.startDate) > new Date();
   };
 
-  if (loading) {
+  if (isInitialLoad && loading) {
     return (
       <div className="p-4 sm:p-6">
         <div className="text-center py-12">
