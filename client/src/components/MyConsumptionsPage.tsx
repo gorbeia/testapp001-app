@@ -30,17 +30,8 @@ export function MyConsumptionsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
   
   // URL state management
-  const [statusFilter, setStatusFilter] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      return params.get('status') || 'all';
-    }
-    return 'all';
-  });
-  
   const [monthFilter, setMonthFilter] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -58,14 +49,13 @@ export function MyConsumptionsPage() {
   // Update URL when filters change
   useEffect(() => {
     const params = new URLSearchParams();
-    if (statusFilter !== 'all') params.set('status', statusFilter);
     if (monthFilter) params.set('month', monthFilter);
     
     const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
     if (newUrl !== window.location.pathname + window.location.search) {
       window.history.replaceState({}, '', newUrl);
     }
-  }, [statusFilter, monthFilter]);
+  }, [monthFilter]);
 
   // Fetch user's own consumptions
   const fetchConsumptions = async () => {
@@ -73,8 +63,6 @@ export function MyConsumptionsPage() {
       setLoading(true);
       const params = new URLSearchParams();
       if (searchTerm) params.append('search', searchTerm);
-      if (statusFilter !== 'all') params.append('status', statusFilter);
-      if (typeFilter !== 'all') params.append('type', typeFilter);
       if (monthFilter) {
         // Extract month number from YYYY-MM format for API
         const monthParam = monthFilter.split('-')[1];
@@ -123,28 +111,7 @@ export function MyConsumptionsPage() {
 
   useEffect(() => {
     fetchConsumptions();
-  }, [searchTerm, statusFilter, typeFilter, monthFilter]);
-
-  const getStatusBadge = (status: string) => {
-    const statusMap: { [key: string]: { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } } = {
-      open: { label: t('open'), variant: 'default' },
-      closed: { label: t('closed'), variant: 'secondary' },
-      cancelled: { label: t('cancelled'), variant: 'destructive' },
-    };
-    const statusInfo = statusMap[status] || { label: status, variant: 'outline' };
-    return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
-  };
-
-  const getTypeBadge = (type: string) => {
-    const typeLabels: Record<string, string> = {
-      bar: 'Barra',
-      kitchen: 'Sukaldaritza',
-      event: 'Ekitaldia',
-      other: 'Besteak',
-    };
-    const label = typeLabels[type] || type;
-    return <Badge variant="outline">{label}</Badge>;
-  };
+  }, [searchTerm, monthFilter]);
 
   const formatDate = (date: string | Date) => {
     const dateObj = typeof date === 'string' ? new Date(date) : date;
@@ -211,7 +178,7 @@ export function MyConsumptionsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {consumptions.filter(c => c.status === 'pending').length}
+              {consumptions.filter(c => !c.closedAt).length}
             </div>
           </CardContent>
         </Card>
@@ -229,30 +196,6 @@ export function MyConsumptionsPage() {
           />
         </div>
         
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('allStatus')}</SelectItem>
-            <SelectItem value="open">{t('open')}</SelectItem>
-            <SelectItem value="closed">{t('closed')}</SelectItem>
-            <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('allTypes')}</SelectItem>
-            <SelectItem value="bar">Barra</SelectItem>
-            <SelectItem value="kitchen">Sukaldaritza</SelectItem>
-            <SelectItem value="other">Besteak</SelectItem>
-          </SelectContent>
-        </Select>
-
         <MonthGrid 
           selectedMonth={monthFilter} 
           onMonthChange={setMonthFilter}
@@ -267,16 +210,14 @@ export function MyConsumptionsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t('date')}</TableHead>
-                <TableHead>{t('type')}</TableHead>
                 <TableHead className="text-right">{t('amount')}</TableHead>
-                <TableHead className="text-right">{t('status')}</TableHead>
                 <TableHead className="text-right">{t('actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {consumptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                     {t('noConsumptionsFound')}
                   </TableCell>
                 </TableRow>
@@ -289,12 +230,8 @@ export function MyConsumptionsPage() {
                         <span>{formatDate(consumption.createdAt)}</span>
                       </div>
                     </TableCell>
-                    <TableCell>{getTypeBadge(consumption.type || 'other')}</TableCell>
                     <TableCell className="text-right font-medium">
                       {formatAmount(consumption.totalAmount)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {getStatusBadge(consumption.status)}
                     </TableCell>
                     <TableCell className="text-right">
                       <Dialog>

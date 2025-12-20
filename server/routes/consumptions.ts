@@ -41,23 +41,13 @@ export function registerConsumptionRoutes(app: Express) {
   app.get("/api/consumptions/user", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user!;
-      const { search, status, type, month } = req.query;
+      const { search, month } = req.query;
       const societyId = getUserSocietyId(user);
       
       let conditions = [
         eq(consumptions.userId, user.id),
         eq(consumptions.societyId, societyId)
       ];
-      
-      // Add status filter
-      if (status && status !== 'all') {
-        conditions.push(eq(consumptions.status, status as string));
-      }
-      
-      // Add type filter
-      if (type && type !== 'all') {
-        conditions.push(eq(consumptions.type, type as string));
-      }
       
       // Add month filter
       if (month && month !== 'all') {
@@ -81,8 +71,6 @@ export function registerConsumptionRoutes(app: Express) {
           id: consumptions.id,
           userId: consumptions.userId,
           eventId: consumptions.eventId,
-          type: consumptions.type,
-          status: consumptions.status,
           totalAmount: consumptions.totalAmount,
           notes: consumptions.notes,
           createdAt: consumptions.createdAt,
@@ -117,8 +105,6 @@ export function registerConsumptionRoutes(app: Express) {
             userName: users.name,
             userUsername: users.username,
             eventId: consumptions.eventId,
-            type: consumptions.type,
-            status: consumptions.status,
             totalAmount: consumptions.totalAmount,
             notes: consumptions.notes,
             createdAt: consumptions.createdAt,
@@ -137,8 +123,6 @@ export function registerConsumptionRoutes(app: Express) {
             userName: users.name,
             userUsername: users.username,
             eventId: consumptions.eventId,
-            type: consumptions.type,
-            status: consumptions.status,
             totalAmount: consumptions.totalAmount,
             notes: consumptions.notes,
             createdAt: consumptions.createdAt,
@@ -279,8 +263,6 @@ export function registerConsumptionRoutes(app: Express) {
           userName: users.name,
           userUsername: users.username,
           eventId: consumptions.eventId,
-          type: consumptions.type,
-          status: consumptions.status,
           totalAmount: consumptions.totalAmount,
           notes: consumptions.notes,
           createdAt: consumptions.createdAt,

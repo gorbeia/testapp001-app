@@ -100,8 +100,6 @@ export const consumptions = pgTable("consumptions", {
   userId: varchar("user_id").notNull(), // Who made the consumption
   societyId: varchar("society_id").notNull().references(() => societies.id),
   eventId: varchar("event_id"), // Optional: linked to a reservation/event
-  type: text("type").notNull().default("bar"), // "bar", "event", "kitchen"
-  status: text("status").notNull().default("open"), // "open", "closed", "cancelled"
   totalAmount: text("total_amount").notNull().default("0"), // Using text for decimal precision
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -158,7 +156,6 @@ export const insertConsumptionSchema = createInsertSchema(consumptions).pick({
   userId: true,
   societyId: true,
   eventId: true,
-  type: true,
   notes: true,
 });
 

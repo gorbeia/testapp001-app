@@ -138,7 +138,6 @@ export function ConsumptionsPage() {
       const consumptionResponse = await authFetch('/api/consumptions', {
         method: 'POST',
         body: JSON.stringify({
-          type: 'bar',
           notes: 'Bar kontsumoa',
         }),
       });

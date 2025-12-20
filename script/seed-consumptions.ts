@@ -45,8 +45,6 @@ async function main() {
   const demoConsumptions = [
     {
       userId: demoUsers[0].id,
-      type: 'bar',
-      status: 'closed',
       totalAmount: '15.50',
       notes: 'Ondo pasatako arratsaldea',
       closedAt: new Date(),
@@ -54,15 +52,11 @@ async function main() {
     },
     {
       userId: demoUsers[1].id,
-      type: 'bar',
-      status: 'open',
       totalAmount: '8.00',
       notes: 'Kontsumo irekia',
     },
     {
       userId: demoUsers[2].id,
-      type: 'event',
-      status: 'closed',
       totalAmount: '42.75',
       notes: 'Urtebetetze festa',
       closedAt: new Date(),
@@ -76,11 +70,10 @@ async function main() {
       societyId,
     }).returning();
     
-    // Add some consumption items for closed consumptions
-    if (consumption.status === 'closed') {
-      const itemsToAdd = Math.floor(Math.random() * 3) + 1; // 1-3 items
-      
-      for (let i = 0; i < itemsToAdd && i < demoProducts.length; i++) {
+    // Add some consumption items for all consumptions
+    const itemsToAdd = Math.floor(Math.random() * 3) + 1; // 1-3 items
+    
+    for (let i = 0; i < itemsToAdd && i < demoProducts.length; i++) {
         const product = demoProducts[i];
         const quantity = Math.floor(Math.random() * 3) + 1; // 1-3 units
         const unitPrice = parseFloat(product.price);
@@ -96,7 +89,6 @@ async function main() {
         });
       }
     }
-  }
 
   console.log('Demo consumptions seeded successfully!');
   await client.end();
