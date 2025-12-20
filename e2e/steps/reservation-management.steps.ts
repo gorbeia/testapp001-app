@@ -6,36 +6,15 @@ Given('I navigate to the reservations page', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
   
-  // Wait a moment for navigation to be ready
-  await page.waitForTimeout(1000);
-  
-  // Try to find the reservations navigation
-  const navReservations = page.locator('[data-testid="nav-reservations"]');
-  if (await navReservations.isVisible()) {
-    await navReservations.click();
-  } else {
-    // Fallback: try to find by text content - use the admin reservations link
-    const reservationsLink = page.locator('[data-testid="link-erreserbak"]');
-    await reservationsLink.click();
-  }
-  
-  // Wait for the reservations page to load
-  await page.waitForSelector('[data-testid="button-new-reservation"]', { timeout: 5000 });
+  await page.click('[data-testid="link-erreserbak"]');
+  await page.waitForLoadState('networkidle');
 });
 
 When('I click the new reservation button', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
   
-  // Check if button exists and is visible
-  const button = page.locator('[data-testid="button-new-reservation"]');
-  await button.waitFor({ state: 'visible', timeout: 5000 });
-  
-  // Click the main button
-  await button.click();
-  
-  // Wait a moment for any dialog to appear
-  await page.waitForTimeout(2000);
+  await page.click('[data-testid="button-new-reservation"]');
 });
 
 Then('I should see the reservation dialog', async function () {
@@ -56,9 +35,6 @@ When('I fill in the reservation details', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
   
-  // Wait for dialog to be fully rendered
-  await page.waitForTimeout(2000);
-  
   // Generate a unique reservation name with timestamp
   const timestamp = Date.now();
   const uniqueName = `Test Erreserba ${timestamp}`;
@@ -66,43 +42,18 @@ When('I fill in the reservation details', async function () {
   // Store the unique name for later verification
   this.testReservationName = uniqueName;
   
-  // Fill the name field with increased timeout
-  await page.waitForSelector('[data-testid="input-reservation-name"]', { timeout: 10000 });
+  // Fill the name field directly
   await page.fill('[data-testid="input-reservation-name"]', uniqueName);
   
-  // Wait a moment for input to register
-  await page.waitForTimeout(1000);
-  
-  // For Radix UI Select, need to click the trigger first, then select option
+  // Select reservation type
   await page.click('[data-testid="select-reservation-type"]');
-  await page.waitForSelector('[role="option"]', { timeout: 10000 });
-  
-  // Try to find the first option (should be bazkaria)
-  const firstOption = page.locator('[role="option"]').first();
-  await firstOption.waitFor({ state: 'visible', timeout: 5000 });
-  await firstOption.click();
-  
-  // Wait for selection to complete
-  await page.waitForTimeout(1000);
+  await page.locator('[role="option"]').first().click();
 });
 
 When('I select the reservation date', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
-  
-  // Wait for dialog to be fully rendered
-  await page.waitForTimeout(2000);
 
-  // Check if date picker button exists and is visible
-  const datePickerButton = page.locator('[data-testid="date-picker-button"]');
-  await datePickerButton.waitFor({ state: 'visible', timeout: 10000 });
-  
-  // Click on date picker button
-  await datePickerButton.click();
-  
-  // Wait for calendar to appear
-  await page.waitForTimeout(2000);
-  
   // Generate a random date within the next 6 months
   const today = new Date();
   const maxFutureDate = new Date(today);
@@ -119,70 +70,43 @@ When('I select the reservation date', async function () {
   const currentMonth = new Date();
   let monthsToNavigate = (targetYear - currentMonth.getFullYear()) * 12 + (targetMonth - currentMonth.getMonth());
   
+  // Open date picker
+  await page.click('[data-testid="date-picker-button"]');
+  
   if (monthsToNavigate > 0) {
     const nextMonthButton = page.locator('button[aria-label="Go to next month"]');
     
     for (let i = 0; i < monthsToNavigate; i++) {
       await nextMonthButton.click();
-      await page.waitForTimeout(500);
-      console.log(`Navigated to month ${i + 1} ahead`);
     }
   } else if (monthsToNavigate < 0) {
     const prevMonthButton = page.locator('button[aria-label="Go to previous month"]');
     
     for (let i = 0; i < Math.abs(monthsToNavigate); i++) {
       await prevMonthButton.click();
-      await page.waitForTimeout(500);
-      console.log(`Navigated to month ${i + 1} back`);
     }
   }
   
-  // Select a day in the target month (use a safe day like 15th or adjust if needed)
-  let dayToSelect = Math.min(targetDay, 28); // Use 28th as safe default to avoid month-end issues
+  // Select a day in the target month
+  let dayToSelect = Math.min(targetDay, 28);
   
   // Try to find the specific day, fallback to any available day
-  let daySelected = false;
-  
-  // First try to select the target day
   const targetDayButton = page.locator(`button[role="gridcell"]:has-text("${dayToSelect}")`).first();
   if (await targetDayButton.isVisible({ timeout: 3000 })) {
     await targetDayButton.click();
-    daySelected = true;
-    console.log(`Selected day ${dayToSelect}`);
   } else {
     // Fallback: select any available day in the middle of the month
     const availableDays = page.locator('button[role="gridcell"]:not(:disabled)');
-    const dayCount = await availableDays.count();
-    
-    if (dayCount > 0) {
-      // Select a day around the middle of the available days
-      const middleDay = availableDays.nth(Math.min(15, dayCount - 1));
-      await middleDay.click();
-      daySelected = true;
-      console.log('Selected a fallback day in the middle of the month');
-    }
+    const middleDay = availableDays.nth(Math.min(15, (await availableDays.count()) - 1));
+    await middleDay.click();
   }
-  
-  if (!daySelected) {
-    throw new Error('Could not select any date in the calendar');
-  }
-  
-  // Wait for date selection to complete
-  await page.waitForTimeout(1000);
 });
 
 When('I set the number of guests to {int}', async function (guests: number) {
   const page = getPage();
   if (!page) throw new Error('Page not available');
 
-  // Wait for dialog to be fully rendered
-  await page.waitForTimeout(500);
-
-  // Clear the field first and then fill with the new value
-  await page.fill('[data-testid="input-guests"]', '');
-  await page.waitForTimeout(200); // Small delay to make the change visible
   await page.fill('[data-testid="input-guests"]', guests.toString());
-  await page.waitForTimeout(300); // Small delay to make the change visible
 });
 
 When('I select a table', async function () {

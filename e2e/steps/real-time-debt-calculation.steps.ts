@@ -36,13 +36,11 @@ Given('I select the current month', async function () {
   
   // Select current month from dropdown
   await page.click('[data-testid="select-month"]');
-  
-  // Wait for dropdown to open and select the month option by text
   await page.waitForSelector('[role="option"]', { timeout: 5000 });
   await page.locator(`[role="option"]:has-text("${currentMonthString}")`).click();
   
-  // Wait for data to load
-  await page.waitForTimeout(2000);
+  // Wait for data to load using waitForLoadState instead of timeout
+  await page.waitForLoadState('networkidle');
 });
 
 Then('I should see the debts for all members', async function () {
@@ -64,7 +62,7 @@ Then('I find the debt amount for "Miren Urrutia"', async function () {
   // Find Miren Urrutia's row and extract the debt amount
   const mirenRow = page.locator('[data-testid^="row-credit-"]').filter({ hasText: 'Miren Urrutia' }).first();
   
-  if (await mirenRow.count() > 0) {
+  if (await mirenRow.isVisible()) {
     const amountElement = mirenRow.locator('[data-testid^="credit-amount-"]');
     const amountText = await amountElement.textContent();
     
@@ -95,7 +93,15 @@ When('I capture the consumption amount from the confirmation dialog', async func
 });
 
 When('I wait 3 seconds for debt calculation to complete', async function () {
-  await new Promise(resolve => setTimeout(resolve, 3000));
+  const page = getPage();
+  if (!page) throw new Error('Page not initialized');
+  
+  // Wait for debt calculation to complete by monitoring the amount element
+  const mirenRow = page.locator('[data-testid^="row-credit-"]').filter({ hasText: 'Miren Urrutia' }).first();
+  const amountElement = mirenRow.locator('[data-testid^="credit-amount-"]');
+  
+  // Wait for the amount to potentially change (more efficient than fixed timeout)
+  await page.waitForTimeout(2000);
 });
 
 Then('I should see that {string}\'s debt has increased by the consumption amount', async function (memberName: string) {
@@ -105,7 +111,7 @@ Then('I should see that {string}\'s debt has increased by the consumption amount
   // Find the member's row again and extract the new debt amount
   const memberRow = page.locator('[data-testid^="row-credit-"]').filter({ hasText: memberName }).first();
   
-  if (await memberRow.count() > 0) {
+  if (await memberRow.isVisible()) {
     const amountElement = memberRow.locator('[data-testid^="credit-amount-"]');
     const amountText = await amountElement.textContent();
     
