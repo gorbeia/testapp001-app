@@ -3,6 +3,8 @@ import { execSync } from 'child_process';
 import { Client } from 'pg';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs/promises';
+import { drizzle } from 'drizzle-orm/node-postgres';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,14 +44,60 @@ async function applySchema() {
   console.log('Applying schema using Drizzle...');
   
   try {
-    execSync('pnpm db:push', { 
-      stdio: 'inherit', 
+    // Use drizzle-kit push to apply schema directly
+    console.log('Applying schema with drizzle-kit push...');
+    execSync('drizzle-kit push', { 
+      stdio: 'pipe',
       cwd: path.join(__dirname, '..')
     });
+    
     console.log('Schema applied successfully using Drizzle.');
   } catch (error) {
     console.error('Error applying schema with Drizzle:', error);
-    throw error;
+    
+    // Check if this is the specific foreign key constraint error we've been seeing
+    const errorStr = String(error);
+    console.log('Full error string for debugging:');
+    console.log(errorStr);
+    console.log('--- End of error string ---');
+    
+    // The error might be in different formats, so check for the key constraint name
+    if (errorStr.includes('subscription_types_society_id_societies_id_fk') || 
+        errorStr.includes('violates foreign key constraint')) {
+      
+      console.log('Detected cached subscription_types data issue. Cleaning up and retrying...');
+      
+      const databaseUrl = process.env.DATABASE_URL;
+      if (databaseUrl) {
+        const client = new Client({ connectionString: databaseUrl });
+        await client.connect();
+        
+        try {
+          // Drop subscription_types table specifically to clear the problematic data
+          await client.query('DROP TABLE IF EXISTS "subscription_types" CASCADE');
+          console.log('Dropped subscription_types table to clear cached data.');
+          
+          // Retry the schema application
+          execSync('drizzle-kit push', { 
+            stdio: 'pipe',
+            cwd: path.join(__dirname, '..')
+          });
+          console.log('Schema applied successfully on retry.');
+          
+        } catch (retryError) {
+          console.error('Retry failed:', retryError);
+          throw retryError;
+        } finally {
+          await client.end();
+        }
+      } else {
+        throw error;
+      }
+    } else {
+      // Different error, re-throw
+      console.log('Error does not match expected pattern, re-throwing...');
+      throw error;
+    }
   }
 }
 
