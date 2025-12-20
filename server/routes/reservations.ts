@@ -105,10 +105,13 @@ export function registerReservationRoutes(app: Express) {
     try {
       const user = req.user!;
       const societyId = getUserSocietyId(user);
+      const { limit } = req.query;
       
       // All users can see all reservations for the society (only future dates)
       const now = new Date();
-      const reservationsList = await db
+      
+      // Build the base query
+      const baseQuery = db
         .select({
           id: reservations.id,
           userId: reservations.userId,
@@ -134,6 +137,19 @@ export function registerReservationRoutes(app: Express) {
           ne(reservations.status, 'cancelled')
         ))
         .orderBy(reservations.startDate);
+      
+      // Apply limit if provided, otherwise execute the base query
+      let reservationsList;
+      if (limit && typeof limit === 'string') {
+        const limitNum = parseInt(limit, 10);
+        if (!isNaN(limitNum) && limitNum > 0) {
+          reservationsList = await baseQuery.limit(limitNum);
+        } else {
+          reservationsList = await baseQuery;
+        }
+      } else {
+        reservationsList = await baseQuery;
+      }
       
       res.json(reservationsList);
     } catch (error) {

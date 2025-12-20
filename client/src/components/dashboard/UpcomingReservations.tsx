@@ -25,11 +25,11 @@ export function UpcomingReservations({ reservations, totalCount, eventTypeLabels
             <Clock className="h-5 w-5" />
             {t('reservations')} - Hurrengoak
           </CardTitle>
-          <CardDescription>Datozen erreserbak</CardDescription>
+          <CardDescription>Hurrengo erreserbak (5 arte)</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
+            {[...Array(5)].map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 p-3 rounded-md bg-muted/50">
                   <div className="flex-1 min-w-0">
@@ -57,7 +57,7 @@ export function UpcomingReservations({ reservations, totalCount, eventTypeLabels
           <Clock className="h-5 w-5" />
           {t('reservations')} - Hurrengoak
         </CardTitle>
-        <CardDescription>Datozen erreserbak</CardDescription>
+        <CardDescription>Hurrengo erreserbak (5 arte)</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">

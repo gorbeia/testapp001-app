@@ -50,7 +50,7 @@ export function Dashboard() {
     setReservationsError(null);
     try {
       const [reservationsData, totalCount] = await Promise.all([
-        fetchUpcomingReservations(4),
+        fetchUpcomingReservations(5),
         fetchTotalReservationsCount()
       ]);
       setReservations(reservationsData);
