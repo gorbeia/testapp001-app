@@ -30,7 +30,6 @@ CREATE TABLE "credits" (
 	"month_number" integer NOT NULL,
 	"consumption_amount" numeric(10, 2) DEFAULT '0',
 	"reservation_amount" numeric(10, 2) DEFAULT '0',
-	"kitchen_amount" numeric(10, 2) DEFAULT '0',
 	"total_amount" numeric(10, 2) DEFAULT '0',
 	"status" text DEFAULT 'pending' NOT NULL,
 	"paid_amount" numeric(10, 2) DEFAULT '0',

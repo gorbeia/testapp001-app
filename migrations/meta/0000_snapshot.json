@@ -1,5 +1,5 @@
 {
-  "id": "9113fa17-2968-4b09-bbed-fac67230b045",
+  "id": "b24e1e00-8674-4011-ad7f-5c68fe634eca",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -202,13 +202,6 @@
         },
         "reservation_amount": {
           "name": "reservation_amount",
-          "type": "numeric(10, 2)",
-          "primaryKey": false,
-          "notNull": false,
-          "default": "'0'"
-        },
-        "kitchen_amount": {
-          "name": "kitchen_amount",
           "type": "numeric(10, 2)",
           "primaryKey": false,
           "notNull": false,

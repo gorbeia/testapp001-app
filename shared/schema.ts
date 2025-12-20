@@ -202,7 +202,6 @@ export const credits = pgTable("credits", {
   monthNumber: integer("month_number").notNull(), // 1-12
   consumptionAmount: decimal("consumption_amount", { precision: 10, scale: 2 }).default("0"),
   reservationAmount: decimal("reservation_amount", { precision: 10, scale: 2 }).default("0"),
-  kitchenAmount: decimal("kitchen_amount", { precision: 10, scale: 2 }).default("0"),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).default("0"),
   status: text("status").notNull().default("pending"), // "pending", "paid", "partial"
   paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default("0"),

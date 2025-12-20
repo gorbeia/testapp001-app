@@ -17,7 +17,6 @@ export function DebtDetailModal({ credit, trigger }: DebtDetailModalProps) {
 
   const consumptionAmount = parseFloat(credit.consumptionAmount || '0');
   const reservationAmount = parseFloat(credit.reservationAmount || '0');
-  const kitchenAmount = parseFloat(credit.kitchenAmount || '0');
   const totalAmount = parseFloat(credit.totalAmount || '0');
 
   const debtItems = [
@@ -37,16 +36,7 @@ export function DebtDetailModal({ credit, trigger }: DebtDetailModalProps) {
       icon: Calendar,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
-      description: t('reservationDescription') || 'Event and space reservations'
-    },
-    {
-      id: 'kitchen',
-      label: t('kitchenCost') || 'Kitchen Costs',
-      amount: kitchenAmount,
-      icon: ChefHat,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-      description: t('kitchenDescription') || 'Kitchen and equipment usage costs'
+      description: t('reservationDescription') || 'Event and space reservations (including kitchen costs when applicable)'
     }
   ].filter(item => item.amount > 0);
 

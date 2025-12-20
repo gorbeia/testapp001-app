@@ -80,22 +80,8 @@ class DebtCalculationService {
 
           const reservationAmount = reservationResults[0]?.total || 0;
 
-          // Calculate kitchen usage fees for reservations with kitchen
-          const kitchenReservations = await db
-            .select()
-            .from(reservations)
-            .where(and(
-              eq(reservations.userId, member.id),
-              eq(reservations.societyId, activeSociety.id),
-              eq(reservations.useKitchen, true),
-              gte(reservations.startDate, startDate),
-              ne(reservations.status, 'cancelled')
-            ));
-
-          const kitchenAmount = kitchenReservations.length * Number(activeSociety.kitchenPricePerMember || 0);
-
-          // Calculate total amount
-          const totalAmount = consumptionAmount + reservationAmount + kitchenAmount;
+          // Calculate total amount (kitchen costs are already included in reservation.totalAmount)
+          const totalAmount = consumptionAmount + reservationAmount;
 
           // Only process credits if member has actual debts
           if (totalAmount > 0) {
@@ -116,7 +102,6 @@ class DebtCalculationService {
                 .set({
                   consumptionAmount: consumptionAmount.toString(),
                   reservationAmount: reservationAmount.toString(),
-                  kitchenAmount: kitchenAmount.toString(),
                   totalAmount: totalAmount.toString(),
                   updatedAt: new Date()
                 })
@@ -131,13 +116,12 @@ class DebtCalculationService {
                 monthNumber: month,
                 consumptionAmount: consumptionAmount.toString(),
                 reservationAmount: reservationAmount.toString(),
-                kitchenAmount: kitchenAmount.toString(),
                 totalAmount: totalAmount.toString(),
                 status: 'pending'
               });
             }
 
-            console.log(`Updated ${member.name}: ${totalAmount.toFixed(2)}€ (consumption: ${consumptionAmount.toFixed(2)}€, reservation: ${reservationAmount.toFixed(2)}€, kitchen: ${kitchenAmount.toFixed(2)}€)`);
+            console.log(`Updated ${member.name}: ${totalAmount.toFixed(2)}€ (consumption: ${consumptionAmount.toFixed(2)}€, reservation: ${reservationAmount.toFixed(2)}€)`);
           }
 
           totalDebts += totalAmount;

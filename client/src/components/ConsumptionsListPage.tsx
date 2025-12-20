@@ -61,7 +61,6 @@ export function ConsumptionsListPage() {
   const typeLabels: Record<string, string> = {
     bar: t('bar'),
     event: t('event'),
-    kitchen: t('kitchen'),
   };
 
   // Fetch consumptions from API (with user data from JOIN)
@@ -179,7 +178,6 @@ export function ConsumptionsListPage() {
               <SelectItem value="all">{t('allTypes')}</SelectItem>
               <SelectItem value="bar">{t('bar')}</SelectItem>
               <SelectItem value="event">{t('event')}</SelectItem>
-              <SelectItem value="kitchen">{t('kitchen')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
