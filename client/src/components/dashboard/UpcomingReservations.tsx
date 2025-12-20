@@ -89,7 +89,7 @@ export function UpcomingReservations({ reservations, totalCount, eventTypeLabels
         </div>
         {hasMore && (
           <div className="pt-2">
-            <Link href="/reservations">
+            <Link href="/erreserbak">
               <Button variant="outline" size="sm" className="w-full">
                 {t('viewAllReservations')} ({totalCount} {t('total')})
               </Button>
