@@ -60,8 +60,7 @@ class DebtCalculationService {
             .where(and(
               eq(consumptions.userId, member.id),
               eq(consumptions.societyId, activeSociety.id),
-              gte(consumptions.createdAt, startDate),
-              ne(consumptions.status, 'cancelled')
+              gte(consumptions.createdAt, startDate)
             ));
 
           const consumptionAmount = consumptionResults[0]?.total || 0;

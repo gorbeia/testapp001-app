@@ -380,7 +380,7 @@ export function registerConsumptionRoutes(app: Express) {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      if (consumption[0].status !== 'open') {
+      if (consumption[0].closedAt !== null) {
         return res.status(400).json({ message: "Consumption is closed" });
       }
       
@@ -472,14 +472,13 @@ export function registerConsumptionRoutes(app: Express) {
         return res.status(403).json({ message: "Access denied" });
       }
       
-      if (consumption[0].status !== 'open') {
+      if (consumption[0].closedAt !== null) {
         return res.status(400).json({ message: "Consumption already closed" });
       }
       
       const [updatedConsumption] = await db
         .update(consumptions)
         .set({ 
-          status: 'closed', 
           closedAt: new Date(), 
           closedBy: user.id 
         })
