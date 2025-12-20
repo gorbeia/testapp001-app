@@ -41,26 +41,51 @@ async function main() {
     return;
   }
 
-  // Create some demo consumptions
+  // Create some demo consumptions with November 2025 dates
+  const novemberDates = [
+    new Date(2025, 10, 5),   // November 5, 2025
+    new Date(2025, 10, 12),  // November 12, 2025  
+    new Date(2025, 10, 18),  // November 18, 2025
+    new Date(2025, 10, 25),  // November 25, 2025
+    new Date(2025, 10, 28),  // November 28, 2025
+  ];
+
   const demoConsumptions = [
     {
       userId: demoUsers[0].id,
       totalAmount: '15.50',
       notes: 'Ondo pasatako arratsaldea',
-      closedAt: new Date(),
+      createdAt: novemberDates[0],
+      closedAt: novemberDates[0],
       closedBy: demoUsers[0].id,
     },
     {
       userId: demoUsers[1].id,
       totalAmount: '8.00',
       notes: 'Kontsumo irekia',
+      createdAt: novemberDates[1],
     },
     {
       userId: demoUsers[2].id,
       totalAmount: '42.75',
       notes: 'Urtebetetze festa',
-      closedAt: new Date(),
+      createdAt: novemberDates[2],
+      closedAt: novemberDates[2],
       closedBy: demoUsers[0].id,
+    },
+    {
+      userId: demoUsers[0].id,
+      totalAmount: '12.25',
+      notes: 'Asteguneko kontsumoa',
+      createdAt: novemberDates[3],
+    },
+    {
+      userId: demoUsers[1].id,
+      totalAmount: '6.50',
+      notes: 'Azken kontsumoa',
+      createdAt: novemberDates[4],
+      closedAt: novemberDates[4],
+      closedBy: demoUsers[1].id,
     },
   ];
 

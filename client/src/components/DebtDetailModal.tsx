@@ -1,4 +1,4 @@
-import { CreditCard, ChefHat, Calendar, ShoppingCart } from 'lucide-react';
+import { CreditCard, ChefHat, Calendar, ShoppingCart, ExternalLink } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -113,6 +113,46 @@ export function DebtDetailModal({ credit, trigger }: DebtDetailModalProps) {
                           />
                         </div>
                       </div>
+                      
+                      {/* Link to consumptions for consumption items */}
+                      {item.id === 'consumptions' && consumptionAmount > 0 && (
+                        <div className="mt-3 pt-3 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            className="text-xs"
+                          >
+                            <a 
+                              href={`/nire-konsumoak?month=${credit.month}`}
+                              className="flex items-center gap-1"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              {t('viewConsumptionDetails') || 'View Consumption Details'}
+                            </a>
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {/* Link to reservations for reservation items */}
+                      {item.id === 'reservations' && reservationAmount > 0 && (
+                        <div className="mt-3 pt-3 border-t">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            asChild
+                            className="text-xs"
+                          >
+                            <a 
+                              href={`/nire-erreserbak?month=${credit.month}`}
+                              className="flex items-center gap-1"
+                            >
+                              <ExternalLink className="h-3 w-3" />
+                              {t('viewReservationDetails') || 'View Reservation Details'}
+                            </a>
+                          </Button>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );

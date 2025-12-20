@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { db } from './db';
-import { eq, and, gte, ne, sql, notLike } from 'drizzle-orm';
+import { eq, and, gte, lte, ne, sql, notLike } from 'drizzle-orm';
 import { users, consumptions, reservations, societies, credits, subscriptionTypes } from '@shared/schema';
 
 class DebtCalculationService {
@@ -75,6 +75,7 @@ class DebtCalculationService {
               eq(reservations.userId, member.id),
               eq(reservations.societyId, activeSociety.id),
               gte(reservations.startDate, startDate),
+              lte(reservations.startDate, endDate),
               ne(reservations.status, 'cancelled')
             ));
 

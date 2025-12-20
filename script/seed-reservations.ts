@@ -38,7 +38,18 @@ export async function seedReservations() {
     
     console.log('Found active tables:', activeTables.map(t => t.name));
 
-    const dummyReservations: Omit<Reservation, 'createdAt' | 'updatedAt'>[] = [
+    // Get the active society to use correct pricing
+    const [society] = await db.select().from(societies).where(eq(societies.isActive, true)).limit(1);
+    if (!society) {
+      throw new Error('No active society found for pricing');
+    }
+    
+    const reservationPrice = parseFloat(society.reservationPricePerMember || '2');
+    const kitchenPrice = parseFloat(society.kitchenPricePerMember || '3');
+    
+    console.log(`Using society pricing: ${reservationPrice}€/person reservation, ${kitchenPrice}€/person kitchen`);
+
+    const dummyReservations: Omit<Reservation, 'createdAt' | 'updatedAt' | 'totalAmount'>[] = [
       {
         id: '550e8400-e29b-4d69-a516-31095a414aa6',
         userId: firstUser.id,
@@ -49,7 +60,6 @@ export async function seedReservations() {
         guests: 15, // Adjusted for Gela Pribatua capacity
         useKitchen: true,
         table: 'Gela Pribatua', // Using actual table name
-        totalAmount: '375.00', // 15 * 25 (reservation) + 15 * 10 (kitchen)
         notes: 'Janariak 25eko urte berria',
         societyId,
       },
@@ -63,7 +73,6 @@ export async function seedReservations() {
         guests: 8, // Adjusted for Mahaia 5 capacity
         useKitchen: false,
         table: 'Mahaia 5', // Using actual table name
-        totalAmount: '200.00', // 8 * 25
         notes: 'Ezkontzeko familia biltzarra',
         societyId,
       },
@@ -77,7 +86,6 @@ export async function seedReservations() {
         guests: 6, // Adjusted for Mahaia 4 capacity
         useKitchen: true,
         table: 'Mahaia 4', // Using actual table name
-        totalAmount: '210.00', // 6 * 25 + 6 * 10
         notes: 'Enpresako bilera ofiziala',
         societyId,
       },
@@ -91,7 +99,6 @@ export async function seedReservations() {
         guests: 4, // Adjusted for Mahaia 3 capacity
         useKitchen: false,
         table: 'Mahaia 3', // Using actual table name
-        totalAmount: '100.00', // 4 * 25
         notes: 'Batzar gaueko batzarra',
         societyId,
       },
@@ -105,7 +112,6 @@ export async function seedReservations() {
         guests: 3, // Adjusted for Mahaia 1 capacity
         useKitchen: false,
         table: 'Mahaia 1', // Using actual table name
-        totalAmount: '75.00', // 3 * 25
         notes: 'Lagun arteko bazkaria',
         societyId,
       },
@@ -119,13 +125,83 @@ export async function seedReservations() {
         guests: 2, // Adjusted for Mahaia 2 capacity
         useKitchen: false,
         table: 'Mahaia 2', // Using actual table name
-        totalAmount: '50.00', // 2 * 25
         notes: 'Eguberriko afaria familiarra',
         societyId,
       }
     ];
+
+    // November reservations for Mikel Etxeberria
+    const mikelNovemberReservations = [
+      {
+        id: 'mikel-nov-001',
+        userId: firstUser.id,
+        name: 'Urriaren 30ko Bazkaria',
+        type: 'bazkaria',
+        status: 'completed',
+        startDate: new Date('2025-11-30T19:00:00Z'),
+        guests: 4,
+        useKitchen: true,
+        table: 'Mahaia 2',
+        notes: 'Azkeneko urteko azken bazkaria',
+        societyId,
+      },
+      {
+        id: 'mikel-nov-002',
+        userId: firstUser.id,
+        name: 'Azaroaren 15ko Bilera',
+        type: 'bilera',
+        status: 'completed',
+        startDate: new Date('2025-11-15T20:00:00Z'),
+        guests: 6,
+        useKitchen: false,
+        table: 'Mahaia 4',
+        notes: 'Neguko planifikazio bilera',
+        societyId,
+      },
+      {
+        id: 'mikel-nov-003',
+        userId: firstUser.id,
+        name: 'San Martin Eguna',
+        type: 'afaria',
+        status: 'completed',
+        startDate: new Date('2025-11-11T21:00:00Z'),
+        guests: 8,
+        useKitchen: true,
+        table: 'Gela Pribatua',
+        notes: 'San Martin eguneko afaria',
+        societyId,
+      },
+      {
+        id: 'mikel-nov-004',
+        userId: firstUser.id,
+        name: 'Neguko Afaria',
+        type: 'afaria',
+        status: 'completed',
+        startDate: new Date('2025-11-25T20:30:00Z'),
+        guests: 5,
+        useKitchen: true,
+        table: 'Mahaia 3',
+        notes: 'Neguko sasoia hasteko afaria',
+        societyId,
+      }
+    ];
     
-    for (const reservation of dummyReservations) {
+    // Combine all reservations
+    const allReservations = [...dummyReservations, ...mikelNovemberReservations];
+    
+    // Calculate totalAmount for each reservation using society pricing
+    const reservationsWithAmounts = allReservations.map(reservation => {
+      const reservationCost = (reservation.guests ?? 0) * reservationPrice;
+      const kitchenCost = reservation.useKitchen ? (reservation.guests ?? 0) * kitchenPrice : 0;
+      const totalAmount = reservationCost + kitchenCost;
+      
+      return {
+        ...reservation,
+        totalAmount: totalAmount.toString()
+      };
+    });
+    
+    for (const reservation of reservationsWithAmounts) {
       // Check if reservation already exists (idempotent)
       const existing = await db.select()
         .from(reservations)

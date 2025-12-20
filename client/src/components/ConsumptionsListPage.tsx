@@ -44,24 +44,12 @@ export function ConsumptionsListPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
   const [consumptions, setConsumptions] = useState<ConsumptionWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [selectedConsumption, setSelectedConsumption] = useState<ConsumptionWithItems | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
-  const statusLabels: Record<string, string> = {
-    open: t('open'),
-    closed: t('closed'),
-    cancelled: t('cancelled'),
-  };
-
-  const typeLabels: Record<string, string> = {
-    bar: t('bar'),
-    event: t('event'),
-  };
 
   // Fetch consumptions from API (with user data from JOIN)
   useEffect(() => {
@@ -89,9 +77,7 @@ export function ConsumptionsListPage() {
     const matchesSearch = 
       consumption.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       consumption.notes?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || consumption.status === statusFilter;
-    const matchesType = typeFilter === 'all' || consumption.type === typeFilter;
-    return matchesSearch && matchesStatus && matchesType;
+    return matchesSearch;
   });
 
   const fetchConsumptionDetails = async (consumptionId: string) => {
@@ -158,29 +144,6 @@ export function ConsumptionsListPage() {
             className="pl-10"
           />
         </div>
-        <div className="flex gap-2">
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('allStatus')}</SelectItem>
-              <SelectItem value="open">{t('open')}</SelectItem>
-              <SelectItem value="closed">{t('closed')}</SelectItem>
-              <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t('allTypes')}</SelectItem>
-              <SelectItem value="bar">{t('bar')}</SelectItem>
-              <SelectItem value="event">{t('event')}</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       <Card>
@@ -195,8 +158,6 @@ export function ConsumptionsListPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t('user')}</TableHead>
-                <TableHead>{t('type')}</TableHead>
-                <TableHead>{t('status')}</TableHead>
                 <TableHead>{t('total')}</TableHead>
                 <TableHead>{t('date')}</TableHead>
                 <TableHead>{t('actions')}</TableHead>
@@ -205,13 +166,13 @@ export function ConsumptionsListPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                     {t('loading')}
                   </TableCell>
                 </TableRow>
               ) : filteredConsumptions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                     {t('noResults')}
                   </TableCell>
                 </TableRow>
@@ -223,19 +184,6 @@ export function ConsumptionsListPage() {
                         <User className="h-4 w-4" />
                         {getUserName(consumption)}
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {typeLabels[consumption.type] || consumption.type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge 
-                        variant={consumption.status === 'open' ? 'default' : 
-                                consumption.status === 'closed' ? 'secondary' : 'destructive'}
-                      >
-                        {statusLabels[consumption.status] || consumption.status}
-                      </Badge>
                     </TableCell>
                     <TableCell className="font-medium" data-testid="consumption-total">
                       {parseFloat(consumption.totalAmount).toFixed(2)}€
@@ -265,14 +213,6 @@ export function ConsumptionsListPage() {
                           {selectedConsumption && (
                             <div className="space-y-4">
                               <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <p className="text-sm font-medium">Mota</p>
-                                  <p>{typeLabels[selectedConsumption.consumption.type]}</p>
-                                </div>
-                                <div>
-                                  <p className="text-sm font-medium">Egoera</p>
-                                  <Badge>{statusLabels[selectedConsumption.consumption.status]}</Badge>
-                                </div>
                                 <div>
                                   <p className="text-sm font-medium">Totala</p>
                                   <p className="font-bold">{parseFloat(selectedConsumption.consumption.totalAmount).toFixed(2)}€</p>

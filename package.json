@@ -13,7 +13,7 @@
     "db:generate": "drizzle-kit generate",
     "db:reset": "NODE_OPTIONS='--import tsx' tsx script/reset-database.ts",
     "db:studio": "drizzle-kit studio",
-    "db:seed": "tsx script/seed-societies.ts && tsx script/seed-users.ts && tsx script/seed-products.ts && tsx script/seed-consumptions.ts && tsx script/seed-reservations.ts && tsx script/seed-notes.ts && tsx script/seed-demo-debts.ts && tsx script/seed-tables.ts && tsx script/seed-notifications.ts && tsx script/seed-subscriptions.ts",
+    "db:seed": "tsx script/seed-societies.ts && tsx script/seed-users.ts && tsx script/seed-products.ts && tsx script/seed-consumptions.ts && tsx script/seed-tables.ts && tsx script/seed-reservations.ts && tsx script/seed-notes.ts && tsx script/seed-notifications.ts && tsx script/seed-subscriptions.ts",
     "db:seed:reservations": "tsx script/seed-reservations.ts",
     "test:e2e": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js e2e/features/**/*.feature --import e2e/steps/**/*.ts --format @cucumber/pretty-formatter",
     "test:e2e:only": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js e2e/features/**/*.feature --import e2e/steps/**/*.ts --format progress --tags '@only'",

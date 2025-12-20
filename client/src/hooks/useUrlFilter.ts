@@ -27,7 +27,8 @@ export function useUrlFilter({ baseUrl, paramName = 'filter', initialValue = '' 
   useEffect(() => {
     const newParams = new URLSearchParams(window.location.search.split('?')[1] || '');
     
-    if (value) {
+    // Only add parameter if value exists and is not the initial/default value
+    if (value && value !== initialValue) {
       newParams.set(paramName, value);
     } else {
       newParams.delete(paramName);
@@ -43,7 +44,7 @@ export function useUrlFilter({ baseUrl, paramName = 'filter', initialValue = '' 
     } else {
       console.log(`[useUrlFilter] URL unchanged, skipping update: ${newUrl}`);
     }
-  }, [value, baseUrl, paramName]);
+  }, [value, baseUrl, paramName, initialValue]);
 
   // Log hook usage for debugging
   console.log(`[useUrlFilter] Hook active for ${paramName}, current value: ${value}`);

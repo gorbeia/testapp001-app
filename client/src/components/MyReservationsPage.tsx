@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { Search, Calendar, Users, MapPin, Eye, X } from 'lucide-react';
+import { Search, Calendar, Users, MapPin, Eye, X, ChefHat, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -21,15 +21,66 @@ export function MyReservationsPage() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [monthFilter, setMonthFilter] = useState<string>('');
+  
+  // URL state management
+  const [statusFilter, setStatusFilter] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('status') || 'all';
+    }
+    return 'all';
+  });
+  const [typeFilter, setTypeFilter] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('type') || 'all';
+    }
+    return 'all';
+  });
+  const [monthFilter, setMonthFilter] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('month') || '';
+    }
+    return '';
+  });
 
   // Fetch user's reservations
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [society, setSociety] = useState<any>(null);
+
+  // Load society data
+  const loadSociety = async () => {
+    try {
+      const response = await authFetch('/api/societies/user');
+      if (response.ok) {
+        const data = await response.json();
+        setSociety(data);
+      }
+    } catch (error) {
+      console.error('Error loading society:', error);
+    }
+  };
+
+  useEffect(() => {
+    loadSociety();
+  }, []);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (statusFilter !== 'all') params.set('status', statusFilter);
+    if (typeFilter !== 'all') params.set('type', typeFilter);
+    if (monthFilter) params.set('month', monthFilter);
+    
+    const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+    if (newUrl !== window.location.pathname + window.location.search) {
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [statusFilter, typeFilter, monthFilter]);
 
   // Fetch user's reservations
   const fetchReservations = async () => {
@@ -133,6 +184,36 @@ export function MyReservationsPage() {
 
   const isFutureReservation = (reservation: Reservation) => {
     return new Date(reservation.startDate) > new Date();
+  };
+
+  // Calculate cost breakdown for a reservation
+  const calculateCostBreakdown = (reservation: Reservation) => {
+    if (!society) {
+      return {
+        reservationCost: 0,
+        kitchenCost: 0,
+        totalCost: 0,
+        pricePerPerson: 0,
+        guests: reservation.guests || 0
+      };
+    }
+    
+    const guests = reservation.guests || 0;
+    const reservationPrice = parseFloat(society.reservationPricePerMember) || 2;
+    const kitchenPrice = parseFloat(society.kitchenPricePerMember) || 3;
+    
+    const reservationCost = guests * reservationPrice;
+    const kitchenCost = reservation.useKitchen ? guests * kitchenPrice : 0;
+    const totalCost = reservationCost + kitchenCost;
+    const pricePerPerson = guests > 0 ? totalCost / guests : 0;
+    
+    return {
+      reservationCost,
+      kitchenCost,
+      totalCost,
+      pricePerPerson,
+      guests
+    };
   };
 
   if (isInitialLoad && loading) {
@@ -331,6 +412,54 @@ export function MyReservationsPage() {
               <div>
                 <p className="text-sm font-medium">{t('notes')}</p>
                 <p className="text-sm text-gray-600">{selectedReservation.notes || t('noNotes')}</p>
+              </div>
+
+              {/* Cost Breakdown */}
+              <div className="border-t pt-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Calculator className="h-5 w-5 text-blue-600" />
+                  <h3 className="font-semibold text-lg">{t('costBreakdown')}</h3>
+                </div>
+                
+                <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-gray-600" />
+                      <span className="text-sm">{t('guests')}</span>
+                    </div>
+                    <span className="font-medium">{calculateCostBreakdown(selectedReservation).guests} {t('persons')}</span>
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">{t('reservationCost')} ({society?.reservationPricePerMember || 2}€/{t('person')})</span>
+                    <span className="font-medium">{calculateCostBreakdown(selectedReservation).reservationCost.toFixed(2)}€</span>
+                  </div>
+                  
+                  {selectedReservation.useKitchen && (
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-2">
+                        <ChefHat className="h-4 w-4 text-orange-600" />
+                        <span className="text-sm">{t('kitchenCost')} ({society?.kitchenPricePerMember || 3}€/{t('person')})</span>
+                      </div>
+                      <span className="font-medium">{calculateCostBreakdown(selectedReservation).kitchenCost.toFixed(2)}€</span>
+                    </div>
+                  )}
+                  
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-semibold">{t('totalCost')}</span>
+                      <span className="font-bold text-lg text-blue-600">
+                        {calculateCostBreakdown(selectedReservation).totalCost.toFixed(2)}€
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-xs text-gray-600">{t('pricePerPerson')}</span>
+                      <span className="text-sm text-gray-600">
+                        {calculateCostBreakdown(selectedReservation).pricePerPerson.toFixed(2)}€
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

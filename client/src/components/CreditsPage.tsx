@@ -81,7 +81,7 @@ export function CreditsPage() {
   // Use URL filter hook for month and status
   const currentDate = new Date();
   const currentMonthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
-  const monthFilter = useUrlFilter({ baseUrl: '/zorrak', paramName: 'month', initialValue: currentMonthString });
+  const monthFilter = useUrlFilter({ baseUrl: '/zorrak', paramName: 'month', initialValue: '' });
   const statusFilter = useUrlFilter({ baseUrl: '/zorrak', paramName: 'status', initialValue: 'all' });
 
   const isAdmin = hasAdminAccess(user);
