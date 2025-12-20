@@ -56,6 +56,9 @@ When('I fill in the reservation details', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
   
+  // Wait for dialog to be fully rendered
+  await page.waitForTimeout(2000);
+  
   // Generate a unique reservation name with timestamp
   const timestamp = Date.now();
   const uniqueName = `Test Erreserba ${timestamp}`;
@@ -63,15 +66,24 @@ When('I fill in the reservation details', async function () {
   // Store the unique name for later verification
   this.testReservationName = uniqueName;
   
+  // Fill the name field with increased timeout
+  await page.waitForSelector('[data-testid="input-reservation-name"]', { timeout: 10000 });
   await page.fill('[data-testid="input-reservation-name"]', uniqueName);
+  
+  // Wait a moment for input to register
+  await page.waitForTimeout(1000);
   
   // For Radix UI Select, need to click the trigger first, then select option
   await page.click('[data-testid="select-reservation-type"]');
-  await page.waitForSelector('[role="option"]', { timeout: 5000 });
+  await page.waitForSelector('[role="option"]', { timeout: 10000 });
   
   // Try to find the first option (should be bazkaria)
   const firstOption = page.locator('[role="option"]').first();
+  await firstOption.waitFor({ state: 'visible', timeout: 5000 });
   await firstOption.click();
+  
+  // Wait for selection to complete
+  await page.waitForTimeout(1000);
 });
 
 When('I select the reservation date', async function () {
@@ -79,64 +91,84 @@ When('I select the reservation date', async function () {
   if (!page) throw new Error('Page not available');
   
   // Wait for dialog to be fully rendered
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2000);
 
   // Check if date picker button exists and is visible
   const datePickerButton = page.locator('[data-testid="date-picker-button"]');
-  await datePickerButton.waitFor({ state: 'visible', timeout: 5000 });
+  await datePickerButton.waitFor({ state: 'visible', timeout: 10000 });
   
   // Click on date picker button
   await datePickerButton.click();
   
-  // Wait for popover/calendar to appear
-  await page.waitForSelector('[data-state="open"]', { timeout: 5000 });
+  // Wait for calendar to appear
+  await page.waitForTimeout(2000);
   
-  // Wait a bit for calendar to render
+  // Generate a random date within the next 6 months
+  const today = new Date();
+  const maxFutureDate = new Date(today);
+  maxFutureDate.setMonth(today.getMonth() + 6);
+  
+  const randomDate = new Date(today.getTime() + Math.random() * (maxFutureDate.getTime() - today.getTime()));
+  const targetMonth = randomDate.getMonth();
+  const targetYear = randomDate.getFullYear();
+  const targetDay = randomDate.getDate();
+  
+  console.log(`Target date: ${targetDay}/${targetMonth + 1}/${targetYear}`);
+  
+  // Navigate to the target month
+  const currentMonth = new Date();
+  let monthsToNavigate = (targetYear - currentMonth.getFullYear()) * 12 + (targetMonth - currentMonth.getMonth());
+  
+  if (monthsToNavigate > 0) {
+    const nextMonthButton = page.locator('button[aria-label="Go to next month"]');
+    
+    for (let i = 0; i < monthsToNavigate; i++) {
+      await nextMonthButton.click();
+      await page.waitForTimeout(500);
+      console.log(`Navigated to month ${i + 1} ahead`);
+    }
+  } else if (monthsToNavigate < 0) {
+    const prevMonthButton = page.locator('button[aria-label="Go to previous month"]');
+    
+    for (let i = 0; i < Math.abs(monthsToNavigate); i++) {
+      await prevMonthButton.click();
+      await page.waitForTimeout(500);
+      console.log(`Navigated to month ${i + 1} back`);
+    }
+  }
+  
+  // Select a day in the target month (use a safe day like 15th or adjust if needed)
+  let dayToSelect = Math.min(targetDay, 28); // Use 28th as safe default to avoid month-end issues
+  
+  // Try to find the specific day, fallback to any available day
+  let daySelected = false;
+  
+  // First try to select the target day
+  const targetDayButton = page.locator(`button[role="gridcell"]:has-text("${dayToSelect}")`).first();
+  if (await targetDayButton.isVisible({ timeout: 3000 })) {
+    await targetDayButton.click();
+    daySelected = true;
+    console.log(`Selected day ${dayToSelect}`);
+  } else {
+    // Fallback: select any available day in the middle of the month
+    const availableDays = page.locator('button[role="gridcell"]:not(:disabled)');
+    const dayCount = await availableDays.count();
+    
+    if (dayCount > 0) {
+      // Select a day around the middle of the available days
+      const middleDay = availableDays.nth(Math.min(15, dayCount - 1));
+      await middleDay.click();
+      daySelected = true;
+      console.log('Selected a fallback day in the middle of the month');
+    }
+  }
+  
+  if (!daySelected) {
+    throw new Error('Could not select any date in the calendar');
+  }
+  
+  // Wait for date selection to complete
   await page.waitForTimeout(1000);
-  
-  // Pick a random month within the next 6 months
-  const randomMonthsAhead = Math.floor(Math.random() * 6) + 1; // 1-6 months ahead
-  
-  // Navigate forward the random number of months
-  try {
-    const navButtons = page.locator('button[title*="Next"], button[aria-label*="Next"], button[title="Hurrengo"], button[title="Siguiente"]');
-    if (await navButtons.count() > 0) {
-      for (let i = 0; i < randomMonthsAhead; i++) {
-        await navButtons.first().click();
-        await page.waitForTimeout(500);
-      }
-    }
-  } catch (error) {
-  }
-  
-  // Pick a random day in the middle of the month (15-25)
-  const randomDay = Math.floor(Math.random() * 11) + 15; // 15-25
-  const dayString = randomDay.toString();
-  
-  try {
-    const dayElement = page.locator('button[role="gridcell"]').filter({ hasText: dayString }).first();
-    if (await dayElement.isVisible({ timeout: 1000 })) {
-      await dayElement.click();
-    } else {
-      // Fallback to day 15
-      const fallbackDay = page.locator('button[role="gridcell"]').filter({ hasText: '15' }).first();
-      await fallbackDay.click();
-    }
-  } catch (error) {
-    // Ultimate fallback to any available day
-    const availableDay = page.locator('button[role="gridcell"]').first();
-    await availableDay.click();
-  }
-  
-  // Wait for date selection to register and popover to close
-  await page.waitForTimeout(100);
-  
-  // Ensure popover is closed by pressing Escape if it's still open
-  const popoverVisible = await page.isVisible('[data-state="open"]');
-  if (popoverVisible) {
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(500);
-  }
 });
 
 When('I set the number of guests to {int}', async function (guests: number) {

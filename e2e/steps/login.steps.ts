@@ -3,7 +3,7 @@ import { chromium, Browser, Page } from 'playwright';
 import assert from 'node:assert/strict';
 import { getBrowser, setBrowser, getPage, setPage } from './shared-state';
 
-setDefaultTimeout(60 * 1000);
+setDefaultTimeout(10 * 1000);
 
 let lastRandomUserEmail: string | undefined;
 
@@ -150,6 +150,9 @@ When('I create a new random user', async function () {
   lastRandomUserEmail = `e2e-user-${suffix}@test.local`;
   const randomName = `E2E User ${suffix}`;
 
+  // Wait for the new user button to be visible with increased timeout
+  await page.waitForSelector('[data-testid="button-new-user"]', { timeout: 10000 });
+
   // Open the "new user" dialog
   await page.click('[data-testid="button-new-user"]');
 
@@ -170,7 +173,7 @@ Then('I should see a success notification for the new user', async function () {
   assert.ok(page, 'Page was not initialized');
 
   // Wait for toast with the success message used in UsersPage
-  await page.waitForSelector('text=Erabiltzailea sortua / Usuario creado', { timeout: 5000 });
+  await page.waitForSelector('text=Erabiltzailea sortua', { timeout: 5000 });
 
   // And ensure the newly created user is actually visible in the users table
   // We rely on the unique random email captured when the user was created

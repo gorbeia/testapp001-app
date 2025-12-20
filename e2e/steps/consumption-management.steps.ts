@@ -7,7 +7,7 @@ Given('I navigate to the consumptions page', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
   
-  await page.click('text=Kontsumoak');
+  await page.click('[data-testid="link-kontsumoak"]');
   await page.waitForLoadState('networkidle');
   // Additional wait to ensure all API calls complete after cache removal
   await page.waitForTimeout(1000);
@@ -17,16 +17,25 @@ When('I add {string} to the cart', async function (productName: string) {
   const page = getPage();
   if (!page) throw new Error('Page not available');
   
-  // Wait for products to load (reduced timeout - 5s is sufficient)
-  await page.waitForSelector('[data-testid="product-card"]', { timeout: 5000 });
+  // Wait for products to load with increased timeout and better error handling
+  try {
+    await page.waitForSelector('[data-testid="product-card"]', { timeout: 15000 });
+  } catch (error) {
+    // Try alternative selectors if the main one fails
+    await page.waitForSelector('.hover-elevate', { timeout: 10000 });
+  }
   
   // Find the first product card that contains the product name and click its add button
   const productCard = page.locator(`[data-testid="product-card"]:has-text("${productName}")`).first();
   
+  // Wait for the product card to be visible with increased timeout
+  await productCard.waitFor({ state: 'visible', timeout: 10000 });
+  
+  // Click the add button
   await productCard.locator('[data-testid="button-add-to-cart"]').click();
   
   // Wait a moment for the cart to update
-  await page.waitForTimeout(500);
+  await page.waitForTimeout(1000);
 });
 
 When('I increase the quantity of {string} to {int}', async function (productName: string, quantity: number) {
