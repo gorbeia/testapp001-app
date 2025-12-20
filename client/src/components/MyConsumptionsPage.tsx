@@ -30,11 +30,24 @@ export function MyConsumptionsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const currentDate = new Date();
-  const currentMonthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
-  const [monthFilter, setMonthFilter] = useState<string>(currentMonthString);
+  
+  // URL state management
+  const [statusFilter, setStatusFilter] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('status') || 'all';
+    }
+    return 'all';
+  });
+  
+  const [monthFilter, setMonthFilter] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('month') || '';
+    }
+    return '';
+  });
   const [consumptions, setConsumptions] = useState<Consumption[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -42,13 +55,33 @@ export function MyConsumptionsPage() {
   const [selectedConsumption, setSelectedConsumption] = useState<ConsumptionWithItems | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
+  // Update URL when filters change
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (statusFilter !== 'all') params.set('status', statusFilter);
+    if (monthFilter) params.set('month', monthFilter);
+    
+    const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+    if (newUrl !== window.location.pathname + window.location.search) {
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, [statusFilter, monthFilter]);
+
   // Fetch user's own consumptions
   const fetchConsumptions = async () => {
     try {
       setLoading(true);
-      // Extract month number from YYYY-MM format for API
-      const monthParam = monthFilter ? monthFilter.split('-')[1] : 'all';
-      const response = await authFetch(`/api/consumptions/user?search=${searchTerm}&status=${statusFilter}&type=${typeFilter}&month=${monthParam}`);
+      const params = new URLSearchParams();
+      if (searchTerm) params.append('search', searchTerm);
+      if (statusFilter !== 'all') params.append('status', statusFilter);
+      if (typeFilter !== 'all') params.append('type', typeFilter);
+      if (monthFilter) {
+        // Extract month number from YYYY-MM format for API
+        const monthParam = monthFilter.split('-')[1];
+        params.append('month', monthParam);
+      }
+      
+      const response = await authFetch(`/api/consumptions/user?${params}`);
       if (!response.ok) throw new Error('Failed to fetch consumptions');
       const data = await response.json();
       setConsumptions(data);
