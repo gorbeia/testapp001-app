@@ -3,6 +3,9 @@ import { drizzle } from 'drizzle-orm/node-postgres';
 import { Client } from 'pg';
 import { societies } from '../shared/schema';
 
+// Predefined UUID for consistent society ID across database resets
+const SOCIETY_UUID = '550e8400-e29b-41d4-a716-446655440000';
+
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
@@ -13,7 +16,7 @@ async function main() {
   await client.connect();
   const db = drizzle(client);
 
-  console.log('Seeding societies...');
+  console.log('Seeding societies with predefined UUID...');
 
   // Check if societies already exist
   const existingSocieties = await db.select().from(societies);
@@ -25,6 +28,7 @@ async function main() {
 
   const demoSocieties = [
     {
+      id: SOCIETY_UUID,
       alphabeticId: 'GT001',
       name: 'Gure Txokoa',
       iban: 'ES91 2100 0418 4502 0005 1330',
@@ -42,7 +46,7 @@ async function main() {
     await db.insert(societies).values(society);
   }
 
-  console.log('Done.');
+  console.log('Done. Society seeded with stable UUID.');
   await client.end();
 }
 

@@ -4,6 +4,15 @@ import { Client } from 'pg';
 import { users, societies } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 
+// Predefined UUIDs for consistent user IDs across database resets
+const USER_UUIDS = {
+  admin: '550e8400-e29b-41d4-a716-446655440001',
+  diruzaina: '550e8400-e29b-41d4-a716-446655440002',
+  sotolaria: '550e8400-e29b-41d4-a716-446655440003',
+  bazkidea: '550e8400-e29b-41d4-a716-446655440004',
+  laguna: '550e8400-e29b-41d4-a716-446655440005',
+};
+
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) {
@@ -31,6 +40,7 @@ async function main() {
 
   const demoUsers = [
     {
+      id: USER_UUIDS.admin,
       username: 'admin@txokoa.eus',
       password: 'demo',
       name: 'Mikel Etxeberria',
@@ -43,6 +53,7 @@ async function main() {
       linkedMemberName: null,
     },
     {
+      id: USER_UUIDS.diruzaina,
       username: 'diruzaina@txokoa.eus',
       password: 'demo',
       name: 'Ane Zelaia',
@@ -55,6 +66,7 @@ async function main() {
       linkedMemberName: null,
     },
     {
+      id: USER_UUIDS.sotolaria,
       username: 'sotolaria@txokoa.eus',
       password: 'demo',
       name: 'Jon Agirre',
@@ -67,6 +79,7 @@ async function main() {
       linkedMemberName: null,
     },
     {
+      id: USER_UUIDS.bazkidea,
       username: 'bazkidea@txokoa.eus',
       password: 'demo',
       name: 'Miren Urrutia',
@@ -79,6 +92,7 @@ async function main() {
       linkedMemberName: null,
     },
     {
+      id: USER_UUIDS.laguna,
       username: 'laguna@txokoa.eus',
       password: 'demo',
       name: 'Andoni Garcia',
@@ -92,7 +106,7 @@ async function main() {
     },
   ];
 
-  console.log('Seeding demo users...');
+  console.log('Seeding demo users with predefined UUIDs...');
 
   for (const user of demoUsers) {
     await db.insert(users)
@@ -100,7 +114,7 @@ async function main() {
       .onConflictDoNothing({ target: users.username });
   }
 
-  console.log('Done.');
+  console.log('Done. Users seeded with stable UUIDs.');
   await client.end();
 }
 
