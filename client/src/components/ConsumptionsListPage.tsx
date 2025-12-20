@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { Search, Eye, Calendar, User, Receipt, Filter } from 'lucide-react';
+import { Search, Eye, Calendar, User, Receipt, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MonthGrid from '@/components/MonthGrid';
 import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/lib/auth';
+import { useUrlFilter } from '@/hooks/useUrlFilter';
 import type { Consumption, ConsumptionItem, User as UserType } from '@shared/schema';
 import { ErrorFallback } from '@/components/ErrorBoundary';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
@@ -43,19 +45,51 @@ interface ConsumptionItemWithProduct extends ConsumptionItem {
 export function ConsumptionsListPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
+  
+  // Use URL filter hooks for consistent behavior with other pages
+  const userFilter = useUrlFilter({ baseUrl: '/kontsumoak-zerrenda', paramName: 'user', initialValue: 'all' });
+  const monthFilter = useUrlFilter({ baseUrl: '/kontsumoak-zerrenda', paramName: 'month', initialValue: '' });
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [consumptions, setConsumptions] = useState<ConsumptionWithUser[]>([]);
+  const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [selectedConsumption, setSelectedConsumption] = useState<ConsumptionWithItems | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
 
 
-  // Fetch consumptions from API (with user data from JOIN)
+  // Fetch users for filtering (page is admin-only)
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await authFetch('/api/users');
+        if (response.ok) {
+          const data = await response.json();
+          setUsers(data);
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error);
+      }
+    };
+
+    // Always fetch users since this page is admin-only
+    if (currentUser) {
+      fetchUsers();
+    }
+  }, [currentUser]);
+
+  // Fetch consumptions from API with filters
   useEffect(() => {
     const fetchConsumptions = async () => {
       try {
-        const response = await authFetch('/api/consumptions');
+        const params = new URLSearchParams();
+        if (userFilter.value !== 'all') params.append('userId', userFilter.value);
+        if (monthFilter.value) params.append('month', monthFilter.value);
+        
+        const url = `/api/consumptions${params.toString() ? `?${params.toString()}` : ''}`;
+        const response = await authFetch(url);
         if (response.ok) {
           const data = await response.json();
           setConsumptions(data);
@@ -71,7 +105,7 @@ export function ConsumptionsListPage() {
     };
 
     fetchConsumptions();
-  }, []);
+  }, [userFilter.value, monthFilter.value]);
 
   const filteredConsumptions = consumptions.filter((consumption) => {
     const matchesSearch = 
@@ -130,19 +164,64 @@ export function ConsumptionsListPage() {
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="p-4 sm:p-6 space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">{t('consumptions')}</h2>
+        <h2 className="text-2xl font-bold">Kontsumo Zerrenda</h2>
         <p className="text-muted-foreground">Kudeatu kontsumo guztiak</p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Bilatu kontsumoak..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      <div className="space-y-4">
+        {/* Filters Section */}
+        <div className="flex flex-col lg:flex-row gap-4 p-4 bg-muted/50 rounded-lg">
+          <div className="flex-1">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Bilatu kontsumoak..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          
+          {/* User Filter - Always show since page is admin-only */}
+          <div className="w-full lg:w-48">
+            <div className="relative">
+              <Select value={userFilter.value} onValueChange={userFilter.setValue}>
+                <SelectTrigger>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <SelectValue placeholder="Erabiltzailea" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Erabiltzaile guztiak</SelectItem>
+                  {users.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name || user.username}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {userFilter.value !== 'all' && (
+                <button
+                  onClick={() => userFilter.setValue('all')}
+                  className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                  title="Garbitu"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          </div>
+          
+          {/* Month Filter - Using standard MonthGrid */}
+          <div className="w-full lg:w-64">
+            <MonthGrid
+              selectedMonth={monthFilter.value}
+              onMonthChange={monthFilter.setValue}
+              className="w-full"
+            />
+          </div>
         </div>
       </div>
 

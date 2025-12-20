@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { consumptions, consumptionItems, products, users, stockMovements, type User, type Consumption, type ConsumptionItem } from "@shared/schema";
-import { eq, and, gte, desc, count, sql, like, or } from "drizzle-orm";
+import { eq, and, gte, desc, count, sql, like, or, between } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { debtCalculationService } from "../cron-jobs";
 
@@ -89,14 +89,35 @@ export function registerConsumptionRoutes(app: Express) {
     }
   });
 
-  // Consumptions: get all consumptions (admin) or user's consumptions
+  // Consumptions: get all consumptions (admin) or user's consumptions with filtering
   app.get("/api/consumptions", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user!;
+      const { userId: filterUserId, month: filterMonth } = req.query;
       const societyId = getUserSocietyId(user);
       
+      // Build base conditions
+      let baseConditions = [eq(consumptions.societyId, societyId)];
+      
+      // Add user filter (only admins can filter by user)
+      if (filterUserId && ['administratzailea', 'diruzaina', 'sotolaria'].includes(user.function || '')) {
+        baseConditions.push(eq(consumptions.userId, filterUserId as string));
+      }
+      
+      // Add month filter (YYYY-MM format)
+      if (filterMonth) {
+        const year = parseInt((filterMonth as string).substring(0, 4));
+        const month = parseInt((filterMonth as string).substring(5, 7));
+        
+        if (!isNaN(year) && !isNaN(month)) {
+          const startDate = new Date(year, month - 1, 1); // First day of month
+          const endDate = new Date(year, month, 0, 23, 59, 59, 999); // Last day of month
+          baseConditions.push(between(consumptions.createdAt, startDate, endDate));
+        }
+      }
+      
       let allConsumptions;
-      if (['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
+      if (['administratzailea', 'diruzaina', 'sotolaria'].includes(user.function || '')) {
         // Admin can see all consumptions with user names
         allConsumptions = await db
           .select({
@@ -113,9 +134,11 @@ export function registerConsumptionRoutes(app: Express) {
           })
           .from(consumptions)
           .leftJoin(users, eq(consumptions.userId, users.id))
-          .where(eq(consumptions.societyId, societyId));
+          .where(and(...baseConditions))
+          .orderBy(desc(consumptions.createdAt));
       } else {
         // Regular users can only see their own consumptions
+        baseConditions.push(eq(consumptions.userId, user.id));
         allConsumptions = await db
           .select({
             id: consumptions.id,
@@ -131,10 +154,8 @@ export function registerConsumptionRoutes(app: Express) {
           })
           .from(consumptions)
           .leftJoin(users, eq(consumptions.userId, users.id))
-          .where(and(
-            eq(consumptions.userId, user.id),
-            eq(consumptions.societyId, societyId)
-          ));
+          .where(and(...baseConditions))
+          .orderBy(desc(consumptions.createdAt));
       }
       
       return res.status(200).json(allConsumptions);

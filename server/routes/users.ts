@@ -3,42 +3,8 @@ import { db } from "../db";
 import { users, consumptions, reservations, credits, notes, subscriptionTypes, type User } from "@shared/schema";
 import { eq, and, count } from "drizzle-orm";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
-
-// JWT Configuration
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
-const JWT_EXPIRES_IN = '15m'; // Reduced to 15 minutes for better security
-const REFRESH_TOKEN_EXPIRES_IN = '7d'; // Refresh token lasts longer
-
-// JWT Functions
-const generateToken = (user: User) => {
-  const { password: _, ...userWithoutPassword } = user;
-  return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-};
-
-const generateRefreshToken = (user: User) => {
-  const { password: _, ...userWithoutPassword } = user;
-  return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
-};
-
-const setAuthCookie = (res: Response, token: string) => {
-  res.cookie('auth-token', token, {
-    httpOnly: true,    // Prevent XSS
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'strict', // Prevent CSRF
-    maxAge: 15 * 60 * 1000 // 15 minutes (matches JWT_EXPIRES_IN)
-  });
-};
-
-const setRefreshCookie = (res: Response, refreshToken: string) => {
-  res.cookie('refresh-token', refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days (matches REFRESH_TOKEN_EXPIRES_IN)
-  });
-};
+import { sessionMiddleware, requireAuth, requireAdmin, requireTreasurer } from "./middleware";
+import { generateToken, setAuthCookie } from "./index";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: User): string => {
@@ -58,8 +24,8 @@ const validateUserId = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export function registerUserRoutes(app: Express) {
-  // Users: list all users from the database (admin only)
-  app.get("/api/users", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
+  // Users: list all users from the database (admin, diruzaina, sotolaria only)
+  app.get("/api/users", sessionMiddleware, requireTreasurer, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { status } = req.query;
       

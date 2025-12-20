@@ -13,7 +13,7 @@ const JWT_EXPIRES_IN = '15m'; // Reduced to 15 minutes for better security
 const REFRESH_TOKEN_EXPIRES_IN = '7d'; // Refresh token lasts longer
 
 // JWT Functions
-const generateToken = (user: User) => {
+export const generateToken = (user: User) => {
   const { password: _, ...userWithoutPassword } = user;
   return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
@@ -23,7 +23,7 @@ const generateRefreshToken = (user: User) => {
   return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
 };
 
-const setAuthCookie = (res: Response, token: string) => {
+export const setAuthCookie = (res: Response, token: string) => {
   res.cookie('auth-token', token, {
     httpOnly: true,    // Prevent XSS
     secure: process.env.NODE_ENV === 'production', // HTTPS only in production

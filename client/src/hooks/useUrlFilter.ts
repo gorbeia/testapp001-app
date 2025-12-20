@@ -17,7 +17,6 @@ export function useUrlFilter({ baseUrl, paramName = 'filter', initialValue = '' 
       const urlValue = urlParams.get(paramName);
       const finalValue = urlValue !== null ? urlValue : (initialValue || '');
       currentUrlRef.current = window.location.pathname + window.location.search;
-      console.log(`[useUrlFilter] Initialized ${paramName} with value:`, finalValue);
       return finalValue;
     }
     return initialValue || '';
@@ -38,16 +37,10 @@ export function useUrlFilter({ baseUrl, paramName = 'filter', initialValue = '' 
     
     // Only update if URL actually changed
     if (newUrl !== currentUrlRef.current) {
-      console.log(`[useUrlFilter] Updating URL from ${currentUrlRef.current} to ${newUrl}`);
       currentUrlRef.current = newUrl;
       window.history.replaceState({}, '', newUrl);
-    } else {
-      console.log(`[useUrlFilter] URL unchanged, skipping update: ${newUrl}`);
     }
   }, [value, baseUrl, paramName, initialValue]);
-
-  // Log hook usage for debugging
-  console.log(`[useUrlFilter] Hook active for ${paramName}, current value: ${value}`);
 
   return {
     value,
