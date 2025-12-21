@@ -128,10 +128,10 @@ export function MyReservationsPage() {
 
   const getTypeBadge = (type: string) => {
     const typeLabels: Record<string, string> = {
-      event: 'Ekitaldia',
-      meeting: 'Bilera',
-      private: 'Pribatua',
-      other: 'Besteak',
+      bazkaria: t('bazkaria'),
+      afaria: t('afaria'),
+      askaria: t('askaria'),
+      hamaiketakako: t('hamaiketakoa'),
     };
     const label = typeLabels[type] || type;
     return <Badge variant="outline">{label}</Badge>;
@@ -281,10 +281,10 @@ export function MyReservationsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('allTypes')}</SelectItem>
-            <SelectItem value="event">Ekitaldia</SelectItem>
-            <SelectItem value="meeting">Bilera</SelectItem>
-            <SelectItem value="private">Pribatua</SelectItem>
-            <SelectItem value="other">Besteak</SelectItem>
+            <SelectItem value="bazkaria">{t('bazkaria')}</SelectItem>
+            <SelectItem value="afaria">{t('afaria')}</SelectItem>
+            <SelectItem value="askaria">{t('askaria')}</SelectItem>
+            <SelectItem value="hamaiketakako">{t('hamaiketakoa')}</SelectItem>
           </SelectContent>
         </Select>
 
