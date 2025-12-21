@@ -353,13 +353,6 @@ export function MyReservationsPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center gap-2 justify-end">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedReservation(reservation)}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
                         {(reservation.status === 'pending' || reservation.status === 'confirmed') && isFutureReservation(reservation) ? (
                           <Button
                             variant="destructive"
@@ -369,6 +362,13 @@ export function MyReservationsPage() {
                             <X className="h-4 w-4" />
                           </Button>
                         ) : null}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedReservation(reservation)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
