@@ -15,15 +15,14 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
   const { t, language } = useLanguage();
   const [open, setOpen] = useState(false);
 
-  // Generate year and month options
+  // Generate year options
   const generateYearOptions = () => {
     const options = [];
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1;
     
-    // Generate options for current year and previous 4 years
-    for (let year = currentYear; year >= currentYear - 4; year--) {
+    // Generate options for current year and next 2 years
+    for (let year = currentYear; year <= currentYear + 2; year++) {
       options.push({
         value: year.toString(),
         display: year.toString()
@@ -56,18 +55,18 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
       display: name
     }));
     
-    // For current year, only show current and previous months
+    // For current year, only show current month and future months
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1; // 1-12
     const selectedYear = getCurrentYear();
     
     if (currentYear === parseInt(selectedYear)) {
-      // Filter to only show current month and previous months
-      return allMonths.filter((month, index) => index + 1 <= currentMonth);
+      // Filter to only show current month and future months
+      return allMonths.filter((month, index) => index + 1 >= currentMonth);
     }
     
-    // For previous years, show all months
+    // For future years, show all months
     return allMonths;
   };
 

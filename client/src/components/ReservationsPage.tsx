@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { Plus, Calendar as CalendarIcon, Search, Filter, Users, Utensils, X } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, Search, Users, Utensils } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -22,6 +21,7 @@ import { eu, es } from 'date-fns/locale';
 import type { Reservation, Table } from '@shared/schema';
 import { ErrorFallback } from '@/components/ErrorBoundary';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
+import MonthGrid from '@/components/MonthGrid';
 
 interface ReservationWithUser extends Reservation {
   userName: string | null;
@@ -43,14 +43,12 @@ export function ReservationsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
-  const filterStatus = useUrlFilter({ baseUrl: '/erreserbak', paramName: 'status', initialValue: 'all' });
+  const monthFilter = useUrlFilter({ baseUrl: '/erreserbak', paramName: 'month', initialValue: '' });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [reservations, setReservations] = useState<ReservationWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [society, setSociety] = useState<any>(null);
-  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [reservationToCancel, setReservationToCancel] = useState<string | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
   
   // Form state
@@ -126,7 +124,7 @@ export function ReservationsPage() {
     loadReservations();
     loadSociety();
     loadTables();
-  }, []);
+  }, [monthFilter.value]);
 
   const loadTables = async () => {
     try {
@@ -143,10 +141,21 @@ export function ReservationsPage() {
 
   const loadReservations = async () => {
     try {
-      const response = await authFetch('/api/reservations');
+      setLoading(true);
+      const params = new URLSearchParams();
+      
+      if (monthFilter.value) {
+        // Extract month number from YYYY-MM format for API
+        const monthParam = monthFilter.value.split('-')[1];
+        params.append('month', monthParam);
+      }
+      
+      const response = await authFetch(`/api/reservations?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
         setReservations(data);
+      } else {
+        throw new Error('Failed to load reservations');
       }
     } catch (error) {
       console.error('Error loading reservations:', error);
@@ -156,11 +165,12 @@ export function ReservationsPage() {
     }
   };
 
+  // Filter reservations - search functionality only (backend handles filtering)
   const filteredReservations = reservations.filter((r) => {
     const matchesSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (r.notes && r.notes.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = filterStatus.value === 'all' || r.status === filterStatus.value;
-    return matchesSearch && matchesStatus;
+                         (r.notes && r.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (r.userName && r.userName.toLowerCase().includes(searchTerm.toLowerCase()));
+    return matchesSearch;
   });
 
   const handleCreateReservation = async () => {
@@ -240,45 +250,6 @@ export function ReservationsPage() {
     }
   };
 
-  const handleCancelReservation = (reservationId: string) => {
-    setReservationToCancel(reservationId);
-    setCancelDialogOpen(true);
-  };
-
-  const confirmCancelReservation = async () => {
-    if (!reservationToCancel) return;
-    
-    try {
-      const response = await authFetch(`/api/reservations/${reservationToCancel}`, {
-        method: 'PUT',
-        body: JSON.stringify({ status: 'cancelled' }),
-      });
-
-      if (response.ok) {
-        const updatedReservation = await response.json();
-        setReservations(reservations.map(r => r.id === reservationToCancel ? updatedReservation : r));
-        
-        toast({
-          title: t('success'),
-          description: t('reservationCancelled'), 
-        });
-        
-        setCancelDialogOpen(false);
-        setReservationToCancel(null);
-      } else {
-        const error = await response.json();
-        throw new Error(error.message || t('errorCancellingReservation'));
-      }
-    } catch (error) {
-      console.error('Error cancelling reservation:', error);
-      toast({
-        title: t('error'),
-        description: error instanceof Error ? error.message : t('errorCancellingReservation'),
-        variant: 'destructive',
-      });
-    }
-  };
-
   const getStatusVariant = (status: string) => {
     switch (status) {
       case 'confirmed': return 'default';
@@ -308,8 +279,8 @@ export function ReservationsPage() {
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold">{t('reservations')}</h2>
-          <p className="text-muted-foreground">{t('manageReservations')}</p>
+          <h2 className="text-2xl font-bold">{t('upcomingReservations')}</h2>
+          <p className="text-muted-foreground">{t('upcomingReservationsDescription')}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
@@ -490,26 +461,19 @@ export function ReservationsPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder={`${t('search')}...`}
+            placeholder={`${t('searchReservation')}...`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
             data-testid="input-search-reservations"
           />
         </div>
-        <Select value={filterStatus.value} onValueChange={filterStatus.setValue}>
-          <SelectTrigger className="w-full sm:w-48" data-testid="select-filter-status">
-            <Filter className="mr-2 h-4 w-4" />
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t('all')}</SelectItem>
-            <SelectItem value="pending">{t('pending')}</SelectItem>
-            <SelectItem value="confirmed">{t('confirmed')}</SelectItem>
-            <SelectItem value="cancelled">{t('cancelled')}</SelectItem>
-            <SelectItem value="completed">{t('completed')}</SelectItem>
-          </SelectContent>
-        </Select>
+        
+        <MonthGrid 
+          selectedMonth={monthFilter.value} 
+          onMonthChange={monthFilter.setValue}
+          className="w-full sm:w-48"
+        />
       </div>
 
       <div className="grid gap-4">
@@ -517,7 +481,7 @@ export function ReservationsPage() {
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <CalendarIcon className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">{t('noResults')}</p>
+              <p className="text-muted-foreground">{t('noReservationsFound')}</p>
             </CardContent>
           </Card>
         ) : (
@@ -536,18 +500,6 @@ export function ReservationsPage() {
                     <Badge variant={getStatusVariant(reservation.status)}>
                       {statusLabels[reservation.status]}
                     </Badge>
-                    {reservation.status === 'confirmed' && 
-                      (reservation.userId === user?.id || 
-                       ['administratzailea', 'diruzaina', 'sotolaria'].includes(user?.function || '')) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCancelReservation(reservation.id)}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -576,25 +528,7 @@ export function ReservationsPage() {
         )}
       </div>
       
-      <AlertDialog open={cancelDialogOpen} onOpenChange={(open) => !open && setCancelDialogOpen(false)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('cancelReservation')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('cancelReservationConfirm')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setCancelDialogOpen(false)}>
-              {t('cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmCancelReservation} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              {t('confirm')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+      </div>
     </ErrorBoundary>
   );
 }

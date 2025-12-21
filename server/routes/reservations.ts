@@ -135,12 +135,10 @@ export function registerReservationRoutes(app: Express) {
       // Apply filters based on query parameters
       let conditions = [eq(reservations.societyId, societyId)];
       
-      // For non-admin users, only show future and non-cancelled reservations
-      if (!isAdmin) {
-        const now = new Date();
-        conditions.push(gte(reservations.startDate, now));
-        conditions.push(ne(reservations.status, 'cancelled'));
-      }
+      // For all users: only show future and confirmed reservations
+      const now = new Date();
+      conditions.push(gte(reservations.startDate, now));
+      conditions.push(eq(reservations.status, 'confirmed'));
       
       // Apply month filter
       if (month && typeof month === 'string' && month !== 'all') {
@@ -170,10 +168,8 @@ export function registerReservationRoutes(app: Express) {
         conditions.push(eq(reservations.userId, userId));
       }
       
-      // Apply status filter
-      if (status && typeof status === 'string' && status !== 'all') {
-        conditions.push(eq(reservations.status, status));
-      }
+      // Apply status filter - ignore since we only show confirmed reservations
+      // Status filter is hardcoded to 'confirmed' above
       
       const finalQuery = baseQuery.where(and(...conditions)).orderBy(desc(reservations.startDate));
       

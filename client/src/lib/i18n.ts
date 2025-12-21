@@ -12,7 +12,7 @@ export const translations = {
     societyId: 'Elkartearen IDa',
     welcome: 'Ongi etorri',
     dashboard: 'Hasiera',
-    reservations: 'Erreserbak',
+    reservations: 'Datozen erreserbak',
     reservationCreated: 'Erreserba sortua',
     reservationCancelled: 'Erreserba bertan behera utzita',
     errorCancellingReservation: 'Errorea erreserba bertan behera uztean',
@@ -362,6 +362,7 @@ export const translations = {
     created: 'Sorrera',
     // Dashboard
     upcomingReservations: 'Datozen erreserbak',
+    upcomingReservationsDescription: 'Hurrengo erreserbak ikusi',
     recentActiveNotes: 'Azken ohar aktiboak',
     activeMembers: 'Bazkideak aktibo',
     societyNotesAndNews: 'Elkartearen oharrak eta albisteak',
@@ -424,7 +425,7 @@ export const translations = {
     societyId: 'ID de Sociedad',
     welcome: 'Bienvenido/a',
     dashboard: 'Inicio',
-    reservations: 'Reservas',
+    reservations: 'Próximas Reservas',
     reservationCreated: 'Reserva creada',
     reservationCancelled: 'Reserva cancelada',
     errorCancellingReservation: 'Error al cancelar la reserva',
@@ -736,6 +737,7 @@ export const translations = {
     created: 'Creación',
     // Dashboard
     upcomingReservations: 'Próximas Reservas',
+    upcomingReservationsDescription: 'Ver próximas reservas',
     recentActiveNotes: 'Notas Activas Recientes',
     activeMembers: 'Miembros Activos',
     societyNotesAndNews: 'Notas y noticias de la sociedad',
