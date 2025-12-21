@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { format } from 'date-fns';
@@ -16,6 +17,8 @@ import { ErrorDisplay } from '@/components/ErrorDisplay';
 import MonthGrid from '@/components/MonthGrid';
 import { ReservationDialog } from '@/components/ReservationDialog';
 import { useUrlFilter } from '@/hooks/useUrlFilter';
+import { usePagination } from '@/hooks/use-pagination';
+import PaginationControls from '@/components/PaginationControls';
 
 interface ReservationWithUser extends Reservation {
   userName: string | null;
@@ -43,6 +46,9 @@ function ReservationsPage() {
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  
+  // Pagination state
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
 
   // Event type labels
   const eventTypeLabels: Record<string, string> = {
@@ -62,23 +68,40 @@ function ReservationsPage() {
   // Load reservations
   useEffect(() => {
     loadReservations();
-  }, [monthFilter.value]);
+  }, [monthFilter.value, pagination.page, pagination.limit, searchTerm, typeFilter]);
 
   const loadReservations = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
       
+      // Add pagination parameters
+      params.append('page', pagination.page.toString());
+      params.append('limit', pagination.limit.toString());
+      
+      // This is the upcoming reservations page - only show future, confirmed reservations
+      params.append('upcoming', 'true');
+      
+      // Add filter parameters
       if (monthFilter.value) {
         // Extract month number from YYYY-MM format for API
         const monthParam = monthFilter.value.split('-')[1];
         params.append('month', monthParam);
       }
       
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
+      
+      if (typeFilter !== 'all') {
+        params.append('type', typeFilter);
+      }
+      
       const response = await authFetch(`/api/reservations?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
-        setReservations(data);
+        setReservations(data.data || []);
+        pagination.updatePagination(data.pagination?.total || 0);
       } else {
         throw new Error('Failed to load reservations');
       }
@@ -90,15 +113,6 @@ function ReservationsPage() {
       setIsInitialLoad(false);
     }
   };
-
-  // Filter reservations - search and type filtering
-  const filteredReservations = reservations.filter((r) => {
-    const matchesSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (r.notes && r.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         (r.userName && r.userName.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesType = typeFilter === 'all' || r.type === typeFilter;
-    return matchesSearch && matchesType;
-  });
 
   const getStatusVariant = (status: string) => {
     switch (status) {
@@ -112,6 +126,16 @@ function ReservationsPage() {
 
   const handleReservationSuccess = () => {
     loadReservations();
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    pagination.setPage(1); // Reset to first page when searching
+  };
+
+  const handleTypeFilter = (value: string) => {
+    setTypeFilter(value);
+    pagination.setPage(1); // Reset to first page when filtering
   };
 
   if (isInitialLoad && loading) {
@@ -146,13 +170,13 @@ function ReservationsPage() {
             <Input
               placeholder={`${t('searchReservation')}...`}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="pl-10"
               data-testid="input-search-reservations"
             />
           </div>
           
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <Select value={typeFilter} onValueChange={handleTypeFilter}>
             <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder={t('type')} />
             </SelectTrigger>
@@ -180,7 +204,7 @@ function ReservationsPage() {
                 <p className="text-muted-foreground">{t('loading')}</p>
               </CardContent>
             </Card>
-          ) : filteredReservations.length === 0 ? (
+          ) : reservations.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <CalendarIcon className="h-12 w-12 text-muted-foreground mb-4" />
@@ -188,46 +212,53 @@ function ReservationsPage() {
               </CardContent>
             </Card>
           ) : (
-            filteredReservations.map((reservation) => (
-              <Card key={reservation.id} data-testid={`card-reservation-${reservation.id}`}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-4 flex-wrap">
-                    <div className="flex-1">
-                      <CardTitle className="text-lg">{reservation.name}</CardTitle>
-                      <p className="text-sm text-muted-foreground">
-                        {reservation.userName && `${reservation.userName} • `}
-                        {format(new Date(reservation.startDate), 'PPP', { locale: language === 'eu' ? eu : es })}
-                      </p>
+            <>
+              {reservations.map((reservation) => (
+                <Card key={reservation.id} data-testid={`card-reservation-${reservation.id}`}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-start justify-between gap-4 flex-wrap">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg">{reservation.name}</CardTitle>
+                        <p className="text-sm text-muted-foreground">
+                          {reservation.userName && `${reservation.userName} • `}
+                          {format(new Date(reservation.startDate), 'PPP', { locale: language === 'eu' ? eu : es })}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={getStatusVariant(reservation.status)}>
+                          {statusLabels[reservation.status]}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={getStatusVariant(reservation.status)}>
-                        {statusLabels[reservation.status]}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <Badge variant="outline">
+                        {eventTypeLabels[reservation.type]}
+                      </Badge>
+                      <Badge variant="outline">
+                        <Users className="mr-1 h-3 w-3" />
+                        {reservation.guests}
+                      </Badge>
+                      <Badge variant="outline">
+                        {reservation.table || 'No table'}
+                      </Badge>
+                      <Badge variant="secondary">
+                        {parseFloat(reservation.totalAmount).toFixed(2)}€
                       </Badge>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    <Badge variant="outline">
-                      {eventTypeLabels[reservation.type]}
-                    </Badge>
-                    <Badge variant="outline">
-                      <Users className="mr-1 h-3 w-3" />
-                      {reservation.guests}
-                    </Badge>
-                    <Badge variant="outline">
-                      {reservation.table || 'No table'}
-                    </Badge>
-                    <Badge variant="secondary">
-                      {parseFloat(reservation.totalAmount).toFixed(2)}€
-                    </Badge>
-                  </div>
-                  {reservation.notes && (
-                    <p className="text-sm text-muted-foreground">{reservation.notes}</p>
-                  )}
-                </CardContent>
-              </Card>
-            ))
+                    {reservation.notes && (
+                      <p className="text-sm text-muted-foreground">{reservation.notes}</p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+              
+              <PaginationControls 
+                pagination={pagination} 
+                itemType="reservationsForPagination" 
+              />
+            </>
           )}
         </div>
         

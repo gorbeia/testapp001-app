@@ -11,20 +11,25 @@ import { authFetch } from '@/lib/api';
 import { Notification } from '@shared/schema';
 import { formatDistanceToNow } from 'date-fns';
 import { eu, es } from 'date-fns/locale';
+import PaginationControls from '@/components/PaginationControls';
+import { usePagination } from '@/hooks/use-pagination';
 
 export default function NotificationsPage() {
   const { t, language } = useLanguage();
-  const [page, setPage] = useState(1);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'info' | 'success' | 'warning' | 'error'>('all');
+  
+  const pagination = usePagination({
+    initialLimit: 20
+  });
 
   // Fetch notifications with pagination
   const { data: notificationsData, isLoading, refetch } = useQuery({
-    queryKey: ['notifications', page, filter, typeFilter, language],
+    queryKey: ['notifications', pagination.page, pagination.limit, filter, typeFilter, language],
     queryFn: async () => {
       const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '20',
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
         lang: language,
       });
       
@@ -44,6 +49,13 @@ export default function NotificationsPage() {
       }>;
     },
   });
+
+  // Update pagination when data is received
+  useEffect(() => {
+    if (notificationsData?.pagination) {
+      pagination.updatePagination(notificationsData.pagination.total);
+    }
+  }, [notificationsData, pagination.updatePagination]);
 
   // Refetch when language changes
   useEffect(() => {
@@ -91,7 +103,7 @@ export default function NotificationsPage() {
   });
 
   const notifications = notificationsData?.notifications || [];
-  const pagination = notificationsData?.pagination;
+  const paginationData = notificationsData?.pagination;
   const unreadCount = unreadData?.count || 0;
   const locale = language === 'es' ? es : eu;
 
@@ -217,28 +229,11 @@ export default function NotificationsPage() {
         </div>
       </ScrollArea>
 
-      {pagination && pagination.pages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-6">
-          <Button
-            variant="outline"
-            onClick={() => setPage(page - 1)}
-            disabled={page === 1}
-          >
-            {t('previous')}
-          </Button>
-          
-          <span className="text-sm text-muted-foreground">
-            {t('page')} {page} {t('of')} {pagination.pages}
-          </span>
-          
-          <Button
-            variant="outline"
-            onClick={() => setPage(page + 1)}
-            disabled={page === pagination.pages}
-          >
-            {t('next')}
-          </Button>
-        </div>
+      {paginationData && paginationData.total > 0 && (
+        <PaginationControls 
+          pagination={pagination} 
+          itemType="notifications"
+        />
       )}
     </div>
   );

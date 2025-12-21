@@ -186,8 +186,63 @@ export async function seedReservations() {
       }
     ];
     
+    // Additional reservations for 2024 and earlier 2025 months for pagination testing
+    const historicalReservations: Omit<Reservation, 'createdAt' | 'updatedAt' | 'totalAmount'>[] = [];
+    
+    // Generate reservations for each month from January 2024 to November 2025
+    const eventTypes = ['bazkaria', 'afaria', 'askaria', 'hamaiketakoa'];
+    const statuses = ['completed', 'cancelled', 'confirmed'];
+    const eventNames = [
+      'Bilera Familiarra', 'Eguberriko Afaria', 'Urte Berri', 'Batzarra', 'Enpresa Bilera',
+      'Ondo Pasatzeko', 'Lagun Bilkura', 'Familia Biltzarra', 'Neguko Bazkaria', 'Udako Afaria',
+      'Asteburuko Bilkura', 'Madrugaldeko Hamaiketakoa', 'Otsaileko Bazkaria', 'Martxoko Askaria',
+      'Apirileko Afaria', 'Maiatzko Bazkaria', 'Ekaineko Hamaiketakoa', 'Uztaileko Afaria',
+      'Abuztuko Bazkaria', 'Irailileko Askaria', 'Urriko Hamaiketakoa', 'Azaroko Bazkaria',
+      'Abenduko Afaria'
+    ];
+    
+    // Generate 3-5 reservations per month for each month from Jan 2024 to Nov 2025
+    for (let year = 2024; year <= 2025; year++) {
+      for (let month = 1; month <= 12; month++) {
+        // Skip December 2025 since we already have some reservations for it
+        if (year === 2025 && month === 12) continue;
+        
+        // Skip future months in 2025 (only include past months)
+        if (year === 2025 && month > new Date().getMonth() + 1) continue;
+        
+        const numReservations = Math.floor(Math.random() * 3) + 3; // 3-5 reservations per month
+        
+        for (let i = 0; i < numReservations; i++) {
+          const day = Math.floor(Math.random() * 28) + 1; // Random day 1-28
+          const hour = Math.floor(Math.random() * 14) + 11; // Random hour 11-24
+          const minute = Math.random() < 0.5 ? 0 : 30; // Either :00 or :30
+          
+          const startDate = new Date(year, month - 1, day, hour, minute);
+          
+          // Skip if this is a future date
+          if (startDate > new Date()) continue;
+          
+          historicalReservations.push({
+            id: `hist-${year}-${month}-${i}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            userId: firstUser.id,
+            name: eventNames[Math.floor(Math.random() * eventNames.length)],
+            type: eventTypes[Math.floor(Math.random() * eventTypes.length)],
+            status: statuses[Math.floor(Math.random() * statuses.length)],
+            startDate: startDate,
+            guests: Math.floor(Math.random() * 8) + 2, // 2-10 guests
+            useKitchen: Math.random() < 0.3, // 30% chance of using kitchen
+            table: activeTables[Math.floor(Math.random() * activeTables.length)].name,
+            notes: `Historical reservation from ${year}-${month.toString().padStart(2, '0')}`,
+            societyId,
+          });
+        }
+      }
+    }
+    
+    console.log(`Generated ${historicalReservations.length} historical reservations for pagination testing`);
+    
     // Combine all reservations
-    const allReservations = [...dummyReservations, ...mikelNovemberReservations];
+    const allReservations = [...dummyReservations, ...mikelNovemberReservations, ...historicalReservations];
     
     // Calculate totalAmount for each reservation using society pricing
     const reservationsWithAmounts = allReservations.map(reservation => {

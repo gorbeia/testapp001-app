@@ -105,10 +105,23 @@ export function registerReservationRoutes(app: Express) {
     try {
       const user = req.user!;
       const societyId = getUserSocietyId(user);
-      const { limit, month, user: userId, status } = req.query;
+      const { limit, month, user: userId, status, page = 1, search, type } = req.query;
       
       // Check if user is admin (administratzailea or diruzaina)
       const isAdmin = user.function === 'administratzailea' || user.function === 'diruzaina';
+      
+      // Parse pagination parameters
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = limit ? parseInt(limit as string, 10) : 25;
+      const offset = (pageNum - 1) * limitNum;
+      
+      // Validate pagination parameters
+      if (isNaN(pageNum) || pageNum < 1) {
+        return res.status(400).json({ message: "Invalid page parameter" });
+      }
+      if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+        return res.status(400).json({ message: "Invalid limit parameter (must be between 1 and 100)" });
+      }
       
       // Build the base query
       const baseQuery = db
@@ -135,10 +148,16 @@ export function registerReservationRoutes(app: Express) {
       // Apply filters based on query parameters
       let conditions = [eq(reservations.societyId, societyId)];
       
-      // For all users: only show future and confirmed reservations
-      const now = new Date();
-      conditions.push(gte(reservations.startDate, now));
-      conditions.push(eq(reservations.status, 'confirmed'));
+      // Check if this request is for upcoming reservations only
+      const upcomingOnly = req.query.upcoming === 'true';
+      
+      // For admin page or when not upcoming only: show all reservations (if admin)
+      // For upcoming reservations page: only show future and confirmed reservations
+      if (upcomingOnly || !isAdmin) {
+        const now = new Date();
+        conditions.push(gte(reservations.startDate, now));
+        conditions.push(eq(reservations.status, 'confirmed'));
+      }
       
       // Apply month filter
       if (month && typeof month === 'string' && month !== 'all') {
@@ -168,25 +187,54 @@ export function registerReservationRoutes(app: Express) {
         conditions.push(eq(reservations.userId, userId));
       }
       
-      // Apply status filter - ignore since we only show confirmed reservations
-      // Status filter is hardcoded to 'confirmed' above
-      
-      const finalQuery = baseQuery.where(and(...conditions)).orderBy(desc(reservations.startDate));
-      
-      // Apply limit if provided, otherwise execute the base query
-      let reservationsList;
-      if (limit && typeof limit === 'string') {
-        const limitNum = parseInt(limit, 10);
-        if (!isNaN(limitNum) && limitNum > 0) {
-          reservationsList = await finalQuery.limit(limitNum);
-        } else {
-          reservationsList = await finalQuery;
-        }
-      } else {
-        reservationsList = await finalQuery;
+      // Apply type filter
+      if (type && typeof type === 'string' && type !== 'all') {
+        conditions.push(eq(reservations.type, type));
       }
       
-      res.json(reservationsList);
+      // Apply search filter
+      if (search && typeof search === 'string') {
+        const searchTerm = `%${search}%`;
+        const searchCondition = or(
+          like(reservations.name, searchTerm),
+          like(reservations.table, searchTerm),
+          like(users.name, searchTerm)
+        );
+        if (searchCondition) {
+          conditions.push(searchCondition);
+        }
+      }
+      
+      // Get total count for pagination
+      const countQuery = db
+        .select({ count: count() })
+        .from(reservations)
+        .leftJoin(users, eq(reservations.userId, users.id))
+        .where(and(...conditions));
+      
+      const countResult = await countQuery;
+      const total = countResult[0]?.count || 0;
+      const totalPages = Math.ceil(total / limitNum);
+      
+      // Get paginated results
+      const reservationsList = await baseQuery
+        .where(and(...conditions))
+        .orderBy(desc(reservations.startDate))
+        .limit(limitNum)
+        .offset(offset);
+      
+      // Return paginated response
+      res.json({
+        data: reservationsList,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages,
+          hasNext: pageNum < totalPages,
+          hasPrev: pageNum > 1
+        }
+      });
     } catch (error) {
       next(error);
     }
@@ -196,8 +244,21 @@ export function registerReservationRoutes(app: Express) {
   app.get("/api/reservations/user", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const user = req.user!;
-      const { search, status, type, month } = req.query;
+      const { search, status, type, month, page = 1, limit = 25 } = req.query;
       const societyId = getUserSocietyId(user);
+      
+      // Parse pagination parameters
+      const pageNum = parseInt(page as string, 10);
+      const limitNum = parseInt(limit as string, 10);
+      const offset = (pageNum - 1) * limitNum;
+      
+      // Validate pagination parameters
+      if (isNaN(pageNum) || pageNum < 1) {
+        return res.status(400).json({ message: "Invalid page parameter" });
+      }
+      if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+        return res.status(400).json({ message: "Invalid limit parameter (must be between 1 and 100)" });
+      }
       
       let conditions = [
         eq(reservations.userId, user.id),
@@ -231,6 +292,17 @@ export function registerReservationRoutes(app: Express) {
         }
       }
       
+      // Get total count for pagination
+      const countQuery = db
+        .select({ count: count() })
+        .from(reservations)
+        .where(and(...conditions));
+      
+      const countResult = await countQuery;
+      const total = countResult[0]?.count || 0;
+      const totalPages = Math.ceil(total / limitNum);
+      
+      // Get paginated results
       const userReservations = await db
         .select({
           id: reservations.id,
@@ -250,9 +322,22 @@ export function registerReservationRoutes(app: Express) {
         })
         .from(reservations)
         .where(and(...conditions))
-        .orderBy(desc(reservations.startDate));
+        .orderBy(desc(reservations.startDate))
+        .limit(limitNum)
+        .offset(offset);
       
-      res.json(userReservations);
+      // Return paginated response
+      res.json({
+        data: userReservations,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages,
+          hasNext: pageNum < totalPages,
+          hasPrev: pageNum > 1
+        }
+      });
     } catch (error) {
       console.error('Error fetching user reservations:', error);
       res.status(500).json({ message: "Internal server error" });

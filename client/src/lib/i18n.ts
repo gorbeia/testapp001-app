@@ -26,6 +26,7 @@ export const translations = {
     adminCredits: 'Zor kudeaketa',
     announcements: 'Oharrak',
     announcementCreated: 'Oharra argitaratua',
+    notifications: 'Jakinarazpenak',
     oharrak: 'Oharrak',
     noteCreated: 'Oharra sortua',
     noteUpdated: 'Oharra eguneratua',
@@ -285,6 +286,9 @@ export const translations = {
     next: 'Hurrengoa',
     page: 'Orria',
     of: '-ren',
+    showing: 'Erakusten',
+    showingResults: '{total} {type}tik {from}tik {to}ra erakusten',
+    reservationsForPagination: 'erreserba',
     // Society and SEPA
     societyDataAndSepaConfig: 'Elkartearen datuak eta SEPA konfigurazioa',
     societyBasicInfo: 'Elkartearen oinarrizko informazioa',
@@ -662,6 +666,9 @@ export const translations = {
     next: 'Siguiente',
     page: 'Página',
     of: 'de',
+    showing: 'Mostrando',
+    showingResults: 'Mostrando {from} a {to} de {total} {type}',
+    reservationsForPagination: 'reservas',
     // Society and SEPA
     societyDataAndSepaConfig: 'Datos de la sociedad y configuración SEPA',
     societyBasicInfo: 'Información básica de la sociedad',

@@ -228,12 +228,6 @@ export function ConsumptionsListPage() {
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Receipt className="h-5 w-5" />
-            {t('consumptionList')}
-          </CardTitle>
-        </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>

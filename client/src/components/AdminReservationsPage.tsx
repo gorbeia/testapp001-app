@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import MonthGrid from '@/components/MonthGrid';
+import PaginationControls from '@/components/PaginationControls';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +20,7 @@ import type { Reservation, User } from '@shared/schema';
 import { ErrorFallback } from '@/components/ErrorBoundary';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { authFetch } from '@/lib/api';
+import { usePagination } from '@/hooks/use-pagination';
 
 interface ReservationWithUser extends Reservation {
   userName: string | null;
@@ -57,6 +59,9 @@ export function AdminReservationsPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [reservationToCancel, setReservationToCancel] = useState<string | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<ReservationWithUser | null>(null);
+  
+  // Pagination state
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
 
   // Load reservations
   const loadReservations = async () => {
@@ -64,6 +69,14 @@ export function AdminReservationsPage() {
     setError(null);
     try {
       const params = new URLSearchParams();
+      
+      // Add pagination parameters
+      params.append('page', pagination.page.toString());
+      params.append('limit', pagination.limit.toString());
+      
+      if (searchTerm) {
+        params.append('search', searchTerm);
+      }
       
       if (monthFilter) {
         // Extract month number from YYYY-MM format for API
@@ -80,7 +93,8 @@ export function AdminReservationsPage() {
       const response = await authFetch(`/api/reservations?${params.toString()}`);
       if (response.ok) {
         const data = await response.json();
-        setReservations(data);
+        setReservations(data.data || []);
+        pagination.updatePagination(data.pagination?.total || 0);
       } else {
         throw new Error('Failed to load reservations');
       }
@@ -131,15 +145,15 @@ export function AdminReservationsPage() {
     }
   };
 
-  // Filter reservations
-  const filteredReservations = reservations.filter(reservation => {
-    const matchesSearch = !searchTerm || 
-      reservation.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reservation.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      reservation.type?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSearch;
-  });
+  // Filter reservations - no longer needed since filtering is done server-side
+  // const reservations = reservations.filter(reservation => {
+  //   const matchesSearch = !searchTerm || 
+  //     reservation.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     reservation.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //     reservation.type?.toLowerCase().includes(searchTerm.toLowerCase());
+  //   
+  //   return matchesSearch;
+  // });
 
   // Get status options
   const getStatusOptions = () => [
@@ -152,11 +166,20 @@ export function AdminReservationsPage() {
 
   // Get event type labels
   const eventTypeLabels: Record<string, string> = {
-    hamaiketako: t('hamaiketakoa'),
     bazkaria: t('bazkaria'),
-    askaria: t('askaria'),
     afaria: t('afaria'),
-    urtebetetzea: t('birthday'),
+    askaria: t('askaria'),
+    hamaiketakako: t('hamaiketakoa'),
+  };
+
+  // Handle filter changes
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    pagination.setPage(1); // Reset to first page when searching
+  };
+
+  const handleFilterChange = () => {
+    pagination.setPage(1); // Reset to first page when filters change
   };
 
   // Format date
@@ -224,7 +247,7 @@ export function AdminReservationsPage() {
   useEffect(() => {
     loadReservations();
     loadUsers();
-  }, [monthFilter, userFilter, statusFilter]);
+  }, [monthFilter, userFilter, statusFilter, pagination.page, pagination.limit, searchTerm]);
 
   if (error) {
     return <ErrorDisplay error={error} />;
@@ -247,12 +270,14 @@ export function AdminReservationsPage() {
           <Input
             placeholder={t('searchReservation')}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            onChange={(e) => handleSearch(e.target.value)}
           />
         </div>
-        
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+
+        <Select value={statusFilter} onValueChange={(value) => {
+          setStatusFilter(value);
+          handleFilterChange();
+        }}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
@@ -265,7 +290,10 @@ export function AdminReservationsPage() {
           </SelectContent>
         </Select>
 
-        <Select value={userFilter} onValueChange={setUserFilter}>
+        <Select value={userFilter} onValueChange={(value) => {
+          setUserFilter(value);
+          handleFilterChange();
+        }}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
@@ -281,7 +309,10 @@ export function AdminReservationsPage() {
 
         <MonthGrid 
           selectedMonth={monthFilter} 
-          onMonthChange={setMonthFilter}
+          onMonthChange={(value) => {
+            setMonthFilter(value);
+            handleFilterChange();
+          }}
           className="w-full sm:w-48"
           mode="all"
           yearRange={{ past: 3, future: 3 }}
@@ -290,9 +321,6 @@ export function AdminReservationsPage() {
 
         {/* Reservations Table */}
         <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle>{t('reservationsList', { count: filteredReservations.length })}</CardTitle>
-          </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
@@ -316,14 +344,14 @@ export function AdminReservationsPage() {
                         {t('loading')}
                       </TableCell>
                     </TableRow>
-                  ) : filteredReservations.length === 0 ? (
+                  ) : reservations.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                         {t('noReservationsFound')}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredReservations.map((reservation) => (
+                    reservations.map((reservation) => (
                       <TableRow key={reservation.id}>
                         <TableCell className="font-medium">{reservation.name}</TableCell>
                         <TableCell>{reservation.userName || t('unknownUser')}</TableCell>
@@ -376,6 +404,11 @@ export function AdminReservationsPage() {
             </div>
           </CardContent>
         </Card>
+
+      <PaginationControls 
+        pagination={pagination} 
+        itemType="reservationsForPagination" 
+      />
 
         {/* Reservation Details Dialog */}
         <Dialog open={!!selectedReservation} onOpenChange={() => setSelectedReservation(null)}>

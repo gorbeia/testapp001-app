@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MonthGrid from '@/components/MonthGrid';
+import PaginationControls from '@/components/PaginationControls';
 import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import { authFetch } from '@/lib/api';
@@ -16,6 +17,7 @@ import type { Reservation } from '@shared/schema';
 import { ErrorFallback } from '@/components/ErrorBoundary';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { ReservationDialog } from '@/components/ReservationDialog';
+import { usePagination } from '@/hooks/use-pagination';
 
 export function MyReservationsPage() {
   const { t } = useLanguage();
@@ -23,6 +25,9 @@ export function MyReservationsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  
+  // Pagination state
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
   
   // URL state management
   const [statusFilter, setStatusFilter] = useState<string>(() => {
@@ -89,6 +94,12 @@ export function MyReservationsPage() {
     try {
       setLoading(true);
       const params = new URLSearchParams();
+      
+      // Add pagination parameters
+      params.append('page', pagination.page.toString());
+      params.append('limit', pagination.limit.toString());
+      
+      // Add filter parameters
       if (searchTerm) params.append('search', searchTerm);
       if (statusFilter !== 'all') params.append('status', statusFilter);
       if (typeFilter !== 'all') params.append('type', typeFilter);
@@ -101,7 +112,8 @@ export function MyReservationsPage() {
       const response = await authFetch(`/api/reservations/user?${params}`);
       if (!response.ok) throw new Error('Failed to fetch reservations');
       const data = await response.json();
-      setReservations(data);
+      setReservations(data.data || []);
+      pagination.updatePagination(data.pagination?.total || 0);
     } catch (error) {
       console.error('Error fetching reservations:', error);
       setError(error instanceof Error ? error : new Error(String(error)));
@@ -113,7 +125,7 @@ export function MyReservationsPage() {
 
   useEffect(() => {
     fetchReservations();
-  }, [searchTerm, statusFilter, typeFilter, monthFilter]);
+  }, [searchTerm, statusFilter, typeFilter, monthFilter, pagination.page, pagination.limit]);
 
   const getStatusBadge = (status: string) => {
     const statusMap: { [key: string]: { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' } } = {
@@ -147,13 +159,9 @@ export function MyReservationsPage() {
     return dateObj.toLocaleTimeString('eu-ES', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const filteredReservations = reservations.filter((reservation) => {
-    const matchesSearch = reservation.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (reservation.table && reservation.table.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesStatus = !statusFilter || statusFilter === 'all' || reservation.status === statusFilter;
-    const matchesType = typeFilter === 'all' || reservation.type === typeFilter;
-    return matchesSearch && matchesStatus && matchesType;
-  });
+  const handleReservationSuccess = () => {
+    fetchReservations();
+  };
 
   const handleCancelReservation = async (reservationId: string) => {
     const confirmed = window.confirm(t('confirmCancelReservation'));
@@ -184,8 +192,19 @@ export function MyReservationsPage() {
     }
   };
 
-  const handleReservationSuccess = () => {
-    fetchReservations();
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    pagination.setPage(1); // Reset to first page when searching
+  };
+
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value);
+    pagination.setPage(1); // Reset to first page when filtering
+  };
+
+  const handleTypeFilter = (value: string) => {
+    setTypeFilter(value);
+    pagination.setPage(1); // Reset to first page when filtering
   };
 
   const isFutureReservation = (reservation: Reservation) => {
@@ -257,12 +276,12 @@ export function MyReservationsPage() {
           <Input
             placeholder={`${t('search')}...`}
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="pl-10"
           />
         </div>
         
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={statusFilter} onValueChange={handleStatusFilter}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
@@ -275,7 +294,7 @@ export function MyReservationsPage() {
           </SelectContent>
         </Select>
 
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
+        <Select value={typeFilter} onValueChange={handleTypeFilter}>
           <SelectTrigger className="w-full sm:w-40">
             <SelectValue />
           </SelectTrigger>
@@ -320,14 +339,14 @@ export function MyReservationsPage() {
                     {t('loading')}
                   </TableCell>
                 </TableRow>
-              ) : filteredReservations.length === 0 ? (
+              ) : reservations.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     {t('noReservationsFound')}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredReservations.map((reservation) => (
+                reservations.map((reservation) => (
                   <TableRow key={reservation.id}>
                     <TableCell className="font-medium">{reservation.name}</TableCell>
                     <TableCell>
@@ -380,6 +399,11 @@ export function MyReservationsPage() {
           </Table>
         </div>
       </Card>
+
+      <PaginationControls 
+        pagination={pagination} 
+        itemType="reservationsForPagination" 
+      />
 
       {/* Reservation Details Dialog */}
       <Dialog open={!!selectedReservation} onOpenChange={() => setSelectedReservation(null)}>
