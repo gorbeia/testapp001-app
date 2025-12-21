@@ -14,6 +14,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Dashboard } from '@/components/dashboard';
 import { ReservationsPage } from "@/components/ReservationsPage";
+import { AdminReservationsPage } from "@/components/AdminReservationsPage";
 import { ConsumptionsPage } from "@/components/ConsumptionsPage";
 import { ConsumptionsListPage } from "@/components/ConsumptionsListPage";
 import { MyConsumptionsPage } from '@/components/MyConsumptionsPage';
@@ -37,6 +38,13 @@ function AppRoutes() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/erreserbak" component={ReservationsPage} />
+      <Route path="/admin-erreserbak">
+        {() => (
+          <ProtectedRoute requiredAccess="admin">
+            <AdminReservationsPage />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/kontsumoak" component={ConsumptionsPage} />
       <Route path="/nire-konsumoak" component={MyConsumptionsPage} />
       <Route path="/nire-erreserbak" component={MyReservationsPage} />

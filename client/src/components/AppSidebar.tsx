@@ -78,6 +78,7 @@ export function AppSidebar() {
 
   const adminMenuItems = [
     ...(hasAdminAccess(user) ? [{ title: t('users'), url: '/erabiltzaileak', icon: Users }] : []),
+    ...(hasAdminAccess(user) ? [{ title: 'Erreserbak kudeatu', url: '/admin-erreserbak', icon: Calendar }] : []),
     ...(hasAdminAccess(user) ? [{ title: t('consumptionList'), url: '/kontsumoak-zerrenda', icon: Receipt }] : []),
     ...(hasAdminAccess(user) ? [{ title: t('adminCredits'), url: '/zorrak', icon: CreditCard }] : []),
     ...(hasCellarmanAccess(user) ? [{ title: t('products'), url: '/produktuak', icon: Package }] : []),

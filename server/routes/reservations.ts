@@ -105,10 +105,10 @@ export function registerReservationRoutes(app: Express) {
     try {
       const user = req.user!;
       const societyId = getUserSocietyId(user);
-      const { limit } = req.query;
+      const { limit, month, user: userId, status } = req.query;
       
-      // All users can see all reservations for the society (only future dates)
-      const now = new Date();
+      // Check if user is admin (administratzailea or diruzaina)
+      const isAdmin = user.function === 'administratzailea' || user.function === 'diruzaina';
       
       // Build the base query
       const baseQuery = db
@@ -130,25 +130,64 @@ export function registerReservationRoutes(app: Express) {
           userName: users.name,
         })
         .from(reservations)
-        .leftJoin(users, eq(reservations.userId, users.id))
-        .where(and(
-          eq(reservations.societyId, societyId),
-          gte(reservations.startDate, now),
-          ne(reservations.status, 'cancelled')
-        ))
-        .orderBy(reservations.startDate);
+        .leftJoin(users, eq(reservations.userId, users.id));
+      
+      // Apply filters based on query parameters
+      let conditions = [eq(reservations.societyId, societyId)];
+      
+      // For non-admin users, only show future and non-cancelled reservations
+      if (!isAdmin) {
+        const now = new Date();
+        conditions.push(gte(reservations.startDate, now));
+        conditions.push(ne(reservations.status, 'cancelled'));
+      }
+      
+      // Apply month filter
+      if (month && typeof month === 'string' && month !== 'all') {
+        let year, monthNum;
+        
+        // Handle both "YYYY-MM" and "MM" formats
+        if (month.includes('-')) {
+          // YYYY-MM format
+          year = parseInt(month.split('-')[0]);
+          monthNum = parseInt(month.split('-')[1]);
+        } else {
+          // MM format - use current year
+          year = new Date().getFullYear();
+          monthNum = parseInt(month);
+        }
+        
+        // Validate the parsed values
+        if (!isNaN(year) && !isNaN(monthNum) && monthNum >= 1 && monthNum <= 12) {
+          const startDate = new Date(year, monthNum - 1, 1);
+          const endDate = new Date(year, monthNum, 0, 23, 59, 59, 999);
+          conditions.push(between(reservations.startDate, startDate, endDate));
+        }
+      }
+      
+      // Apply user filter
+      if (userId && typeof userId === 'string' && userId !== 'all') {
+        conditions.push(eq(reservations.userId, userId));
+      }
+      
+      // Apply status filter
+      if (status && typeof status === 'string' && status !== 'all') {
+        conditions.push(eq(reservations.status, status));
+      }
+      
+      const finalQuery = baseQuery.where(and(...conditions)).orderBy(desc(reservations.startDate));
       
       // Apply limit if provided, otherwise execute the base query
       let reservationsList;
       if (limit && typeof limit === 'string') {
         const limitNum = parseInt(limit, 10);
         if (!isNaN(limitNum) && limitNum > 0) {
-          reservationsList = await baseQuery.limit(limitNum);
+          reservationsList = await finalQuery.limit(limitNum);
         } else {
-          reservationsList = await baseQuery;
+          reservationsList = await finalQuery;
         }
       } else {
-        reservationsList = await baseQuery;
+        reservationsList = await finalQuery;
       }
       
       res.json(reservationsList);
