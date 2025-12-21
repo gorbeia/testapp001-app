@@ -253,9 +253,10 @@ const fetchUserTotalPendingDebt = async (): Promise<number> => {
 
 export const fetchUpcomingReservations = async (limit = 4): Promise<UpcomingReservation[]> => {
   try {
-    const response = await authFetch(`/api/reservations?limit=${limit}&status=confirmed`);
+    const response = await authFetch(`/api/reservations?limit=${limit}&status=confirmed&upcoming=true`);
     if (response.ok) {
-      const data = await response.json();
+      const result = await response.json();
+      const data = result.data || result; // Handle both paginated and direct array responses
       return data.map((reservation: any) => ({
         id: reservation.id,
         member: reservation.userName || reservation.name || 'Unknown',

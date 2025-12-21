@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { reservations, users, societies, notifications, notificationMessages, type User, type Reservation, type Society } from "@shared/schema";
-import { eq, and, gte, ne, desc, count, sql, like, or, between } from "drizzle-orm";
+import { eq, and, gte, ne, desc, asc, count, sql, like, or, between } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { debtCalculationService } from "../cron-jobs";
 
@@ -219,7 +219,7 @@ export function registerReservationRoutes(app: Express) {
       // Get paginated results
       const reservationsList = await baseQuery
         .where(and(...conditions))
-        .orderBy(desc(reservations.startDate))
+        .orderBy(upcomingOnly ? asc(reservations.startDate) : desc(reservations.startDate))
         .limit(limitNum)
         .offset(offset);
       
