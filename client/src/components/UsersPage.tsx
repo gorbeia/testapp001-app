@@ -54,6 +54,7 @@ export function UsersPage() {
   const [statusFilter, setStatusFilter] = useState<string>('active');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [editingUser, setEditingUser] = useState<UsersPageUser | null>(null);
 
   // Fetch users with React Query
@@ -64,6 +65,13 @@ export function UsersPage() {
     staleTime: 0, // Data is stale immediately
     gcTime: 0, // Don't cache results (garbage collection time)
   });
+
+  // Set initial load state when query completes
+  useEffect(() => {
+    if (!isLoading) {
+      setIsInitialLoad(false);
+    }
+  }, [isLoading]);
 
   // Fetch subscription types for dropdown
   const { data: subscriptionTypes = [] } = useQuery({
@@ -106,7 +114,7 @@ export function UsersPage() {
   const [createFunction, setCreateFunction] = useState<string>('');
   const [createSubscriptionTypeId, setCreateSubscriptionTypeId] = useState<string>('none');
 
-  if (isLoading) {
+  if (isInitialLoad && isLoading) {
     return (
       <div className="p-4 sm:p-6">
         <div className="text-center py-12">
@@ -655,7 +663,13 @@ export function UsersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.length === 0 ? (
+            {isLoading && !isInitialLoad ? (
+              <TableRow>
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                  {t('loading')}
+                </TableCell>
+              </TableRow>
+            ) : filteredUsers.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   {t('noResults')}

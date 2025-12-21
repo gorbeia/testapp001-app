@@ -39,6 +39,7 @@ function ReservationsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [reservations, setReservations] = useState<ReservationWithUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   // Event type labels
@@ -84,6 +85,7 @@ function ReservationsPage() {
       setError(error instanceof Error ? error : new Error(String(error)));
     } finally {
       setLoading(false);
+      setIsInitialLoad(false);
     }
   };
 
@@ -109,7 +111,7 @@ function ReservationsPage() {
     loadReservations();
   };
 
-  if (loading) {
+  if (isInitialLoad && loading) {
     return (
       <div className="p-4 sm:p-6">
         <div className="text-center">{t('loading')}</div>
@@ -156,7 +158,13 @@ function ReservationsPage() {
         </div>
 
         <div className="grid gap-4">
-          {filteredReservations.length === 0 ? (
+          {loading && !isInitialLoad ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <p className="text-muted-foreground">{t('loading')}</p>
+              </CardContent>
+            </Card>
+          ) : filteredReservations.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <CalendarIcon className="h-12 w-12 text-muted-foreground mb-4" />
