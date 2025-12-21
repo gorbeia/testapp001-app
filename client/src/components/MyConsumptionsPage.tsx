@@ -200,6 +200,8 @@ export function MyConsumptionsPage() {
           selectedMonth={monthFilter} 
           onMonthChange={setMonthFilter}
           className="w-full sm:w-48"
+          mode="past"
+          yearRange={{ past: 3, future: 0 }}
         />
       </div>
 

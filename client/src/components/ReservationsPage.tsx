@@ -151,6 +151,7 @@ function ReservationsPage() {
             selectedMonth={monthFilter.value} 
             onMonthChange={monthFilter.setValue}
             className="w-full sm:w-48"
+            mode="future"
           />
         </div>
 

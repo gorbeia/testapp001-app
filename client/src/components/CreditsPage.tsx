@@ -287,6 +287,9 @@ export function CreditsPage() {
           <MonthGrid 
             selectedMonth={monthFilter.value} 
             onMonthChange={monthFilter.setValue}
+            className="w-full sm:w-48"
+            mode="past"
+            yearRange={{ past: 3, future: 0 }}
           />
         </div>
         

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, X } from 'lucide-react';
 import * as Popover from '@radix-ui/react-popover';
 import * as Select from '@radix-ui/react-select';
@@ -9,20 +9,54 @@ interface MonthGridProps {
   selectedMonth?: string;
   onMonthChange: (month: string) => void;
   className?: string;
+  // Configuration options for month/year ranges
+  mode?: 'future' | 'past' | 'all';
+  yearRange?: {
+    past?: number; // Number of past years to include
+    future?: number; // Number of future years to include
+  };
 }
 
-const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) => {
+const MonthGrid = ({ selectedMonth, onMonthChange, className, mode = 'future', yearRange = { past: 2, future: 2 } }: MonthGridProps) => {
   const { t, language } = useLanguage();
   const [open, setOpen] = useState(false);
+  const [tempSelectedYear, setTempSelectedYear] = useState<string>('');
 
-  // Generate year options
+  // Initialize tempSelectedYear when component mounts or selectedMonth changes
+  useEffect(() => {
+    if (selectedMonth) {
+      setTempSelectedYear(selectedMonth.split('-')[0]);
+    } else {
+      setTempSelectedYear(new Date().getFullYear().toString());
+    }
+  }, [selectedMonth]);
+
+  // Generate year options based on mode and yearRange
   const generateYearOptions = () => {
     const options = [];
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // 1-12
     
-    // Generate options for current year and next 2 years
-    for (let year = currentYear; year <= currentYear + 2; year++) {
+    let startYear = currentYear;
+    let endYear = currentYear;
+    
+    switch (mode) {
+      case 'future':
+        startYear = currentYear;
+        endYear = currentYear + (yearRange.future || 2);
+        break;
+      case 'past':
+        startYear = currentYear - (yearRange.past || 2);
+        endYear = currentYear;
+        break;
+      case 'all':
+        startYear = currentYear - (yearRange.past || 2);
+        endYear = currentYear + (yearRange.future || 2);
+        break;
+    }
+    
+    for (let year = startYear; year <= endYear; year++) {
       options.push({
         value: year.toString(),
         display: year.toString()
@@ -32,6 +66,7 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
   };
 
   const getCurrentYear = () => {
+    if (tempSelectedYear) return tempSelectedYear;
     if (!selectedMonth) return new Date().getFullYear().toString();
     return selectedMonth.split('-')[0];
   };
@@ -55,19 +90,32 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
       display: name
     }));
     
-    // For current year, only show current month and future months
+    // Filter months based on mode and selected year
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1; // 1-12
     const selectedYear = getCurrentYear();
     
-    if (currentYear === parseInt(selectedYear)) {
-      // Filter to only show current month and future months
-      return allMonths.filter((month, index) => index + 1 >= currentMonth);
+    switch (mode) {
+      case 'future':
+        if (currentYear === parseInt(selectedYear)) {
+          // For current year, only show current month and future months
+          return allMonths.filter((month, index) => index + 1 >= currentMonth);
+        }
+        // For future years, show all months
+        return allMonths;
+      case 'past':
+        if (currentYear === parseInt(selectedYear)) {
+          // For current year, only show past months and current month
+          return allMonths.filter((month, index) => index + 1 <= currentMonth);
+        }
+        // For past years, show all months
+        return allMonths;
+      case 'all':
+      default:
+        // Show all months for any year
+        return allMonths;
     }
-    
-    // For future years, show all months
-    return allMonths;
   };
 
   const getSelectedDisplay = () => {
@@ -135,11 +183,9 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">{t('year')}</label>
               <Select.Root 
-                value={currentYear} 
+                value={tempSelectedYear || currentYear} 
                 onValueChange={(year: string) => {
-                  const newMonth = `${year}-${currentMonth}`;
-                  onMonthChange(newMonth);
-                  setOpen(false);
+                  setTempSelectedYear(year);
                 }}
               >
                 <Select.Trigger className="w-full flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-gray-200 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -176,7 +222,8 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
                   <button
                     key={option.value}
                     onClick={() => {
-                      const newMonth = `${currentYear}-${option.value}`;
+                      const finalYear = tempSelectedYear || getCurrentYear();
+                      const newMonth = `${finalYear}-${option.value}`;
                       onMonthChange(newMonth);
                       setOpen(false);
                     }}
@@ -191,6 +238,19 @@ const MonthGrid = ({ selectedMonth, onMonthChange, className }: MonthGridProps) 
                   </button>
                 ))}
               </div>
+            </div>
+            
+            {/* Clear Selection Button */}
+            <div className="pt-2 border-t border-gray-200">
+              <button
+                onClick={() => {
+                  onMonthChange('');
+                  setOpen(false);
+                }}
+                className="w-full px-3 py-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded hover:bg-gray-100 hover:text-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+              >
+                {t('clearSelection')}
+              </button>
             </div>
           </div>
         </Popover.Content>

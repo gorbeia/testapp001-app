@@ -292,6 +292,8 @@ export function MyReservationsPage() {
           selectedMonth={monthFilter} 
           onMonthChange={setMonthFilter}
           className="w-full sm:w-48"
+          mode="all"
+          yearRange={{ past: 3, future: 3 }}
         />
       </div>
 
