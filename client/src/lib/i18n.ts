@@ -493,7 +493,6 @@ export const translations = {
     type: 'Tipo',
     date: 'Fecha',
     actions: 'Acciones',
-    clearSelection: 'Limpiar selección',
     debtDetailsFor: 'Detalles de la deuda',
     debtBreakdown: 'Desglose de la deuda',
     consumptionDescription: 'Productos y servicios consumidos',
