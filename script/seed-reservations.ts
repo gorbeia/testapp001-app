@@ -149,7 +149,7 @@ export async function seedReservations() {
         id: 'mikel-nov-002',
         userId: firstUser.id,
         name: 'Azaroaren 15ko Bilera',
-        type: 'bilera',
+        type: 'askaria',
         status: 'completed',
         startDate: new Date('2025-11-15T20:00:00Z'),
         guests: 6,

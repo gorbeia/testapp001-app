@@ -140,7 +140,7 @@ export const reservations = pgTable("reservations", {
   userId: varchar("user_id").notNull(), // Who made the reservation
   societyId: varchar("society_id").notNull().references(() => societies.id),
   name: text("name").notNull(), // Event/reservation name
-  type: text("type").notNull().default("event"), // "event", "meeting", "private", "other"
+  type: text("type").notNull().default("bazkaria"), // "bazkaria", "afaria", "askaria", "hamaiketakako"
   status: text("status").notNull().default("confirmed"), // "pending", "confirmed", "cancelled", "completed"
   startDate: timestamp("start_date").notNull(),
   guests: integer("guests").default(0),

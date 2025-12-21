@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth } from '@/lib/auth';
 import { format } from 'date-fns';
@@ -35,6 +36,7 @@ function ReservationsPage() {
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
   const monthFilter = useUrlFilter({ baseUrl: '/erreserbak', paramName: 'month', initialValue: '' });
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [reservations, setReservations] = useState<ReservationWithUser[]>([]);
@@ -89,12 +91,13 @@ function ReservationsPage() {
     }
   };
 
-  // Filter reservations - search functionality only (backend handles filtering)
+  // Filter reservations - search and type filtering
   const filteredReservations = reservations.filter((r) => {
     const matchesSearch = r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (r.notes && r.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
                          (r.userName && r.userName.toLowerCase().includes(searchTerm.toLowerCase()));
-    return matchesSearch;
+    const matchesType = typeFilter === 'all' || r.type === typeFilter;
+    return matchesSearch && matchesType;
   });
 
   const getStatusVariant = (status: string) => {
@@ -148,6 +151,19 @@ function ReservationsPage() {
               data-testid="input-search-reservations"
             />
           </div>
+          
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-full sm:w-48">
+              <SelectValue placeholder={t('type')} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('all')}</SelectItem>
+              <SelectItem value="bazkaria">{eventTypeLabels.bazkaria}</SelectItem>
+              <SelectItem value="afaria">{eventTypeLabels.afaria}</SelectItem>
+              <SelectItem value="askaria">{eventTypeLabels.askaria}</SelectItem>
+              <SelectItem value="hamaiketakako">{eventTypeLabels.hamaiketakako}</SelectItem>
+            </SelectContent>
+          </Select>
           
           <MonthGrid 
             selectedMonth={monthFilter.value} 
