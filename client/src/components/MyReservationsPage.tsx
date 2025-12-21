@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { Search, Calendar, Users, MapPin, Eye, X, ChefHat, Calculator } from 'lucide-react';
+import { Search, Calendar, Users, MapPin, Eye, X, ChefHat, Calculator, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -15,12 +15,14 @@ import { authFetch } from '@/lib/api';
 import type { Reservation } from '@shared/schema';
 import { ErrorFallback } from '@/components/ErrorBoundary';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
+import { ReservationDialog } from '@/components/ReservationDialog';
 
 export function MyReservationsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
   // URL state management
   const [statusFilter, setStatusFilter] = useState<string>(() => {
@@ -182,6 +184,10 @@ export function MyReservationsPage() {
     }
   };
 
+  const handleReservationSuccess = () => {
+    fetchReservations();
+  };
+
   const isFutureReservation = (reservation: Reservation) => {
     return new Date(reservation.startDate) > new Date();
   };
@@ -233,9 +239,15 @@ export function MyReservationsPage() {
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">{t('myReservations')}</h2>
-        <p className="text-muted-foreground">{t('viewAllReservations')}</p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold">{t('myReservations')}</h2>
+          <p className="text-muted-foreground">{t('viewAllReservations')}</p>
+        </div>
+        <Button data-testid="button-new-reservation" onClick={() => setIsDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          {t('newReservation')}
+        </Button>
       </div>
 
       {/* Filters */}
@@ -465,6 +477,12 @@ export function MyReservationsPage() {
           )}
         </DialogContent>
       </Dialog>
+      
+      <ReservationDialog 
+        open={isDialogOpen} 
+        onOpenChange={setIsDialogOpen}
+        onSuccess={handleReservationSuccess}
+      />
     </div>
     </ErrorBoundary>
   );
