@@ -1,7 +1,6 @@
 import { Given, When, Then } from '@cucumber/cucumber';
-import { chromium, Browser, Page } from 'playwright';
 import assert from 'node:assert/strict';
-import { getBrowser, setBrowser, getPage, setPage } from './shared-state';
+import { getPage } from './shared-state';
 
 interface TestState {
   initialDebt: number;

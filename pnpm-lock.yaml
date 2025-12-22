@@ -246,9 +246,6 @@ importers:
       '@types/connect-pg-simple':
         specifier: ^7.0.3
         version: 7.0.3
-      '@types/cucumber':
-        specifier: ^7.0.3
-        version: 7.0.3
       '@types/express':
         specifier: 4.17.21
         version: 4.17.21
@@ -2073,10 +2070,6 @@ packages:
     resolution: {integrity: sha512-B4xqkqfZ8Wek+rCOeRxsjMS9OgvzebEzzLYw7NHYuvzb7IdxOkI0ZHGgeEBX4PUM7QGVvNSK60T3OvWj3YfBRg==}
     peerDependencies:
       '@types/express': '*'
-
-  '@types/cucumber@7.0.3':
-    resolution: {integrity: sha512-uBPVhCO2meZgiEICd+hTWFRn388vNljDuSppdenww2NJnwYF+HudlZQCGugbmcYLYdKw4NZyn1r+SiLU9aQu/g==}
-    deprecated: This is a stub types definition. @cucumber/cucumber provides its own type definitions, so you do not need this installed.
 
   '@types/d3-array@3.2.2':
     resolution: {integrity: sha512-hOLWVbm7uRza0BYXpIIW5pxfrKe0W+D5lrFiAEYR+pb6w3N2SwSMaJbXdUfSEv+dT4MfHBLtn5js0LAWaO6otw==}
@@ -5543,10 +5536,6 @@ snapshots:
   '@types/cookie-parser@1.4.10(@types/express@4.17.21)':
     dependencies:
       '@types/express': 4.17.21
-
-  '@types/cucumber@7.0.3':
-    dependencies:
-      '@cucumber/cucumber': 12.3.0
 
   '@types/d3-array@3.2.2': {}
 

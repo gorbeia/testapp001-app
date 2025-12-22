@@ -148,7 +148,7 @@ Then('I should see a confirmation dialog', async function () {
   const title = await page.locator('[role="alertdialog"] h2').textContent();
   const description = await page.locator('[role="alertdialog"] p').textContent();
   
-  assert.ok(title?.includes('Produktua Ezabatu'), 'Dialog should show delete title');
+  assert.ok(title?.includes('Produktua ezabatu'), 'Dialog should show delete title');
   assert.ok(description?.includes('Ziur zaude'), 'Dialog should show confirmation message');
 });
 

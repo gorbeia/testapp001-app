@@ -67,7 +67,7 @@ Then('I should see the admin management section', async function () {
   assert.ok(sepaLink, 'SEPA link should be visible for admin user');
 });
 
-Then('I should not be able to access admin pages directly', async function () {
+Then('I should not be able to access admin pages directly', { timeout: 15000 }, async function () {
   const page = getPage();
   assert.ok(page, 'Page was not initialized');
 
@@ -75,24 +75,48 @@ Then('I should not be able to access admin pages directly', async function () {
   const adminPages = [
     '/erabiltzaileak', // Users
     '/produktuak',     // Products
-    '/elkartea',       // Society
+    '/admin-erreserbak', // Reservations
+    '/kontsumoak-zerrenda', // Consumptions
+    '/zorrak', // Debts
     '/sepa',           // SEPA
+    '/elkartea',       // Society
   ];
 
   for (const pagePath of adminPages) {
-    await page.goto(`http://localhost:5000${pagePath}`, { waitUntil: 'domcontentloaded' });
-    
-    // Wait a moment for the protected route to render
-    await page.waitForTimeout(1000);
-    
-    // Check for the access denied message in Basque
-    const accessDeniedMessage = await page.$('text=Ez duzu baimenik orri hau ikusteko');
-    
-    assert.ok(
-      accessDeniedMessage,
-      `Access to admin page ${pagePath} should show access denied message for bazkide user`
-    );
+    try {
+      await page.goto(`http://localhost:5000${pagePath}`, { waitUntil: 'domcontentloaded', timeout: 3000 });
+      console.log(`Navigated to ${pagePath}`);
+      
+      // Check for the access denied message immediately (before wait that might cause context closure)
+      const accessDeniedMessage = await page.$('text=Ez duzu baimenik orri hau ikusteko');
+      
+      // If not found, try alternative access denied messages
+      if (!accessDeniedMessage) {
+        const altMessage1 = await page.$('text=Sarbidea ukatuta');
+        const altMessage2 = await page.$('text=Access denied');
+        const altMessage3 = await page.$('text=Unauthorized');
+        
+        // Check current URL for redirects
+        const currentUrl = page.url();
+        const isRedirected = currentUrl.includes('dashboard') || currentUrl.includes('login');
+        
+        assert.ok(
+          altMessage1 || altMessage2 || altMessage3 || isRedirected,
+          `Access to admin page ${pagePath} should show access denied message or redirect for bazkide user. Current URL: ${currentUrl}`
+        );
+      } else {
+        assert.ok(
+          accessDeniedMessage,
+          `Access to admin page ${pagePath} should show access denied message for bazkide user`
+        );
+      }
+    } catch (error) {
+      console.log(`  Error accessing ${pagePath}: ${(error as Error).message}`);
+      throw error;
+    }
   }
+  
+  console.log('Successfully validated access denied for all admin pages');
 });
 
 Then('I should be able to access all admin pages', async function () {

@@ -27,7 +27,7 @@ Feature: Reservation Cancellation Notifications
     When I open the login page
     And I log in as a admin user
     And I should see the dashboard instead of the login form
-    And I navigate to the reservations page
+    And I navigate to the admin reservations page
     And I find the user's reservation
     And I cancel the user's reservation
     Then the reservation should be marked as cancelled

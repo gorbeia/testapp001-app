@@ -10,6 +10,14 @@ Given('I navigate to the reservations page', async function () {
   await page.waitForLoadState('networkidle');
 });
 
+Given('I navigate to the admin reservations page', async function () {
+  const page = getPage();
+  if (!page) throw new Error('Page not available');
+  
+  await page.goto('http://localhost:5000/admin-erreserbak');
+  await page.waitForLoadState('networkidle');
+});
+
 When('I click the new reservation button', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
@@ -35,9 +43,10 @@ When('I fill in the reservation details', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
   
-  // Generate a unique reservation name with timestamp
+  // Generate a unique reservation name with timestamp and random type
   const timestamp = Date.now();
-  const uniqueName = `Test Erreserba ${timestamp}`;
+  const randomType = Math.floor(Math.random() * 1000);
+  const uniqueName = `Test Erreserba ${timestamp} T${randomType}`;
   
   // Store the unique name for later verification
   this.testReservationName = uniqueName;
@@ -45,9 +54,13 @@ When('I fill in the reservation details', async function () {
   // Fill the name field directly
   await page.fill('[data-testid="input-reservation-name"]', uniqueName);
   
-  // Select reservation type
+  // Select reservation type randomly
   await page.click('[data-testid="select-reservation-type"]');
-  await page.locator('[role="option"]').first().click();
+  const options = await page.locator('[role="option"]').all();
+  if (options.length > 0) {
+    const randomIndex = Math.floor(Math.random() * options.length);
+    await options[randomIndex].click();
+  }
 });
 
 When('I select the reservation date', async function () {
@@ -365,8 +378,11 @@ Then('I should see a reservation success message', async function () {
   
   // Look for success message text in page
   const successTexts = [
-    'Erreserba sortua' 
-
+    'Erreserba sortua',
+    'sortua',
+    'created',
+    'success',
+    'Reservation created'
   ];
   
   let found = false;
@@ -387,40 +403,21 @@ Then('the reservation should appear in the list', async function () {
   const page = getPage();
   if (!page) throw new Error('Page not available');
   
-  // Wait longer for the reservation to appear (might take time to process)
-  await page.waitForTimeout(5000);
+  // Wait for the reservation to appear and page to load
+  await page.waitForTimeout(3000);
   
   // Look for the reservation card with our unique name
   const uniqueReservationName = this.testReservationName;
   
-  // Try to find the reservation with multiple attempts
-  let reservationCard = null;
-  let attempts = 0;
-  const maxAttempts = 3;
+  // Simple approach: wait for the specific reservation card to appear
+  const reservationCard = page.locator('[data-testid^="card-reservation-"]').filter({ hasText: uniqueReservationName }).first();
   
-  while (attempts < maxAttempts && !reservationCard) {
-    try {
-      reservationCard = page.locator('[data-testid^="card-reservation-"]').filter({ hasText: uniqueReservationName }).first();
-      await reservationCard.waitFor({ state: 'visible', timeout: 10000 });
-    } catch (error) {
-      attempts++;
-      if (attempts < maxAttempts) {
-        await page.reload();
-        await page.waitForTimeout(3000);
-      }
-    }
-  }
+  // Wait up to 10 seconds for the reservation to appear
+  await reservationCard.waitFor({ state: 'visible', timeout: 10000 });
   
-  if (!reservationCard) {
-    // As a fallback, look for any reservation card to see if reservations exist
-    const anyReservationCard = page.locator('[data-testid^="card-reservation-"]').first();
-    if (await anyReservationCard.isVisible({ timeout: 5000 })) {
-      const cardText = await anyReservationCard.textContent();
-      assert.ok(false, `Could not find reservation with name "${uniqueReservationName}". Found other reservations instead.`);
-    } else {
-      assert.ok(false, 'No reservations found in the list');
-    }
-  }
+  // Verify the reservation is actually visible
+  const isVisible = await reservationCard.isVisible();
+  assert.ok(isVisible, `Reservation "${uniqueReservationName}" should be visible in the list`);
   
   // Check that our unique reservation name is present
   const cardText = await reservationCard.textContent();

@@ -236,7 +236,7 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
             <div className="space-y-2">
               <Label>{t('type')}</Label>
               <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
-                <SelectTrigger>
+                <SelectTrigger data-testid="select-reservation-type">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -268,6 +268,7 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
                 <Button
                   variant="outline"
                   className="w-full justify-start text-left font-normal"
+                  data-testid="date-picker-button"
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {formData.startDate ? format(formData.startDate, 'PPP', { locale: language === 'eu' ? eu : es }) : t('selectDate')}

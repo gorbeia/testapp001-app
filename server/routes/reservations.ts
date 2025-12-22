@@ -648,12 +648,15 @@ export function registerReservationRoutes(app: Express) {
       }
       
       // Check access permissions
-      if (reservation[0].userId !== user.id && !['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
+      const isAdmin = ['administratzailea', 'diruzaina', 'sotolaria'].includes(user.function || '') ||
+                     ['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '');
+      
+      if (reservation[0].userId !== user.id && !isAdmin) {
         return res.status(403).json({ message: "Access denied" });
       }
       
       // Create notification if admin is cancelling someone else's reservation
-      if (reservation[0].userId !== user.id && ['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '')) {
+      if (reservation[0].userId !== user.id && isAdmin) {
         await createReservationNotification(
           reservation[0].userId,
           societyId,

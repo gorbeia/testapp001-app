@@ -27,7 +27,7 @@ Feature: Product Management
     When I click the new product button
     And I fill in the product name with "E2E Test Product"
     And I fill in the product description with "E2E Test Description"
-    And I select the category "Janariak"
+    And I select the category "Aperitiboak"
     And I fill in the price with "3.25"
     And I fill in the stock with "15"
     And I fill in the minimum stock with "5"

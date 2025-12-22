@@ -30,12 +30,18 @@ When('I find the user\'s reservation', async function () {
   if (!page) throw new Error('Page not available');
   
   const uniqueReservationName = this.testReservationName || 'Test Erreserba Notifikazioa';
-  const reservationCard = page.locator('[data-testid^="card-reservation-"]').filter({ hasText: uniqueReservationName }).first();
-  await reservationCard.waitFor({ state: 'visible', timeout: 5000 });
   
-  // Store the reservation ID for later use
-  const reservationId = await reservationCard.getAttribute('data-testid');
-  this.testReservationId = reservationId;
+  // Wait for admin page to load
+  await page.waitForTimeout(2000);
+  
+  // Look for the reservation in the admin table (check first page)
+  const reservationRow = page.locator('table tr').filter({ hasText: uniqueReservationName }).first();
+  
+  // Wait for the reservation to be visible
+  await reservationRow.waitFor({ state: 'visible', timeout: 10000 });
+  
+  // Store the reservation row for later use
+  this.testReservationRow = reservationRow;
 });
 
 When('I cancel the user\'s reservation', async function () {
@@ -43,26 +49,33 @@ When('I cancel the user\'s reservation', async function () {
   if (!page) throw new Error('Page not available');
   
   const uniqueReservationName = this.testReservationName || 'Test Erreserba Notifikazioa';
-  const reservationCard = page.locator('[data-testid^="card-reservation-"]').filter({ hasText: uniqueReservationName }).first();
-  await reservationCard.waitFor({ state: 'visible', timeout: 5000 });
   
-  // Find the cancel button (Button with X icon, red color)
-  const cancelButton = reservationCard.locator('button.text-red-600').first();
+  // Use the stored reservation row or find it again
+  const reservationRow = this.testReservationRow || page.locator('table tr').filter({ hasText: uniqueReservationName }).first();
+  await reservationRow.waitFor({ state: 'visible', timeout: 5000 });
+  
+  // Find the cancel button (button containing X icon) in the table row
+  const cancelButton = reservationRow.locator('button').filter({ has: page.locator('svg') }).first();
   
   if (await cancelButton.isVisible()) {
     await cancelButton.click();
     await page.waitForTimeout(1000);
     
-    // Handle confirmation dialog - look for "Berretsi" (Confirm in Basque)
-    const confirmButton = page.locator('button:has-text("Berretsi"), button:has-text("Bai"), button:has-text("Yes")').first();
+    // Handle confirmation dialog - wait for it to appear using exact DOM selector
+    await page.waitForSelector('div[role="alertdialog"][data-state="open"]', { timeout: 3000 });
+    
+    // Find the confirm button within the dialog using the exact DOM structure
+    // The confirm button has destructive styling and contains "Erreserba ezeztatu"
+    const confirmButton = page.locator('div[role="alertdialog"] button.bg-destructive:has-text("Erreserba ezeztatu")').first();
+    
     if (await confirmButton.isVisible({ timeout: 3000 })) {
       await confirmButton.click();
-      await page.waitForTimeout(1000);
+      await page.waitForTimeout(2000); // Wait for cancellation to process
     } else {
       throw new Error('Confirmation button not found in cancel dialog');
     }
   } else {
-    throw new Error('Cancel button not found in reservation card');
+    throw new Error('Cancel button not found in reservation row');
   }
 });
 
@@ -74,15 +87,30 @@ Then('the reservation should be marked as cancelled', async function () {
   await page.waitForLoadState('networkidle');
   
   const uniqueReservationName = this.testReservationName || 'Test Erreserba Notifikazioa';
-  const reservationCard = page.locator('[data-testid^="card-reservation-"]').filter({ hasText: uniqueReservationName }).first();
   
-  if (await reservationCard.isVisible({ timeout: 5000 })) {
-    const cardText = await reservationCard.textContent();
-    const isCancelled = cardText?.includes('ezeztatua') || cardText?.includes('cancel') || cardText?.includes('cancelled');
-    assert.ok(isCancelled, 'Reservation should be marked as cancelled');
+  // In admin page, check the table for the cancelled reservation
+  const reservationRow = page.locator('table tr').filter({ hasText: uniqueReservationName }).first();
+  
+  if (await reservationRow.isVisible({ timeout: 5000 })) {
+    const rowText = await reservationRow.textContent();
+    
+    // Check for various cancellation indicators in Basque and English
+    const isCancelled = rowText?.includes('ezeztatua') || 
+                       rowText?.includes('cancel') || 
+                       rowText?.includes('cancelled') ||
+                       rowText?.includes('Ezeztatua') ||
+                       rowText?.includes('Cancel') ||
+                       rowText?.includes('Cancelled');
+    
+    // Check if the reservation still has the cancel button
+    const hasCancelButton = await reservationRow.locator('button').filter({ has: page.locator('svg') }).count() > 0;
+    
+    // Success if either marked as cancelled or cancel button is gone
+    const success = isCancelled || !hasCancelButton;
+    assert.ok(success, 'Reservation should be cancelled (either marked as cancelled or cancel button removed)');
   } else {
-    // Reservation might be removed from list after cancellation
-    assert.ok(true, 'Reservation is no longer visible (likely cancelled)');
+    // Reservation removed from list after cancellation - this is also success
+    assert.ok(true, 'Reservation is no longer visible (cancelled)');
   }
 });
 

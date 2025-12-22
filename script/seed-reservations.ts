@@ -240,7 +240,7 @@ export async function seedReservations() {
     }
     
     // Smart table assignment function
-    function findBestTable(guestCount: number, excludeTables: string[] = []): string | null {
+    const findBestTable = (guestCount: number, excludeTables: string[] = []): string | null => {
       const suitableTables = activeTables.filter(table => 
         !excludeTables.includes(table.name) &&
         guestCount >= (table.minCapacity ?? 1) && 
