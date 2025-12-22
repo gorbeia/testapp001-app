@@ -239,6 +239,29 @@ export async function seedReservations() {
       }
     }
     
+    // Smart table assignment function
+    function findBestTable(guestCount: number, excludeTables: string[] = []): string | null {
+      const suitableTables = activeTables.filter(table => 
+        !excludeTables.includes(table.name) &&
+        guestCount >= (table.minCapacity ?? 1) && 
+        guestCount <= table.maxCapacity
+      );
+      
+      if (suitableTables.length === 0) return null;
+      
+      // Prefer tables with capacity closest to guest count
+      return suitableTables.reduce((best, current) => {
+        const bestDiff = best.maxCapacity - guestCount;
+        const currentDiff = current.maxCapacity - guestCount;
+        return currentDiff < bestDiff ? current : best;
+      }).name;
+    }
+    
+    // Track statistics
+    let skippedCount = 0;
+    let addedCount = 0;
+    let reassignedCount = 0;
+    
     console.log(`Generated ${historicalReservations.length} historical reservations for pagination testing`);
     
     // Combine all reservations
@@ -275,24 +298,48 @@ export async function seedReservations() {
         continue;
       }
       
-      // Verify guest count is within table capacity
+      // Smart table assignment with fallback
+      let assignedTable = reservation.table;
+      let wasReassigned = false;
+      
+      // First try the assigned table
       const table = activeTables.find(t => t.name === reservation.table);
-      if (table && reservation.guests !== null && (reservation.guests < (table.minCapacity ?? 1) || reservation.guests > table.maxCapacity)) {
-        console.log(`Guest count ${reservation.guests} not suitable for table '${reservation.table}' (capacity: ${table.minCapacity ?? 1}-${table.maxCapacity}) for reservation '${reservation.name}' (skipping)`);
-        continue;
+      if (!table || reservation.guests === null || reservation.guests < (table.minCapacity ?? 1) || reservation.guests > table.maxCapacity) {
+        // Try to find a better table
+        const betterTable = findBestTable(reservation.guests ?? 1);
+        if (betterTable) {
+          assignedTable = betterTable;
+          wasReassigned = true;
+          reassignedCount++;
+        } else {
+          skippedCount++;
+          continue;
+        }
       }
       
       // Insert new reservation
       const newReservation = {
         ...reservation,
+        table: assignedTable,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
       
       await db.insert(reservations).values(newReservation);
-      console.log(`Added reservation: ${reservation.name} at ${reservation.table} for ${reservation.guests} guests`);
+      addedCount++;
+      
+      if (wasReassigned) {
+        console.log(`Added reservation: ${reservation.name} -> reassigned to ${assignedTable} for ${reservation.guests} guests`);
+      } else {
+        console.log(`Added reservation: ${reservation.name} at ${assignedTable} for ${reservation.guests} guests`);
+      }
     }
     
+    console.log(`\n=== Reservation Seeding Summary ===`);
+    console.log(`Total processed: ${reservationsWithAmounts.length}`);
+    console.log(`Successfully added: ${addedCount}`);
+    console.log(`Skipped (no suitable table): ${skippedCount}`);
+    console.log(`Reassigned to better tables: ${reassignedCount}`);
     console.log('Reservations seeded successfully!');
   } catch (error) {
     console.error('Error seeding reservations:', error);
