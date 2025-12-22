@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Minus, ShoppingCart, X, Search, Receipt, ChevronUp, ChevronDown } from 'lucide-react';
+import { Plus, Minus, ShoppingCart, X, Search, Receipt, ChevronUp, ChevronDown, Beer, Utensils, Coffee, ChefHat } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,10 +8,33 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/lib/auth';
 import type { Product } from '@shared/schema';
+
+// Icon mapping function
+const getCategoryIcon = (iconName: string) => {
+  switch (iconName) {
+    case 'Beer': return Beer;
+    case 'Utensils': return Utensils;
+    case 'Coffee': return Coffee;
+    case 'ChefHat': return ChefHat;
+    default: return Utensils; // Default fallback
+  }
+};
+
+// Define Category type for frontend
+type Category = {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  icon: string;
+  sortOrder: number;
+  isActive: boolean;
+};
 
 // API helper function
 const authFetch = async (url: string, options: RequestInit = {}) => {
@@ -40,33 +63,40 @@ export function ConsumptionsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [isClosingAccount, setIsClosingAccount] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isCartExpanded, setIsCartExpanded] = useState(false);
 
-  const categoryLabels: Record<string, string> = {
-    edariak: 'Edariak',
-    janariak: 'Janariak',
-    opilekuak: 'Opilekuak',
-    kafea: 'Kafea',
-    bestelakoak: 'Bestelakoak',
-  };
 
-  // Fetch products from API
+  // Fetch products and categories from API
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await authFetch('/api/products');
-        if (response.ok) {
-          const data = await response.json();
+        const [productsResponse, categoriesResponse] = await Promise.all([
+          authFetch('/api/products'),
+          authFetch('/api/categories')
+        ]);
+        
+        if (productsResponse.ok) {
+          const productsData = await productsResponse.json();
           // Only show active products
-          setProducts(data.filter((product: Product) => product.isActive));
+          setProducts(productsData.filter((product: Product) => product.isActive));
         } else {
           throw new Error('Failed to fetch products');
         }
+        
+        if (categoriesResponse.ok) {
+          const categoriesData = await categoriesResponse.json();
+          setCategories(categoriesData);
+        } else {
+          const errorText = await categoriesResponse.text();
+          console.error('Categories API error:', errorText);
+          throw new Error(`Failed to fetch categories: ${errorText}`);
+        }
       } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching data:', error);
         toast({
           title: 'Error',
           description: 'Produktuak ezin izan dira kargatu',
@@ -77,12 +107,12 @@ export function ConsumptionsPage() {
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, [toast]);
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
+    const matchesCategory = categoryFilter === 'all' || p.categoryId === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
@@ -221,17 +251,36 @@ export function ConsumptionsPage() {
               />
             </div>
             <div className="flex gap-2 flex-wrap">
-              {['all', 'edariak', 'janariak'].map((cat) => (
-                <Button
-                  key={cat}
-                  variant={categoryFilter === cat ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setCategoryFilter(cat)}
-                  data-testid={`button-filter-${cat}`}
-                >
-                  {cat === 'all' ? t('allTime') : categoryLabels[cat]}
-                </Button>
-              ))}
+              <Button
+                key="all"
+                variant={categoryFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setCategoryFilter('all')}
+                data-testid={`button-filter-all`}
+              >
+                {t('allTime')}
+              </Button>
+              {categories.map((category) => {
+                const IconComponent = getCategoryIcon(category.icon);
+                return (
+                  <Button
+                    key={category.id}
+                    variant={categoryFilter === category.id ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setCategoryFilter(category.id)}
+                    data-testid={`button-filter-${category.id}`}
+                    className={categoryFilter === category.id ? '' : 'border-2'}
+                    style={{
+                      borderColor: categoryFilter === category.id ? undefined : category.color,
+                      backgroundColor: categoryFilter === category.id ? category.color : undefined,
+                      color: categoryFilter === category.id ? 'white' : category.color,
+                    }}
+                  >
+                    <IconComponent className="mr-1 h-3 w-3" />
+                    {category.name}
+                  </Button>
+                );
+              })}
             </div>
           </div>
 
@@ -261,7 +310,7 @@ export function ConsumptionsPage() {
                         <span className="font-medium text-sm">{product.name}</span>
                         <div className="flex items-center justify-between gap-2">
                           <Badge variant="secondary" className="text-xs">
-                            {categoryLabels[product.category] || product.category}
+                            {categories.find(c => c.id === product.categoryId)?.name || 'Kategoria ezezaguna'}
                           </Badge>
                           <span className="font-bold">{parseFloat(product.price).toFixed(2)}€</span>
                         </div>

@@ -35,3 +35,32 @@ export function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps)
     </div>
   );
 }
+
+interface ErrorDisplayProps {
+  error: Error;
+}
+
+export function ErrorDisplay({ error }: ErrorDisplayProps) {
+  const { t } = useLanguage();
+  
+  return (
+    <div className="p-4 sm:p-6">
+      <Card className="max-w-2xl mx-auto border-destructive">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <AlertTriangle className="h-5 w-5" />
+            {t('error') || 'Error'}
+          </CardTitle>
+          <CardDescription>
+            {t('error') || 'Something went wrong while loading the data.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="text-sm text-muted-foreground">
+            {error.message}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

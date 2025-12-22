@@ -69,7 +69,7 @@ export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   description: text("description"),
-  category: text("category").notNull(),
+  categoryId: varchar("category_id").notNull().references(() => productCategories.id),
   price: text("price").notNull(), // Using text for decimal precision
   stock: text("stock").notNull().default("0"), // Using text for large numbers
   unit: text("unit").notNull().default("unit"), // e.g., "unit", "kg", "liter"
@@ -106,7 +106,7 @@ export const categoryMessages = pgTable("category_messages", {
 export const insertProductSchema = createInsertSchema(products).pick({
   name: true,
   description: true,
-  category: true,
+  categoryId: true,
   price: true,
   stock: true,
   unit: true,

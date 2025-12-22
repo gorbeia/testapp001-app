@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Client } from 'pg';
-import { products, societies } from '../shared/schema';
+import { products, societies, productCategories } from '../shared/schema';
 import { eq } from 'drizzle-orm';
 
 async function main() {
@@ -29,12 +29,33 @@ async function main() {
 
   console.log('Using society ID for products:', societyId);
 
+  // Get categories to map old category names to new category IDs
+  const categories = await db.select().from(productCategories);
+  
+  // Map old category names to category icons
+  const categoryMap: Record<string, string> = {
+    'edariak': 'Beer',
+    'janariak': 'Utensils', 
+    'opilekuak': 'ChefHat',
+    'kafea': 'Coffee',
+    'bestelakoak': 'ChefHat'
+  };
+
+  // Helper function to get category ID by icon
+  function getCategoryId(icon: string): string {
+    const category = categories.find(cat => cat.icon === icon);
+    if (!category) {
+      throw new Error(`Category with icon '${icon}' not found. Make sure categories are seeded first.`);
+    }
+    return category.id;
+  }
+
   const demoProducts = [
     // Beverages
     {
       name: 'Kalea Garagardoa',
       description: 'Garagardo lokal ekoizpena, 330ml botila',
-      category: 'edariak',
+      categoryId: '', // Will be set below
       price: '3.50',
       stock: '24',
       unit: 'unit',
@@ -45,7 +66,7 @@ async function main() {
     {
       name: 'Txakoli Getariako',
       description: 'Txakoli zuria, 750ml botila',
-      category: 'edariak',
+      categoryId: '', // Will be set below
       price: '12.00',
       stock: '12',
       unit: 'unit',
@@ -56,7 +77,7 @@ async function main() {
     {
       name: 'Ura Mineral',
       description: 'Ura minerala, 1.5L botila',
-      category: 'edariak',
+      categoryId: '', // Will be set below
       price: '1.20',
       stock: '50',
       unit: 'unit',
@@ -69,7 +90,7 @@ async function main() {
     {
       name: 'Pintxo Tortilla',
       description: 'Tortilla pintxoa',
-      category: 'janariak',
+      categoryId: '', // Will be set below
       price: '2.50',
       stock: '20',
       unit: 'unit',
@@ -80,7 +101,7 @@ async function main() {
     {
       name: 'Gilda Pintxo',
       description: 'Gilda klasikoa: oliba, antxoa eta piperra',
-      category: 'janariak',
+      categoryId: '', // Will be set below
       price: '3.00',
       stock: '15',
       unit: 'unit',
@@ -91,7 +112,7 @@ async function main() {
     {
       name: 'Txistorra Sandwich',
       description: 'Txistorra ogitartekoa',
-      category: 'janariak',
+      categoryId: '', // Will be set below
       price: '5.50',
       stock: '10',
       unit: 'unit',
@@ -104,7 +125,7 @@ async function main() {
     {
       name: 'Patata Frita',
       description: 'Patata frijituak, 150g poltsa',
-      category: 'opilekuak',
+      categoryId: '', // Will be set below
       price: '2.00',
       stock: '30',
       unit: 'unit',
@@ -115,7 +136,7 @@ async function main() {
     {
       name: 'Oliba Berdea',
       description: 'Oliba berdeak, 200g potea',
-      category: 'opilekuak',
+      categoryId: '', // Will be set below
       price: '4.50',
       stock: '18',
       unit: 'unit',
@@ -128,7 +149,7 @@ async function main() {
     {
       name: 'Kafea',
       description: 'Espresso kafea',
-      category: 'kafea',
+      categoryId: '', // Will be set below
       price: '1.80',
       stock: '100', // in servings
       unit: 'unit',
@@ -139,7 +160,7 @@ async function main() {
     {
       name: 'Tila Belar',
       description: 'Tila belar tea, poltsa',
-      category: 'kafea',
+      categoryId: '', // Will be set below
       price: '1.50',
       stock: '50',
       unit: 'unit',
@@ -152,7 +173,7 @@ async function main() {
     {
       name: 'Sukaldeko Gatzak',
       description: 'Gatz mahastua, 1kg',
-      category: 'bestelakoak',
+      categoryId: '', // Will be set below
       price: '1.00',
       stock: '5',
       unit: 'kg',
@@ -163,7 +184,7 @@ async function main() {
     {
       name: 'Azukrea',
       description: 'Azukre zuria, 1kg',
-      category: 'bestelakoak',
+      categoryId: '', // Will be set below
       price: '2.00',
       stock: '8',
       unit: 'kg',
@@ -172,6 +193,13 @@ async function main() {
       isActive: true,
     },
   ];
+
+  // Set categoryIds based on old category names
+  demoProducts.forEach((product, index) => {
+    const oldCategoryNames = ['edariak', 'edariak', 'edariak', 'janariak', 'janariak', 'janariak', 'opilekuak', 'opilekuak', 'kafea', 'kafea', 'bestelakoak', 'bestelakoak'];
+    const icon = categoryMap[oldCategoryNames[index]];
+    product.categoryId = getCategoryId(icon);
+  });
 
   console.log('Seeding demo products...');
 

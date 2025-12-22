@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,18 @@ import { useLanguage } from '@/lib/i18n';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@shared/schema';
 import { ErrorFallback } from '@/components/ErrorBoundary';
-import { ErrorDisplay } from '@/components/ErrorDisplay';
+import { ErrorDisplay } from '@/components/ErrorBoundary';
+
+// Define Category type for frontend
+type Category = {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  icon: string;
+  sortOrder: number;
+  isActive: boolean;
+};
 
 // API helper function
 const authFetch = async (url: string, options: RequestInit = {}) => {
@@ -36,44 +47,51 @@ export function ProductsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; product: Product | null }>({ open: false, product: null });
   const [editDialog, setEditDialog] = useState<{ open: boolean; product: Product | null }>({ open: false, product: null });
 
-  const categoryLabels: Record<string, string> = {
-    edariak: 'Edariak',
-    janariak: 'Janariak',
-    opilekuak: 'Opilekuak',
-    kafea: 'Kafea',
-    bestelakoak: 'Bestelakoak',
-  };
 
-  // Fetch products from API
+  // Fetch products and categories from API
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await authFetch('/api/products');
-        if (response.ok) {
-          const data = await response.json();
-          setProducts(data);
+        const [productsResponse, categoriesResponse] = await Promise.all([
+          authFetch('/api/products'),
+          authFetch('/api/categories')
+        ]);
+        
+        if (productsResponse.ok) {
+          const productsData = await productsResponse.json();
+          setProducts(productsData);
         } else {
           throw new Error('Failed to fetch products');
         }
+        
+        if (categoriesResponse.ok) {
+          const categoriesData = await categoriesResponse.json();
+          setCategories(categoriesData);
+        } else {
+          const errorText = await categoriesResponse.text();
+          console.error('Categories API error:', errorText);
+          throw new Error(`Failed to fetch categories: ${errorText}`);
+        }
       } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching data:', error);
         setError(error instanceof Error ? error : new Error(String(error)));
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, []);
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
+    const matchesCategory = categoryFilter === 'all' || p.categoryId === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
@@ -86,7 +104,7 @@ export function ProductsPage() {
   const [newProduct, setNewProduct] = useState({
     name: '',
     description: '',
-    category: '',
+    categoryId: '',
     price: '',
     stock: '',
     unit: 'unit',
@@ -98,7 +116,7 @@ export function ProductsPage() {
   const [editProduct, setEditProduct] = useState({
     name: '',
     description: '',
-    category: '',
+    categoryId: '',
     price: '',
     stock: '',
     unit: 'unit',
@@ -126,7 +144,7 @@ export function ProductsPage() {
         setNewProduct({
           name: '',
           description: '',
-          category: '',
+          categoryId: '',
           price: '',
           stock: '',
           unit: 'unit',
@@ -190,7 +208,7 @@ export function ProductsPage() {
     setEditProduct({
       name: product.name,
       description: product.description || '',
-      category: product.category,
+      categoryId: product.categoryId || '',
       price: product.price,
       stock: product.stock,
       unit: product.unit,
@@ -260,7 +278,7 @@ export function ProductsPage() {
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-new-product">
+            <Button data-testid="button-new-product" aria-label="Produktu berria sortu">
               <Plus className="mr-2 h-4 w-4" />
               {t('newProduct')}
             </Button>
@@ -268,12 +286,16 @@ export function ProductsPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{t('newProduct')}</DialogTitle>
+              <DialogDescription>
+                Sortu produktu berri bat sistema honentzat.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-4">
               <div className="space-y-2">
                 <Label>{t('name')}</Label>
                 <Input 
-                  placeholder="Produktuaren izena..." 
+                  placeholder="Produktuaren izena..."
+                  aria-label="Produktuaren izena"
                   value={newProduct.name}
                   onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                   data-testid="input-product-name" 
@@ -283,7 +305,8 @@ export function ProductsPage() {
               <div className="space-y-2">
                 <Label>{t('productDescription')}</Label>
                 <Input 
-                  placeholder="Produktuaren deskribapena..." 
+                  placeholder="Produktuaren deskribapena..."
+                  aria-label="Produktuaren deskribapena"
                   value={newProduct.description}
                   onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                 />
@@ -292,17 +315,23 @@ export function ProductsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t('productCategory')}</Label>
-                  <Select value={newProduct.category} onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}>
-                    <SelectTrigger data-testid="select-product-category">
+                  <Select value={newProduct.categoryId} onValueChange={(value) => setNewProduct({ ...newProduct, categoryId: value })}>
+                    <SelectTrigger data-testid="select-product-category" aria-label="Hautatu produktuaren kategoria">
                       <SelectValue placeholder="Hautatu kategoria" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="edariak">Edariak</SelectItem>
-                      <SelectItem value="janariak">Janariak</SelectItem>
-                      <SelectItem value="opilekuak">Opilekuak</SelectItem>
-                      <SelectItem value="kafea">Kafea</SelectItem>
-                      <SelectItem value="bestelakoak">Bestelakoak</SelectItem>
-                    </SelectContent>
+                    {categories.length === 0 ? (
+                      <SelectItem value="loading" disabled>
+                        Kategoriak kargatzen...
+                      </SelectItem>
+                    ) : (
+                      categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
@@ -311,7 +340,8 @@ export function ProductsPage() {
                     type="number" 
                     step="0.01" 
                     min="0" 
-                    placeholder="0.00" 
+                    placeholder="0.00"
+                    aria-label="Produktuaren prezioa eurotan"
                     value={newProduct.price}
                     onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
                     data-testid="input-product-price" 
@@ -325,7 +355,8 @@ export function ProductsPage() {
                   <Input 
                     type="number" 
                     min="0" 
-                    placeholder="0" 
+                    placeholder="0"
+                    aria-label="Produktuaren stock kopurua"
                     value={newProduct.stock}
                     onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value })}
                     data-testid="input-product-stock" 
@@ -349,7 +380,8 @@ export function ProductsPage() {
                   <Input 
                     type="number" 
                     min="0" 
-                    placeholder="0" 
+                    placeholder="0"
+                    aria-label="Stock minimoaren alerta mugaria"
                     value={newProduct.minStock}
                     onChange={(e) => setNewProduct({ ...newProduct, minStock: e.target.value })}
                     data-testid="input-product-min-stock" 
@@ -360,17 +392,18 @@ export function ProductsPage() {
               <div className="space-y-2">
                 <Label>{t('supplier')}</Label>
                 <Input 
-                  placeholder="Hornitzailearen izena..." 
+                  placeholder="Hornitzailearen izena..."
+                  aria-label="Hornitzailearen izena"
                   value={newProduct.supplier}
                   onChange={(e) => setNewProduct({ ...newProduct, supplier: e.target.value })}
                 />
               </div>
 
               <div className="flex justify-end gap-2 pt-2">
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)} aria-label="Ezeztatu produktu berria">
                   {t('cancel')}
                 </Button>
-                <Button onClick={handleCreateProduct} data-testid="button-save-product">
+                <Button onClick={handleCreateProduct} data-testid="button-save-product" aria-label="Gorde produktu berria">
                   {t('save')}
                 </Button>
               </div>
@@ -400,6 +433,7 @@ export function ProductsPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={`${t('search')}...`}
+            aria-label="Bilatu produktuak izenez"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -407,16 +441,16 @@ export function ProductsPage() {
           />
         </div>
         <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-          <SelectTrigger className="w-full sm:w-48" data-testid="select-filter-category">
+          <SelectTrigger className="w-full sm:w-48" data-testid="select-filter-category" aria-label="Iragazi produktuak kategoriaz">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{t('all')}</SelectItem>
-            <SelectItem value="edariak">Edariak</SelectItem>
-            <SelectItem value="janariak">Janariak</SelectItem>
-            <SelectItem value="opilekuak">Opilekuak</SelectItem>
-            <SelectItem value="kafea">Kafea</SelectItem>
-            <SelectItem value="bestelakoak">Bestelakoak</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -426,11 +460,11 @@ export function ProductsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t('name')}</TableHead>
-              <TableHead>{t('category')}</TableHead>
-              <TableHead>{t('stock')}</TableHead>
-              <TableHead>{t('price')}</TableHead>
-              <TableHead className="w-12"></TableHead>
+              <TableHead scope="col">{t('name')}</TableHead>
+              <TableHead scope="col">{t('category')}</TableHead>
+              <TableHead scope="col">{t('stock')}</TableHead>
+              <TableHead scope="col">{t('price')}</TableHead>
+              <TableHead scope="col" className="w-12"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -468,7 +502,9 @@ export function ProductsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">{categoryLabels[product.category] || product.category}</Badge>
+                      <Badge variant="outline">
+                        {categories.find(c => c.id === product.categoryId)?.name || 'Kategoria ezezaguna'}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium">{parseFloat(product.price).toFixed(2)}€</TableCell>
                     <TableCell className="text-right">
@@ -484,7 +520,7 @@ export function ProductsPage() {
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" data-testid={`button-product-menu-${product.id}`}>
+                          <Button variant="ghost" size="icon" data-testid={`button-product-menu-${product.id}`} aria-label={`Produktuaren menua: ${product.name}`}>
                             <span className="sr-only">Menu</span>
                             <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                               <circle cx="12" cy="5" r="2" />
@@ -522,12 +558,16 @@ export function ProductsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('editProduct')}</DialogTitle>
+            <DialogDescription>
+              Editatu produktuaren informazioa.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div className="space-y-2">
               <Label>{t('name')}</Label>
               <Input 
-                placeholder="Produktuaren izena..." 
+                placeholder="Produktuaren izena..."
+                aria-label="Editatu produktuaren izena"
                 value={editProduct.name}
                 onChange={(e) => setEditProduct({ ...editProduct, name: e.target.value })}
                 data-testid="input-edit-product-name" 
@@ -537,7 +577,8 @@ export function ProductsPage() {
             <div className="space-y-2">
               <Label>{t('productDescription')}</Label>
               <Input 
-                placeholder="Produktuaren deskribapena..." 
+                placeholder="Produktuaren deskribapena..."
+                aria-label="Editatu produktuaren deskribapena"
                 value={editProduct.description}
                 onChange={(e) => setEditProduct({ ...editProduct, description: e.target.value })}
               />
@@ -546,16 +587,22 @@ export function ProductsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>{t('productCategory')}</Label>
-                <Select value={editProduct.category} onValueChange={(value) => setEditProduct({ ...editProduct, category: value })}>
-                  <SelectTrigger data-testid="select-edit-product-category">
+                <Select value={editProduct.categoryId} onValueChange={(value) => setEditProduct({ ...editProduct, categoryId: value })}>
+                  <SelectTrigger data-testid="select-edit-product-category" aria-label="Editatu produktuaren kategoria">
                     <SelectValue placeholder="Hautatu kategoria" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="edariak">Edariak</SelectItem>
-                    <SelectItem value="janariak">Janariak</SelectItem>
-                    <SelectItem value="opilekuak">Opilekuak</SelectItem>
-                    <SelectItem value="kafea">Kafea</SelectItem>
-                    <SelectItem value="bestelakoak">Bestelakoak</SelectItem>
+                    {categories.length === 0 ? (
+                      <SelectItem value="loading" disabled>
+                        Kategoriak kargatzen...
+                      </SelectItem>
+                    ) : (
+                      categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
@@ -565,7 +612,8 @@ export function ProductsPage() {
                   type="number" 
                   step="0.01" 
                   min="0" 
-                  placeholder="0.00" 
+                  placeholder="0.00"
+                  aria-label="Editatu produktuaren prezioa eurotan"
                   value={editProduct.price}
                   onChange={(e) => setEditProduct({ ...editProduct, price: e.target.value })}
                   data-testid="input-edit-product-price" 
@@ -579,7 +627,8 @@ export function ProductsPage() {
                 <Input 
                   type="number" 
                   min="0" 
-                  placeholder="0" 
+                  placeholder="0"
+                  aria-label="Editatu produktuaren stock kopurua"
                   value={editProduct.stock}
                   onChange={(e) => setEditProduct({ ...editProduct, stock: e.target.value })}
                   data-testid="input-edit-product-stock" 
@@ -603,7 +652,8 @@ export function ProductsPage() {
                 <Input 
                   type="number" 
                   min="0" 
-                  placeholder="0" 
+                  placeholder="0"
+                  aria-label="Editatu stock minimoaren alerta mugaria"
                   value={editProduct.minStock}
                   onChange={(e) => setEditProduct({ ...editProduct, minStock: e.target.value })}
                   data-testid="input-edit-product-min-stock" 
@@ -614,17 +664,18 @@ export function ProductsPage() {
             <div className="space-y-2">
               <Label>{t('supplier')}</Label>
               <Input 
-                placeholder="Hornitzailearen izena..." 
+                placeholder="Hornitzailearen izena..."
+                aria-label="Editatu hornitzailearen izena"
                 value={editProduct.supplier}
                 onChange={(e) => setEditProduct({ ...editProduct, supplier: e.target.value })}
               />
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={cancelEdit}>
+              <Button variant="outline" onClick={cancelEdit} aria-label="Ezeztatu produktuaren edizioa">
                 {t('cancel')}
               </Button>
-              <Button onClick={handleUpdateProduct} data-testid="button-update-product">
+              <Button onClick={handleUpdateProduct} data-testid="button-update-product" aria-label="Eguneratu produktua">
                 {t('update')}
               </Button>
             </div>
@@ -642,8 +693,8 @@ export function ProductsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelDelete}>Utzi</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDeleteProduct} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogCancel onClick={cancelDelete} aria-label="Ezeztatu produktuaren ezabapena">Utzi</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteProduct} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" aria-label="Berretsi produktuaren ezabapena">
               Ezabatu
             </AlertDialogAction>
           </AlertDialogFooter>
