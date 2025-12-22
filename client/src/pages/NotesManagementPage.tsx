@@ -12,8 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { ErrorFallback } from '@/components/ErrorBoundary';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { authFetch } from '@/lib/api';
-import { MultiLanguageNoteForm } from '@/components/announcements/MultiLanguageNoteForm';
-import { NoteWithMessages } from '@/components/dashboard/api';
+import { MultiLanguageNoteForm } from '@/pages/announcements/MultiLanguageNoteForm';
+import { NoteWithMessages } from '@/pages/dashboard/api';
 import { Language, DisplayContent, getDisplayContent } from '@shared/schema';
 
 // Type alias for clarity
