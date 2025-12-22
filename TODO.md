@@ -22,5 +22,11 @@ Use specific folder for pages different from componentes ✓ COMPLETED
     - Updated cross-references in NotesManagementPage
     - Components folder now contains only shared UI components
 
+Fix missing Spanish translations ✓ COMPLETED
+    - Added 40+ missing Spanish translations to match Basque translations
+    - Fixed duplicate translation keys causing TypeScript errors
+    - All translation keys now exist in both languages
+    - TypeScript check now passes without errors
+
 
 Mutliple society management
