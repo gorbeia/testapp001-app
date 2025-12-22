@@ -13,6 +13,7 @@ import {
   Receipt,
   Table as TableIcon,
   CreditCard as SubscriptionIcon,
+  Palette,
 } from 'lucide-react';
 import {
   Sidebar,
@@ -87,6 +88,7 @@ export function AppSidebar() {
 
   const configMenuItems = [
     ...(hasAdminAccess(user) ? [{ title: t('tables'), url: '/mahaiak', icon: TableIcon }] : []),
+    ...(hasAdminAccess(user) ? [{ title: t('productCategories'), url: '/kategoriak', icon: Palette }] : []),
     ...(hasAdminAccess(user) ? [{ title: t('subscriptionTypes'), url: '/subscriptions', icon: SubscriptionIcon }] : []),
     ...(hasTreasurerAccess(user) ? [{ title: t('society'), url: '/elkartea', icon: Building2 }] : []),
   ];

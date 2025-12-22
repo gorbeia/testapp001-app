@@ -21,7 +21,6 @@ import { MyConsumptionsPage } from '@/components/MyConsumptionsPage';
 import { MyReservationsPage } from '@/components/MyReservationsPage';
 import { CreditsPage } from "@/components/CreditsPage";
 import { MyDebtsPage } from "@/components/MyDebtsPage";
-import { AnnouncementsPage } from "@/components/AnnouncementsPage";
 import { UsersPage } from "@/components/UsersPage";
 import { ProductsPage } from "@/components/ProductsPage";
 import { SocietyPage } from "@/components/SocietyPage";
@@ -31,6 +30,7 @@ import { UserProfile } from "@/components/UserProfile";
 import OharrakPage from "@/components/announcements";
 import NotificationsPage from "@/components/NotificationsPage";
 import { SubscriptionsPage } from "@/components/SubscriptionsPage";
+import CategoriesPage from "@/components/CategoriesPage";
 import NotFound from "@/pages/not-found";
 
 function AppRoutes() {
@@ -85,6 +85,13 @@ function AppRoutes() {
         {() => (
           <ProtectedRoute requiredAccess="admin">
             <TablesPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/kategoriak">
+        {() => (
+          <ProtectedRoute requiredAccess="admin">
+            <CategoriesPage />
           </ProtectedRoute>
         )}
       </Route>

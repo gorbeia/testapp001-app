@@ -81,6 +81,28 @@ export const products = pgTable("products", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const productCategories = pgTable("product_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  color: varchar("color").notNull(),
+  icon: varchar("icon").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  societyId: varchar("society_id").notNull().references(() => societies.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+// Category messages for multilingual support
+export const categoryMessages = pgTable("category_messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  categoryId: varchar("category_id").notNull().references(() => productCategories.id, { onDelete: "cascade" }),
+  language: varchar("language").notNull(),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const insertProductSchema = createInsertSchema(products).pick({
   name: true,
   description: true,
@@ -92,6 +114,21 @@ export const insertProductSchema = createInsertSchema(products).pick({
   supplier: true,
   isActive: true,
   societyId: true,
+});
+
+export const insertProductCategorySchema = createInsertSchema(productCategories).pick({
+  color: true,
+  icon: true,
+  isActive: true,
+  sortOrder: true,
+  societyId: true,
+});
+
+export const insertCategoryMessageSchema = createInsertSchema(categoryMessages).pick({
+  categoryId: true,
+  language: true,
+  name: true,
+  description: true,
 });
 
 // Consumption sessions/events (e.g., a bar tab, event consumption)
