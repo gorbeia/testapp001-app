@@ -55,9 +55,21 @@ function AppRoutes() {
           </ProtectedRoute>
         )}
       </Route>
-      <Route path="/zorrak" component={CreditsPage} />
+      <Route path="/zorrak">
+        {() => (
+          <ProtectedRoute requiredAccess="admin">
+            <CreditsPage />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/nire-zorrak" component={MyDebtsPage} />
-      <Route path="/oharrak" component={OharrakPage} />
+      <Route path="/oharrak">
+        {() => (
+          <ProtectedRoute requiredAccess="admin">
+            <OharrakPage />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/jakinarazpenak" component={NotificationsPage} />
       <Route path="/profila" component={UserProfile} />
       <Route path="/erabiltzaileak">

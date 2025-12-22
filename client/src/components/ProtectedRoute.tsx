@@ -2,8 +2,7 @@ import { ReactNode } from 'react';
 import { useAuth, hasAdminAccess, hasCellarmanAccess, hasTreasurerAccess } from '@/lib/auth';
 import { useLocation } from 'wouter';
 import { useEffect } from 'react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Shield } from 'lucide-react';
+import { AccessDenied } from '@/components/AccessDenied';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -62,16 +61,7 @@ export function ProtectedRoute({ children, requiredAccess }: ProtectedRouteProps
   }
 
   if (!hasAccess) {
-    return (
-      <div className="p-6">
-        <Alert className="max-w-md">
-          <Shield className="h-4 w-4" />
-          <AlertDescription>
-            Ez duzu baimenik orri hau ikusteko. Administratzailearekin harremanetan jarri behar duzu.
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
+    return <AccessDenied />;
   }
 
   return <>{children}</>;

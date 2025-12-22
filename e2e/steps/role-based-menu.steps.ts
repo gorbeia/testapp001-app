@@ -87,29 +87,13 @@ Then('I should not be able to access admin pages directly', { timeout: 15000 }, 
       await page.goto(`http://localhost:5000${pagePath}`, { waitUntil: 'domcontentloaded', timeout: 3000 });
       console.log(`Navigated to ${pagePath}`);
       
-      // Check for the access denied message immediately (before wait that might cause context closure)
+      // Check for the unified access denied message
       const accessDeniedMessage = await page.$('text=Ez duzu baimenik orri hau ikusteko');
       
-      // If not found, try alternative access denied messages
-      if (!accessDeniedMessage) {
-        const altMessage1 = await page.$('text=Sarbidea ukatuta');
-        const altMessage2 = await page.$('text=Access denied');
-        const altMessage3 = await page.$('text=Unauthorized');
-        
-        // Check current URL for redirects
-        const currentUrl = page.url();
-        const isRedirected = currentUrl.includes('dashboard') || currentUrl.includes('login');
-        
-        assert.ok(
-          altMessage1 || altMessage2 || altMessage3 || isRedirected,
-          `Access to admin page ${pagePath} should show access denied message or redirect for bazkide user. Current URL: ${currentUrl}`
-        );
-      } else {
-        assert.ok(
-          accessDeniedMessage,
-          `Access to admin page ${pagePath} should show access denied message for bazkide user`
-        );
-      }
+      assert.ok(
+        accessDeniedMessage,
+        `Access to admin page ${pagePath} should show access denied message for bazkide user`
+      );
     } catch (error) {
       console.log(`  Error accessing ${pagePath}: ${(error as Error).message}`);
       throw error;

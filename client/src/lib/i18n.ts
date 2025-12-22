@@ -302,6 +302,7 @@ export const translations = {
     // Error messages
     noSocietyData: 'Ez dago elkarteko daturik eskuragarri',
     accessDenied: 'Sarbidea ukatuta',
+    accessDeniedDescription: 'Ez duzu baimenik orri hau ikusteko. Administratzailearekin harremanetan jarri behar duzu.',
     errorLoadingDebts: 'Zure zorrak kargatzean errorea bat gertatu da. Mesedez, saiatu berriz geroago.',
     needToLogin: 'Saioa hasi behar duzu',
     needToLoginToSeeDebts: 'Zure zorrak ikusteko, saioa hasi behar duzu.',
@@ -710,6 +711,7 @@ export const translations = {
     // Error messages
     noSocietyData: 'No hay datos de la sociedad disponibles',
     accessDenied: 'Acceso denegado',
+    accessDeniedDescription: 'No tienes permiso para ver esta página. Ponte en contacto con el administrador.',
     errorLoadingDebts: 'Ocurrió un error al cargar tus deudas. Por favor, inténtalo de nuevo más tarde.',
     needToLogin: 'Necesitas iniciar sesión',
     needToLoginToSeeDebts: 'Necesitas iniciar sesión para ver tus deudas.',

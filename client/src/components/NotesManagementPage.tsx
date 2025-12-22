@@ -303,16 +303,7 @@ export function NotesManagementPage() {
     }
   };
 
-  if (!isAdmin) {
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="text-center py-12">
-          <FileText className="h-12 w-12 text-muted-foreground mb-4 mx-auto" />
-          <p className="text-muted-foreground">{t('accessDenied')}</p>
-        </div>
-      </div>
-    );
-  }
+  // Access control is now handled by ProtectedRoute
 
   if (loading) {
     return (

@@ -1,8 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useState } from 'react';
 import { useUrlFilter } from '@/hooks/useUrlFilter';
-import { ErrorFallback } from '@/components/ErrorBoundary';
-import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -80,23 +77,10 @@ export function CreditsPage() {
   
   // Use URL filter hook for month and status
   const currentDate = new Date();
-  const currentMonthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
   const monthFilter = useUrlFilter({ baseUrl: '/zorrak', paramName: 'month', initialValue: '' });
   const statusFilter = useUrlFilter({ baseUrl: '/zorrak', paramName: 'status', initialValue: 'all' });
 
   const isAdmin = hasAdminAccess(user);
-
-  // Redirect non-admin users
-  if (user && !isAdmin) {
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('accessDenied')}</h1>
-          <p className="text-gray-600">Orri hau administratzaileentzat baino ez da eskuragarri.</p>
-        </div>
-      </div>
-    );
-  }
 
   const queryClient = useQueryClient();
 
