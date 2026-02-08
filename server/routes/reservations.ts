@@ -8,7 +8,7 @@ import {
   type User,
 } from "@shared/schema";
 import { eq, and, or, like, gte, between, ne, count, desc, asc, sql } from "drizzle-orm";
-import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
+import { sessionMiddleware, requireAuth } from "./middleware";
 import { translateWithParams, formatDate, translations } from "../lib/i18n";
 import { debtCalculationService } from "../cron-jobs";
 

@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { products, type User, type Product } from "@shared/schema";
+import { products, type User } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 

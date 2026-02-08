@@ -18,7 +18,7 @@ export const generateToken = (user: User) => {
 };
 
 const generateRefreshToken = (user: User) => {
-  const { password: _, ...userWithoutPassword } = user;
+  const { password: _password, ...userWithoutPassword } = user;
   return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
 };
 
@@ -48,14 +48,9 @@ const clearAuthCookie = (res: Response) => {
 const verifyToken = (token: string): User | null => {
   try {
     return jwt.verify(token, JWT_SECRET) as User;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
-};
-
-// Access control helpers
-const hasTreasurerAccess = (user: User): boolean => {
-  return user.function === "diruzaina" || user.function === "administratzailea";
 };
 
 // No-cache middleware for sensitive endpoints
@@ -80,8 +75,8 @@ const sessionMiddleware = (req: Request, res: Response, next: NextFunction) => {
     if (user) {
       req.user = user;
     }
-  } catch (error) {
-    console.error("JWT verification error:", error);
+  } catch (_error) {
+    console.error("JWT verification error:", _error);
   }
 
   next();
@@ -225,7 +220,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       setRefreshCookie(res, refreshToken);
 
       // Return user data and token (for backward compatibility)
-      const { password: _, ...userWithoutPassword } = dbUser;
+      const { password: _password, ...userWithoutPassword } = dbUser;
       return res.status(200).json({
         user: userWithoutPassword,
         token,
@@ -270,7 +265,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       setAuthCookie(res, newToken);
 
       // Return new token info
-      const { password: _, ...userWithoutPassword } = dbUser;
+      const { password: _password, ...userWithoutPassword } = dbUser;
       return res.status(200).json({
         user: userWithoutPassword,
         token: newToken,

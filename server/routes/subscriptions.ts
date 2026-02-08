@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { subscriptionTypes, type SubscriptionType } from "@shared/schema";
+import { subscriptionTypes } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "./middleware";
 

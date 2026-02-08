@@ -3,7 +3,6 @@ import { db } from "../db";
 import {
   notifications,
   notificationMessages,
-  users,
   type User,
   type Notification,
 } from "@shared/schema";

@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express } from "express";
 import { db } from "../db";
 import { societies, type User } from "@shared/schema";
 import { eq } from "drizzle-orm";

@@ -8,7 +8,7 @@ import {
   notificationMessages,
   type User,
 } from "@shared/schema";
-import { eq, and, desc, ne } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
 
 // Helper function to convert a note into notifications for all users in a society

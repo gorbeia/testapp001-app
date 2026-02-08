@@ -28,8 +28,8 @@ export const sessionMiddleware = (req: Request, res: Response, next: NextFunctio
     if (user) {
       req.user = user;
     }
-  } catch (error) {
-    console.error("JWT verification error:", error);
+  } catch (_error) {
+    console.error("JWT verification error:", _error);
   }
 
   next();
