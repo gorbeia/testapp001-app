@@ -207,7 +207,7 @@ export function ConsumptionsPage() {
 
       toast({
         title: t('success'),
-        description: `Kontua itxita: ${cartTotal.toFixed(2)}€ / Cuenta cerrada: ${cartTotal.toFixed(2)}€`,
+        description: t('accountClosed', { amount: cartTotal.toFixed(2) }),
       });
       
       // Refresh products to update stock levels
