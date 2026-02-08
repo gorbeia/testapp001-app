@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Building2, Save, DollarSign, AlertTriangle } from "lucide-react";
+import { Building2, Save, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

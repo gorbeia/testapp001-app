@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
 import { useLanguage } from "@/lib/i18n";
@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Search, Plus, Edit, Trash2, CreditCard, Calendar, Settings } from "lucide-react";
+import { Search, Plus, Edit, Trash2, Settings } from "lucide-react";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 
