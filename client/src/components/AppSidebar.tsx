@@ -1,4 +1,5 @@
 import { useLocation, Link } from 'wouter';
+import { useEffect, useState } from 'react';
 import {
   Calendar,
   ShoppingCart,
@@ -32,12 +33,32 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useLanguage } from '@/lib/i18n';
 import { useAuth, hasAdminAccess, hasTreasurerAccess, hasCellarmanAccess } from '@/lib/auth';
+import { authFetch } from '@/lib/api';
 
 export function AppSidebar() {
   const { t } = useLanguage();
   const { user, logout } = useAuth();
   const [location] = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
+  const [societyName, setSocietyName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadSociety = async () => {
+      try {
+        const response = await authFetch('/api/societies/user');
+        if (response.ok) {
+          const data = await response.json();
+          if (data && typeof data.name === 'string') {
+            setSocietyName(data.name);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading society for sidebar:', error);
+      }
+    };
+
+    loadSociety();
+  }, []);
 
   const handleNavigation = (href: string) => {
     // On mobile, close the sidebar after navigation
@@ -110,7 +131,7 @@ export function AppSidebar() {
             <span className="text-primary-foreground font-bold text-sm">GT</span>
           </div>
           <div>
-            <h1 className="font-semibold text-sm">{t('appName')}</h1>
+            <h1 className="font-semibold text-sm">{societyName || t('appName')}</h1>
             <p className="text-xs text-muted-foreground">Sociedad Gastronómica</p>
           </div>
         </div>
