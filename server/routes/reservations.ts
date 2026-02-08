@@ -586,6 +586,7 @@ export function registerReservationRoutes(app: Express) {
   app.put("/api/reservations/:id", sessionMiddleware, requireAuth, async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { id } = req.params;
+      const { cancellationReason } = req.body as { cancellationReason?: string };
       const user = req.user!;
       
       const societyId = getUserSocietyId(user);
@@ -607,15 +608,29 @@ export function registerReservationRoutes(app: Express) {
         return res.status(403).json({ message: "You can only cancel your own reservations" });
       }
       console.error('CANCEL DEBUG - Permission granted for cancellation');
+      const isAdmin = ['administratzailea', 'diruzaina', 'sotolaria'].includes(user.function || '') ||
+                      ['administratzailea', 'diruzaina', 'sotolaria'].includes(user.role || '');
+      // For admin cancelling someone else's reservation, a cancellation reason is required
+      if (isAdmin && reservation[0].userId !== user.id) {
+        if (!cancellationReason || !String(cancellationReason).trim()) {
+          return res.status(400).json({ message: "Cancellation reason is required" });
+        }
+      }
       
       // Check if reservation can be cancelled (not already cancelled or completed)
       if (['cancelled', 'completed'].includes(reservation[0].status)) {
         return res.status(400).json({ message: "Reservation cannot be cancelled" });
       }
       
-      // Update status to cancelled
+      // Update status to cancelled and store cancellation metadata
       const updatedReservation = await db.update(reservations)
-        .set({ status: 'cancelled', updatedAt: new Date() })
+        .set({
+          status: 'cancelled',
+          cancellationReason: cancellationReason ?? reservation[0].cancellationReason ?? null,
+          cancelledBy: user.id,
+          cancelledAt: new Date(),
+          updatedAt: new Date(),
+        })
         .where(eq(reservations.id, id))
         .returning();
       

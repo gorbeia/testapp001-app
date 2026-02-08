@@ -20,6 +20,7 @@ import type { Reservation, User } from '@shared/schema';
 import { ErrorFallback } from '@/components/ErrorBoundary';
 import { ErrorDisplay } from '@/components/ErrorDisplay';
 import { authFetch } from '@/lib/api';
+import { Textarea } from '@/components/ui/textarea';
 import { usePagination } from '@/hooks/use-pagination';
 
 interface ReservationWithUser extends Reservation {
@@ -59,6 +60,7 @@ export function AdminReservationsPage() {
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [reservationToCancel, setReservationToCancel] = useState<string | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<ReservationWithUser | null>(null);
+  const [cancellationReason, setCancellationReason] = useState('');
   
   // Pagination state
   const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
@@ -119,11 +121,16 @@ export function AdminReservationsPage() {
     }
   };
 
-  // Cancel reservation
-  const cancelReservation = async (reservationId: string) => {
+  // Cancel reservation (admin)
+  const cancelReservation = async (reservationId: string, reason: string) => {
     try {
       const response = await authFetch(`/api/reservations/${reservationId}`, {
-        method: 'DELETE',
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'cancelled',
+          cancellationReason: reason,
+        }),
       });
       
       if (response.ok) {
@@ -142,6 +149,8 @@ export function AdminReservationsPage() {
         description: t('reservationCancelError'),
         variant: 'destructive',
       });
+    } finally {
+      setCancellationReason('');
     }
   };
 
@@ -470,7 +479,16 @@ export function AdminReservationsPage() {
         </Dialog>
 
         {/* Cancel confirmation dialog */}
-        <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialog
+          open={cancelDialogOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCancellationReason('');
+              setReservationToCancel(null);
+            }
+            setCancelDialogOpen(open);
+          }}
+        >
           <AlertDialogContent>
             <AlertDialogHeader>
               <AlertDialogTitle className="flex items-center gap-2">
@@ -481,14 +499,38 @@ export function AdminReservationsPage() {
                 {t('cancelReservationConfirmMessage')}
               </AlertDialogDescription>
             </AlertDialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="cancellationReason" className="text-sm font-medium">
+                  {t('cancellationReason')} *
+                </label>
+                <Textarea
+                  id="cancellationReason"
+                  value={cancellationReason}
+                  onChange={(e) => setCancellationReason(e.target.value)}
+                  placeholder={t('enterCancellationReason')}
+                  className="min-h-[100px]"
+                  required
+                />
+              </div>
+            </div>
             <AlertDialogFooter>
               <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => {
+                  if (!cancellationReason.trim()) {
+                    toast({
+                      title: t('errorTitle'),
+                      description: t('cancellationReasonRequired'),
+                      variant: 'destructive',
+                    });
+                    return;
+                  }
                   if (reservationToCancel) {
-                    cancelReservation(reservationToCancel);
+                    cancelReservation(reservationToCancel, cancellationReason);
                     setCancelDialogOpen(false);
                     setReservationToCancel(null);
+                    setCancellationReason('');
                   }
                 }}
                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

@@ -177,7 +177,7 @@ export const reservations = pgTable("reservations", {
   userId: varchar("user_id").notNull(), // Who made the reservation
   societyId: varchar("society_id").notNull().references(() => societies.id),
   name: text("name").notNull(), // Event/reservation name
-  type: text("type").notNull().default("bazkaria"), // "bazkaria", "afaria", "askaria", "hamaiketakako"
+  type: text("type").notNull().default("bazkaria"), // "bazkaria", "afaria", "askaria", "hamaiketakao"
   status: text("status").notNull().default("confirmed"), // "pending", "confirmed", "cancelled", "completed"
   startDate: timestamp("start_date").notNull(),
   guests: integer("guests").default(0),
@@ -185,6 +185,9 @@ export const reservations = pgTable("reservations", {
   table: text("table").notNull(), // Table name (e.g., "Mahaia 1", "Mahaia 2", etc.)
   totalAmount: text("total_amount").notNull().default("0"), // Using text for decimal precision
   notes: text("notes"),
+  cancellationReason: text("cancellation_reason"), // Reason for cancellation
+  cancelledBy: varchar("cancelled_by").references(() => users.id), // User who cancelled the reservation
+  cancelledAt: timestamp("cancelled_at"), // When the reservation was cancelled
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
