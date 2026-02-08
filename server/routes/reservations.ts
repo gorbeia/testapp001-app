@@ -504,9 +504,15 @@ export function registerReservationRoutes(app: Express) {
         }
       }
       
-      // Check if reservation date is in the past
+      // Check if reservation date is in the past (ignoring time)
       const now = new Date();
-      if (startDate < now) {
+      const reservationDate = new Date(startDate);
+      
+      // Reset time components to compare dates only
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const selectedDate = new Date(reservationDate.getFullYear(), reservationDate.getMonth(), reservationDate.getDate());
+      
+      if (selectedDate < today) {
         return res.status(400).json({ message: "Reservations cannot be created for past dates" });
       }
       
