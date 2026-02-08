@@ -11,12 +11,14 @@ A modern web application built with React, TypeScript, and Express.js for managi
 ## Getting Started
 
 1. **Clone the repository**
+
    ```bash
    git clone [repository-url]
    cd elkartearen-app
    ```
 
 2. **Install dependencies**
+
    ```bash
    pnpm install
    ```
@@ -30,6 +32,7 @@ A modern web application built with React, TypeScript, and Express.js for managi
 ## Database Setup
 
 1. **Start the PostgreSQL database (Docker)**
+
    ```bash
    pnpm docker:db:up
    ```
@@ -74,6 +77,7 @@ This downloads Chromium/Firefox/WebKit binaries used by Playwright.
 ### Running E2E tests
 
 1. **Start the application** (in one terminal):
+
    ```bash
    pnpm dev
    ```
@@ -84,6 +88,7 @@ This downloads Chromium/Firefox/WebKit binaries used by Playwright.
    ```
 
 This runs Cucumber with:
+
 - Features in `e2e/features/**/*.feature` (e.g. `e2e/features/login.feature`)
 - Step definitions in `e2e/steps/**/*.js` (e.g. `e2e/steps/login.steps.js`)
 
@@ -117,5 +122,3 @@ You should see output similar to:
 - `pnpm docker:db:down` – Stop PostgreSQL
 - `pnpm docker:db:reset` – Reset PostgreSQL volume
 - `pnpm test:e2e` – Run E2E tests (Playwright + Cucumber)
-
-

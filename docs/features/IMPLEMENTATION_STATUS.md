@@ -1,6 +1,7 @@
 # Implementation Status – Elkartearen App User Stories
 
 Status legend:
+
 - ✅ Implemented (real feature: UI + some logic/persistence)
 - 🟡 UI Only / Mock (front-end prototype, mock data, no real backend)
 - ❌ Not Implemented
@@ -14,7 +15,7 @@ Status legend:
 1. **User Login** – Login form & auth context
    - **Status**: ✅ Implemented (real API + DB-backed credentials, E2E tested; profile data still mocked on client)
 2. **Role-Based Access Control** – role-aware menus
-   - **Status**: ✅ Implemented 
+   - **Status**: ✅ Implemented
 3. **View Personal Profile** – self profile view
    - **Status**: ✅ Implemented
 4. **Update Password** – change password flow
@@ -33,7 +34,7 @@ Status legend:
 4. **Edit user details** – update contact/role information
    - **Status**: ✅ Implemented
 5. **Delete a user** – remove users
-   - **Status**:  ✅ Implemented
+   - **Status**: ✅ Implemented
 6. **Role-based access to user management** – restrict admin page access
    - **Status**: ✅ Implemented
 
@@ -123,7 +124,8 @@ Status legend:
 ### Preferences & Analytics
 
 7–10. Notification settings, templates, analytics, history
-   - **Status**: ❌ Not Implemented
+
+- **Status**: ❌ Not Implemented
 
 ---
 
@@ -165,7 +167,7 @@ All these stories depend on dedicated tables and admin UIs; currently only envir
    - **Status**: ✅ Implemented (frontend)
 2. **Secondary Language (Castellano)** – switch + translations
    - **Status**: 🟡 Partially (mechanism implemented; content completeness may vary)
-3–12. Language preferences, translation workflows, analytics, QA
+     3–12. Language preferences, translation workflows, analytics, QA
    - **Status**: ❌ Not Implemented (beyond base i18n framework)
 
 ---
@@ -175,4 +177,3 @@ All these stories depend on dedicated tables and admin UIs; currently only envir
 - Back-end API & database models still needed for credits/SEPA, announcements, chat, and society configuration; existing domains (auth, users, reservations, consumptions, products) should continue to be hardened and expanded.
 - Once additional endpoints and tables exist, update each story here from 🟡/❌ toward ✅.
 - Keeping this file in sync with `docs/features/*.md` will provide a clear roadmap and progress tracker.
-

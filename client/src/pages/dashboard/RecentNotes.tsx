@@ -1,15 +1,15 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { FileText, AlertCircle, Megaphone } from 'lucide-react';
-import { Link } from 'wouter';
-import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { useLanguage } from '@/lib/i18n';
-import { Note } from './api';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { FileText, AlertCircle, Megaphone } from "lucide-react";
+import { Link } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
+import { useLanguage } from "@/lib/i18n";
+import { Note } from "./api";
 
 interface RecentNotesProps {
   notes: Note[];
@@ -24,9 +24,7 @@ export function RecentNotes({ notes, loading, error }: RecentNotesProps) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertDescription>
-          {error}
-        </AlertDescription>
+        <AlertDescription>{error}</AlertDescription>
       </Alert>
     );
   }
@@ -34,7 +32,7 @@ export function RecentNotes({ notes, loading, error }: RecentNotesProps) {
   if (loading) {
     return (
       <div className="space-y-3">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3].map(i => (
           <div key={i} className="p-3 rounded-md bg-muted/50 animate-pulse">
             <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
             <div className="h-3 bg-muted rounded w-1/2"></div>
@@ -49,17 +47,17 @@ export function RecentNotes({ notes, loading, error }: RecentNotesProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Megaphone className="h-5 w-5" />
-          {t('announcements')}
+          {t("announcements")}
         </CardTitle>
         <CardDescription>Azken ohar aktiboak</CardDescription>
       </CardHeader>
       <CardContent>
         <TooltipProvider>
           {notes.length === 0 ? (
-            <div className="text-sm text-muted-foreground">{t('noActiveNotes')}</div>
+            <div className="text-sm text-muted-foreground">{t("noActiveNotes")}</div>
           ) : (
             <div className="space-y-3">
-              {notes.map((note) => (
+              {notes.map(note => (
                 <div
                   key={note.id}
                   className="p-3 rounded-md bg-muted/50"
@@ -78,7 +76,7 @@ export function RecentNotes({ notes, loading, error }: RecentNotesProps) {
                         </TooltipContent>
                       </Tooltip>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {format(new Date(note.createdAt), 'PPP', { locale: es })}
+                        {format(new Date(note.createdAt), "PPP", { locale: es })}
                       </p>
                     </div>
                   </div>
@@ -88,7 +86,7 @@ export function RecentNotes({ notes, loading, error }: RecentNotesProps) {
                 <div className="pt-2">
                   <Link href="/oharrak">
                     <Button variant="outline" size="sm" className="w-full">
-                      {t('viewAllNotes')}
+                      {t("viewAllNotes")}
                     </Button>
                   </Link>
                 </div>

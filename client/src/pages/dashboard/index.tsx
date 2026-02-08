@@ -1,14 +1,21 @@
-import { useLanguage } from '@/lib/i18n';
-import { useAuth } from '@/lib/auth';
-import { useState, useEffect } from 'react';
-import { Note, fetchNotes, fetchUpcomingReservations, fetchTotalReservationsCount, UpcomingReservation, fetchDashboardStats, DashboardStats } from './api';
-import { WelcomeHeader } from './WelcomeHeader';
-import { StatsCards } from './StatsCards';
-import { UpcomingReservations } from './UpcomingReservations';
-import { RecentNotes } from './RecentNotes';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertCircle } from 'lucide-react';
-
+import { useLanguage } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
+import { useState, useEffect } from "react";
+import {
+  Note,
+  fetchNotes,
+  fetchUpcomingReservations,
+  fetchTotalReservationsCount,
+  UpcomingReservation,
+  fetchDashboardStats,
+  DashboardStats,
+} from "./api";
+import { WelcomeHeader } from "./WelcomeHeader";
+import { StatsCards } from "./StatsCards";
+import { UpcomingReservations } from "./UpcomingReservations";
+import { RecentNotes } from "./RecentNotes";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 
 export function Dashboard() {
   const { t } = useLanguage();
@@ -34,11 +41,11 @@ export function Dashboard() {
     setLoadingNotes(true);
     setNotesError(null);
     try {
-      const notesData = await fetchNotes(t('language') === 'es' ? 'es' : 'eu');
+      const notesData = await fetchNotes(t("language") === "es" ? "es" : "eu");
       setNotes(notesData);
     } catch (error) {
-      console.error('Error fetching notes:', error);
-      setNotesError('Failed to load notes');
+      console.error("Error fetching notes:", error);
+      setNotesError("Failed to load notes");
       setNotes([]);
     } finally {
       setLoadingNotes(false);
@@ -51,13 +58,13 @@ export function Dashboard() {
     try {
       const [reservationsData, totalCount] = await Promise.all([
         fetchUpcomingReservations(5),
-        fetchTotalReservationsCount()
+        fetchTotalReservationsCount(),
       ]);
       setReservations(reservationsData);
       setTotalReservationsCount(totalCount);
     } catch (error) {
-      console.error('Error fetching reservations:', error);
-      setReservationsError('Failed to load reservations');
+      console.error("Error fetching reservations:", error);
+      setReservationsError("Failed to load reservations");
       setReservations([]);
       setTotalReservationsCount(0);
     } finally {
@@ -72,8 +79,8 @@ export function Dashboard() {
       const statsData = await fetchDashboardStats(user);
       setStats(statsData);
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
-      setStatsError('Failed to load dashboard statistics');
+      console.error("Error fetching dashboard stats:", error);
+      setStatsError("Failed to load dashboard statistics");
       setStats(null);
     } finally {
       setLoadingStats(false);
@@ -81,11 +88,11 @@ export function Dashboard() {
   };
 
   const eventTypeLabels: Record<string, string> = {
-    hamaiketako: t('hamaiketakoa'),
-    bazkaria: t('bazkaria'),
-    askaria: t('askaria'),
-    afaria: t('afaria'),
-    urtebetetzea: t('birthday'),
+    hamaiketako: t("hamaiketakoa"),
+    bazkaria: t("bazkaria"),
+    askaria: t("askaria"),
+    afaria: t("afaria"),
+    urtebetetzea: t("birthday"),
   };
 
   return (
@@ -95,9 +102,7 @@ export function Dashboard() {
       {statsError ? (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            {statsError}
-          </AlertDescription>
+          <AlertDescription>{statsError}</AlertDescription>
         </Alert>
       ) : (
         <StatsCards stats={stats} loading={loadingStats} />
@@ -107,15 +112,13 @@ export function Dashboard() {
         {reservationsError ? (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {reservationsError}
-            </AlertDescription>
+            <AlertDescription>{reservationsError}</AlertDescription>
           </Alert>
         ) : (
-          <UpcomingReservations 
-            reservations={reservations} 
+          <UpcomingReservations
+            reservations={reservations}
             totalCount={totalReservationsCount}
-            eventTypeLabels={eventTypeLabels} 
+            eventTypeLabels={eventTypeLabels}
             loading={loadingReservations}
           />
         )}

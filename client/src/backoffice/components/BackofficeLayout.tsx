@@ -1,8 +1,8 @@
-import { ReactNode } from 'react';
-import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { BackofficeSidebar } from './BackofficeSidebar';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { ThemeToggle } from '@/components/ThemeToggle';
+import { ReactNode } from "react";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { BackofficeSidebar } from "./BackofficeSidebar";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 interface BackofficeLayoutProps {
   children: ReactNode;
@@ -26,9 +26,7 @@ export function BackofficeLayout({ children }: BackofficeLayoutProps) {
               <ThemeToggle />
             </div>
           </header>
-          <main className="flex-1 overflow-auto">
-            {children}
-          </main>
+          <main className="flex-1 overflow-auto">{children}</main>
         </SidebarInset>
       </div>
     </SidebarProvider>

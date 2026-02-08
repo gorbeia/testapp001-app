@@ -1,2 +1,2 @@
-export { BackofficeSidebar } from './BackofficeSidebar';
-export { BackofficeLayout } from './BackofficeLayout';
+export { BackofficeSidebar } from "./BackofficeSidebar";
+export { BackofficeLayout } from "./BackofficeLayout";

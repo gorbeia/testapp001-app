@@ -127,7 +127,6 @@ ALTER SCHEMA public OWNER TO guretxokoa_user;
 "
 ```
 
-
 ```bash
 # Seed database with initial data (optional)
 pnpm db:seed
@@ -157,6 +156,7 @@ pnpm start
 ### 9. Verify Installation
 
 Open your web browser and navigate to:
+
 - **Application**: http://YOUR_SERVER_IP:3000
 - **API Endpoints**: http://YOUR_SERVER_IP:3000/api
 
@@ -166,15 +166,15 @@ Replace `YOUR_SERVER_IP` with your server's public IP address or domain name.
 
 After seeding, you can use these demo accounts:
 
-| Email | Password | Role |
-|-------|----------|------|
-| admin@txokoa.eus | demo | Administrator |
-| diruzaina@txokoa.eus | demo | Treasurer |
-| sotolaria@txokoa.eus | demo | CellarSotolaria Distinct |
-|. bazkidea@职员 | demo | . Member |
- . laguna kost | demo |.
-| lagunaarca.eusH | demo |.
-| Friend |
+| Email                | Password | Role                     |
+| -------------------- | -------- | ------------------------ |
+| admin@txokoa.eus     | demo     | Administrator            |
+| diruzaina@txokoa.eus | demo     | Treasurer                |
+| sotolaria@txokoa.eus | demo     | CellarSotolaria Distinct |
+| . bazkidea@职员      | demo     | . Member                 |
+| . laguna kost        | demo     | .                        |
+| lagunaarca.eusH      | demo     | .                        |
+| Friend               |
 
 **Society ID**: Use `GT001` for the login form.
 
@@ -216,28 +216,30 @@ Add the following configuration:
 
 ```javascript
 module.exports = {
-  apps: [{
-    name: 'guretxokoa',
-    script: 'dist/index.cjs',
-    instances: 'max', // Use all available CPU cores
-    exec_mode: 'cluster',
-    env: {
-      NODE_ENV: 'development',
-      PORT: 3000
+  apps: [
+    {
+      name: "guretxokoa",
+      script: "dist/index.cjs",
+      instances: "max", // Use all available CPU cores
+      exec_mode: "cluster",
+      env: {
+        NODE_ENV: "development",
+        PORT: 3000,
+      },
+      env_production: {
+        NODE_ENV: "production",
+        PORT: 3000,
+      },
+      error_file: "./logs/err.log",
+      out_file: "./logs/out.log",
+      log_file: "./logs/combined.log",
+      time: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: "1G",
+      node_args: "--max-old-space-size=1024",
     },
-    env_production: {
-      NODE_ENV: 'production',
-      PORT: 3000
-    },
-    error_file: './logs/err.log',
-    out_file: './logs/out.log',
-    log_file: './logs/combined.log',
-    time: true,
-    autorestart: true,
-    watch: false,
-    max_memory_restart: '1G',
-    node_args: '--max-old-space-size=1024'
-  }]
+  ],
 };
 ```
 
@@ -368,7 +370,7 @@ Add the following configuration:
 server {
     listen 80;
     server_name your-domain.com www.your-domain.com;
-    
+
     # Redirect all HTTP traffic to HTTPS
     return 301 https://$server_name$request_uri;
 }
@@ -381,7 +383,7 @@ server {
     # SSL Configuration (after obtaining certificates)
     ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
-    
+
     # SSL Settings
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384;
@@ -406,7 +408,7 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
-        
+
         # Timeouts
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
@@ -467,6 +469,7 @@ Add this line for auto-renewal:
 ```
 
 After SSL setup, your Nginx configuration will automatically handle:
+
 - **Port 80**: HTTP traffic redirected to HTTPS
 - **Port 443**: HTTPS traffic to your application
 - **SSL certificates**: Automatically renewed
@@ -477,15 +480,17 @@ After SSL setup, your Nginx configuration will automatically handle:
 ### Common Issues
 
 1. **Database Connection Error**
+
    ```bash
    # Check PostgreSQL status
    sudo systemctl status postgresql
-   
+
    # Check if database exists
    sudo -u postgres psql -l
    ```
 
 2. **Permission Denied**
+
    ```bash
    # Fix file permissions
    sudo chown -R $USER:$USER /path/to/testapp001-app
@@ -493,19 +498,21 @@ After SSL setup, your Nginx configuration will automatically handle:
    ```
 
 3. **Port Already in Use**
+
    ```bash
    # Check what's using port 3000
    sudo lsof -i :3000
-   
+
    # Kill the process
    sudo kill -9 <PID>
    ```
 
 4. **Node.js Version Issues**
+
    ```bash
    # Check Node.js version
    node --version
-   
+
    # Should be v20.x or higher
    ```
 
@@ -544,6 +551,7 @@ tar -czf app_backup_$(date +%Y%m%d).tar.gz /path/to/testapp001-app
 ## Support
 
 For issues and support:
+
 - Check the application logs for error messages
 - Verify all configuration settings
 - Ensure all services are running

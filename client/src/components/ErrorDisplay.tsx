@@ -1,5 +1,5 @@
-import { Button } from '@/components/ui/button';
-import { useLanguage } from '@/lib/i18n';
+import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/lib/i18n";
 
 interface ErrorDisplayProps {
   error: Error;
@@ -21,9 +21,11 @@ export function ErrorDisplay({ error, onRetry, className = "" }: ErrorDisplayPro
   return (
     <div className={`p-4 sm:p-6 ${className}`}>
       <div className="text-center py-12">
-        <p className="text-destructive">{t('error')}: {error.message}</p>
+        <p className="text-destructive">
+          {t("error")}: {error.message}
+        </p>
         <Button onClick={handleRetry} variant="outline" className="mt-4">
-          {t('tryAgain') || 'Try Again'}
+          {t("tryAgain") || "Try Again"}
         </Button>
       </div>
     </div>

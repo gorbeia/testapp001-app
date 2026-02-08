@@ -5,11 +5,13 @@
 ## Epic: Table and Equipment Reservations
 
 ### Story 1: Create Reservation
+
 **As a** Bazkidea or Laguna  
 **I want to** reserve tables and kitchen equipment  
-**So that** I can organize events and ensure availability  
+**So that** I can organize events and ensure availability
 
 **Acceptance Criteria:**
+
 - List view (table) of upcoming reservations; no calendar UI
 - Button to open a form for a new reservation
 - Select table(s) for reservation
@@ -21,11 +23,13 @@
 - Event-day consumptions are **not** logged within the reservation flow; they are recorded later as standard consumptions (bar tab) with no special “event consumption” feature.
 
 ### Story 2: View My Reservations
+
 **As a** Bazkidea or Laguna  
 **I want to** see my upcoming and past reservations  
-**So that** I can manage my planned events  
+**So that** I can manage my planned events
 
 **Acceptance Criteria:**
+
 - List of current/future reservations with dates (table view)
 - Historical view of past reservations
 - Ability for the creator to cancel their upcoming reservations (with time limits)
@@ -33,18 +37,21 @@
 - Export personal reservation list (no calendar export)
 
 ### Story 3: Reservation Calendar
+
 **As a** Bazkidea or Laguna  
 **I want to** see a calendar of all reservations  
-**So that** I can plan around existing bookings  
+**So that** I can plan around existing bookings
 
 ## Epic: Reservation Management (Sotolaria/Administratzailea)
 
 ### Story 4: Manage All Reservations
+
 **As a** Sotolaria or Administratzailea  
 **I want to** view and manage all reservations  
-**So that** I can coordinate resources and resolve conflicts  
+**So that** I can coordinate resources and resolve conflicts
 
 **Acceptance Criteria:**
+
 - Complete reservation list with all users
 - Ability to modify or cancel any reservation
 - Conflict detection and resolution tools
@@ -52,11 +59,13 @@
 - Export reservation reports by date range
 
 ### Story 5: Resource Configuration
+
 **As an** Administratzailea  
 **I want to** configure available resources and pricing  
-**So that** the reservation system reflects actual capacity  
+**So that** the reservation system reflects actual capacity
 
 **Acceptance Criteria:**
+
 - Define table types and quantities
 - Configure kitchen equipment inventory
 - Set pricing for different resources
@@ -66,22 +75,26 @@
 ## Epic: Reservation Costs
 
 ### Story 6: Cost Calculation
+
 **As a** Bazkidea or Laguna  
 **I want to** see the costs associated with my reservation  
-**So that** I can understand the financial commitment  
+**So that** I can understand the financial commitment
 
 **Acceptance Criteria:**
+
 - Real-time cost calculation during reservation
 - Breakdown of costs by resource (tables, equipment, event type)
 - Total cost display before confirmation
 - Receipt generation after reservation
 
 ### Story 7: Cost Integration with Credits
+
 **As a** system  
 **I want to** automatically charge reservation costs to the responsible Bazkidea  
-**So that** accounting is accurate and automated  
+**So that** accounting is accurate and automated
 
 **Acceptance Criteria:**
+
 - Automatic charge to Bazkidea's credit account
 - Clear indication of cost responsibility
 - Integration with Zorrak (credits) system

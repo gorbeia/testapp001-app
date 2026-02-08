@@ -44,7 +44,7 @@ async function buildAll() {
     ...Object.keys(pkg.dependencies || {}),
     ...Object.keys(pkg.devDependencies || {}),
   ];
-  const externals = allDeps.filter((dep) => !allowlist.includes(dep));
+  const externals = allDeps.filter(dep => !allowlist.includes(dep));
 
   await esbuild({
     entryPoints: ["server/index.ts"],
@@ -61,7 +61,7 @@ async function buildAll() {
   });
 }
 
-buildAll().catch((err) => {
+buildAll().catch(err => {
   console.error(err);
   process.exit(1);
 });

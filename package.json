@@ -19,7 +19,9 @@
     "test:e2e:only": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js e2e/features/**/*.feature --import e2e/steps/**/*.ts --format progress --tags '@only'",
     "docker:db:up": "docker-compose up -d db",
     "docker:db:down": "docker-compose down",
-    "docker:db:reset": "docker-compose down -v && docker-compose up -d db"
+    "docker:db:reset": "docker-compose down -v && docker-compose up -d db",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -121,6 +123,7 @@
     "nodemon": "^3.1.11",
     "playwright": "^1.57.0",
     "postcss": "^8.4.47",
+    "prettier": "^3.8.1",
     "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",

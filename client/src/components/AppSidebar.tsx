@@ -1,5 +1,5 @@
-import { useLocation, Link } from 'wouter';
-import { useEffect, useState } from 'react';
+import { useLocation, Link } from "wouter";
+import { useEffect, useState } from "react";
 import {
   Calendar,
   ShoppingCart,
@@ -15,7 +15,7 @@ import {
   Table as TableIcon,
   CreditCard as SubscriptionIcon,
   Palette,
-} from 'lucide-react';
+} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -28,12 +28,12 @@ import {
   SidebarHeader,
   SidebarFooter,
   useSidebar,
-} from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { useLanguage } from '@/lib/i18n';
-import { useAuth, hasAdminAccess, hasTreasurerAccess, hasCellarmanAccess } from '@/lib/auth';
-import { authFetch } from '@/lib/api';
+} from "@/components/ui/sidebar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/lib/i18n";
+import { useAuth, hasAdminAccess, hasTreasurerAccess, hasCellarmanAccess } from "@/lib/auth";
+import { authFetch } from "@/lib/api";
 
 export function AppSidebar() {
   const { t } = useLanguage();
@@ -45,15 +45,15 @@ export function AppSidebar() {
   useEffect(() => {
     const loadSociety = async () => {
       try {
-        const response = await authFetch('/api/societies/user');
+        const response = await authFetch("/api/societies/user");
         if (response.ok) {
           const data = await response.json();
-          if (data && typeof data.name === 'string') {
+          if (data && typeof data.name === "string") {
             setSocietyName(data.name);
           }
         }
       } catch (error) {
-        console.error('Error loading society for sidebar:', error);
+        console.error("Error loading society for sidebar:", error);
       }
     };
 
@@ -68,57 +68,81 @@ export function AppSidebar() {
   };
 
   const getRoleBadgeVariant = () => {
-    if (!user) return 'secondary';
+    if (!user) return "secondary";
     switch (user.function) {
-      case 'administratzailea': return 'default';
-      case 'diruzaina': return 'default';
-      case 'sotolaria': return 'default';
-      default: return 'secondary';
+      case "administratzailea":
+        return "default";
+      case "diruzaina":
+        return "default";
+      case "sotolaria":
+        return "default";
+      default:
+        return "secondary";
     }
   };
 
   const getRoleLabel = () => {
-    if (!user) return '';
-    if (user.role === 'laguna') return t('companion');
+    if (!user) return "";
+    if (user.role === "laguna") return t("companion");
     switch (user.function) {
-      case 'administratzailea': return t('administrator');
-      case 'diruzaina': return t('treasurer');
-      case 'sotolaria': return t('cellarman');
-      default: return t('member');
+      case "administratzailea":
+        return t("administrator");
+      case "diruzaina":
+        return t("treasurer");
+      case "sotolaria":
+        return t("cellarman");
+      default:
+        return t("member");
     }
   };
 
   const menuItems = [
-    { title: t('dashboard'), url: '/', icon: Home },
-    { title: t('consumptions'), url: '/kontsumoak', icon: ShoppingCart },
-    { title: t('reservations'), url: '/erreserbak', icon: Calendar },
-    { title: t('myReservations'), url: '/nire-erreserbak', icon: Calendar },
-    { title: t('myConsumptions'), url: '/nire-konsumoak', icon: Receipt },
-    { title: t('credits'), url: '/nire-zorrak', icon: CreditCard },
-    { title: t('announcements'), url: '/oharrak', icon: Megaphone },
+    { title: t("dashboard"), url: "/", icon: Home },
+    { title: t("consumptions"), url: "/kontsumoak", icon: ShoppingCart },
+    { title: t("reservations"), url: "/erreserbak", icon: Calendar },
+    { title: t("myReservations"), url: "/nire-erreserbak", icon: Calendar },
+    { title: t("myConsumptions"), url: "/nire-konsumoak", icon: Receipt },
+    { title: t("credits"), url: "/nire-zorrak", icon: CreditCard },
+    { title: t("announcements"), url: "/oharrak", icon: Megaphone },
   ];
 
   const adminMenuItems = [
-    ...(hasAdminAccess(user) ? [{ title: t('users'), url: '/erabiltzaileak', icon: Users }] : []),
-    ...(hasAdminAccess(user) ? [{ title: t('reservationsManagement'), url: '/admin-erreserbak', icon: Calendar }] : []),
-    ...(hasAdminAccess(user) ? [{ title: t('consumptionList'), url: '/kontsumoak-zerrenda', icon: Receipt }] : []),
-    ...(hasAdminAccess(user) ? [{ title: t('adminCredits'), url: '/zorrak', icon: CreditCard }] : []),
-    ...(hasCellarmanAccess(user) ? [{ title: t('products'), url: '/produktuak', icon: Package }] : []),
-    ...(hasTreasurerAccess(user) ? [{ title: t('sepaExport'), url: '/sepa', icon: FileSpreadsheet }] : []),
+    ...(hasAdminAccess(user) ? [{ title: t("users"), url: "/erabiltzaileak", icon: Users }] : []),
+    ...(hasAdminAccess(user)
+      ? [{ title: t("reservationsManagement"), url: "/admin-erreserbak", icon: Calendar }]
+      : []),
+    ...(hasAdminAccess(user)
+      ? [{ title: t("consumptionList"), url: "/kontsumoak-zerrenda", icon: Receipt }]
+      : []),
+    ...(hasAdminAccess(user)
+      ? [{ title: t("adminCredits"), url: "/zorrak", icon: CreditCard }]
+      : []),
+    ...(hasCellarmanAccess(user)
+      ? [{ title: t("products"), url: "/produktuak", icon: Package }]
+      : []),
+    ...(hasTreasurerAccess(user)
+      ? [{ title: t("sepaExport"), url: "/sepa", icon: FileSpreadsheet }]
+      : []),
   ];
 
   const configMenuItems = [
-    ...(hasAdminAccess(user) ? [{ title: t('tables'), url: '/mahaiak', icon: TableIcon }] : []),
-    ...(hasAdminAccess(user) ? [{ title: t('productCategories'), url: '/kategoriak', icon: Palette }] : []),
-    ...(hasAdminAccess(user) ? [{ title: t('subscriptionTypes'), url: '/subscriptions', icon: SubscriptionIcon }] : []),
-    ...(hasTreasurerAccess(user) ? [{ title: t('society'), url: '/elkartea', icon: Building2 }] : []),
+    ...(hasAdminAccess(user) ? [{ title: t("tables"), url: "/mahaiak", icon: TableIcon }] : []),
+    ...(hasAdminAccess(user)
+      ? [{ title: t("productCategories"), url: "/kategoriak", icon: Palette }]
+      : []),
+    ...(hasAdminAccess(user)
+      ? [{ title: t("subscriptionTypes"), url: "/subscriptions", icon: SubscriptionIcon }]
+      : []),
+    ...(hasTreasurerAccess(user)
+      ? [{ title: t("society"), url: "/elkartea", icon: Building2 }]
+      : []),
   ];
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
+      .split(" ")
+      .map(n => n[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -131,7 +155,7 @@ export function AppSidebar() {
             <span className="text-primary-foreground font-bold text-sm">GT</span>
           </div>
           <div>
-            <h1 className="font-semibold text-sm">{societyName || t('appName')}</h1>
+            <h1 className="font-semibold text-sm">{societyName || t("appName")}</h1>
             <p className="text-xs text-muted-foreground">Sociedad Gastronómica</p>
           </div>
         </div>
@@ -139,15 +163,15 @@ export function AppSidebar() {
 
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>{t('menu')}</SidebarGroupLabel>
+          <SidebarGroupLabel>{t("menu")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item: any) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
-                    <Link 
-                      href={item.url} 
-                      data-testid={`link-${item.url.replace('/', '') || 'home'}`}
+                    <Link
+                      href={item.url}
+                      data-testid={`link-${item.url.replace("/", "") || "home"}`}
                       onClick={() => handleNavigation(item.url)}
                     >
                       <item.icon className="h-4 w-4" />
@@ -162,15 +186,15 @@ export function AppSidebar() {
 
         {adminMenuItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>{t('management')}</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("management")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {adminMenuItems.map((item) => (
+                {adminMenuItems.map(item => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild isActive={location === item.url}>
-                      <Link 
-                        href={item.url} 
-                        data-testid={`link-${item.url.replace('/', '')}`}
+                      <Link
+                        href={item.url}
+                        data-testid={`link-${item.url.replace("/", "")}`}
                         onClick={() => handleNavigation(item.url)}
                       >
                         <item.icon className="h-4 w-4" />
@@ -186,15 +210,15 @@ export function AppSidebar() {
 
         {configMenuItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel>{t('configuration')}</SidebarGroupLabel>
+            <SidebarGroupLabel>{t("configuration")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {configMenuItems.map((item) => (
+                {configMenuItems.map(item => (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild isActive={location === item.url}>
-                      <Link 
-                        href={item.url} 
-                        data-testid={`link-${item.url.replace('/', '')}`}
+                      <Link
+                        href={item.url}
+                        data-testid={`link-${item.url.replace("/", "")}`}
                         onClick={() => handleNavigation(item.url)}
                       >
                         <item.icon className="h-4 w-4" />
@@ -212,11 +236,11 @@ export function AppSidebar() {
       <SidebarFooter className="p-4 border-t">
         {user && (
           <div className="flex items-center gap-3">
-            <Link 
-              href="/profila" 
-              className="flex items-center gap-3 flex-1 min-w-0 hover-elevate active-elevate-2 rounded-md p-1 -m-1" 
+            <Link
+              href="/profila"
+              className="flex items-center gap-3 flex-1 min-w-0 hover-elevate active-elevate-2 rounded-md p-1 -m-1"
               data-testid="link-profile"
-              onClick={() => handleNavigation('/profila')}
+              onClick={() => handleNavigation("/profila")}
             >
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="text-xs bg-accent">

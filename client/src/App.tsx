@@ -7,18 +7,18 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { useAuth } from '@/lib/auth';
+import { useAuth } from "@/lib/auth";
 import { LoginForm } from "@/components/LoginForm";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { Dashboard } from '@/pages/dashboard';
+import { Dashboard } from "@/pages/dashboard";
 import { ReservationsPage } from "@/pages/ReservationsPage";
 import { AdminReservationsPage } from "@/pages/AdminReservationsPage";
 import { ConsumptionsPage } from "@/pages/ConsumptionsPage";
 import { ConsumptionsListPage } from "@/pages/ConsumptionsListPage";
-import { MyConsumptionsPage } from '@/pages/MyConsumptionsPage';
-import { MyReservationsPage } from '@/pages/MyReservationsPage';
+import { MyConsumptionsPage } from "@/pages/MyConsumptionsPage";
+import { MyReservationsPage } from "@/pages/MyReservationsPage";
 import { CreditsPage } from "@/pages/CreditsPage";
 import { MyDebtsPage } from "@/pages/MyDebtsPage";
 import { UsersPage } from "@/pages/UsersPage";
@@ -139,23 +139,32 @@ function AuthenticatedApp() {
     if (location === "/elkarteapp/kudeaketa/login") {
       return <SuperAdminLoginPage />;
     }
-    
+
     // Redirect base URL to societies page
     if (location === "/elkarteapp/kudeaketa") {
-      return <BackofficeLayout>
-        <Switch>
-          <Route path="/elkarteapp/kudeaketa" component={BackofficeSocietiesPage} />
-        </Switch>
-      </BackofficeLayout>;
+      return (
+        <BackofficeLayout>
+          <Switch>
+            <Route path="/elkarteapp/kudeaketa" component={BackofficeSocietiesPage} />
+          </Switch>
+        </BackofficeLayout>
+      );
     }
-    
+
     // All other backoffice routes use the backoffice layout
     return (
       <BackofficeLayout>
         <Switch>
           <Route path="/elkarteapp/kudeaketa/societies" component={BackofficeSocietiesPage} />
           <Route path="/elkarteapp/kudeaketa/superadmins" component={BackofficeSuperadminsPage} />
-          <Route component={() => <div className="p-8"><h1>Page Not Found</h1><p>The requested backoffice page does not exist.</p></div>} />
+          <Route
+            component={() => (
+              <div className="p-8">
+                <h1>Page Not Found</h1>
+                <p>The requested backoffice page does not exist.</p>
+              </div>
+            )}
+          />
         </Switch>
       </BackofficeLayout>
     );

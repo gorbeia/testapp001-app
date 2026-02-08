@@ -7,9 +7,9 @@ import type { User } from "../../shared/schema";
 import { i18nMiddleware } from "../lib/i18n";
 
 // JWT Configuration
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
-const JWT_EXPIRES_IN = '15m'; // Reduced to 15 minutes for better security
-const REFRESH_TOKEN_EXPIRES_IN = '7d'; // Refresh token lasts longer
+const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key-change-in-production";
+const JWT_EXPIRES_IN = "15m"; // Reduced to 15 minutes for better security
+const REFRESH_TOKEN_EXPIRES_IN = "7d"; // Refresh token lasts longer
 
 // JWT Functions
 export const generateToken = (user: User) => {
@@ -23,26 +23,26 @@ const generateRefreshToken = (user: User) => {
 };
 
 export const setAuthCookie = (res: Response, token: string) => {
-  res.cookie('auth-token', token, {
-    httpOnly: true,    // Prevent XSS
-    secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-    sameSite: 'strict', // Prevent CSRF
-    maxAge: 15 * 60 * 1000 // 15 minutes (matches JWT_EXPIRES_IN)
+  res.cookie("auth-token", token, {
+    httpOnly: true, // Prevent XSS
+    secure: process.env.NODE_ENV === "production", // HTTPS only in production
+    sameSite: "strict", // Prevent CSRF
+    maxAge: 15 * 60 * 1000, // 15 minutes (matches JWT_EXPIRES_IN)
   });
 };
 
 const setRefreshCookie = (res: Response, refreshToken: string) => {
-  res.cookie('refresh-token', refreshToken, {
+  res.cookie("refresh-token", refreshToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days (matches REFRESH_TOKEN_EXPIRES_IN)
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (matches REFRESH_TOKEN_EXPIRES_IN)
   });
 };
 
 const clearAuthCookie = (res: Response) => {
-  res.clearCookie('auth-token');
-  res.clearCookie('refresh-token');
+  res.clearCookie("auth-token");
+  res.clearCookie("refresh-token");
 };
 
 const verifyToken = (token: string): User | null => {
@@ -55,22 +55,22 @@ const verifyToken = (token: string): User | null => {
 
 // Access control helpers
 const hasTreasurerAccess = (user: User): boolean => {
-  return user.function === 'diruzaina' || user.function === 'administratzailea';
+  return user.function === "diruzaina" || user.function === "administratzailea";
 };
 
 // No-cache middleware for sensitive endpoints
 const noCache = (req: Request, res: Response, next: NextFunction) => {
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
+  res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
   next();
 };
 
 // JWT Authentication middleware
 const sessionMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Try to get token from cookie first, then from Authorization header
-  const token = req.cookies?.['auth-token'] || req.headers.authorization?.replace('Bearer ', '');
-  
+  const token = req.cookies?.["auth-token"] || req.headers.authorization?.replace("Bearer ", "");
+
   if (!token) {
     return next();
   }
@@ -81,9 +81,9 @@ const sessionMiddleware = (req: Request, res: Response, next: NextFunction) => {
       req.user = user;
     }
   } catch (error) {
-    console.error('JWT verification error:', error);
+    console.error("JWT verification error:", error);
   }
-  
+
   next();
 };
 
@@ -101,7 +101,7 @@ declare global {
 // Helper function to get society ID from JWT (no DB query needed)
 export const getUserSocietyId = (user: User): string => {
   if (!user.societyId) {
-    throw new Error('User societyId not found in JWT');
+    throw new Error("User societyId not found in JWT");
   }
   return user.societyId;
 };
@@ -120,10 +120,7 @@ import { registerSubscriptionRoutes } from "./subscriptions";
 import { registerCategoryRoutes } from "./categories";
 import { registerBackofficeRoutes, backofficeSessionMiddleware } from "./backoffice";
 
-export async function registerRoutes(
-  httpServer: Server,
-  app: Express
-): Promise<Server> {
+export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   // Apply session middleware to all routes
   app.use(sessionMiddleware);
   // Apply backoffice session middleware to all routes (independent)
@@ -135,37 +132,37 @@ export async function registerRoutes(
 
   // Register table routes
   registerTableRoutes(app);
-  
+
   // Register note routes
   registerNoteRoutes(app);
-  
+
   // Register notification routes
   registerNotificationRoutes(app);
-  
+
   // Register product routes
   registerProductRoutes(app);
-  
+
   // Register consumption routes
   registerConsumptionRoutes(app);
-  
+
   // Register reservation routes
   registerReservationRoutes(app);
-  
+
   // Register SEPA routes
   registerSepaRoutes(app);
-  
+
   // Register debt routes
   registerDebtRoutes(app);
-  
+
   // Register society routes
   registerSocietyRoutes(app);
-  
+
   // Register user routes
   registerUserRoutes(app);
-  
+
   // Register subscription routes
   registerSubscriptionRoutes(app);
-  
+
   // Register category routes
   registerCategoryRoutes(app);
 
@@ -175,7 +172,11 @@ export async function registerRoutes(
   // Authentication: login using database-backed users table
   app.post("/api/login", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, password, societyId } = req.body as { email?: string; password?: string; societyId?: string };
+      const { email, password, societyId } = req.body as {
+        email?: string;
+        password?: string;
+        societyId?: string;
+      };
 
       if (!email || !password || !societyId) {
         return res.status(400).json({ message: "Email, password, and society ID are required" });
@@ -205,7 +206,7 @@ export async function registerRoutes(
 
       // Check if password is hashed (starts with $2b$) or plain text
       let passwordValid = false;
-      if (dbUser.password.startsWith('$2b$')) {
+      if (dbUser.password.startsWith("$2b$")) {
         // Hashed password - use bcrypt compare
         passwordValid = await bcrypt.compare(password, dbUser.password);
       } else {
@@ -222,13 +223,13 @@ export async function registerRoutes(
       const refreshToken = generateRefreshToken(dbUser);
       setAuthCookie(res, token);
       setRefreshCookie(res, refreshToken);
-      
+
       // Return user data and token (for backward compatibility)
       const { password: _, ...userWithoutPassword } = dbUser;
-      return res.status(200).json({ 
+      return res.status(200).json({
         user: userWithoutPassword,
         token,
-        expiresIn: JWT_EXPIRES_IN
+        expiresIn: JWT_EXPIRES_IN,
       });
     } catch (err) {
       next(err);
@@ -238,8 +239,8 @@ export async function registerRoutes(
   // Refresh token endpoint
   app.post("/api/refresh", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const refreshToken = req.cookies?.['refresh-token'];
-      
+      const refreshToken = req.cookies?.["refresh-token"];
+
       if (!refreshToken) {
         return res.status(401).json({ message: "No refresh token provided" });
       }
@@ -267,13 +268,13 @@ export async function registerRoutes(
       // Generate new access token
       const newToken = generateToken(dbUser);
       setAuthCookie(res, newToken);
-      
+
       // Return new token info
       const { password: _, ...userWithoutPassword } = dbUser;
-      return res.status(200).json({ 
+      return res.status(200).json({
         user: userWithoutPassword,
         token: newToken,
-        expiresIn: JWT_EXPIRES_IN
+        expiresIn: JWT_EXPIRES_IN,
       });
     } catch (err) {
       next(err);

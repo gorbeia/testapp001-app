@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 interface PaginationState {
   page: number;
@@ -17,7 +17,7 @@ interface UsePaginationOptions {
 
 export function usePagination(options: UsePaginationOptions = {}) {
   const { initialPage = 1, initialLimit = 25, totalItems = 0 } = options;
-  
+
   const [state, setState] = useState<PaginationState>({
     page: initialPage,
     limit: initialLimit,
@@ -92,28 +92,31 @@ export function usePagination(options: UsePaginationOptions = {}) {
     });
   }, [initialPage, initialLimit]);
 
-  const getPageNumbers = useCallback((maxVisible: number = 5) => {
-    const { page, totalPages } = state;
-    
-    if (totalPages <= maxVisible) {
-      // Show all pages if total is less than or equal to maxVisible
-      return Array.from({ length: totalPages }, (_, i) => i + 1);
-    }
-    
-    if (page <= Math.floor(maxVisible / 2)) {
-      // Show first maxVisible pages when current page is near the beginning
-      return Array.from({ length: maxVisible }, (_, i) => i + 1);
-    }
-    
-    if (page >= totalPages - Math.floor(maxVisible / 2)) {
-      // Show last maxVisible pages when current page is near the end
-      return Array.from({ length: maxVisible }, (_, i) => totalPages - maxVisible + 1 + i);
-    }
-    
-    // Show pages centered around current page
-    const startPage = page - Math.floor(maxVisible / 2);
-    return Array.from({ length: maxVisible }, (_, i) => startPage + i);
-  }, [state]);
+  const getPageNumbers = useCallback(
+    (maxVisible: number = 5) => {
+      const { page, totalPages } = state;
+
+      if (totalPages <= maxVisible) {
+        // Show all pages if total is less than or equal to maxVisible
+        return Array.from({ length: totalPages }, (_, i) => i + 1);
+      }
+
+      if (page <= Math.floor(maxVisible / 2)) {
+        // Show first maxVisible pages when current page is near the beginning
+        return Array.from({ length: maxVisible }, (_, i) => i + 1);
+      }
+
+      if (page >= totalPages - Math.floor(maxVisible / 2)) {
+        // Show last maxVisible pages when current page is near the end
+        return Array.from({ length: maxVisible }, (_, i) => totalPages - maxVisible + 1 + i);
+      }
+
+      // Show pages centered around current page
+      const startPage = page - Math.floor(maxVisible / 2);
+      return Array.from({ length: maxVisible }, (_, i) => startPage + i);
+    },
+    [state]
+  );
 
   return {
     ...state,

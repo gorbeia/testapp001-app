@@ -17,22 +17,22 @@ interface SepaConfig {
 
 export class SepaDirectDebitGenerator {
   private config: SepaConfig;
-  
+
   constructor(config: SepaConfig) {
     this.config = config;
   }
 
   generateXML(debits: SepaDebit[], executionDate: Date): string {
     const selectedDebits = debits.filter(d => d.selected && d.iban);
-    
+
     if (selectedDebits.length === 0) {
-      throw new Error('No valid debits selected for SEPA export');
+      throw new Error("No valid debits selected for SEPA export");
     }
 
     const totalAmount = selectedDebits.reduce((sum, debit) => sum + debit.amount, 0);
     const paymentId = this.generatePaymentId();
     const messageId = this.generateMessageId();
-    
+
     const xml = this.createXMLStructure({
       messageId,
       creationDate: new Date(),
@@ -40,7 +40,7 @@ export class SepaDirectDebitGenerator {
       totalAmount,
       executionDate,
       paymentId,
-      debits: selectedDebits
+      debits: selectedDebits,
     });
 
     return xml;
@@ -62,7 +62,7 @@ export class SepaDirectDebitGenerator {
       totalAmount,
       executionDate,
       paymentId,
-      debits
+      debits,
     } = data;
 
     return `<?xml version="1.0" encoding="UTF-8"?>
@@ -119,11 +119,11 @@ export class SepaDirectDebitGenerator {
       </CdtrAcct>
       <CdtrAgt>
         <FinInstnId>
-          ${this.config.creditorBIC ? `<BIC>${this.config.creditorBIC}</BIC>` : ''}
+          ${this.config.creditorBIC ? `<BIC>${this.config.creditorBIC}</BIC>` : ""}
         </FinInstnId>
       </CdtrAgt>
       <ChrgBr>SHAR</ChrgBr>
-      ${debits.map(debit => this.createDirectDebitTransaction(debit)).join('\n      ')}
+      ${debits.map(debit => this.createDirectDebitTransaction(debit)).join("\n      ")}
     </PmtInf>
   </CstmrDrctDbtInitn>
 </Document>`;
@@ -132,7 +132,7 @@ export class SepaDirectDebitGenerator {
   private createDirectDebitTransaction(debit: SepaDebit): string {
     const endToEndId = this.generateEndToEndId(debit);
     const mandateId = this.generateMandateId(debit);
-    
+
     return `
 <DrctDbtTxInf>
   <PmtId>
@@ -142,7 +142,7 @@ export class SepaDirectDebitGenerator {
   <DrctDbtTx>
     <MndtRltdInf>
       <MndtId>${mandateId}</MndtId>
-      <DtOfSgntr>${this.formatDate(new Date('2023-01-01'))}</DtOfSgntr>
+      <DtOfSgntr>${this.formatDate(new Date("2023-01-01"))}</DtOfSgntr>
       <AmdmntInd>false</AmdmntInd>
     </MndtRltdInf>
   </DrctDbtTx>
@@ -171,11 +171,11 @@ export class SepaDirectDebitGenerator {
   }
 
   private formatDateTime(date: Date): string {
-    return date.toISOString().replace('Z', '');
+    return date.toISOString().replace("Z", "");
   }
 
   private formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
   }
 
   private formatAmount(amount: number): string {
@@ -184,11 +184,11 @@ export class SepaDirectDebitGenerator {
 
   private escapeXml(text: string): string {
     return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   private generateMessageId(): string {
@@ -215,39 +215,39 @@ export class SepaDirectDebitGenerator {
     // This is a simplified BIC extraction
     // In a real implementation, you would use a BIC lookup service or bank code mapping
     const spanishBanks: { [key: string]: string } = {
-      '2100': 'BSCHESMM',
-      '0049': 'BSCHESMM',
-      '0182': 'BBVAESMM',
-      '0075': 'POPUESMM',
-      '0081': 'SABDESMM',
-      '0061': 'BKEAESMM',
-      '0128': 'BANKESMM',
-      '0169': 'OPENESMM',
-      '0239': 'CAIXESBB',
-      '1490': 'CAIXESBB',
-      '2038': 'CAIXESBB',
-      '2105': 'CAIXESBB',
-      '2052': 'CAIXESBB',
-      '0030': 'CAIXESBB',
-      '0065': 'CAIXESBB'
+      "2100": "BSCHESMM",
+      "0049": "BSCHESMM",
+      "0182": "BBVAESMM",
+      "0075": "POPUESMM",
+      "0081": "SABDESMM",
+      "0061": "BKEAESMM",
+      "0128": "BANKESMM",
+      "0169": "OPENESMM",
+      "0239": "CAIXESBB",
+      "1490": "CAIXESBB",
+      "2038": "CAIXESBB",
+      "2105": "CAIXESBB",
+      "2052": "CAIXESBB",
+      "0030": "CAIXESBB",
+      "0065": "CAIXESBB",
     };
 
     // Extract bank code from Spanish IBAN (positions 5-9)
-    if (iban && iban.startsWith('ES') && iban.length >= 10) {
+    if (iban && iban.startsWith("ES") && iban.length >= 10) {
       const bankCode = iban.substring(4, 8);
-      return spanishBanks[bankCode] || 'BANKESMM'; // Default to generic bank BIC
+      return spanishBanks[bankCode] || "BANKESMM"; // Default to generic bank BIC
     }
 
-    return 'BANKESMM'; // Default BIC for non-Spanish IBANs or invalid format
+    return "BANKESMM"; // Default BIC for non-Spanish IBANs or invalid format
   }
 
   downloadXML(xml: string, filename?: string): void {
-    const blob = new Blob([xml], { type: 'application/xml;charset=utf-8' });
+    const blob = new Blob([xml], { type: "application/xml;charset=utf-8" });
     const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    
+    const link = document.createElement("a");
+
     link.href = url;
-    link.download = filename || `sepa-direct-debit-${new Date().toISOString().split('T')[0]}.xml`;
+    link.download = filename || `sepa-direct-debit-${new Date().toISOString().split("T")[0]}.xml`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -257,8 +257,8 @@ export class SepaDirectDebitGenerator {
 
 // Default configuration for Gure Txokoa
 export const defaultSepaConfig: SepaConfig = {
-  creditorName: 'Gure Txokoa',
-  creditorIBAN: 'ES45000B12345678', // This should be replaced with actual IBAN
-  creditorId: 'ES45000B12345678',
-  creditorBIC: 'BANKESMM'
+  creditorName: "Gure Txokoa",
+  creditorIBAN: "ES45000B12345678", // This should be replaced with actual IBAN
+  creditorId: "ES45000B12345678",
+  creditorBIC: "BANKESMM",
 };

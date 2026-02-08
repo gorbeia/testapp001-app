@@ -20,7 +20,7 @@ app.use(
     verify: (req, _res, buf) => {
       req.rawBody = buf;
     },
-  }),
+  })
 );
 
 app.use(express.urlencoded({ extended: false }));
@@ -91,7 +91,7 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
-  
+
   const server = httpServer.listen(
     {
       port,
@@ -102,24 +102,24 @@ app.use((req, res, next) => {
       log(`serving on port ${port}`);
       // Run catch-up calculation after server starts
       debtCalculationService.checkAndRunCatchupCalculation();
-    },
+    }
   );
 
   // Graceful shutdown
-  process.on('SIGTERM', () => {
-    log('SIGTERM received, shutting down gracefully');
+  process.on("SIGTERM", () => {
+    log("SIGTERM received, shutting down gracefully");
     debtCalculationService.stopCronJobs();
     server.close(() => {
-      log('Server closed');
+      log("Server closed");
       process.exit(0);
     });
   });
 
-  process.on('SIGINT', () => {
-    log('SIGINT received, shutting down gracefully');
+  process.on("SIGINT", () => {
+    log("SIGINT received, shutting down gracefully");
     debtCalculationService.stopCronJobs();
     server.close(() => {
-      log('Server closed');
+      log("Server closed");
       process.exit(0);
     });
   });

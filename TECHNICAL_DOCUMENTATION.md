@@ -1,11 +1,13 @@
 # Technical Documentation: Elkartearen App
 
 ## 1. Project Overview
+
 **Elkartearen App** is a modern web application built with a full-stack TypeScript architecture, featuring a React frontend and an Express.js backend. The application follows a client-server architecture with a clear separation of concerns.
 
 ## 2. Technology Stack
 
 ### Frontend
+
 - **Framework**: React 18
 - **Build Tool**: Vite
 - **UI Components**: Radix UI Primitives
@@ -19,6 +21,7 @@
 - **Charts**: Recharts
 
 ### Backend
+
 - **Runtime**: Node.js with TypeScript (tsx)
 - **Web Framework**: Express.js
 - **Authentication**: Passport.js with local strategy
@@ -28,6 +31,7 @@
 - **WebSockets**: ws
 
 ### Development Tools
+
 - **Type Checking**: TypeScript 5.6
 - **CSS Processing**: PostCSS with Autoprefixer
 - **Code Formatting**: Prettier
@@ -58,22 +62,26 @@ elkarearen-app/
 ## 4. Key Features
 
 ### Authentication System
+
 - Email/password authentication using Passport.js
 - Session management with secure cookies
 - Protected routes and API endpoints
 
 ### Database Layer
+
 - Type-safe database access with Drizzle ORM
 - PostgreSQL for data persistence
 - Database migrations support
 
 ### Frontend Architecture
+
 - Component-based UI with Radix UI primitives
 - Responsive design with Tailwind CSS
 - Client-side state management with React Query
 - Form handling with validation using React Hook Form and Zod
 
 ### Development Experience
+
 - Hot Module Replacement (HMR) with Vite
 - TypeScript for type safety
 - Environment-based configuration
@@ -81,11 +89,13 @@ elkarearen-app/
 ## 5. Development Setup
 
 ### Prerequisites
+
 - Node.js (v18+ recommended)
 - PostgreSQL (v14+)
 - pnpm (or npm/yarn)
 
 ### Installation
+
 ```bash
 # Install dependencies
 pnpm install
@@ -99,6 +109,7 @@ pnpm dev
 ```
 
 ### Available Scripts
+
 - `dev`: Start development server
 - `build`: Build for production
 - `start`: Start production server
@@ -108,6 +119,7 @@ pnpm dev
 ## 6. Deployment
 
 ### Build Process
+
 ```bash
 # Install dependencies
 pnpm install --production
@@ -120,7 +132,9 @@ pnpm start
 ```
 
 ### Environment Variables
+
 Required environment variables:
+
 ```
 DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 SESSION_SECRET=your-session-secret
@@ -145,12 +159,14 @@ NODE_ENV=production
 ## 9. Testing
 
 ### Unit Tests
+
 ```bash
 # Run unit tests
 pnpm test:unit
 ```
 
 ### Integration Tests
+
 ```bash
 # Run integration tests
 pnpm test:integration

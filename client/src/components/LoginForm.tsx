@@ -1,16 +1,23 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Mail, Lock, LogIn, AlertCircle, Building } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { useLanguage } from '@/lib/i18n';
-import { useAuth } from '@/lib/auth';
-import { LanguageToggle } from './LanguageToggle';
-import { ThemeToggle } from './ThemeToggle';
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Mail, Lock, LogIn, AlertCircle, Building } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useLanguage } from "@/lib/i18n";
+import { useAuth } from "@/lib/auth";
+import { LanguageToggle } from "./LanguageToggle";
+import { ThemeToggle } from "./ThemeToggle";
 
 const loginSchema = z.object({
   societyId: z.string().min(1),
@@ -29,9 +36,9 @@ export function LoginForm() {
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      societyId: 'GT001',
-      email: '',
-      password: '',
+      societyId: "GT001",
+      email: "",
+      password: "",
     },
   });
 
@@ -41,14 +48,16 @@ export function LoginForm() {
     try {
       await login(data.email, data.password, data.societyId);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      
-      if (errorMessage === 'Server connection failed') {
-        setError(t('serverConnectionFailed') || 'Server connection failed. Please try again later.');
-      } else if (errorMessage === 'Server error occurred') {
-        setError(t('serverErrorOccurred') || 'Server error occurred. Please try again later.');
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+
+      if (errorMessage === "Server connection failed") {
+        setError(
+          t("serverConnectionFailed") || "Server connection failed. Please try again later."
+        );
+      } else if (errorMessage === "Server error occurred") {
+        setError(t("serverErrorOccurred") || "Server error occurred. Please try again later.");
       } else {
-        setError(t('invalidCredentials'));
+        setError(t("invalidCredentials"));
       }
     } finally {
       setIsLoading(false);
@@ -61,13 +70,13 @@ export function LoginForm() {
         <LanguageToggle />
         <ThemeToggle />
       </div>
-      
+
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 w-16 h-16 bg-primary rounded-full flex items-center justify-center">
             <span className="text-primary-foreground text-2xl font-bold">GT</span>
           </div>
-          <CardTitle className="text-2xl font-bold">{t('appName')}</CardTitle>
+          <CardTitle className="text-2xl font-bold">{t("appName")}</CardTitle>
           <CardDescription>Sociedad Gastronómica</CardDescription>
         </CardHeader>
         <CardContent>
@@ -79,13 +88,13 @@ export function LoginForm() {
                   {error}
                 </div>
               )}
-              
+
               <FormField
                 control={form.control}
                 name="societyId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('societyId')}</FormLabel>
+                    <FormLabel>{t("societyId")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Building className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -101,13 +110,13 @@ export function LoginForm() {
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('email')}</FormLabel>
+                    <FormLabel>{t("email")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -130,7 +139,7 @@ export function LoginForm() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('password')}</FormLabel>
+                    <FormLabel>{t("password")}</FormLabel>
                     <FormControl>
                       <div className="relative">
                         <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -148,14 +157,14 @@ export function LoginForm() {
                 )}
               />
 
-              <Button 
-                type="submit" 
-                className="w-full" 
+              <Button
+                type="submit"
+                className="w-full"
                 disabled={isLoading}
                 data-testid="button-login"
               >
                 <LogIn className="mr-2 h-4 w-4" />
-                {isLoading ? t('loading') : t('login')}
+                {isLoading ? t("loading") : t("login")}
               </Button>
             </form>
           </Form>

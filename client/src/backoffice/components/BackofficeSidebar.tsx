@@ -1,10 +1,6 @@
-import { useLocation, Link } from 'wouter';
-import { useState, useEffect } from 'react';
-import {
-  Building2,
-  LogOut,
-  Users,
-} from 'lucide-react';
+import { useLocation, Link } from "wouter";
+import { useState, useEffect } from "react";
+import { Building2, LogOut, Users } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -17,10 +13,10 @@ import {
   SidebarHeader,
   SidebarFooter,
   useSidebar,
-} from '@/components/ui/sidebar';
-import { Badge } from '@/components/ui/badge';
-import { useLanguage } from '@/lib/i18n';
-import { authFetch } from '@/lib/api';
+} from "@/components/ui/sidebar";
+import { Badge } from "@/components/ui/badge";
+import { useLanguage } from "@/lib/i18n";
+import { authFetch } from "@/lib/api";
 
 // Helper to get backoffice token
 const getBackofficeCookie = (): string | null => {
@@ -38,7 +34,7 @@ export function BackofficeSidebar() {
   useEffect(() => {
     const loadSuperadminInfo = async () => {
       try {
-        const response = await authFetch('/api/backoffice/me');
+        const response = await authFetch("/api/backoffice/me");
         if (response.ok) {
           const data = await response.json();
           if (data) {
@@ -47,7 +43,7 @@ export function BackofficeSidebar() {
           }
         }
       } catch (error) {
-        console.error('Error loading superadmin info for sidebar:', error);
+        console.error("Error loading superadmin info for sidebar:", error);
       }
     };
 
@@ -66,25 +62,25 @@ export function BackofficeSidebar() {
 
   const handleLogout = async () => {
     try {
-      await authFetch('/api/backoffice/logout', { method: 'POST' });
+      await authFetch("/api/backoffice/logout", { method: "POST" });
     } catch (err) {
-      console.error('Logout request failed:', err);
+      console.error("Logout request failed:", err);
     } finally {
-      document.cookie = 'backoffice-token=; path=/; max-age=0';
-      window.location.href = '/elkarteapp/kudeaketa';
+      document.cookie = "backoffice-token=; path=/; max-age=0";
+      window.location.href = "/elkarteapp/kudeaketa";
     }
   };
 
   const menuItems = [
-    { title: t('societies'), url: '/elkarteapp/kudeaketa/societies', icon: Building2 },
-    { title: t('superadmins'), url: '/elkarteapp/kudeaketa/superadmins', icon: Users },
+    { title: t("societies"), url: "/elkarteapp/kudeaketa/societies", icon: Building2 },
+    { title: t("superadmins"), url: "/elkarteapp/kudeaketa/superadmins", icon: Users },
   ];
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
+      .split(" ")
+      .map(n => n[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -108,13 +104,10 @@ export function BackofficeSidebar() {
           <SidebarGroupLabel>Main</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {menuItems.map(item => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
-                    <Link 
-                      href={item.url} 
-                      onClick={() => handleNavigation(item.url)}
-                    >
+                    <Link href={item.url} onClick={() => handleNavigation(item.url)}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
@@ -129,11 +122,9 @@ export function BackofficeSidebar() {
       <SidebarFooter className="p-4 border-t">
         <div className="flex items-center gap-3">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">
-              {superadminName || 'Superadmin'}
-            </p>
+            <p className="text-sm font-medium truncate">{superadminName || "Superadmin"}</p>
             <p className="text-xs text-muted-foreground truncate">
-              {superadminEmail || 'admin@backoffice.com'}
+              {superadminEmail || "admin@backoffice.com"}
             </p>
             <Badge variant="default" className="text-[10px] px-1.5 py-0 mt-1">
               Superadmin

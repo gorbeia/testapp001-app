@@ -1,14 +1,14 @@
-import type { Request } from 'express';
-import { translations, type Language, type TranslationKey } from './translations';
+import type { Request } from "express";
+import { translations, type Language, type TranslationKey } from "./translations";
 
 // Export translations for use in other modules
 export { translations, type Language, type TranslationKey };
 
 // Default language
-const DEFAULT_LANGUAGE: Language = 'eu';
+const DEFAULT_LANGUAGE: Language = "eu";
 
 // Supported languages
-const SUPPORTED_LANGUAGES: Language[] = ['eu', 'es', 'en'];
+const SUPPORTED_LANGUAGES: Language[] = ["eu", "es", "en"];
 
 /**
  * Get language from request
@@ -22,14 +22,14 @@ export function getLanguageFromRequest(req: Request): Language {
   }
 
   // Check Accept-Language header
-  const acceptLanguage = req.headers['accept-language'];
+  const acceptLanguage = req.headers["accept-language"];
   if (acceptLanguage) {
     // Parse Accept-Language header (e.g., "eu-ES,es;q=0.9,en;q=0.8")
     const languages = acceptLanguage
-      .split(',')
-      .map(lang => lang.split(';')[0].trim().toLowerCase())
-      .map(lang => lang.split('-')[0] as Language); // Take primary language (e.g., 'eu' from 'eu-ES')
-    
+      .split(",")
+      .map(lang => lang.split(";")[0].trim().toLowerCase())
+      .map(lang => lang.split("-")[0] as Language); // Take primary language (e.g., 'eu' from 'eu-ES')
+
     for (const lang of languages) {
       if (SUPPORTED_LANGUAGES.includes(lang)) {
         return lang;
@@ -47,16 +47,16 @@ export function getLanguageFromRequest(req: Request): Language {
 export function translate(key: TranslationKey, language?: Language): string {
   const lang = language || DEFAULT_LANGUAGE;
   const translation = translations[lang]?.[key] || translations[DEFAULT_LANGUAGE]?.[key];
-  
-  if (typeof translation === 'string') {
+
+  if (typeof translation === "string") {
     return translation;
   }
-  
+
   // Handle nested objects (like emailSubject)
-  if (typeof translation === 'object' && translation !== null) {
+  if (typeof translation === "object" && translation !== null) {
     return JSON.stringify(translation);
   }
-  
+
   return key; // fallback to key if translation not found
 }
 
@@ -65,17 +65,17 @@ export function translate(key: TranslationKey, language?: Language): string {
  * Supports variables like {name}, {date}, etc.
  */
 export function translateWithParams(
-  key: TranslationKey, 
-  params: Record<string, string | number>, 
+  key: TranslationKey,
+  params: Record<string, string | number>,
   language: Language = DEFAULT_LANGUAGE
 ): string {
   let translation = translate(key, language);
-  
+
   // Replace variables in the translation
   for (const [param, value] of Object.entries(params)) {
-    translation = translation.replace(new RegExp(`\\{${param}\\}`, 'g'), String(value));
+    translation = translation.replace(new RegExp(`\\{${param}\\}`, "g"), String(value));
   }
-  
+
   return translation;
 }
 
@@ -128,23 +128,23 @@ declare global {
  */
 export function getLocalizedDateFormatter(language: Language): Intl.DateTimeFormatOptions {
   const formats = {
-    eu: { 
-      year: 'numeric' as const, 
-      month: 'long' as const, 
-      day: 'numeric' as const 
+    eu: {
+      year: "numeric" as const,
+      month: "long" as const,
+      day: "numeric" as const,
     },
-    es: { 
-      year: 'numeric' as const, 
-      month: 'long' as const, 
-      day: 'numeric' as const 
+    es: {
+      year: "numeric" as const,
+      month: "long" as const,
+      day: "numeric" as const,
     },
-    en: { 
-      year: 'numeric' as const, 
-      month: 'long' as const, 
-      day: 'numeric' as const 
+    en: {
+      year: "numeric" as const,
+      month: "long" as const,
+      day: "numeric" as const,
     },
   };
-  
+
   return formats[language];
 }
 
@@ -154,7 +154,7 @@ export function getLocalizedDateFormatter(language: Language): Intl.DateTimeForm
 export function formatDate(date: Date, language: Language): string {
   const options = getLocalizedDateFormatter(language);
   return date.toLocaleDateString(
-    language === 'eu' ? 'eu-ES' : language === 'es' ? 'es-ES' : 'en-US',
+    language === "eu" ? "eu-ES" : language === "es" ? "es-ES" : "en-US",
     options
   );
 }
@@ -164,10 +164,10 @@ export function formatDate(date: Date, language: Language): string {
  */
 export function getNumberLocale(language: Language): string {
   const locales = {
-    eu: 'eu-ES',
-    es: 'es-ES',
-    en: 'en-US',
+    eu: "eu-ES",
+    es: "es-ES",
+    en: "en-US",
   };
-  
+
   return locales[language];
 }

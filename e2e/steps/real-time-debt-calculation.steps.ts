@@ -1,6 +1,6 @@
-import { Given, When, Then } from '@cucumber/cucumber';
-import assert from 'node:assert/strict';
-import { getPage } from './shared-state';
+import { Given, When, Then } from "@cucumber/cucumber";
+import assert from "node:assert/strict";
+import { getPage } from "./shared-state";
 
 interface TestState {
   initialDebt: number;
@@ -14,41 +14,41 @@ const testState: TestState = {
   consumptionAmount: 0,
 };
 
-Given('I navigate to the credits page', async function () {
+Given("I navigate to the credits page", async function () {
   const page = getPage();
-  if (!page) throw new Error('Page not initialized');
-  
-  await page.goto('http://localhost:5000/zorrak');
-  await page.waitForLoadState('networkidle');
-  
+  if (!page) throw new Error("Page not initialized");
+
+  await page.goto("http://localhost:5000/zorrak");
+  await page.waitForLoadState("networkidle");
+
   // Wait for credits page to load
   await page.waitForSelector('[data-testid="credits-page"]', { timeout: 5000 });
 });
 
-Given('I select the current month', async function () {
+Given("I select the current month", async function () {
   const page = getPage();
-  if (!page) throw new Error('Page not initialized');
-  
+  if (!page) throw new Error("Page not initialized");
+
   // Get current month string
   const currentDate = new Date();
-  const currentMonthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}`;
-  
+  const currentMonthString = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, "0")}`;
+
   // Select current month from dropdown
   await page.click('[data-testid="select-month"]');
   await page.waitForSelector('[role="option"]', { timeout: 5000 });
   await page.locator(`[role="option"]:has-text("${currentMonthString}")`).click();
-  
+
   // Wait for data to load using waitForLoadState instead of timeout
-  await page.waitForLoadState('networkidle');
+  await page.waitForLoadState("networkidle");
 });
 
-Then('I should see the debts for all members', async function () {
+Then("I should see the debts for all members", async function () {
   const page = getPage();
-  if (!page) throw new Error('Page not initialized');
-  
+  if (!page) throw new Error("Page not initialized");
+
   // Wait for credits table to be visible
   await page.waitForSelector('[data-testid="credits-table"]', { timeout: 10000 });
-  
+
   // Check that we have some credit rows
   const creditRows = await page.locator('[data-testid^="row-credit-"]').count();
   assert.ok(creditRows > 0);
@@ -56,15 +56,18 @@ Then('I should see the debts for all members', async function () {
 
 Then('I find the debt amount for "Miren Urrutia"', async function () {
   const page = getPage();
-  if (!page) throw new Error('Page not initialized');
-  
+  if (!page) throw new Error("Page not initialized");
+
   // Find Miren Urrutia's row and extract the debt amount
-  const mirenRow = page.locator('[data-testid^="row-credit-"]').filter({ hasText: 'Miren Urrutia' }).first();
-  
+  const mirenRow = page
+    .locator('[data-testid^="row-credit-"]')
+    .filter({ hasText: "Miren Urrutia" })
+    .first();
+
   if (await mirenRow.isVisible()) {
     const amountElement = mirenRow.locator('[data-testid^="credit-amount-"]');
     const amountText = await amountElement.textContent();
-    
+
     if (amountText) {
       // Extract numeric value from "XX.XX€"
       const amountMatch = amountText.match(/([\d.]+)€/);
@@ -77,10 +80,10 @@ Then('I find the debt amount for "Miren Urrutia"', async function () {
   }
 });
 
-When('I capture the consumption amount from the confirmation dialog', async function () {
+When("I capture the consumption amount from the confirmation dialog", async function () {
   const page = getPage();
-  if (!page) throw new Error('Page not initialized');
-  
+  if (!page) throw new Error("Page not initialized");
+
   // Capture the consumption amount from the confirmation dialog
   const totalAmountText = await page.locator('[data-testid="total-amount"]').textContent();
   if (totalAmountText) {
@@ -91,41 +94,50 @@ When('I capture the consumption amount from the confirmation dialog', async func
   }
 });
 
-When('I wait 3 seconds for debt calculation to complete', async function () {
+When("I wait 3 seconds for debt calculation to complete", async function () {
   const page = getPage();
-  if (!page) throw new Error('Page not initialized');
-  
+  if (!page) throw new Error("Page not initialized");
+
   // Wait for debt calculation to complete by monitoring the amount element
-  const mirenRow = page.locator('[data-testid^="row-credit-"]').filter({ hasText: 'Miren Urrutia' }).first();
+  const mirenRow = page
+    .locator('[data-testid^="row-credit-"]')
+    .filter({ hasText: "Miren Urrutia" })
+    .first();
   const amountElement = mirenRow.locator('[data-testid^="credit-amount-"]');
-  
+
   // Wait for the amount to potentially change (more efficient than fixed timeout)
   await page.waitForTimeout(2000);
 });
 
-Then('I should see that {string}\'s debt has increased by the consumption amount', async function (memberName: string) {
-  const page = getPage();
-  if (!page) throw new Error('Page not initialized');
-  
-  // Find the member's row again and extract the new debt amount
-  const memberRow = page.locator('[data-testid^="row-credit-"]').filter({ hasText: memberName }).first();
-  
-  if (await memberRow.isVisible()) {
-    const amountElement = memberRow.locator('[data-testid^="credit-amount-"]');
-    const amountText = await amountElement.textContent();
-    
-    if (amountText) {
-      const amountMatch = amountText.match(/([\d.]+)€/);
-      if (amountMatch) {
-        testState.finalDebt = parseFloat(amountMatch[1]);
+Then(
+  "I should see that {string}'s debt has increased by the consumption amount",
+  async function (memberName: string) {
+    const page = getPage();
+    if (!page) throw new Error("Page not initialized");
+
+    // Find the member's row again and extract the new debt amount
+    const memberRow = page
+      .locator('[data-testid^="row-credit-"]')
+      .filter({ hasText: memberName })
+      .first();
+
+    if (await memberRow.isVisible()) {
+      const amountElement = memberRow.locator('[data-testid^="credit-amount-"]');
+      const amountText = await amountElement.textContent();
+
+      if (amountText) {
+        const amountMatch = amountText.match(/([\d.]+)€/);
+        if (amountMatch) {
+          testState.finalDebt = parseFloat(amountMatch[1]);
+        }
       }
     }
   }
-});
+);
 
-Then('the debt increase should match the consumption total', async function () {
+Then("the debt increase should match the consumption total", async function () {
   const debtIncrease = testState.finalDebt - testState.initialDebt;
-  
+
   // Allow for small floating point differences
   assert.ok(Math.abs(debtIncrease - testState.consumptionAmount) < 0.01);
 });

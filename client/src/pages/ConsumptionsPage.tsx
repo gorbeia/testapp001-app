@@ -1,27 +1,64 @@
-import { useState, useEffect } from 'react';
-import { Plus, Minus, ShoppingCart, X, Search, Receipt, ChevronUp, ChevronDown, Beer, Utensils, Coffee, ChefHat } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useLanguage } from '@/lib/i18n';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/lib/auth';
-import type { Product } from '@shared/schema';
+import { useState, useEffect } from "react";
+import {
+  Plus,
+  Minus,
+  ShoppingCart,
+  X,
+  Search,
+  Receipt,
+  ChevronUp,
+  ChevronDown,
+  Beer,
+  Utensils,
+  Coffee,
+  ChefHat,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useLanguage } from "@/lib/i18n";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
+import type { Product } from "@shared/schema";
 
 // Icon mapping function
 const getCategoryIcon = (iconName: string) => {
   switch (iconName) {
-    case 'Beer': return Beer;
-    case 'Utensils': return Utensils;
-    case 'Coffee': return Coffee;
-    case 'ChefHat': return ChefHat;
-    default: return Utensils; // Default fallback
+    case "Beer":
+      return Beer;
+    case "Utensils":
+      return Utensils;
+    case "Coffee":
+      return Coffee;
+    case "ChefHat":
+      return ChefHat;
+    default:
+      return Utensils; // Default fallback
   }
 };
 
@@ -38,9 +75,9 @@ type Category = {
 
 // API helper function
 const authFetch = async (url: string, options: RequestInit = {}) => {
-  const token = localStorage.getItem('auth:token');
+  const token = localStorage.getItem("auth:token");
   const headers = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
     ...(token && { Authorization: `Bearer ${token}` }),
     ...options.headers,
   };
@@ -59,8 +96,8 @@ export function ConsumptionsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { user } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -69,38 +106,37 @@ export function ConsumptionsPage() {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isCartExpanded, setIsCartExpanded] = useState(false);
 
-
   // Fetch products and categories from API
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [productsResponse, categoriesResponse] = await Promise.all([
-          authFetch('/api/products'),
-          authFetch('/api/categories')
+          authFetch("/api/products"),
+          authFetch("/api/categories"),
         ]);
-        
+
         if (productsResponse.ok) {
           const productsData = await productsResponse.json();
           // Only show active products
           setProducts(productsData.filter((product: Product) => product.isActive));
         } else {
-          throw new Error('Failed to fetch products');
+          throw new Error("Failed to fetch products");
         }
-        
+
         if (categoriesResponse.ok) {
           const categoriesData = await categoriesResponse.json();
           setCategories(categoriesData);
         } else {
           const errorText = await categoriesResponse.text();
-          console.error('Categories API error:', errorText);
+          console.error("Categories API error:", errorText);
           throw new Error(`Failed to fetch categories: ${errorText}`);
         }
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error("Error fetching data:", error);
         toast({
-          title: 'Error',
-          description: 'Produktuak ezin izan dira kargatu',
-          variant: 'destructive',
+          title: "Error",
+          description: "Produktuak ezin izan dira kargatu",
+          variant: "destructive",
         });
       } finally {
         setLoading(false);
@@ -110,45 +146,46 @@ export function ConsumptionsPage() {
     fetchData();
   }, [toast]);
 
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = categoryFilter === 'all' || p.categoryId === categoryFilter;
+    const matchesCategory = categoryFilter === "all" || p.categoryId === categoryFilter;
     return matchesSearch && matchesCategory;
   });
 
   const addToCart = (product: Product) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.productId === product.id);
+    setCart(prev => {
+      const existing = prev.find(item => item.productId === product.id);
       if (existing) {
-        return prev.map((item) =>
-          item.productId === product.id
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
+        return prev.map(item =>
+          item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      return [...prev, { 
-        productId: product.id, 
-        name: product.name, 
-        price: parseFloat(product.price), 
-        quantity: 1 
-      }];
+      return [
+        ...prev,
+        {
+          productId: product.id,
+          name: product.name,
+          price: parseFloat(product.price),
+          quantity: 1,
+        },
+      ];
     });
   };
 
   const updateQuantity = (productId: string, delta: number) => {
-    setCart((prev) => {
+    setCart(prev => {
       return prev
-        .map((item) =>
+        .map(item =>
           item.productId === productId
             ? { ...item, quantity: Math.max(0, item.quantity + delta) }
             : item
         )
-        .filter((item) => item.quantity > 0);
+        .filter(item => item.quantity > 0);
     });
   };
 
   const removeFromCart = (productId: string) => {
-    setCart((prev) => prev.filter((item) => item.productId !== productId));
+    setCart(prev => prev.filter(item => item.productId !== productId));
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -165,22 +202,22 @@ export function ConsumptionsPage() {
 
     try {
       // Create consumption session
-      const consumptionResponse = await authFetch('/api/consumptions', {
-        method: 'POST',
+      const consumptionResponse = await authFetch("/api/consumptions", {
+        method: "POST",
         body: JSON.stringify({
-          notes: 'Bar kontsumoa',
+          notes: "Bar kontsumoa",
         }),
       });
 
       if (!consumptionResponse.ok) {
-        throw new Error('Failed to create consumption');
+        throw new Error("Failed to create consumption");
       }
 
       const consumption = await consumptionResponse.json();
 
       // Add items to consumption
       const itemsResponse = await authFetch(`/api/consumptions/${consumption.id}/items`, {
-        method: 'POST',
+        method: "POST",
         body: JSON.stringify({
           items: cart.map(item => ({
             productId: item.productId,
@@ -191,39 +228,39 @@ export function ConsumptionsPage() {
       });
 
       if (!itemsResponse.ok) {
-        throw new Error('Failed to add consumption items');
+        throw new Error("Failed to add consumption items");
       }
 
       const itemsResult = await itemsResponse.json();
 
       // Close the consumption
       const closeResponse = await authFetch(`/api/consumptions/${consumption.id}/close`, {
-        method: 'POST',
+        method: "POST",
       });
 
       if (!closeResponse.ok) {
-        throw new Error('Failed to close consumption');
+        throw new Error("Failed to close consumption");
       }
 
       toast({
-        title: t('success'),
-        description: t('accountClosed', { amount: cartTotal.toFixed(2) }),
+        title: t("success"),
+        description: t("accountClosed", { amount: cartTotal.toFixed(2) }),
       });
-      
+
       // Refresh products to update stock levels
-      const productsResponse = await authFetch('/api/products');
+      const productsResponse = await authFetch("/api/products");
       if (productsResponse.ok) {
         const data = await productsResponse.json();
         setProducts(data.filter((product: Product) => product.isActive));
       }
-      
+
       setCart([]);
     } catch (error: any) {
-      console.error('Error saving consumption:', error);
+      console.error("Error saving consumption:", error);
       toast({
-        title: 'Error',
-        description: error.message || 'Kontsumoa ezin izan da gorde',
-        variant: 'destructive',
+        title: "Error",
+        description: error.message || "Kontsumoa ezin izan da gorde",
+        variant: "destructive",
       });
     } finally {
       setIsClosingAccount(false);
@@ -235,17 +272,17 @@ export function ConsumptionsPage() {
       <div className="flex-1 p-4 sm:p-6 overflow-auto">
         <div className="space-y-6">
           <div>
-            <h2 className="text-2xl font-bold">{t('consumptions')}</h2>
-            <p className="text-muted-foreground">{t('manageConsumptions')}</p>
+            <h2 className="text-2xl font-bold">{t("consumptions")}</h2>
+            <p className="text-muted-foreground">{t("manageConsumptions")}</p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={`${t('search')}...`}
+                placeholder={`${t("search")}...`}
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={e => setSearchTerm(e.target.value)}
                 className="pl-10"
                 data-testid="input-search-products"
               />
@@ -253,27 +290,27 @@ export function ConsumptionsPage() {
             <div className="flex gap-2 flex-wrap">
               <Button
                 key="all"
-                variant={categoryFilter === 'all' ? 'default' : 'outline'}
+                variant={categoryFilter === "all" ? "default" : "outline"}
                 size="sm"
-                onClick={() => setCategoryFilter('all')}
+                onClick={() => setCategoryFilter("all")}
                 data-testid={`button-filter-all`}
               >
-                {t('allTime')}
+                {t("allTime")}
               </Button>
-              {categories.map((category) => {
+              {categories.map(category => {
                 const IconComponent = getCategoryIcon(category.icon);
                 return (
                   <Button
                     key={category.id}
-                    variant={categoryFilter === category.id ? 'default' : 'outline'}
+                    variant={categoryFilter === category.id ? "default" : "outline"}
                     size="sm"
                     onClick={() => setCategoryFilter(category.id)}
                     data-testid={`button-filter-${category.id}`}
-                    className={categoryFilter === category.id ? '' : 'border-2'}
+                    className={categoryFilter === category.id ? "" : "border-2"}
                     style={{
                       borderColor: categoryFilter === category.id ? undefined : category.color,
                       backgroundColor: categoryFilter === category.id ? category.color : undefined,
-                      color: categoryFilter === category.id ? 'white' : category.color,
+                      color: categoryFilter === category.id ? "white" : category.color,
                     }}
                   >
                     <IconComponent className="mr-1 h-3 w-3" />
@@ -294,29 +331,26 @@ export function ConsumptionsPage() {
                 Ez da produkturik aurkitu
               </div>
             ) : (
-              filteredProducts.map((product) => {
+              filteredProducts.map(product => {
                 const stock = parseInt(product.stock);
                 const minStock = parseInt(product.minStock);
                 const isLowStock = stock <= minStock;
-                
+
                 return (
-                  <Card
-                    key={product.id}
-                    className="hover-elevate"
-                    data-testid={`product-card`}
-                  >
+                  <Card key={product.id} className="hover-elevate" data-testid={`product-card`}>
                     <CardContent className="p-4">
                       <div className="flex flex-col gap-2">
                         <span className="font-medium text-sm">{product.name}</span>
                         <div className="flex items-center justify-between gap-2">
                           <Badge variant="secondary" className="text-xs">
-                            {categories.find(c => c.id === product.categoryId)?.name || 'Kategoria ezezaguna'}
+                            {categories.find(c => c.id === product.categoryId)?.name ||
+                              "Kategoria ezezaguna"}
                           </Badge>
                           <span className="font-bold">{parseFloat(product.price).toFixed(2)}€</span>
                         </div>
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-xs text-muted-foreground">
-                            {t('stock')}: {stock} {product.unit}
+                            {t("stock")}: {stock} {product.unit}
                           </span>
                           {isLowStock && (
                             <Badge variant="destructive" className="text-xs">
@@ -326,7 +360,7 @@ export function ConsumptionsPage() {
                         </div>
                         <Button
                           size="sm"
-                          onClick={(e) => {
+                          onClick={e => {
                             e.stopPropagation();
                             addToCart(product);
                           }}
@@ -352,7 +386,7 @@ export function ConsumptionsPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <ShoppingCart className="h-4 w-4" />
-              <h3 className="font-semibold">{t('cart')}</h3>
+              <h3 className="font-semibold">{t("cart")}</h3>
               {cartCount > 0 && (
                 <Badge variant="secondary" data-testid="cart-count">
                   {cartCount}
@@ -375,7 +409,7 @@ export function ConsumptionsPage() {
           </div>
           {cart.length > 0 && (
             <div className="flex justify-between items-center mt-2">
-              <span className="font-medium text-sm">{t('total')}:</span>
+              <span className="font-medium text-sm">{t("total")}:</span>
               <span className="font-bold">{cartTotal.toFixed(2)}€</span>
             </div>
           )}
@@ -385,7 +419,7 @@ export function ConsumptionsPage() {
         <div className="p-4 border-b hidden lg:block">
           <h3 className="font-semibold flex items-center gap-2">
             <ShoppingCart className="h-4 w-4" />
-            {t('cart')}
+            {t("cart")}
             {cartCount > 0 && (
               <Badge variant="secondary" className="ml-auto" data-testid="cart-count">
                 {cartCount}
@@ -395,16 +429,20 @@ export function ConsumptionsPage() {
         </div>
 
         {/* Collapsible Cart Content - Mobile Only */}
-        <div className={`lg:hidden transition-all duration-300 ease-in-out ${isCartExpanded ? 'max-h-96' : 'max-h-0'} overflow-hidden`}>
+        <div
+          className={`lg:hidden transition-all duration-300 ease-in-out ${isCartExpanded ? "max-h-96" : "max-h-0"} overflow-hidden`}
+        >
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-3">
               {cart.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm" data-testid="mobile-cart-empty">{t('cartEmpty')}</p>
+                  <p className="text-sm" data-testid="mobile-cart-empty">
+                    {t("cartEmpty")}
+                  </p>
                 </div>
               ) : (
-                cart.map((item) => (
+                cart.map(item => (
                   <div
                     key={item.productId}
                     className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50"
@@ -460,10 +498,12 @@ export function ConsumptionsPage() {
               {cart.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm" data-testid="desktop-cart-empty">{t('cartEmpty')}</p>
+                  <p className="text-sm" data-testid="desktop-cart-empty">
+                    {t("cartEmpty")}
+                  </p>
                 </div>
               ) : (
-                cart.map((item) => (
+                cart.map(item => (
                   <div
                     key={item.productId}
                     className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50"
@@ -513,7 +553,9 @@ export function ConsumptionsPage() {
         </div>
 
         {/* Cart Footer - Mobile (Collapsible) */}
-        <div className={`lg:hidden transition-all duration-300 ease-in-out ${isCartExpanded ? 'block' : 'hidden'}`}>
+        <div
+          className={`lg:hidden transition-all duration-300 ease-in-out ${isCartExpanded ? "block" : "hidden"}`}
+        >
           <div className="p-4 border-t">
             <Button
               className="w-full"
@@ -522,7 +564,7 @@ export function ConsumptionsPage() {
               data-testid="mobile-button-close-account"
             >
               <Receipt className="mr-2 h-4 w-4" />
-              {isClosingAccount ? 'Gordetzen...' : t('closeAccount')}
+              {isClosingAccount ? "Gordetzen..." : t("closeAccount")}
             </Button>
           </div>
         </div>
@@ -530,7 +572,7 @@ export function ConsumptionsPage() {
         {/* Cart Footer - Desktop */}
         <div className="hidden lg:block p-4 border-t mt-auto">
           <div className="flex justify-between items-center mb-4">
-            <span className="font-medium">{t('total')}:</span>
+            <span className="font-medium">{t("total")}:</span>
             <span className="text-xl font-bold">{cartTotal.toFixed(2)}€</span>
           </div>
           <Button
@@ -540,7 +582,7 @@ export function ConsumptionsPage() {
             data-testid="button-close-account"
           >
             <Receipt className="mr-2 h-4 w-4" />
-            {isClosingAccount ? 'Gordetzen...' : t('closeAccount')}
+            {isClosingAccount ? "Gordetzen..." : t("closeAccount")}
           </Button>
         </div>
       </div>
@@ -549,39 +591,43 @@ export function ConsumptionsPage() {
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="max-w-2xl" data-testid="confirmation-dialog">
           <DialogHeader>
-            <DialogTitle className="text-xl">{t('confirmConsumption')}</DialogTitle>
+            <DialogTitle className="text-xl">{t("confirmConsumption")}</DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-6">
             {/* Member and Total Info */}
             <div className="bg-muted p-4 rounded-lg">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{t('idea')}</p>
-                  <p className="text-lg font-bold" data-testid="member-name">{user?.name || user?.email || 'Ezezaguna'}</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("idea")}</p>
+                  <p className="text-lg font-bold" data-testid="member-name">
+                    {user?.name || user?.email || "Ezezaguna"}
+                  </p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-medium text-muted-foreground">{t('total')}</p>
-                  <p className="text-2xl font-bold text-primary" data-testid="total-amount">{cartTotal.toFixed(2)}€</p>
+                  <p className="text-sm font-medium text-muted-foreground">{t("total")}</p>
+                  <p className="text-2xl font-bold text-primary" data-testid="total-amount">
+                    {cartTotal.toFixed(2)}€
+                  </p>
                 </div>
               </div>
             </div>
 
             {/* Items Table */}
             <div>
-              <h3 className="text-lg font-semibold mb-3">{t('products')}</h3>
+              <h3 className="text-lg font-semibold mb-3">{t("products")}</h3>
               <ScrollArea className="h-48 border rounded-md">
                 <Table data-testid="confirmation-items-table">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t('product')}</TableHead>
-                      <TableHead className="text-center">{t('quantity')}</TableHead>
-                      <TableHead className="text-right">{t('unitPrice')}</TableHead>
-                      <TableHead className="text-right">{t('total')}</TableHead>
+                      <TableHead>{t("product")}</TableHead>
+                      <TableHead className="text-center">{t("quantity")}</TableHead>
+                      <TableHead className="text-right">{t("unitPrice")}</TableHead>
+                      <TableHead className="text-right">{t("total")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {cart.map((item) => (
+                    {cart.map(item => (
                       <TableRow key={item.productId}>
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell className="text-center">{item.quantity}</TableCell>
@@ -599,7 +645,7 @@ export function ConsumptionsPage() {
             {/* Final Total */}
             <div className="border-t pt-4">
               <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold">{t('total')}:</span>
+                <span className="text-lg font-semibold">{t("total")}:</span>
                 <span className="text-2xl font-bold text-primary">{cartTotal.toFixed(2)}€</span>
               </div>
             </div>
@@ -621,7 +667,7 @@ export function ConsumptionsPage() {
               data-testid="button-confirm-consumption"
             >
               <Receipt className="mr-2 h-4 w-4" />
-              {isClosingAccount ? 'Gordetzen...' : 'Baieztatu eta Gorde'}
+              {isClosingAccount ? "Gordetzen..." : "Baieztatu eta Gorde"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,12 +1,12 @@
-import { ReactNode } from 'react';
-import { useAuth, hasAdminAccess, hasCellarmanAccess, hasTreasurerAccess } from '@/lib/auth';
-import { useLocation } from 'wouter';
-import { useEffect } from 'react';
-import { AccessDenied } from '@/components/AccessDenied';
+import { ReactNode } from "react";
+import { useAuth, hasAdminAccess, hasCellarmanAccess, hasTreasurerAccess } from "@/lib/auth";
+import { useLocation } from "wouter";
+import { useEffect } from "react";
+import { AccessDenied } from "@/components/AccessDenied";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredAccess?: 'admin' | 'cellarman' | 'treasurer';
+  requiredAccess?: "admin" | "cellarman" | "treasurer";
 }
 
 export function ProtectedRoute({ children, requiredAccess }: ProtectedRouteProps) {
@@ -15,19 +15,19 @@ export function ProtectedRoute({ children, requiredAccess }: ProtectedRouteProps
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      setLocation('/');
+      setLocation("/");
       return;
     }
 
     let hasAccess = false;
     switch (requiredAccess) {
-      case 'admin':
+      case "admin":
         hasAccess = hasAdminAccess(user);
         break;
-      case 'cellarman':
+      case "cellarman":
         hasAccess = hasCellarmanAccess(user);
         break;
-      case 'treasurer':
+      case "treasurer":
         hasAccess = hasTreasurerAccess(user);
         break;
       default:
@@ -47,13 +47,13 @@ export function ProtectedRoute({ children, requiredAccess }: ProtectedRouteProps
 
   let hasAccess = false;
   switch (requiredAccess) {
-    case 'admin':
+    case "admin":
       hasAccess = hasAdminAccess(user);
       break;
-    case 'cellarman':
+    case "cellarman":
       hasAccess = hasCellarmanAccess(user);
       break;
-    case 'treasurer':
+    case "treasurer":
       hasAccess = hasTreasurerAccess(user);
       break;
     default:

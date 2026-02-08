@@ -1,48 +1,60 @@
-import { useState, useEffect } from 'react';
-import { Check, CheckCheck, Bell, Filter } from 'lucide-react';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useLanguage } from '@/lib/i18n';
-import { authFetch } from '@/lib/api';
-import { Notification } from '@shared/schema';
-import { formatDistanceToNow } from 'date-fns';
-import { eu, es } from 'date-fns/locale';
-import PaginationControls from '@/components/PaginationControls';
-import { usePagination } from '@/hooks/use-pagination';
+import { useState, useEffect } from "react";
+import { Check, CheckCheck, Bell, Filter } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useLanguage } from "@/lib/i18n";
+import { authFetch } from "@/lib/api";
+import { Notification } from "@shared/schema";
+import { formatDistanceToNow } from "date-fns";
+import { eu, es } from "date-fns/locale";
+import PaginationControls from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/use-pagination";
 
 export default function NotificationsPage() {
   const { t, language } = useLanguage();
-  const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'info' | 'success' | 'warning' | 'error'>('all');
-  
+  const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
+  const [typeFilter, setTypeFilter] = useState<"all" | "info" | "success" | "warning" | "error">(
+    "all"
+  );
+
   const pagination = usePagination({
-    initialLimit: 20
+    initialLimit: 20,
   });
 
   // Fetch notifications with pagination
-  const { data: notificationsData, isLoading, refetch } = useQuery({
-    queryKey: ['notifications', pagination.page, pagination.limit, filter, typeFilter, language],
+  const {
+    data: notificationsData,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["notifications", pagination.page, pagination.limit, filter, typeFilter, language],
     queryFn: async () => {
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         lang: language,
       });
-      
-      if (filter !== 'all') {
-        params.append('filter', filter);
+
+      if (filter !== "all") {
+        params.append("filter", filter);
       }
-      
-      if (typeFilter !== 'all') {
-        params.append('type', typeFilter);
+
+      if (typeFilter !== "all") {
+        params.append("type", typeFilter);
       }
 
       const response = await authFetch(`/api/notifications?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch notifications');
+      if (!response.ok) throw new Error("Failed to fetch notifications");
       return response.json() as Promise<{
         notifications: Notification[];
         pagination: { page: number; limit: number; total: number; pages: number };
@@ -64,10 +76,10 @@ export default function NotificationsPage() {
 
   // Fetch unread count
   const { data: unreadData, refetch: refetchUnreadCount } = useQuery({
-    queryKey: ['notifications', 'unread-count'],
+    queryKey: ["notifications", "unread-count"],
     queryFn: async () => {
-      const response = await authFetch('/api/notifications/unread-count');
-      if (!response.ok) throw new Error('Failed to fetch unread count');
+      const response = await authFetch("/api/notifications/unread-count");
+      if (!response.ok) throw new Error("Failed to fetch unread count");
       return response.json() as Promise<{ count: number }>;
     },
   });
@@ -76,9 +88,9 @@ export default function NotificationsPage() {
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: string) => {
       const response = await authFetch(`/api/notifications/${notificationId}/read`, {
-        method: 'PATCH',
+        method: "PATCH",
       });
-      if (!response.ok) throw new Error('Failed to mark as read');
+      if (!response.ok) throw new Error("Failed to mark as read");
       return response.json() as Promise<Notification>;
     },
     onSuccess: () => {
@@ -90,10 +102,10 @@ export default function NotificationsPage() {
   // Mark all as read
   const markAllAsReadMutation = useMutation({
     mutationFn: async () => {
-      const response = await authFetch('/api/notifications/mark-all-read', {
-        method: 'PATCH',
+      const response = await authFetch("/api/notifications/mark-all-read", {
+        method: "PATCH",
       });
-      if (!response.ok) throw new Error('Failed to mark all as read');
+      if (!response.ok) throw new Error("Failed to mark all as read");
       return response.json();
     },
     onSuccess: () => {
@@ -105,12 +117,12 @@ export default function NotificationsPage() {
   const notifications = notificationsData?.notifications || [];
   const paginationData = notificationsData?.pagination;
   const unreadCount = unreadData?.count || 0;
-  const locale = language === 'es' ? es : eu;
+  const locale = language === "es" ? es : eu;
 
   const formatTime = (date: Date) => {
-    return formatDistanceToNow(new Date(date), { 
-      addSuffix: true, 
-      locale 
+    return formatDistanceToNow(new Date(date), {
+      addSuffix: true,
+      locale,
     });
   };
 
@@ -118,15 +130,14 @@ export default function NotificationsPage() {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">{t('notifications')}</h1>
+          <h1 className="text-3xl font-bold">{t("notifications")}</h1>
           <p className="text-muted-foreground">
-            {unreadCount > 0 
-              ? t('unreadNotifications', { count: unreadCount })
-              : t('noUnreadNotifications')
-            }
+            {unreadCount > 0
+              ? t("unreadNotifications", { count: unreadCount })
+              : t("noUnreadNotifications")}
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Select value={filter} onValueChange={(value: any) => setFilter(value)}>
             <SelectTrigger className="w-[140px]">
@@ -134,9 +145,9 @@ export default function NotificationsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('all')}</SelectItem>
-              <SelectItem value="unread">{t('unread')}</SelectItem>
-              <SelectItem value="read">{t('read')}</SelectItem>
+              <SelectItem value="all">{t("all")}</SelectItem>
+              <SelectItem value="unread">{t("unread")}</SelectItem>
+              <SelectItem value="read">{t("read")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -145,11 +156,11 @@ export default function NotificationsPage() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t('allTypes')}</SelectItem>
-              <SelectItem value="info">{t('notificationInfo')}</SelectItem>
-              <SelectItem value="success">{t('notificationSuccess')}</SelectItem>
-              <SelectItem value="warning">{t('notificationWarning')}</SelectItem>
-              <SelectItem value="error">{t('notificationError')}</SelectItem>
+              <SelectItem value="all">{t("allTypes")}</SelectItem>
+              <SelectItem value="info">{t("notificationInfo")}</SelectItem>
+              <SelectItem value="success">{t("notificationSuccess")}</SelectItem>
+              <SelectItem value="warning">{t("notificationWarning")}</SelectItem>
+              <SelectItem value="error">{t("notificationError")}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -160,7 +171,7 @@ export default function NotificationsPage() {
               disabled={markAllAsReadMutation.isPending}
             >
               <CheckCheck className="h-4 w-4 mr-2" />
-              {t('markAllRead')}
+              {t("markAllRead")}
             </Button>
           )}
         </div>
@@ -169,44 +180,47 @@ export default function NotificationsPage() {
       <ScrollArea className="h-[calc(100vh-200px)]">
         <div className="space-y-4">
           {isLoading ? (
-            <div className="text-center py-8">{t('loading')}</div>
+            <div className="text-center py-8">{t("loading")}</div>
           ) : notifications.length === 0 ? (
             <Card>
               <CardContent className="text-center py-8">
                 <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">{t('noNotifications')}</h3>
-                <p className="text-muted-foreground">{t('noNotificationsDesc')}</p>
+                <h3 className="text-lg font-semibold mb-2">{t("noNotifications")}</h3>
+                <p className="text-muted-foreground">{t("noNotificationsDesc")}</p>
               </CardContent>
             </Card>
           ) : (
-            notifications.map((notification) => (
-              <Card key={notification.id} className={`transition-all ${!notification.isRead ? 'border-l-4 border-l-blue-500' : ''}`}>
+            notifications.map(notification => (
+              <Card
+                key={notification.id}
+                className={`transition-all ${!notification.isRead ? "border-l-4 border-l-blue-500" : ""}`}
+              >
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4 flex-1">
                       <div className="mt-1">
                         <Bell className="h-5 w-5 text-blue-500" />
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
                           <h3 className="font-semibold text-lg">{notification.title}</h3>
                           {!notification.isRead && (
                             <Badge variant="default" className="bg-blue-500">
-                              {t('new')}
+                              {t("new")}
                             </Badge>
                           )}
                         </div>
-                        
+
                         <p className="text-muted-foreground mb-3 whitespace-pre-wrap">
                           {notification.message}
                         </p>
-                        
+
                         <div className="flex items-center justify-between">
                           <p className="text-sm text-muted-foreground">
                             {formatTime(notification.createdAt)}
                           </p>
-                          
+
                           {!notification.isRead && (
                             <Button
                               variant="ghost"
@@ -215,7 +229,7 @@ export default function NotificationsPage() {
                               disabled={markAsReadMutation.isPending}
                             >
                               <Check className="h-4 w-4 mr-2" />
-                              {t('markAsRead')}
+                              {t("markAsRead")}
                             </Button>
                           )}
                         </div>
@@ -230,10 +244,7 @@ export default function NotificationsPage() {
       </ScrollArea>
 
       {paginationData && paginationData.total > 0 && (
-        <PaginationControls 
-          pagination={pagination} 
-          itemType="notifications"
-        />
+        <PaginationControls pagination={pagination} itemType="notifications" />
       )}
     </div>
   );

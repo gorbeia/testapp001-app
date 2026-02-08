@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
-import { Mail, Lock, LogIn, AlertCircle, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useLanguage } from '@/lib/i18n';
-import { LanguageToggle } from '@/components/LanguageToggle';
-import { ThemeToggle } from '@/components/ThemeToggle';
-import { authFetch } from '@/lib/api';
+import { useState, useEffect } from "react";
+import { Mail, Lock, LogIn, AlertCircle, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useLanguage } from "@/lib/i18n";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { authFetch } from "@/lib/api";
 
 // Helper to get backoffice token cookie
 const clearBackofficeCookie = () => {
-  document.cookie = 'backoffice-token=; path=/; max-age=0';
+  document.cookie = "backoffice-token=; path=/; max-age=0";
 };
 
 const getBackofficeCookie = (): string | null => {
@@ -20,8 +20,8 @@ const getBackofficeCookie = (): string | null => {
 
 export function SuperAdminLoginPage() {
   const { t } = useLanguage();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -38,15 +38,15 @@ export function SuperAdminLoginPage() {
     setIsSubmitting(true);
     setError(null);
     try {
-      const response = await authFetch('/api/backoffice/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await authFetch("/api/backoffice/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        const message = data.message || 'Invalid credentials';
+        const message = data.message || "Invalid credentials";
         setError(message);
       } else {
         const data = await response.json().catch(() => ({}));
@@ -55,13 +55,13 @@ export function SuperAdminLoginPage() {
           setIsLoggedIn(true);
           setError(null);
           // Redirect to the societies list after successful login
-          window.location.replace('/elkarteapp/kudeaketa/societies');
+          window.location.replace("/elkarteapp/kudeaketa/societies");
         } else {
-          setError('Unexpected response from server');
+          setError("Unexpected response from server");
         }
       }
     } catch (err) {
-      setError('Failed to contact backoffice login endpoint');
+      setError("Failed to contact backoffice login endpoint");
     } finally {
       setIsSubmitting(false);
     }
@@ -69,9 +69,9 @@ export function SuperAdminLoginPage() {
 
   const handleLogout = async () => {
     try {
-      await authFetch('/api/backoffice/logout', { method: 'POST' });
+      await authFetch("/api/backoffice/logout", { method: "POST" });
     } catch (err) {
-      console.error('Logout request failed:', err);
+      console.error("Logout request failed:", err);
     } finally {
       clearBackofficeCookie();
       setIsLoggedIn(false);
@@ -92,14 +92,12 @@ export function SuperAdminLoginPage() {
               <span className="text-primary-foreground text-2xl font-bold">SA</span>
             </div>
             <CardTitle className="text-2xl font-bold">Superadmin</CardTitle>
-            <CardDescription>
-              You are logged into the multisociety backoffice.
-            </CardDescription>
+            <CardDescription>You are logged into the multisociety backoffice.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Button onClick={handleLogout} className="w-full" variant="outline">
               <LogOut className="mr-2 h-4 w-4" />
-              {t('logout') || 'Logout'}
+              {t("logout") || "Logout"}
             </Button>
           </CardContent>
         </Card>
@@ -111,7 +109,7 @@ export function SuperAdminLoginPage() {
             </div>
             <CardTitle className="text-2xl font-bold">Superadmin</CardTitle>
             <CardDescription>
-              {t('login')} – multi-society administration (UI only, no backend yet)
+              {t("login")} – multi-society administration (UI only, no backend yet)
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -125,7 +123,7 @@ export function SuperAdminLoginPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="superadmin-email">
-                  {t('email')}
+                  {t("email")}
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -133,7 +131,7 @@ export function SuperAdminLoginPage() {
                     id="superadmin-email"
                     type="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={e => setEmail(e.target.value)}
                     className="pl-10"
                     required
                   />
@@ -142,7 +140,7 @@ export function SuperAdminLoginPage() {
 
               <div>
                 <label className="block text-sm font-medium mb-1" htmlFor="superadmin-password">
-                  {t('password')}
+                  {t("password")}
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -150,7 +148,7 @@ export function SuperAdminLoginPage() {
                     id="superadmin-password"
                     type="password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                     className="pl-10"
                     required
                   />
@@ -159,7 +157,7 @@ export function SuperAdminLoginPage() {
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 <LogIn className="mr-2 h-4 w-4" />
-                {isSubmitting ? t('loading') : t('login')}
+                {isSubmitting ? t("loading") : t("login")}
               </Button>
             </form>
           </CardContent>

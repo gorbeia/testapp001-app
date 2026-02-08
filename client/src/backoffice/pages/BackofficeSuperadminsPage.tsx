@@ -1,22 +1,22 @@
-import { useState, useEffect } from 'react';
-import { useLanguage } from '@/lib/i18n';
-import { Shield, Mail, Plus, Edit, Trash2, AlertCircle, Check, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { authFetch } from '@/lib/api';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useState, useEffect } from "react";
+import { useLanguage } from "@/lib/i18n";
+import { Shield, Mail, Plus, Edit, Trash2, AlertCircle, Check, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { authFetch } from "@/lib/api";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
-  DialogHeader, 
+  DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,7 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 
 interface Superadmin {
   id: string;
@@ -46,7 +46,7 @@ export function BackofficeSuperadminsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingSuperadmin, setEditingSuperadmin] = useState<Superadmin | null>(null);
-  const [formData, setFormData] = useState({ email: '', name: '', password: '', isActive: true });
+  const [formData, setFormData] = useState({ email: "", name: "", password: "", isActive: true });
 
   useEffect(() => {
     loadSuperadmins();
@@ -56,12 +56,12 @@ export function BackofficeSuperadminsPage() {
     setLoading(true);
     setError(null);
     try {
-      const response = await authFetch('/api/backoffice/superadmins');
-      if (!response.ok) throw new Error('Failed to fetch superadmins');
+      const response = await authFetch("/api/backoffice/superadmins");
+      if (!response.ok) throw new Error("Failed to fetch superadmins");
       const data = await response.json();
       setSuperadmins(data);
     } catch (err) {
-      setError(t('failedToLoadSuperadmins'));
+      setError(t("failedToLoadSuperadmins"));
     } finally {
       setLoading(false);
     }
@@ -69,20 +69,20 @@ export function BackofficeSuperadminsPage() {
 
   const handleCreate = async () => {
     try {
-      const response = await authFetch('/api/backoffice/superadmins', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await authFetch("/api/backoffice/superadmins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(t('failedToCreateSuperadmin'));
+        throw new Error(t("failedToCreateSuperadmin"));
       }
       await loadSuperadmins();
       setIsCreateDialogOpen(false);
-      setFormData({ email: '', name: '', password: '', isActive: true });
+      setFormData({ email: "", name: "", password: "", isActive: true });
     } catch (err: any) {
-      setError(t('failedToCreateSuperadmin'));
+      setError(t("failedToCreateSuperadmin"));
     }
   };
 
@@ -90,40 +90,39 @@ export function BackofficeSuperadminsPage() {
     if (!editingSuperadmin) return;
     try {
       const response = await authFetch(`/api/backoffice/superadmins/${editingSuperadmin.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(t('failedToUpdateSuperadmin'));
+        throw new Error(t("failedToUpdateSuperadmin"));
       }
       await loadSuperadmins();
       setIsEditDialogOpen(false);
       setEditingSuperadmin(null);
-      setFormData({ email: '', name: '', password: '', isActive: true });
+      setFormData({ email: "", name: "", password: "", isActive: true });
     } catch (err: any) {
-      setError(t('failedToUpdateSuperadmin'));
+      setError(t("failedToUpdateSuperadmin"));
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
-      const response = await authFetch(`/api/backoffice/superadmins/${id}`, { method: 'DELETE' });
-      if (!response.ok) throw new Error(t('failedToDeleteSuperadmin'));
+      const response = await authFetch(`/api/backoffice/superadmins/${id}`, { method: "DELETE" });
+      if (!response.ok) throw new Error(t("failedToDeleteSuperadmin"));
       await loadSuperadmins();
     } catch (err) {
-      setError(t('failedToDeleteSuperadmin'));
+      setError(t("failedToDeleteSuperadmin"));
     }
   };
 
   const openEditDialog = (sa: Superadmin) => {
     setEditingSuperadmin(sa);
-    setFormData({ email: sa.email, name: sa.name, password: '', isActive: sa.isActive });
+    setFormData({ email: sa.email, name: sa.name, password: "", isActive: sa.isActive });
     setIsEditDialogOpen(true);
   };
 
-  
   return (
     <div className="p-8">
       <div className="max-w-4xl mx-auto">
@@ -131,49 +130,49 @@ export function BackofficeSuperadminsPage() {
           <div>
             <h1 className="text-3xl font-bold flex items-center gap-2">
               <Shield className="h-8 w-8" />
-              {t('superadminAccounts')}
+              {t("superadminAccounts")}
             </h1>
-            <p className="text-muted-foreground mt-2">{t('manageBackoffice')}</p>
+            <p className="text-muted-foreground mt-2">{t("manageBackoffice")}</p>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 h-4 w-4" />
-                {t('createSuperadmin')}
+                {t("createSuperadmin")}
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>{t('createSuperadmin')}</DialogTitle>
+                <DialogTitle>{t("createSuperadmin")}</DialogTitle>
                 <DialogDescription>Add a new backoffice superadmin account.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="create-name">{t('superadminName')}</Label>
+                  <Label htmlFor="create-name">{t("superadminName")}</Label>
                   <Input
                     id="create-name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
                     required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="create-email">{t('superadminEmail')}</Label>
+                  <Label htmlFor="create-email">{t("superadminEmail")}</Label>
                   <Input
                     id="create-email"
                     type="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={e => setFormData({ ...formData, email: e.target.value })}
                     required
                   />
                 </div>
                 <div>
-                  <Label htmlFor="create-password">{t('superadminPassword')}</Label>
+                  <Label htmlFor="create-password">{t("superadminPassword")}</Label>
                   <Input
                     id="create-password"
                     type="password"
                     value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    onChange={e => setFormData({ ...formData, password: e.target.value })}
                     required
                   />
                 </div>
@@ -181,16 +180,16 @@ export function BackofficeSuperadminsPage() {
                   <Switch
                     id="create-active"
                     checked={formData.isActive}
-                    onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                    onCheckedChange={checked => setFormData({ ...formData, isActive: checked })}
                   />
-                  <Label htmlFor="create-active">{t('isActive')}</Label>
+                  <Label htmlFor="create-active">{t("isActive")}</Label>
                 </div>
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  {t('cancel')}
+                  {t("cancel")}
                 </Button>
-                <Button onClick={handleCreate}>{t('create')}</Button>
+                <Button onClick={handleCreate}>{t("create")}</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -217,7 +216,7 @@ export function BackofficeSuperadminsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {superadmins.map((sa) => (
+            {superadmins.map(sa => (
               <Card key={sa.id}>
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
@@ -257,7 +256,8 @@ export function BackofficeSuperadminsPage() {
                           <AlertDialogHeader>
                             <AlertDialogTitle>Delete Superadmin</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Are you sure you want to delete {sa.name}? This action cannot be undone.
+                              Are you sure you want to delete {sa.name}? This action cannot be
+                              undone.
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
@@ -279,8 +279,8 @@ export function BackofficeSuperadminsPage() {
         {!loading && !error && superadmins.length === 0 && (
           <div className="text-center py-12">
             <Shield className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold">{t('noSuperadminAccounts')}</h3>
-            <p className="text-muted-foreground">{t('noSuperadminAccountsDescription')}</p>
+            <h3 className="text-lg font-semibold">{t("noSuperadminAccounts")}</h3>
+            <p className="text-muted-foreground">{t("noSuperadminAccountsDescription")}</p>
           </div>
         )}
       </div>
@@ -289,36 +289,38 @@ export function BackofficeSuperadminsPage() {
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('editSuperadmin')}</DialogTitle>
+            <DialogTitle>{t("editSuperadmin")}</DialogTitle>
             <DialogDescription>Update superadmin account details.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="edit-name">{t('superadminName')}</Label>
+              <Label htmlFor="edit-name">{t("superadminName")}</Label>
               <Input
                 id="edit-name"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={e => setFormData({ ...formData, name: e.target.value })}
                 required
               />
             </div>
             <div>
-              <Label htmlFor="edit-email">{t('superadminEmail')}</Label>
+              <Label htmlFor="edit-email">{t("superadminEmail")}</Label>
               <Input
                 id="edit-email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={e => setFormData({ ...formData, email: e.target.value })}
                 required
               />
             </div>
             <div>
-              <Label htmlFor="edit-password">{t('superadminPassword')} (leave blank to keep unchanged)</Label>
+              <Label htmlFor="edit-password">
+                {t("superadminPassword")} (leave blank to keep unchanged)
+              </Label>
               <Input
                 id="edit-password"
                 type="password"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={e => setFormData({ ...formData, password: e.target.value })}
                 placeholder="Leave blank to keep current password"
               />
             </div>
@@ -326,7 +328,7 @@ export function BackofficeSuperadminsPage() {
               <Switch
                 id="edit-active"
                 checked={formData.isActive}
-                onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                onCheckedChange={checked => setFormData({ ...formData, isActive: checked })}
               />
               <Label htmlFor="edit-active">Active</Label>
             </div>

@@ -1,5 +1,5 @@
-import { useState, useEffect, type ReactNode } from 'react';
-import { LanguageContext, type Language, translations, type TranslationKey } from '@/lib/i18n';
+import { useState, useEffect, type ReactNode } from "react";
+import { LanguageContext, type Language, translations, type TranslationKey } from "@/lib/i18n";
 
 interface LanguageProviderProps {
   children: ReactNode;
@@ -7,15 +7,15 @@ interface LanguageProviderProps {
 
 export function LanguageProvider({ children }: LanguageProviderProps) {
   const [language, setLanguage] = useState<Language>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('language') as Language;
-      return saved === 'es' ? 'es' : 'eu';
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("language") as Language;
+      return saved === "es" ? "es" : "eu";
     }
-    return 'eu';
+    return "eu";
   });
 
   useEffect(() => {
-    localStorage.setItem('language', language);
+    localStorage.setItem("language", language);
     document.documentElement.lang = language;
   }, [language]);
 
@@ -24,7 +24,7 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
     let text: string = langTranslations[key] || key;
     if (values) {
       Object.entries(values).forEach(([placeholder, value]) => {
-        text = text.replace(new RegExp(`{${placeholder}}`, 'g'), value.toString());
+        text = text.replace(new RegExp(`{${placeholder}}`, "g"), value.toString());
       });
     }
     return text;

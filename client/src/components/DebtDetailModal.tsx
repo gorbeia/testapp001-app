@@ -1,11 +1,17 @@
-import { CreditCard, ChefHat, Calendar, ShoppingCart, ExternalLink } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Eye } from 'lucide-react';
-import { useLanguage } from '@/lib/i18n';
-import type { Credit } from '@shared/schema';
+import { CreditCard, ChefHat, Calendar, ShoppingCart, ExternalLink } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Eye } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
+import type { Credit } from "@shared/schema";
 
 interface DebtDetailModalProps {
   credit: Credit;
@@ -15,29 +21,31 @@ interface DebtDetailModalProps {
 export function DebtDetailModal({ credit, trigger }: DebtDetailModalProps) {
   const { t } = useLanguage();
 
-  const consumptionAmount = parseFloat(credit.consumptionAmount || '0');
-  const reservationAmount = parseFloat(credit.reservationAmount || '0');
-  const totalAmount = parseFloat(credit.totalAmount || '0');
+  const consumptionAmount = parseFloat(credit.consumptionAmount || "0");
+  const reservationAmount = parseFloat(credit.reservationAmount || "0");
+  const totalAmount = parseFloat(credit.totalAmount || "0");
 
   const debtItems = [
     {
-      id: 'consumptions',
-      label: t('consumptions') || 'Consumptions',
+      id: "consumptions",
+      label: t("consumptions") || "Consumptions",
       amount: consumptionAmount,
       icon: ShoppingCart,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-      description: t('consumptionDescription') || 'Products and services consumed'
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      description: t("consumptionDescription") || "Products and services consumed",
     },
     {
-      id: 'reservations',
-      label: t('reservations') || 'Reservations',
+      id: "reservations",
+      label: t("reservations") || "Reservations",
       amount: reservationAmount,
       icon: Calendar,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-      description: t('reservationDescription') || 'Event and space reservations (including kitchen costs when applicable)'
-    }
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      description:
+        t("reservationDescription") ||
+        "Event and space reservations (including kitchen costs when applicable)",
+    },
   ].filter(item => item.amount > 0);
 
   return (
@@ -53,38 +61,36 @@ export function DebtDetailModal({ credit, trigger }: DebtDetailModalProps) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CreditCard className="h-5 w-5" />
-            {t('debtDetailsFor')} {credit.month}
+            {t("debtDetailsFor")} {credit.month}
           </DialogTitle>
         </DialogHeader>
-        
+
         <div className="space-y-6">
           {/* Status and Total */}
           <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
             <div>
-              <span className="text-sm text-gray-600">{t('status')}</span>
+              <span className="text-sm text-gray-600">{t("status")}</span>
               <div className="mt-1">
-                <Badge variant={credit.status === 'paid' ? 'default' : 'destructive'}>
-                  {credit.status === 'paid' ? t('paid') : t('pending')}
+                <Badge variant={credit.status === "paid" ? "default" : "destructive"}>
+                  {credit.status === "paid" ? t("paid") : t("pending")}
                 </Badge>
               </div>
             </div>
             <div className="text-right">
-              <span className="text-sm text-gray-600">{t('totalAmount')}</span>
-              <div className="text-2xl font-bold text-gray-900">
-                {totalAmount.toFixed(2)}€
-              </div>
+              <span className="text-sm text-gray-600">{t("totalAmount")}</span>
+              <div className="text-2xl font-bold text-gray-900">{totalAmount.toFixed(2)}€</div>
             </div>
           </div>
 
           {/* Debt Breakdown */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">{t('debtBreakdown') || 'Debt Breakdown'}</h3>
-            
+            <h3 className="font-semibold text-lg">{t("debtBreakdown") || "Debt Breakdown"}</h3>
+
             <div className="space-y-3">
-              {debtItems.map((item) => {
+              {debtItems.map(item => {
                 const Icon = item.icon;
                 const percentage = totalAmount > 0 ? (item.amount / totalAmount) * 100 : 0;
-                
+
                 return (
                   <Card key={item.id} className="border-l-4 border-l-gray-200">
                     <CardContent className="p-4">
@@ -103,52 +109,42 @@ export function DebtDetailModal({ credit, trigger }: DebtDetailModalProps) {
                           <div className="text-sm text-gray-500">{percentage.toFixed(1)}%</div>
                         </div>
                       </div>
-                      
+
                       {/* Progress bar */}
                       <div className="mt-3">
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${percentage}%` }}
                           />
                         </div>
                       </div>
-                      
+
                       {/* Link to consumptions for consumption items */}
-                      {item.id === 'consumptions' && consumptionAmount > 0 && (
+                      {item.id === "consumptions" && consumptionAmount > 0 && (
                         <div className="mt-3 pt-3 border-t">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="text-xs"
-                          >
-                            <a 
+                          <Button variant="outline" size="sm" asChild className="text-xs">
+                            <a
                               href={`/nire-konsumoak?month=${credit.month}`}
                               className="flex items-center gap-1"
                             >
                               <ExternalLink className="h-3 w-3" />
-                              {t('viewConsumptionDetails') || 'View Consumption Details'}
+                              {t("viewConsumptionDetails") || "View Consumption Details"}
                             </a>
                           </Button>
                         </div>
                       )}
-                      
+
                       {/* Link to reservations for reservation items */}
-                      {item.id === 'reservations' && reservationAmount > 0 && (
+                      {item.id === "reservations" && reservationAmount > 0 && (
                         <div className="mt-3 pt-3 border-t">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            asChild
-                            className="text-xs"
-                          >
-                            <a 
+                          <Button variant="outline" size="sm" asChild className="text-xs">
+                            <a
                               href={`/nire-erreserbak?month=${credit.month}`}
                               className="flex items-center gap-1"
                             >
                               <ExternalLink className="h-3 w-3" />
-                              {t('viewReservationDetails') || 'View Reservation Details'}
+                              {t("viewReservationDetails") || "View Reservation Details"}
                             </a>
                           </Button>
                         </div>
@@ -163,14 +159,14 @@ export function DebtDetailModal({ credit, trigger }: DebtDetailModalProps) {
           {/* Summary */}
           <div className="border-t pt-4">
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">{t('calculatedOn') || 'Calculated on'}</span>
+              <span className="text-gray-600">{t("calculatedOn") || "Calculated on"}</span>
               <span className="text-gray-900">
                 {new Date(credit.calculatedAt).toLocaleDateString()}
               </span>
             </div>
             {credit.markedAsPaidAt && (
               <div className="flex justify-between items-center text-sm mt-2">
-                <span className="text-gray-600">{t('markedAsPaidOn') || 'Marked as paid on'}</span>
+                <span className="text-gray-600">{t("markedAsPaidOn") || "Marked as paid on"}</span>
                 <span className="text-gray-900">
                   {new Date(credit.markedAsPaidAt).toLocaleDateString()}
                 </span>

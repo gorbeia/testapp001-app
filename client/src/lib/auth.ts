@@ -1,7 +1,7 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext } from "react";
 
-export type UserRole = 'bazkidea' | 'laguna';
-export type UserFunction = 'administratzailea' | 'diruzaina' | 'sotolaria' | 'arrunta';
+export type UserRole = "bazkidea" | "laguna";
+export type UserFunction = "administratzailea" | "diruzaina" | "sotolaria" | "arrunta";
 
 export interface User {
   id: string;
@@ -35,19 +35,21 @@ export const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const hasAdminAccess = (user: User | null): boolean => {
-  return user?.function === 'administratzailea';
+  return user?.function === "administratzailea";
 };
 
 export const hasTreasurerAccess = (user: User | null): boolean => {
-  return user?.function === 'diruzaina' || user?.function === 'administratzailea';
+  return user?.function === "diruzaina" || user?.function === "administratzailea";
 };
 
 export const hasCellarmanAccess = (user: User | null): boolean => {
-  return user?.function === 'sotolaria' || user?.function === 'administratzailea';
+  return user?.function === "sotolaria" || user?.function === "administratzailea";
 };
 
 export const canPostAnnouncements = (user: User | null): boolean => {
-  return user?.function === 'administratzailea' || 
-         user?.function === 'diruzaina' || 
-         user?.function === 'sotolaria';
+  return (
+    user?.function === "administratzailea" ||
+    user?.function === "diruzaina" ||
+    user?.function === "sotolaria"
+  );
 };

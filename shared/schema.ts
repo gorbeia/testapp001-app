@@ -4,7 +4,9 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const societies = pgTable("societies", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   alphabeticId: varchar("alphabetic_id").notNull().unique(),
   name: text("name").notNull(),
   iban: text("iban"),
@@ -13,15 +15,22 @@ export const societies = pgTable("societies", {
   phone: text("phone"),
   email: text("email"),
   // Reservation pricing
-  reservationPricePerMember: decimal("reservation_price_per_member", { precision: 10, scale: 2 }).default("25.00"),
-  kitchenPricePerMember: decimal("kitchen_price_per_member", { precision: 10, scale: 2 }).default("10.00"),
+  reservationPricePerMember: decimal("reservation_price_per_member", {
+    precision: 10,
+    scale: 2,
+  }).default("25.00"),
+  kitchenPricePerMember: decimal("kitchen_price_per_member", { precision: 10, scale: 2 }).default(
+    "10.00"
+  ),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   name: text("name"),
@@ -32,7 +41,9 @@ export const users = pgTable("users", {
   linkedMemberId: varchar("linked_member_id"),
   linkedMemberName: text("linked_member_name"),
   subscriptionTypeId: varchar("subscription_type_id").references(() => subscriptionTypes.id),
-  societyId: varchar("society_id").notNull().references(() => societies.id),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -66,36 +77,50 @@ export const insertUserSchema = createInsertSchema(users).pick({
 });
 
 export const products = pgTable("products", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   description: text("description"),
-  categoryId: varchar("category_id").notNull().references(() => productCategories.id),
+  categoryId: varchar("category_id")
+    .notNull()
+    .references(() => productCategories.id),
   price: text("price").notNull(), // Using text for decimal precision
   stock: text("stock").notNull().default("0"), // Using text for large numbers
   unit: text("unit").notNull().default("unit"), // e.g., "unit", "kg", "liter"
   minStock: text("min_stock").notNull().default("0"), // Alert threshold
   supplier: text("supplier"),
   isActive: boolean("is_active").notNull().default(true),
-  societyId: varchar("society_id").notNull().references(() => societies.id),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 export const productCategories = pgTable("product_categories", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   color: varchar("color").notNull(),
   icon: varchar("icon").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
-  societyId: varchar("society_id").notNull().references(() => societies.id),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Category messages for multilingual support
 export const categoryMessages = pgTable("category_messages", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  categoryId: varchar("category_id").notNull().references(() => productCategories.id, { onDelete: "cascade" }),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  categoryId: varchar("category_id")
+    .notNull()
+    .references(() => productCategories.id, { onDelete: "cascade" }),
   language: varchar("language").notNull(),
   name: varchar("name").notNull(),
   description: text("description"),
@@ -133,9 +158,13 @@ export const insertCategoryMessageSchema = createInsertSchema(categoryMessages).
 
 // Consumption sessions/events (e.g., a bar tab, event consumption)
 export const consumptions = pgTable("consumptions", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(), // Who made the consumption
-  societyId: varchar("society_id").notNull().references(() => societies.id),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
   eventId: varchar("event_id"), // Optional: linked to a reservation/event
   totalAmount: text("total_amount").notNull().default("0"), // Using text for decimal precision
   notes: text("notes"),
@@ -146,7 +175,9 @@ export const consumptions = pgTable("consumptions", {
 
 // Individual consumption items (products within a consumption session)
 export const consumptionItems = pgTable("consumption_items", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   consumptionId: varchar("consumption_id").notNull(),
   productId: varchar("product_id").notNull(),
   quantity: integer("quantity").notNull().default(1),
@@ -158,9 +189,13 @@ export const consumptionItems = pgTable("consumption_items", {
 
 // Stock movements (for tracking inventory changes)
 export const stockMovements = pgTable("stock_movements", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   productId: varchar("product_id").notNull(),
-  societyId: varchar("society_id").notNull().references(() => societies.id),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
   type: text("type").notNull(), // "consumption", "purchase", "adjustment", "damage"
   quantity: integer("quantity").notNull(), // Negative for consumption, positive for purchase
   reason: text("reason"),
@@ -173,9 +208,13 @@ export const stockMovements = pgTable("stock_movements", {
 
 // Reservations (events, bookings, etc.)
 export const reservations = pgTable("reservations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(), // Who made the reservation
-  societyId: varchar("society_id").notNull().references(() => societies.id),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
   name: text("name").notNull(), // Event/reservation name
   type: text("type").notNull().default("bazkaria"), // "bazkaria", "afaria", "askaria", "hamaiketakao"
   status: text("status").notNull().default("confirmed"), // "pending", "confirmed", "cancelled", "completed"
@@ -234,7 +273,9 @@ export const insertReservationSchema = createInsertSchema(reservations).pick({
 
 // Superadmins table for backoffice multisociety admin access
 export const superadmins = pgTable("superadmins", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   email: varchar("email").notNull().unique(),
   password: varchar("password").notNull(), // Hashed password
   name: text("name").notNull(),
@@ -252,9 +293,15 @@ export const insertSuperadminSchema = createInsertSchema(superadmins).pick({
 
 // Credits/Debts (monthly calculated debts for members)
 export const credits = pgTable("credits", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  memberId: varchar("member_id").notNull().references(() => users.id),
-  societyId: varchar("society_id").notNull().references(() => societies.id),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  memberId: varchar("member_id")
+    .notNull()
+    .references(() => users.id),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
   month: text("month").notNull(), // Format: "YYYY-MM" (e.g., "2024-12")
   year: integer("year").notNull(),
   monthNumber: integer("month_number").notNull(), // 1-12
@@ -270,19 +317,29 @@ export const credits = pgTable("credits", {
 });
 
 export const notes = pgTable("notes", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   notifyUsers: boolean("notify_users").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
-  createdBy: varchar("created_by").notNull().references(() => users.id),
-  societyId: varchar("society_id").notNull().references(() => societies.id),
+  createdBy: varchar("created_by")
+    .notNull()
+    .references(() => users.id),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
 // Note messages for multilingual support
 export const noteMessages = pgTable("note_messages", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  noteId: varchar("note_id").notNull().references(() => notes.id, { onDelete: "cascade" }),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  noteId: varchar("note_id")
+    .notNull()
+    .references(() => notes.id, { onDelete: "cascade" }),
   language: varchar("language").notNull(),
   title: varchar("title").notNull(),
   content: text("content").notNull(),
@@ -327,7 +384,9 @@ export type InsertNoteMessage = z.infer<typeof insertNoteMessageSchema>;
 
 // Tables for reservations
 export const tables = pgTable("tables", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   name: varchar("name").notNull().unique(),
   minCapacity: integer("min_capacity").default(1),
   maxCapacity: integer("max_capacity").notNull(),
@@ -347,9 +406,15 @@ export const insertTableSchema = createInsertSchema(tables).pick({
 
 // Notifications for users
 export const notifications = pgTable("notifications", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  societyId: varchar("society_id").notNull().references(() => societies.id, { onDelete: "cascade" }),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: varchar("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id, { onDelete: "cascade" }),
   referenceId: varchar("reference_id"), // Reference to the original entity (note_id, debt_id, etc.)
   title: varchar("title").notNull(),
   message: text("message").notNull(),
@@ -362,8 +427,12 @@ export const notifications = pgTable("notifications", {
 
 // Notification messages for multilingual support
 export const notificationMessages = pgTable("notification_messages", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  notificationId: varchar("notification_id").notNull().references(() => notifications.id, { onDelete: "cascade" }),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  notificationId: varchar("notification_id")
+    .notNull()
+    .references(() => notifications.id, { onDelete: "cascade" }),
   language: varchar("language").notNull(),
   title: varchar("title").notNull(),
   message: text("message").notNull(),
@@ -394,7 +463,7 @@ export type NotificationMessage = typeof notificationMessages.$inferSelect;
 export type InsertNotificationMessage = z.infer<typeof insertNotificationMessageSchema>;
 
 // Shared types for multilingual content handling
-export type Language = 'eu' | 'es' | 'en';
+export type Language = "eu" | "es" | "en";
 
 export interface MultilingualMessage {
   language: Language;
@@ -410,12 +479,12 @@ export interface MultilingualContent {
 export interface DisplayContent {
   title: string;
   content: string;
-  language: Language | 'unknown';
+  language: Language | "unknown";
 }
 
 // Type guards
 export const isValidLanguage = (lang: string): lang is Language => {
-  return ['eu', 'es', 'en'].includes(lang);
+  return ["eu", "es", "en"].includes(lang);
 };
 
 export const hasMessages = (content: any): content is { messages: MultilingualMessage[] } => {
@@ -423,28 +492,31 @@ export const hasMessages = (content: any): content is { messages: MultilingualMe
 };
 
 export const findMessageByLanguage = (
-  messages: MultilingualMessage[], 
+  messages: MultilingualMessage[],
   preferredLanguage: Language
 ): MultilingualMessage | undefined => {
   // Try preferred language first
   let message = messages.find(msg => msg.language === preferredLanguage);
-  
+
   // If not found, try fallback language
   if (!message) {
-    const fallbackLanguage = preferredLanguage === 'eu' ? 'es' : 'eu';
+    const fallbackLanguage = preferredLanguage === "eu" ? "es" : "eu";
     message = messages.find(msg => msg.language === fallbackLanguage);
   }
-  
+
   // If still not found, return first available message
   if (!message && messages.length > 0) {
     message = messages[0];
   }
-  
+
   return message;
 };
 
 export const getDisplayContent = (
-  content: MultilingualContent | { messages?: MultilingualMessage[] } | { title?: string; content?: string },
+  content:
+    | MultilingualContent
+    | { messages?: MultilingualMessage[] }
+    | { title?: string; content?: string },
   userLanguage: Language
 ): DisplayContent => {
   if (hasMessages(content)) {
@@ -454,33 +526,35 @@ export const getDisplayContent = (
     } else {
       // This should not happen with the fallback logic, but just in case
       return {
-        title: 'Error',
-        content: 'Content not available',
-        language: 'unknown'
+        title: "Error",
+        content: "Content not available",
+        language: "unknown",
       };
     }
   }
-  
+
   // Handle simple title/content format
-  if ('title' in content && 'content' in content) {
+  if ("title" in content && "content" in content) {
     return {
-      title: content.title || '',
-      content: content.content || '',
-      language: userLanguage
+      title: content.title || "",
+      content: content.content || "",
+      language: userLanguage,
     };
   }
-  
+
   // Default fallback
   return {
-    title: '',
-    content: '',
-    language: 'unknown'
+    title: "",
+    content: "",
+    language: "unknown",
   };
 };
 
 // Subscription types table
 export const subscriptionTypes = pgTable("subscription_types", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   description: text("description"),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
@@ -488,7 +562,9 @@ export const subscriptionTypes = pgTable("subscription_types", {
   periodMonths: integer("period_months").notNull().default(12), // Number of months for custom periods
   isActive: boolean("is_active").notNull().default(true),
   autoRenew: boolean("auto_renew").notNull().default(false),
-  societyId: varchar("society_id").notNull().references(() => societies.id),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

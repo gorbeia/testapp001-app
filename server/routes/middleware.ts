@@ -3,7 +3,7 @@ import { type User } from "@shared/schema";
 import jwt from "jsonwebtoken";
 
 // JWT Configuration
-const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key-change-in-production";
 
 // Extend Express Request type
 declare global {
@@ -17,8 +17,8 @@ declare global {
 // JWT Authentication middleware
 export const sessionMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Try to get token from cookie first, then from Authorization header
-  const token = req.cookies?.['auth-token'] || req.headers.authorization?.replace('Bearer ', '');
-  
+  const token = req.cookies?.["auth-token"] || req.headers.authorization?.replace("Bearer ", "");
+
   if (!token) {
     return next();
   }
@@ -29,9 +29,9 @@ export const sessionMiddleware = (req: Request, res: Response, next: NextFunctio
       req.user = user;
     }
   } catch (error) {
-    console.error('JWT verification error:', error);
+    console.error("JWT verification error:", error);
   }
-  
+
   next();
 };
 
@@ -48,11 +48,11 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
   if (!req.user) {
     return res.status(401).json({ message: "Authentication required" });
   }
-  
-  if (req.user.function !== 'administratzailea') {
+
+  if (req.user.function !== "administratzailea") {
     return res.status(403).json({ message: "Admin access required" });
   }
-  
+
   next();
 };
 
@@ -60,11 +60,11 @@ export const requireTreasurer = (req: Request, res: Response, next: NextFunction
   if (!req.user) {
     return res.status(401).json({ message: "Authentication required" });
   }
-  
+
   if (!hasTreasurerAccess(req.user)) {
     return res.status(403).json({ message: "Treasurer access required" });
   }
-  
+
   next();
 };
 
@@ -72,10 +72,10 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
   if (!req.user) {
     return res.status(401).json({ message: "Authentication required" });
   }
-  
+
   next();
 };
 
 const hasTreasurerAccess = (user: User): boolean => {
-  return user.function === 'diruzaina' || user.function === 'administratzailea';
+  return user.function === "diruzaina" || user.function === "administratzailea";
 };
