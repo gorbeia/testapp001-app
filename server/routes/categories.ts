@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { productCategories, categoryMessages } from "@shared/schema";
+import { productCategories, categoryMessages, products } from "@shared/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
@@ -283,6 +283,24 @@ export function registerCategoryRoutes(app: Express) {
       
       if (!existingCategory.length) {
         return res.status(404).json({ message: "Category not found" });
+      }
+      
+      // Check if category is being used by any active products
+      const productsUsingCategory = await db
+        .select()
+        .from(products)
+        .where(and(
+          eq(products.categoryId, id),
+          eq(products.societyId, societyId),
+          eq(products.isActive, true)
+        ))
+        .limit(1);
+      
+      if (productsUsingCategory.length > 0) {
+        return res.status(400).json({ 
+          message: "categoryInUse",
+          details: "categoryInUseDescription"
+        });
       }
       
       await db.update(productCategories)

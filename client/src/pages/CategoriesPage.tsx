@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/lib/i18n';
+import { useToast } from '@/hooks/use-toast';
 import { authFetch } from '@/lib/api';
 import { IconSelector } from '@/components/IconSelector';
 
@@ -58,6 +59,7 @@ interface CategoryFormData {
 
 export default function CategoriesPage() {
   const { t } = useLanguage();
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -126,10 +128,21 @@ export default function CategoriesPage() {
       const response = await authFetch(`/api/categories/${id}`, {
         method: 'DELETE',
       });
-      if (!response.ok) throw new Error('Failed to delete category');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Failed to delete category');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+    },
+    onError: (error: Error) => {
+      const description = error.message === 'categoryInUse' ? t('categoryInUse') : error.message;
+      toast({
+        title: t('error'),
+        description,
+        variant: 'destructive',
+      });
     },
   });
 
