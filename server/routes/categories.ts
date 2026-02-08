@@ -26,7 +26,7 @@ export function registerCategoryRoutes(app: Express) {
         const fallbackLanguage = language === "eu" ? "es" : "eu";
 
         // First try to get messages in the requested language
-        let categories = await db
+        const categories = await db
           .select({
             id: productCategories.id,
             color: productCategories.color,
@@ -104,7 +104,7 @@ export function registerCategoryRoutes(app: Express) {
         const fallbackLanguage = language === "eu" ? "es" : "eu";
 
         // First try to get message in the requested language
-        let category = await db
+        const category = await db
           .select({
             id: productCategories.id,
             color: productCategories.color,

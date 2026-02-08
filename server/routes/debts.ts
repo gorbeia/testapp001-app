@@ -47,7 +47,7 @@ export function registerDebtRoutes(app: Express) {
         conditions.push(eq(credits.status, status as string));
       }
 
-      let query = db
+      const query = db
         .select()
         .from(credits)
         .where(and(...conditions));

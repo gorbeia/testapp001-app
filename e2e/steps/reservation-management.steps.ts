@@ -83,7 +83,7 @@ When("I select the reservation date", async function () {
 
   // Navigate to the target month
   const currentMonth = new Date();
-  let monthsToNavigate =
+  const monthsToNavigate =
     (targetYear - currentMonth.getFullYear()) * 12 + (targetMonth - currentMonth.getMonth());
 
   // Open date picker
@@ -104,7 +104,7 @@ When("I select the reservation date", async function () {
   }
 
   // Select a day in the target month
-  let dayToSelect = Math.min(targetDay, 28);
+  const dayToSelect = Math.min(targetDay, 28);
 
   // Try to find the specific day, fallback to any available day
   const targetDayButton = page

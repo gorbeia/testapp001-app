@@ -179,7 +179,7 @@ export function registerReservationRoutes(app: Express) {
           .leftJoin(users, eq(reservations.userId, users.id));
 
         // Apply filters based on query parameters
-        let conditions = [eq(reservations.societyId, societyId)];
+        const conditions = [eq(reservations.societyId, societyId)];
 
         // Check if this request is for upcoming reservations only
         const upcomingOnly = req.query.upcoming === "true";
@@ -300,7 +300,7 @@ export function registerReservationRoutes(app: Express) {
             .json({ message: "Invalid limit parameter (must be between 1 and 100)" });
         }
 
-        let conditions = [eq(reservations.userId, user.id), eq(reservations.societyId, societyId)];
+        const conditions = [eq(reservations.userId, user.id), eq(reservations.societyId, societyId)];
 
         // Add status filter
         if (status && status !== "all") {

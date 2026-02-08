@@ -62,7 +62,7 @@ export function registerConsumptionRoutes(app: Express) {
         const { search, month } = req.query;
         const societyId = getUserSocietyId(user);
 
-        let conditions = [eq(consumptions.userId, user.id), eq(consumptions.societyId, societyId)];
+        const conditions = [eq(consumptions.userId, user.id), eq(consumptions.societyId, societyId)];
 
         // Add month filter
         if (month && month !== "all") {
@@ -117,7 +117,7 @@ export function registerConsumptionRoutes(app: Express) {
         const societyId = getUserSocietyId(user);
 
         // Build base conditions
-        let baseConditions = [eq(consumptions.societyId, societyId)];
+        const baseConditions = [eq(consumptions.societyId, societyId)];
 
         // Add user filter (only admins can filter by user)
         if (
