@@ -232,6 +232,24 @@ export const insertReservationSchema = createInsertSchema(reservations).pick({
   notes: true,
 });
 
+// Superadmins table for backoffice multisociety admin access
+export const superadmins = pgTable("superadmins", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: varchar("email").notNull().unique(),
+  password: varchar("password").notNull(), // Hashed password
+  name: text("name").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSuperadminSchema = createInsertSchema(superadmins).pick({
+  email: true,
+  password: true,
+  name: true,
+  isActive: true,
+});
+
 // Credits/Debts (monthly calculated debts for members)
 export const credits = pgTable("credits", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

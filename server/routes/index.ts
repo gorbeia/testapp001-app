@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "../db";
 import type { User } from "../../shared/schema";
+import { i18nMiddleware } from "../lib/i18n";
 
 // JWT Configuration
 const JWT_SECRET = process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production';
@@ -87,10 +88,12 @@ const sessionMiddleware = (req: Request, res: Response, next: NextFunction) => {
 };
 
 // Extend Express Request type
+
 declare global {
   namespace Express {
     interface Request {
       user?: User;
+      isBackoffice?: boolean;
     }
   }
 }
@@ -115,6 +118,7 @@ import { registerSocietyRoutes } from "./societies";
 import { registerUserRoutes } from "./users";
 import { registerSubscriptionRoutes } from "./subscriptions";
 import { registerCategoryRoutes } from "./categories";
+import { registerBackofficeRoutes, backofficeSessionMiddleware } from "./backoffice";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -122,7 +126,10 @@ export async function registerRoutes(
 ): Promise<Server> {
   // Apply session middleware to all routes
   app.use(sessionMiddleware);
-  
+  // Apply backoffice session middleware to all routes (independent)
+  app.use(backofficeSessionMiddleware);
+  // Apply i18n middleware to all routes
+  app.use(i18nMiddleware);
   // Apply no-cache to all API routes
   app.use("/api", noCache);
 
@@ -161,6 +168,9 @@ export async function registerRoutes(
   
   // Register category routes
   registerCategoryRoutes(app);
+
+  // Register backoffice routes
+  registerBackofficeRoutes(app);
 
   // Authentication: login using database-backed users table
   app.post("/api/login", async (req: Request, res: Response, next: NextFunction) => {

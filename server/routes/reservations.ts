@@ -1,8 +1,9 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { reservations, users, societies, notifications, notificationMessages, type User, type Reservation, type Society } from "@shared/schema";
-import { eq, and, gte, ne, desc, asc, count, sql, like, or, between } from "drizzle-orm";
-import { sessionMiddleware, requireAuth } from "./middleware";
+import { users, reservations, notifications, notificationMessages, type User } from "@shared/schema";
+import { eq, and, or, like, gte, between, ne, count, desc, asc, sql } from "drizzle-orm";
+import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
+import { translateWithParams, formatDate, translations } from "../lib/i18n";
 import { debtCalculationService } from "../cron-jobs";
 
 // Helper function to get society ID from JWT (no DB query needed)
@@ -13,90 +14,88 @@ const getUserSocietyId = (user: User): string => {
   return user.societyId;
 };
 
-// Helper function to create reservation notifications
-const createReservationNotification = async (
-  userId: string,
-  societyId: string,
-  type: 'created' | 'cancelled' | 'confirmed',
-  reservationData: any
-) => {
-  const reservationName = reservationData.name || 'erreserba';
-  const reservationDate = new Date(reservationData.startDate).toLocaleDateString('eu-ES');
-  
-  let title, message;
-  
-  switch (type) {
-    case 'cancelled':
-      title = 'Erreserba ezeztatua';
-      message = `Zure "${reservationName}" erreserba ezeztatu egin da. Data: ${reservationDate}.`;
-      break;
-    case 'confirmed':
-      title = 'Erreserba konfirmatua';
-      message = `Zure "${reservationName}" erreserba konfirmatua izan da. Data: ${reservationDate}.`;
-      break;
-    case 'created':
-    default:
-      title = 'Erreserba berria';
-      message = `Zure "${reservationName}" erreserba ondo egin da. Data: ${reservationDate}.`;
-      break;
-  }
-  
-  // Create notification
-  const notification = await db.insert(notifications).values({
-    userId,
-    societyId,
-    title,
-    message,
-    isRead: false,
-    defaultLanguage: 'eu',
-  }).returning();
+// Helper function to map reservation type to email subject key
+const getEmailSubjectKey = (type: 'cancelled' | 'confirmed' | 'created'): 'reservationCancelled' | 'reservationConfirmed' | 'reservationCreated' => {
+  const keyMap = {
+    cancelled: 'reservationCancelled' as const,
+    confirmed: 'reservationConfirmed' as const, 
+    created: 'reservationCreated' as const,
+  };
+  return keyMap[type];
+};
 
-  // Create multilingual messages
+// Helper function to create reservation notifications
+const createReservationNotifications = async (
+  reservationData: any,
+  reservationName: string,
+  type: 'created' | 'cancelled' | 'confirmed'
+) => {
+  const reservationDate = new Date(reservationData.startDate);
+  
+  // Define message keys based on type
+  const messageKey = type === 'cancelled' ? 'reservationCancelledNotification' : 
+                     type === 'confirmed' ? 'reservationConfirmedNotification' : 
+                     'reservationCreatedNotification';
+  
+  // Create notification record
+  const [notification] = await db.insert(notifications)
+    .values({
+      userId: reservationData.userId,
+      societyId: reservationData.societyId,
+      referenceId: reservationData.id,
+      title: translations.eu.emailSubject[getEmailSubjectKey(type)],
+      message: translateWithParams(messageKey, {
+        reservationName,
+        date: formatDate(reservationDate, 'eu')
+      }, 'eu'),
+      defaultLanguage: 'eu',
+    })
+    .returning();
+  
   const messages = [];
   
-  // Basque (default)
+  // Basque
+  const basqueMessage = translateWithParams(messageKey, {
+    reservationName,
+    date: formatDate(reservationDate, 'eu')
+  }, 'eu');
+  
   messages.push({
-    notificationId: notification[0].id,
+    notificationId: notification.id,
     language: 'eu',
-    title,
-    message,
+    title: translations.eu.emailSubject[getEmailSubjectKey(type)],
+    message: basqueMessage,
   });
   
   // Spanish
-  const spanishTitle = type === 'cancelled' ? 'Reserva cancelada' : 
-                      type === 'confirmed' ? 'Reserva confirmada' : 'Nueva reserva';
-  const spanishMessage = type === 'cancelled' ? 
-    `Tu reserva "${reservationName}" ha sido cancelada. Fecha: ${new Date(reservationData.startDate).toLocaleDateString('es-ES')}.` :
-    type === 'confirmed' ? 
-    `Tu reserva "${reservationName}" ha sido confirmada. Fecha: ${new Date(reservationData.startDate).toLocaleDateString('es-ES')}.` :
-    `Tu reserva "${reservationName}" se ha realizado correctamente. Fecha: ${new Date(reservationData.startDate).toLocaleDateString('es-ES')}.`;
+  const spanishMessage = translateWithParams(messageKey, {
+    reservationName,
+    date: formatDate(reservationDate, 'es')
+  }, 'es');
   
   messages.push({
-    notificationId: notification[0].id,
+    notificationId: notification.id,
     language: 'es',
-    title: spanishTitle,
+    title: translations.es.emailSubject[getEmailSubjectKey(type)],
     message: spanishMessage,
   });
   
   // English
-  const englishTitle = type === 'cancelled' ? 'Reservation cancelled' : 
-                       type === 'confirmed' ? 'Reservation confirmed' : 'New reservation';
-  const englishMessage = type === 'cancelled' ? 
-    `Your "${reservationName}" reservation has been cancelled. Date: ${new Date(reservationData.startDate).toLocaleDateString('en-US')}.` :
-    type === 'confirmed' ? 
-    `Your "${reservationName}" reservation has been confirmed. Date: ${new Date(reservationData.startDate).toLocaleDateString('en-US')}.` :
-    `Your "${reservationName}" reservation has been successfully made. Date: ${new Date(reservationData.startDate).toLocaleDateString('en-US')}.`;
+  const englishMessage = translateWithParams(messageKey, {
+    reservationName,
+    date: formatDate(reservationDate, 'en')
+  }, 'en');
   
   messages.push({
-    notificationId: notification[0].id,
+    notificationId: notification.id,
     language: 'en',
-    title: englishTitle,
+    title: translations.en.emailSubject[getEmailSubjectKey(type)],
     message: englishMessage,
   });
 
   await db.insert(notificationMessages).values(messages);
   
-  return notification[0];
+  return notification;
 };
 
 export function registerReservationRoutes(app: Express) {
@@ -635,11 +634,10 @@ export function registerReservationRoutes(app: Express) {
         .returning();
       
       // Create cancellation notification for the user
-      await createReservationNotification(
-        reservation[0].userId,
-        societyId,
-        'cancelled',
-        updatedReservation[0]
+      await createReservationNotifications(
+        updatedReservation[0],
+        reservation[0].name,
+        'cancelled'
       );
       
       // Trigger real-time debt calculation for current month
@@ -678,11 +676,10 @@ export function registerReservationRoutes(app: Express) {
       
       // Create notification if admin is cancelling someone else's reservation
       if (reservation[0].userId !== user.id && isAdmin) {
-        await createReservationNotification(
-          reservation[0].userId,
-          societyId,
-          'cancelled',
-          reservation[0]
+        await createReservationNotifications(
+          reservation[0],
+          reservation[0].name,
+          'cancelled'
         );
       }
       

@@ -20,7 +20,8 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   }, [language]);
 
   const t = (key: TranslationKey, values?: Record<string, number | string>): string => {
-    let text: string = translations[language][key];
+    const langTranslations = translations[language] as Record<TranslationKey, string>;
+    let text: string = langTranslations[key] || key;
     if (values) {
       Object.entries(values).forEach(([placeholder, value]) => {
         text = text.replace(new RegExp(`{${placeholder}}`, 'g'), value.toString());

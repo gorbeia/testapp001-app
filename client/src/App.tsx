@@ -1,4 +1,4 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -7,7 +7,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
-import { useAuth } from "@/lib/auth";
+import { useAuth } from '@/lib/auth';
 import { LoginForm } from "@/components/LoginForm";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
@@ -32,6 +32,8 @@ import NotificationsPage from "@/pages/NotificationsPage";
 import { SubscriptionsPage } from "@/pages/SubscriptionsPage";
 import CategoriesPage from "@/pages/CategoriesPage";
 import NotFound from "@/pages/not-found";
+import { SuperAdminLoginPage } from "@/pages/SuperAdminLoginPage";
+import { BackofficeSocietiesPage, BackofficeSuperadminsPage, BackofficeLayout } from "@/backoffice";
 
 function AppRoutes() {
   return (
@@ -127,7 +129,37 @@ function AppRoutes() {
 }
 
 function AuthenticatedApp() {
+  const [location] = useLocation();
   const { isAuthenticated } = useAuth();
+
+  // Multisociety management area (superadmin), independent of society-based layout
+  // All pages under /elkarteapp/kudeaketa* use their own UI with the backoffice sidebar.
+  if (location.startsWith("/elkarteapp/kudeaketa")) {
+    // Login page doesn't use the backoffice layout
+    if (location === "/elkarteapp/kudeaketa/login") {
+      return <SuperAdminLoginPage />;
+    }
+    
+    // Redirect base URL to societies page
+    if (location === "/elkarteapp/kudeaketa") {
+      return <BackofficeLayout>
+        <Switch>
+          <Route path="/elkarteapp/kudeaketa" component={BackofficeSocietiesPage} />
+        </Switch>
+      </BackofficeLayout>;
+    }
+    
+    // All other backoffice routes use the backoffice layout
+    return (
+      <BackofficeLayout>
+        <Switch>
+          <Route path="/elkarteapp/kudeaketa/societies" component={BackofficeSocietiesPage} />
+          <Route path="/elkarteapp/kudeaketa/superadmins" component={BackofficeSuperadminsPage} />
+          <Route component={() => <div className="p-8"><h1>Page Not Found</h1><p>The requested backoffice page does not exist.</p></div>} />
+        </Switch>
+      </BackofficeLayout>
+    );
+  }
 
   if (!isAuthenticated) {
     return <LoginForm />;

@@ -49,7 +49,7 @@ export async function seedReservations() {
     
     console.log(`Using society pricing: ${reservationPrice}€/person reservation, ${kitchenPrice}€/person kitchen`);
 
-    const dummyReservations: Omit<Reservation, 'createdAt' | 'updatedAt' | 'totalAmount'>[] = [
+    const dummyReservations: Omit<Reservation, 'createdAt' | 'updatedAt' | 'totalAmount' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt'>[] = [
       {
         id: '550e8400-e29b-4d69-a516-31095a414aa6',
         userId: firstUser.id,
@@ -131,7 +131,7 @@ export async function seedReservations() {
     ];
 
     // November reservations for Mikel Etxeberria
-    const mikelNovemberReservations = [
+    const mikelNovemberReservations: Omit<Reservation, 'createdAt' | 'updatedAt' | 'totalAmount' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt'>[] = [
       {
         id: 'mikel-nov-001',
         userId: firstUser.id,
@@ -187,7 +187,7 @@ export async function seedReservations() {
     ];
     
     // Additional reservations for 2024 and earlier 2025 months for pagination testing
-    const historicalReservations: Omit<Reservation, 'createdAt' | 'updatedAt' | 'totalAmount'>[] = [];
+    const historicalReservations: Omit<Reservation, 'createdAt' | 'updatedAt' | 'totalAmount' | 'cancellationReason' | 'cancelledBy' | 'cancelledAt'>[] = [];
     
     // Generate reservations for each month from January 2024 to November 2025
     const eventTypes = ['bazkaria', 'afaria', 'askaria', 'hamaiketakoa'];
