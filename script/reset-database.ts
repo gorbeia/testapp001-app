@@ -3,8 +3,6 @@ import { execSync } from "child_process";
 import { Client } from "pg";
 import path from "path";
 import { fileURLToPath } from "url";
-import fs from "fs/promises";
-import { drizzle } from "drizzle-orm/node-postgres";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

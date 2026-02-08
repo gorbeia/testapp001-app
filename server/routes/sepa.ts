@@ -4,14 +4,6 @@ import { credits, users, type User } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
-// Helper function to get society ID from JWT (no DB query needed)
-const getUserSocietyId = (user: User): string => {
-  if (!user.societyId) {
-    throw new Error("User societyId not found in JWT");
-  }
-  return user.societyId;
-};
-
 // Helper function to check if user has treasurer access
 const requireTreasurerAccess = (user: User): boolean => {
   return user.function === "diruzaina" || user.function === "administratzailea";

@@ -20,13 +20,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import MonthGrid from "@/components/MonthGrid";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";

@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import { db } from "./db";
-import { eq, and, gte, lte, ne, sql, notLike } from "drizzle-orm";
+import { eq, and, gte, lte, ne, sql } from "drizzle-orm";
 import {
   users,
   consumptions,

@@ -131,10 +131,7 @@ export function registerTableRoutes(app: Express) {
           });
         }
 
-        const [deletedTable] = await db.delete(tables).where(eq(tables.id, id)).returning();
-
-        console.log(`[TABLE-DELETED] Table '${tableInfo.name}' deleted by admin`);
-
+        await db.delete(tables).where(eq(tables.id, id));
         return res.status(204).send();
       } catch (err) {
         next(err);

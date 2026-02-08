@@ -407,7 +407,7 @@ export function registerUserRoutes(app: Express) {
           .returning();
 
         // Remove password from response
-        const { password, ...userWithoutPassword } = updatedUser;
+        const { password: _, ...userWithoutPassword } = updatedUser;
 
         return res.status(200).json(userWithoutPassword);
       } catch (err) {

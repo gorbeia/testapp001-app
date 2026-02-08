@@ -1,6 +1,6 @@
 import { db } from "../server/db";
 import { notifications, notificationMessages, users, notes, noteMessages } from "@shared/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 async function seedNoteBasedNotifications() {
   console.log("Seeding note-based notifications...");

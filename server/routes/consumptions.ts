@@ -7,8 +7,6 @@ import {
   users,
   stockMovements,
   type User,
-  type Consumption,
-  type ConsumptionItem,
 } from "@shared/schema";
 import { eq, and, gte, desc, count, sql, like, or, between } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";

@@ -1,4 +1,4 @@
-import { Given, When, Then } from "@cucumber/cucumber";
+import { When, Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
 import { getPage } from "./shared-state";
 
