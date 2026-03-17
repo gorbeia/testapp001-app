@@ -242,6 +242,7 @@ Then("the consumption should appear in the consumption list", async function () 
   await page.waitForLoadState("networkidle");
 
   // Login as admin
+  await page.fill('[data-testid="input-society-id"]', "GT001");
   await page.fill('[data-testid="input-email"]', "admin@txokoa.eus");
   await page.fill('[data-testid="input-password"]', "password");
   await page.click('[data-testid="button-login"]');

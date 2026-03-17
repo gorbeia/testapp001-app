@@ -72,6 +72,7 @@ When("I log in as a {word} user", async function (role: string) {
   const email = emailByRole[role];
   assert.ok(email, `Unknown demo user role: ${role}`);
 
+  await page.fill('[data-testid="input-society-id"]', "GT001");
   await page.fill('[data-testid="input-email"]', email);
   // Use the actual seeded password from the database
   await page.fill('[data-testid="input-password"]', "demo");
@@ -94,6 +95,7 @@ When("I try to log in as a bazkide user with a wrong password", async function (
   const page = getPage();
   assert.ok(page, "Page was not initialized");
 
+  await page.fill('[data-testid="input-society-id"]', "GT001");
   await page.fill('[data-testid="input-email"]', "bazkidea@txokoa.eus");
   await page.fill('[data-testid="input-password"]', "wrong-password");
 
