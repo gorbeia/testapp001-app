@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useLanguage } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,7 +58,6 @@ interface Table {
 
 export function TablesPage() {
   const { t } = useLanguage();
-  const { user } = useAuth();
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);

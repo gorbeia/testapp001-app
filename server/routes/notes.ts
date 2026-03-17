@@ -32,7 +32,6 @@ async function convertNoteToNotifications(noteId: string, societyId: string) {
     }
 
     // Extract the note and messages
-    const note = noteWithMessages[0].note;
     const messages = noteWithMessages.filter(row => row.messages).map(row => row.messages);
 
     // Group messages by language
@@ -43,8 +42,6 @@ async function convertNoteToNotifications(noteId: string, societyId: string) {
 
     // Create a notification for each user using the note content
     for (const user of societyUsers) {
-      // Determine user language preference (default to 'eu' if not set)
-      const userLanguage = "eu"; // Since users table doesn't have language field, default to Basque
 
       // Create the main notification with note content
       const [notification] = await db

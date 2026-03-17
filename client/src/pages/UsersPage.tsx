@@ -135,11 +135,6 @@ export function UsersPage() {
   const [editFunction, setEditFunction] = useState<string>("");
   const [editSubscriptionTypeId, setEditSubscriptionTypeId] = useState<string>("none");
 
-  // Create form refs
-  const createPhoneRef = useRef<HTMLInputElement | null>(null);
-  const createIbanRef = useRef<HTMLInputElement | null>(null);
-  const [createRole, setCreateRole] = useState<string>("");
-  const [createFunction, setCreateFunction] = useState<string>("");
   const [createSubscriptionTypeId, setCreateSubscriptionTypeId] = useState<string>("none");
 
   if (isInitialLoad && isLoading) {
@@ -398,8 +393,6 @@ export function UsersPage() {
         });
         return;
       }
-
-      const created: { id: number; username: string; password: string } = await response.json();
 
       // Invalidate cache to refresh the users list
       queryClient.invalidateQueries({ queryKey: ["users"] });

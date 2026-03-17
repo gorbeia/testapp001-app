@@ -69,7 +69,7 @@ export function SocietyPage() {
 
     try {
       const token = localStorage.getItem("auth:token");
-      const { id, createdAt, updatedAt, ...updateData } = society; // Remove timestamps
+      const { ...updateData } = society; // Remove timestamps
 
       const response = await fetch(`/api/societies/${society.id}`, {
         method: "PUT",

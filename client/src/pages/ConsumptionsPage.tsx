@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+type RequestInit = globalThis.RequestInit;
 import {
   Plus,
   Minus,
@@ -222,8 +223,6 @@ export function ConsumptionsPage() {
       if (!itemsResponse.ok) {
         throw new Error("Failed to add consumption items");
       }
-
-      const itemsResult = await itemsResponse.json();
 
       // Close the consumption
       const closeResponse = await authFetch(`/api/consumptions/${consumption.id}/close`, {

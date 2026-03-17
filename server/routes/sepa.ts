@@ -37,15 +37,6 @@ export function registerSepaRoutes(app: Express) {
           return res.status(400).json({ message: "Month parameter is required" });
         }
 
-        // First, let's check if there are any credits at all
-        const allCredits = await db.select().from(credits);
-
-        // Check credits for the specific month
-        const monthCredits = await db
-          .select()
-          .from(credits)
-          .where(eq(credits.month, month as string));
-
         // Get all credits for the specified month with user information
         const creditsData = await db
           .select({

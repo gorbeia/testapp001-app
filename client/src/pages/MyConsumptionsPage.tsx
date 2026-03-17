@@ -39,7 +39,7 @@ interface ConsumptionItemWithProduct extends ConsumptionItem {
 export function MyConsumptionsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
-  const { user } = useAuth();
+  useAuth();
   const [searchTerm, setSearchTerm] = useState("");
 
   // URL state management

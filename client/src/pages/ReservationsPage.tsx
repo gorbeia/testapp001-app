@@ -13,7 +13,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useLanguage } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
 import { format } from "date-fns";
 import { eu, es } from "date-fns/locale";
 import type { Reservation } from "@shared/schema";
@@ -42,7 +41,6 @@ const authFetch = async (url: string, options: RequestInit = {}) => {
 
 function ReservationsPage() {
   const { t, language } = useLanguage();
-  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const monthFilter = useUrlFilter({
