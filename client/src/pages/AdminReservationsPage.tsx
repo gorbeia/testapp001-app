@@ -6,6 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -236,8 +242,28 @@ export function AdminReservationsPage() {
   };
 
   // Get status badge component
-  const getStatusBadge = (status: string) => {
-    return <Badge variant={getStatusBadgeVariant(status)}>{getStatusLabel(status)}</Badge>;
+  const getStatusBadge = (status: string, cancellationReason?: string | null) => {
+    // Show cancellation reason as tooltip for cancelled reservations
+    if (status === "cancelled" && cancellationReason) {
+      return (
+        <Tooltip>
+          <TooltipTrigger>
+            <Badge variant={getStatusBadgeVariant(status)}>
+              {getStatusLabel(status)}
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="max-w-xs">{cancellationReason}</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return (
+      <Badge variant={getStatusBadgeVariant(status)}>
+        {getStatusLabel(status)}
+      </Badge>
+    );
   };
 
   // Get type badge component
@@ -285,7 +311,8 @@ export function AdminReservationsPage() {
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className="p-6 space-y-6">
+      <TooltipProvider>
+        <div className="p-6 space-y-6">
         <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">{t("reservationsManagement")}</h1>
@@ -407,7 +434,7 @@ export function AdminReservationsPage() {
                         </TableCell>
                         <TableCell>{getTypeBadge(reservation.type)}</TableCell>
                         <TableCell className="text-right">
-                          {getStatusBadge(reservation.status)}
+                          {getStatusBadge(reservation.status, reservation.cancellationReason)}
                         </TableCell>
                         <TableCell className="text-right w-32">
                           <div className="flex items-center gap-2 justify-end ml-auto">
@@ -466,7 +493,7 @@ export function AdminReservationsPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">{t("tableHeaderStatus")}</p>
-                    <p>{getStatusBadge(selectedReservation.status)}</p>
+                    <p>{getStatusBadge(selectedReservation.status, selectedReservation.cancellationReason)}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">{t("tableHeaderTable")}</p>
@@ -488,6 +515,14 @@ export function AdminReservationsPage() {
                     <div>
                       <p className="text-sm font-medium">{t("cost")}</p>
                       <p>€{selectedReservation.totalAmount}</p>
+                    </div>
+                  )}
+                  {selectedReservation.status === "cancelled" && selectedReservation.cancellationReason && (
+                    <div className="col-span-2">
+                      <p className="text-sm font-medium">{t("cancellationReason")}</p>
+                      <p className="text-sm text-muted-foreground bg-muted p-2 rounded">
+                        {selectedReservation.cancellationReason}
+                      </p>
                     </div>
                   )}
                   {selectedReservation.notes && (
@@ -578,6 +613,7 @@ export function AdminReservationsPage() {
           </AlertDialogContent>
         </AlertDialog>
       </div>
+      </TooltipProvider>
     </ErrorBoundary>
   );
 }

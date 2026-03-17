@@ -136,7 +136,7 @@ export function registerReservationRoutes(app: Express) {
       try {
         const user = req.user!;
         const societyId = getUserSocietyId(user);
-const { limit, month, user: userId, page = 1, search, type } = req.query;
+const { limit, month, user: userId, page = 1, search, type, status } = req.query;
 
         // Check if user is admin (administratzailea or diruzaina)
         const isAdmin = user.function === "administratzailea" || user.function === "diruzaina";
@@ -171,6 +171,9 @@ const { limit, month, user: userId, page = 1, search, type } = req.query;
             table: reservations.table,
             totalAmount: reservations.totalAmount,
             notes: reservations.notes,
+            cancellationReason: reservations.cancellationReason,
+            cancelledBy: reservations.cancelledBy,
+            cancelledAt: reservations.cancelledAt,
             createdAt: reservations.createdAt,
             updatedAt: reservations.updatedAt,
             userName: users.name,
@@ -218,6 +221,11 @@ const { limit, month, user: userId, page = 1, search, type } = req.query;
         // Apply user filter
         if (userId && typeof userId === "string" && userId !== "all") {
           conditions.push(eq(reservations.userId, userId));
+        }
+
+        // Apply status filter
+        if (status && typeof status === "string" && status !== "all") {
+          conditions.push(eq(reservations.status, status));
         }
 
         // Apply type filter
