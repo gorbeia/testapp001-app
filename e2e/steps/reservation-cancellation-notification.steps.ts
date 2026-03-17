@@ -151,9 +151,6 @@ When("I cancel the user's reservation", async function () {
         console.log('No response detected - checking if dialog closed anyway...');
       }
       
-      // Take screenshot to see what happened
-      await page.screenshot({ path: 'debug-after-cancel.png', fullPage: true });
-      
       // Check if dialog is still open
       const dialogOpen = await page.locator('div[role="alertdialog"][data-state="open"]').isVisible().catch(() => false);
       if (dialogOpen) {
