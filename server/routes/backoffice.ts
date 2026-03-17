@@ -157,6 +157,7 @@ export function registerBackofficeRoutes(app: Express) {
         // Check if alphabetic ID already exists and make it unique
         let finalAlphabeticId = alphabeticId;
         let counter = 1;
+        // eslint-disable-next-line no-constant-condition
         while (true) {
           const existing = await db.query.societies.findFirst({
             where: (s, { eq }) => eq(s.alphabeticId, finalAlphabeticId),

@@ -136,7 +136,7 @@ export function registerReservationRoutes(app: Express) {
       try {
         const user = req.user!;
         const societyId = getUserSocietyId(user);
-        const { limit, month, user: userId, status, page = 1, search, type } = req.query;
+const { limit, month, user: userId, page = 1, search, type } = req.query;
 
         // Check if user is admin (administratzailea or diruzaina)
         const isAdmin = user.function === "administratzailea" || user.function === "diruzaina";

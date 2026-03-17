@@ -269,7 +269,7 @@ export const createNotification = async (req: Request, res: Response, next: Next
   try {
     const user = req.user!;
     const societyId = getUserSocietyId(user);
-    const { title, message, type, targetUserId, messages, defaultLanguage = "eu" } = req.body;
+const { title, message, targetUserId, messages, defaultLanguage = "eu" } = req.body;
 
     // Only admins can create notifications for other users
     if (targetUserId && targetUserId !== user.id && user.role !== "admin") {

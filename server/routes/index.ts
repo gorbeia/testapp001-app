@@ -13,12 +13,14 @@ const REFRESH_TOKEN_EXPIRES_IN = "7d"; // Refresh token lasts longer
 
 // JWT Functions
 export const generateToken = (user: User) => {
-  const { password: _, ...userWithoutPassword } = user;
+  const userWithoutPassword = { ...user };
+  delete (userWithoutPassword as any).password;
   return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
 const generateRefreshToken = (user: User) => {
-  const { password: _password, ...userWithoutPassword } = user;
+  const userWithoutPassword = { ...user };
+  delete (userWithoutPassword as any).password;
   return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
 };
 
@@ -48,7 +50,7 @@ const clearAuthCookie = (res: Response) => {
 const verifyToken = (token: string): User | null => {
   try {
     return jwt.verify(token, JWT_SECRET) as User;
-  } catch (_error) {
+  } catch {
     return null;
   }
 };
@@ -220,7 +222,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       setRefreshCookie(res, refreshToken);
 
       // Return user data and token (for backward compatibility)
-      const { password: _password, ...userWithoutPassword } = dbUser;
+      const userWithoutPassword = { ...dbUser };
+      delete (userWithoutPassword as any).password;
       return res.status(200).json({
         user: userWithoutPassword,
         token,
@@ -265,7 +268,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       setAuthCookie(res, newToken);
 
       // Return new token info
-      const { password: _password, ...userWithoutPassword } = dbUser;
+      const userWithoutPassword = { ...dbUser };
+      delete (userWithoutPassword as any).password;
       return res.status(200).json({
         user: userWithoutPassword,
         token: newToken,

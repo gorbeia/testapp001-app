@@ -38,6 +38,7 @@ export const sessionMiddleware = (req: Request, res: Response, next: NextFunctio
 const verifyToken = (token: string): User | null => {
   try {
     return jwt.verify(token, JWT_SECRET) as User;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return null;
   }

@@ -36,7 +36,7 @@ export function log(message: string, source = "express") {
   console.log(`${formattedTime} [${source}] ${message}`);
 }
 
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
@@ -68,12 +68,13 @@ app.use((req, res, next) => {
   // Start the cron job service for automatic debt calculations
   debtCalculationService.startMonthlyCalculationCron();
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error('Error:', err.message);
+    if (res && typeof res.status === 'function') {
+      res.status(500).json({ message: 'Internal Server Error' });
+    } else {
+      next(err);
+    }
   });
 
   // importantly only setup vite in development and after
