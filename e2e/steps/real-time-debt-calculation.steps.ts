@@ -138,6 +138,14 @@ Then(
 Then("the debt increase should match the consumption total", async function () {
   const debtIncrease = testState.finalDebt - testState.initialDebt;
 
+  // Debug logging
+  console.log('Debt calculation debug:');
+  console.log('Initial debt:', testState.initialDebt);
+  console.log('Final debt:', testState.finalDebt);
+  console.log('Debt increase:', debtIncrease);
+  console.log('Consumption amount:', testState.consumptionAmount);
+  console.log('Difference:', Math.abs(debtIncrease - testState.consumptionAmount));
+
   // Allow for small floating point differences
   assert.ok(Math.abs(debtIncrease - testState.consumptionAmount) < 0.01);
 });

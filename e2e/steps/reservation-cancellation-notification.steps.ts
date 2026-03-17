@@ -98,30 +98,26 @@ Then("the reservation should be marked as cancelled", async function () {
 
   const uniqueReservationName = this.testReservationName || "Test Erreserba Notifikazioa";
 
-  // In admin page, check the table for the cancelled reservation
-  const reservationRow = page
-    .locator("table tr")
-    .filter({ hasText: uniqueReservationName })
-    .first();
+  // Try to find the reservation again
+  const reservationRow = page.locator("table tr").filter({ hasText: uniqueReservationName }).first();
 
-  if (await reservationRow.isVisible({ timeout: 5000 })) {
-    const rowText = await reservationRow.textContent();
+  if (await reservationRow.isVisible()) {
+    // Check if the reservation is marked as cancelled
+    const isCancelled = await reservationRow.locator('[data-testid="cancelled-badge"]').isVisible();
 
-    // Check for various cancellation indicators in Basque and English
-    const isCancelled =
-      rowText?.includes("ezeztatua") ||
-      rowText?.includes("cancel") ||
-      rowText?.includes("cancelled") ||
-      rowText?.includes("Ezeztatua") ||
-      rowText?.includes("Cancel") ||
-      rowText?.includes("Cancelled");
-
-    // Check if the reservation still has the cancel button
+    // Check if cancel button is removed
     const hasCancelButton =
       (await reservationRow
         .locator("button")
         .filter({ has: page.locator("svg") })
         .count()) > 0;
+
+    // Debug logging
+    console.log('Reservation cancellation debug:');
+    console.log('Reservation name:', uniqueReservationName);
+    console.log('Is visible:', await reservationRow.isVisible());
+    console.log('Is cancelled:', isCancelled);
+    console.log('Has cancel button:', hasCancelButton);
 
     // Success if either marked as cancelled or cancel button is gone
     const success = isCancelled || !hasCancelButton;
@@ -131,6 +127,7 @@ Then("the reservation should be marked as cancelled", async function () {
     );
   } else {
     // Reservation removed from list after cancellation - this is also success
+    console.log('Reservation is no longer visible (cancelled)');
     assert.ok(true, "Reservation is no longer visible (cancelled)");
   }
 });
