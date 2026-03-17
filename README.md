@@ -63,7 +63,7 @@ pnpm start
 
 ## E2E Tests (Playwright + Cucumber)
 
-End-to-end tests are implemented using **Playwright** and **Cucumber/Gherkin**. Currently there is a minimal test that verifies the **login page** loads correctly.
+End-to-end tests are implemented using **Playwright** and **Cucumber/Gherkin** with TypeScript. The suite includes 12 comprehensive features covering authentication, user management, reservations, and real-time features.
 
 ### One-time setup
 
@@ -72,12 +72,17 @@ End-to-end tests are implemented using **Playwright** and **Cucumber/Gherkin**. 
    pnpm exec playwright install
    ```
 
-This downloads Chromium/Firefox/WebKit binaries used by Playwright.
+2. **Set up test database**
+   ```bash
+   pnpm docker:db:up
+   pnpm db:seed
+   ```
+
+This downloads Chromium/Firefox/WebKit binaries and seeds the database with test users.
 
 ### Running E2E tests
 
 1. **Start the application** (in one terminal):
-
    ```bash
    pnpm dev
    ```
@@ -87,27 +92,50 @@ This downloads Chromium/Firefox/WebKit binaries used by Playwright.
    pnpm test:e2e
    ```
 
+3. **Run only tagged tests** (for development):
+   ```bash
+   pnpm test:e2e:only
+   ```
+
+4. **Run a specific feature file**:
+   ```bash
+   pnpm test:e2e:feature e2e/features/login.feature
+   ```
+
 This runs Cucumber with:
 
-- Features in `e2e/features/**/*.feature` (e.g. `e2e/features/login.feature`)
-- Step definitions in `e2e/steps/**/*.js` (e.g. `e2e/steps/login.steps.js`)
+- Features in `e2e/features/**/*.feature` (12 feature files)
+- TypeScript step definitions in `e2e/steps/**/*.ts`
+- Test environment: `NODE_ENV=test`
+- Default timeout: 10 seconds
 
-You should see output similar to:
+### Environment Variables
 
-```text
-1 scenario (1 passed)
-3 steps (3 passed)
-```
+- `E2E_HEADED=false` - Run tests in headless mode (default)
+- `E2E_HEADED=true` - Run tests with visible browser
+
+### Test Coverage
+
+The E2E suite covers:
+- Authentication and authorization (multiple user roles)
+- User management and profiles
+- Product and consumption management
+- Reservation management and cancellation
+- Society management
+- Real-time debt calculation
+- Notifications system
 
 ### Structure
 
-- `e2e/features/login.feature`
-  - Gherkin feature that describes visiting the login page.
-- `e2e/steps/login.steps.js`
-  - Playwright-powered step definitions (ES modules) that:
-    - Launch Chromium
-    - Open `http://localhost:5000/`
-    - Assert that the login form inputs are present.
+- `e2e/features/` - Gherkin feature files (12 features)
+  - `login.feature` - Authentication scenarios
+  - `reservation-management.feature` - Reservation CRUD operations
+  - `user-profile.feature` - User profile management
+  - And 9 more comprehensive features
+- `e2e/steps/` - TypeScript step definitions
+  - `login.steps.ts` - Authentication step definitions
+  - `shared-state.ts` - Browser/page state management
+  - Additional step files for each feature area
 
 ---
 
@@ -118,7 +146,11 @@ You should see output similar to:
 - `pnpm start` – Start production server
 - `pnpm check` – TypeScript type checking
 - `pnpm db:push` – Apply database schema via Drizzle
+- `pnpm db:seed` – Seed database with test data
+- `pnpm db:reset` – Reset and migrate database
 - `pnpm docker:db:up` – Start PostgreSQL via Docker Compose
 - `pnpm docker:db:down` – Stop PostgreSQL
 - `pnpm docker:db:reset` – Reset PostgreSQL volume
 - `pnpm test:e2e` – Run E2E tests (Playwright + Cucumber)
+- `pnpm test:e2e:only` – Run only tagged E2E tests
+- `pnpm test:e2e:feature <feature-file>` – Run a specific feature file

@@ -78,7 +78,7 @@ export function AdminReservationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [reservationToCancel, setReservationToCancel] = useState<string | null>(null);
+  const [reservationToCancel, setReservationToCancel] = useState<ReservationWithUser | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<ReservationWithUser | null>(null);
   const [cancellationReason, setCancellationReason] = useState("");
 
@@ -142,7 +142,7 @@ export function AdminReservationsPage() {
   };
 
   // Cancel reservation (admin)
-  const cancelReservation = async (reservationId: string, reason: string) => {
+  const cancelReservation = async (reservationId: string, reason: string, reservationName: string) => {
     try {
       const response = await authFetch(`/api/reservations/${reservationId}`, {
         method: "PUT",
@@ -156,7 +156,7 @@ export function AdminReservationsPage() {
       if (response.ok) {
         toast({
           title: t("reservationCancelledTitle"),
-          description: t("reservationCancelledDescription"),
+          description: `${t("reservationCancelledDescription")}: ${reservationName}`,
         });
         loadReservations(); // Reload reservations
       } else {
@@ -416,7 +416,7 @@ export function AdminReservationsPage() {
                                 variant="destructive"
                                 size="sm"
                                 onClick={() => {
-                                  setReservationToCancel(reservation.id);
+                                  setReservationToCancel(reservation);
                                   setCancelDialogOpen(true);
                                 }}
                               >
@@ -522,6 +522,19 @@ export function AdminReservationsPage() {
               <AlertDialogDescription>
                 {t("cancelReservationConfirmMessage")}
               </AlertDialogDescription>
+              
+              {/* Reservation Details */}
+              {reservationToCancel && (
+                <div className="mt-4 p-3 bg-muted rounded-lg space-y-1">
+                  <div className="text-sm space-y-1">
+                    <p><span className="font-medium">{t("name")}:</span> {reservationToCancel.name}</p>
+                    <p><span className="font-medium">{t("user")}:</span> {reservationToCancel.userName || 'Unknown'}</p>
+                    <p><span className="font-medium">{t("date")}:</span> {reservationToCancel.startDate ? new Date(reservationToCancel.startDate).toLocaleDateString('eu-ES', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-') : 'Invalid Date'}</p>
+                    <p><span className="font-medium">{t("guests")}:</span> {reservationToCancel.guests}</p>
+                    <p><span className="font-medium">{t("table")}:</span> {reservationToCancel.table}</p>
+                  </div>
+                </div>
+              )}
             </AlertDialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -551,7 +564,7 @@ export function AdminReservationsPage() {
                     return;
                   }
                   if (reservationToCancel) {
-                    cancelReservation(reservationToCancel, cancellationReason);
+                    cancelReservation(reservationToCancel.id, cancellationReason, reservationToCancel.name);
                     setCancelDialogOpen(false);
                     setReservationToCancel(null);
                     setCancellationReason("");

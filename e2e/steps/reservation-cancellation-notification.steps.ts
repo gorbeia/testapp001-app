@@ -34,14 +34,51 @@ When("I find the user's reservation", async function () {
   // Wait for admin page to load
   await page.waitForTimeout(2000);
 
+  // First try to use the search to find the reservation
+  const searchInput = page.locator('input[placeholder*="Bilatu"]');
+  if (await searchInput.isVisible()) {
+    await searchInput.fill(uniqueReservationName);
+    await page.waitForTimeout(1000);
+  }
+
   // Look for the reservation in the admin table (check first page)
-  const reservationRow = page
+  let reservationRow = page
     .locator("table tr")
     .filter({ hasText: uniqueReservationName })
     .first();
 
-  // Wait for the reservation to be visible
-  await reservationRow.waitFor({ state: "visible", timeout: 10000 });
+  // If not found on first page, check if there are pagination controls and search through pages
+  let found = false;
+  let currentPage = 1;
+  const maxPages = 10; // Safety limit to prevent infinite loop
+
+  while (!found && currentPage <= maxPages) {
+    try {
+      await reservationRow.waitFor({ state: "visible", timeout: 3000 });
+      found = true;
+    } catch {
+      // Reservation not found on current page, try next page
+      const nextButton = page.locator('button[aria-label="Next page"]');
+      if (await nextButton.isVisible() && await nextButton.isEnabled()) {
+        await nextButton.click();
+        await page.waitForTimeout(1000);
+        currentPage++;
+        
+        // Re-locate the reservation row on the new page
+        reservationRow = page
+          .locator("table tr")
+          .filter({ hasText: uniqueReservationName })
+          .first();
+      } else {
+        // No more pages or next button disabled
+        break;
+      }
+    }
+  }
+
+  if (!found) {
+    throw new Error(`Reservation "${uniqueReservationName}" not found in admin table after searching ${currentPage} pages`);
+  }
 
   // Store the reservation row for later use
   this.testReservationRow = reservationRow;
@@ -86,7 +123,44 @@ When("I cancel the user's reservation", async function () {
       }
       
       await confirmButton.click();
-      await page.waitForTimeout(2000); // Wait for cancellation to process
+      
+      console.log('Cancellation clicked, waiting for completion...');
+      
+      // Wait for either success toast OR error dialog to stay open (indicating failure)
+      try {
+        await Promise.race([
+          page.waitForSelector('text=Erreserba ezeztatua', { timeout: 5000 }),
+          page.waitForSelector('text=Errorea erreserba ezeztatzean', { timeout: 5000 }),
+          page.waitForSelector('div[role="alertdialog"][data-state="open"]', { timeout: 5000 })
+        ]);
+        
+        // Check which one appeared
+        const successToast = await page.locator('text=Erreserba ezeztatua').isVisible().catch(() => false);
+        const errorToast = await page.locator('text=Errorea erreserba ezeztatzean').isVisible().catch(() => false);
+        const dialogStillOpen = await page.locator('div[role="alertdialog"][data-state="open"]').isVisible().catch(() => false);
+        
+        if (successToast) {
+          console.log('Success toast detected');
+        } else if (errorToast) {
+          console.log('Error toast detected - cancellation failed');
+        } else if (dialogStillOpen) {
+          console.log('Dialog still open - cancellation may have failed');
+        }
+        
+      } catch {
+        console.log('No response detected - checking if dialog closed anyway...');
+      }
+      
+      // Take screenshot to see what happened
+      await page.screenshot({ path: 'debug-after-cancel.png', fullPage: true });
+      
+      // Check if dialog is still open
+      const dialogOpen = await page.locator('div[role="alertdialog"][data-state="open"]').isVisible().catch(() => false);
+      if (dialogOpen) {
+        console.log('Dialog is still open - cancellation likely failed');
+        // Close it to continue
+        await page.keyboard.press('Escape');
+      }
     } else {
       throw new Error("Confirmation button not found in cancel dialog");
     }
@@ -99,17 +173,22 @@ Then("the reservation should be marked as cancelled", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
+  const uniqueReservationName = this.testReservationName || "Test Erreserba Notifikazioa";
+
   await page.reload();
   await page.waitForLoadState("networkidle");
-
-  const uniqueReservationName = this.testReservationName || "Test Erreserba Notifikazioa";
 
   // Try to find the reservation again
   const reservationRow = page.locator("table tr").filter({ hasText: uniqueReservationName }).first();
 
   if (await reservationRow.isVisible()) {
-    // Check if the reservation is marked as cancelled
-    const isCancelled = await reservationRow.locator('[data-testid="cancelled-badge"]').isVisible();
+    // Check if the reservation is marked as cancelled by looking for the destructive badge
+    const cancelledBadge = reservationRow.locator('div.bg-destructive.text-destructive-foreground');
+    const isCancelled = await cancelledBadge.isVisible();
+
+    // Also check if the badge contains "Ezeztatua" text
+    const cancelledText = await reservationRow.locator('text=Ezeztatua').isVisible();
+    const finalIsCancelled = isCancelled || cancelledText;
 
     // Check if cancel button is removed
     const hasCancelButton =
@@ -122,11 +201,13 @@ Then("the reservation should be marked as cancelled", async function () {
     console.log('Reservation cancellation debug:');
     console.log('Reservation name:', uniqueReservationName);
     console.log('Is visible:', await reservationRow.isVisible());
-    console.log('Is cancelled:', isCancelled);
+    console.log('Badge visible:', isCancelled);
+    console.log('Cancelled text visible:', cancelledText);
+    console.log('Is cancelled:', finalIsCancelled);
     console.log('Has cancel button:', hasCancelButton);
 
     // Success if either marked as cancelled or cancel button is gone
-    const success = isCancelled || !hasCancelButton;
+    const success = finalIsCancelled || !hasCancelButton;
     assert.ok(
       success,
       "Reservation should be cancelled (either marked as cancelled or cancel button removed)"
@@ -156,8 +237,8 @@ Then("I should see a cancellation notification", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  // Look for cancellation notification
-  const cancellationTexts = ["ezeztatua", "cancel", "bazkaria"];
+  // Look for cancellation notification - use the actual Basque text from translations
+  const cancellationTexts = ["bertan behera utzi da", "erreserba bertan behera", "Erreserba"];
 
   for (const text of cancellationTexts) {
     try {
@@ -170,9 +251,10 @@ Then("I should see a cancellation notification", async function () {
           elementText &&
           (elementText.includes("Erreserba") ||
             elementText.includes("erreserba") ||
-            elementText.includes("ezeztatu"))
+            elementText.includes("bertan behera"))
         ) {
           this.cancellationNotificationText = elementText;
+          console.log('Found cancellation notification:', elementText);
           return;
         }
       }
