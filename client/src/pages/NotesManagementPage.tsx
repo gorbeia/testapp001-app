@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Power, Edit, Trash, Bell, FileText, Plus, Send, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -225,7 +225,7 @@ export function NotesManagementPage() {
         throw new Error("Failed to push notifications");
       }
 
-      const updatedNote = await response.json();
+      await response.json();
 
       // Update the note in the local state
       setNotes(prev =>
@@ -260,7 +260,7 @@ export function NotesManagementPage() {
         throw new Error("Failed to revert notifications");
       }
 
-      const updatedNote = await response.json();
+      await response.json();
 
       // Update the note in the local state
       setNotes(prev =>

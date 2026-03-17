@@ -42,25 +42,25 @@ const isCurrentMonth = (monthString: string) => {
 };
 
 // Helper function to display month in Basque
-const getMonthDisplay = (monthString: string) => {
-  if (!monthString) return "Guztiak";
-  const [year, month] = monthString.split("-");
-  const monthNames = [
-    "Urtarrila",
-    "Otsaila",
-    "Martxoa",
-    "Apirila",
-    "Maiatza",
-    "Ekaina",
-    "Uztaila",
-    "Abuztua",
-    "Iraila",
-    "Urria",
-    "Azaroa",
-    "Abendua",
-  ];
-  return `${monthNames[parseInt(month) - 1]} ${year}`;
-};
+// const getMonthDisplay = (monthString: string) => {
+//   if (!monthString) return "Guztiak";
+//   const [year, month] = monthString.split("-");
+//   const monthNames = [
+//     "Urtarrila",
+//     "Otsaila",
+//     "Martxoa",
+//     "Apirila",
+//     "Maiatza",
+//     "Ekaina",
+//     "Uztaila",
+//     "Abuztua",
+//     "Iraila",
+//     "Urria",
+//     "Azaroa",
+//     "Abendua",
+//   ];
+//   return `${monthNames[parseInt(month) - 1]} ${year}`;
+// };
 
 // API functions
 const fetchCredits = async (filters?: { month?: string; status?: string }) => {
@@ -99,7 +99,7 @@ export function CreditsPage() {
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
 
   // Use URL filter hook for month and status
-  const currentDate = new Date();
+  // const currentDate = new Date();
   const monthFilter = useUrlFilter({ baseUrl: "/zorrak", paramName: "month", initialValue: "" });
   const statusFilter = useUrlFilter({
     baseUrl: "/zorrak",

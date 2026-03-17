@@ -34,7 +34,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import MonthGrid from "@/components/MonthGrid";
 import PaginationControls from "@/components/PaginationControls";
 import { useLanguage } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { eu, es } from "date-fns/locale";
@@ -51,7 +50,6 @@ interface ReservationWithUser extends Reservation {
 
 export function AdminReservationsPage() {
   const { t, language } = useLanguage();
-  const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [monthFilter, setMonthFilter] = useState<string>(() => {

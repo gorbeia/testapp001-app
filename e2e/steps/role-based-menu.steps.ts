@@ -123,7 +123,6 @@ Then("I should be able to access all admin pages", async function () {
 
     // Check that we can access the page (no redirect to dashboard)
     const currentUrl = page.url();
-    const expectedUrl = `http://localhost:5000${adminPage.path}`;
 
     assert.ok(
       currentUrl.includes(adminPage.path),

@@ -12,7 +12,6 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/lib/i18n";
@@ -27,7 +26,6 @@ const getBackofficeCookie = (): string | null => {
 export function BackofficeSidebar() {
   const { t } = useLanguage();
   const [location] = useLocation();
-  const { isMobile, setOpenMobile } = useSidebar();
   const [superadminName, setSuperadminName] = useState<string | null>(null);
   const [superadminEmail, setSuperadminEmail] = useState<string | null>(null);
 
@@ -53,13 +51,6 @@ export function BackofficeSidebar() {
     }
   }, []);
 
-  const handleNavigation = (href: string) => {
-    // On mobile, close the sidebar after navigation
-    if (isMobile) {
-      setOpenMobile(false);
-    }
-  };
-
   const handleLogout = async () => {
     try {
       await authFetch("/api/backoffice/logout", { method: "POST" });
@@ -75,15 +66,6 @@ export function BackofficeSidebar() {
     { title: t("societies"), url: "/elkarteapp/kudeaketa/societies", icon: Building2 },
     { title: t("superadmins"), url: "/elkarteapp/kudeaketa/superadmins", icon: Users },
   ];
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map(n => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
 
   return (
     <Sidebar>
@@ -107,7 +89,7 @@ export function BackofficeSidebar() {
               {menuItems.map(item => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
-                    <Link href={item.url} onClick={() => handleNavigation(item.url)}>
+                    <Link href={item.url}>
                       <item.icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>

@@ -98,14 +98,7 @@ When("I wait 3 seconds for debt calculation to complete", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not initialized");
 
-  // Wait for debt calculation to complete by monitoring the amount element
-  const mirenRow = page
-    .locator('[data-testid^="row-credit-"]')
-    .filter({ hasText: "Miren Urrutia" })
-    .first();
-  const amountElement = mirenRow.locator('[data-testid^="credit-amount-"]');
-
-  // Wait for the amount to potentially change (more efficient than fixed timeout)
+  // Wait for debt calculation to complete (more efficient than fixed timeout)
   await page.waitForTimeout(2000);
 });
 

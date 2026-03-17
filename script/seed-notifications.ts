@@ -62,7 +62,7 @@ async function seedNoteBasedNotifications() {
 
     // Create notifications for all users
     for (const user of allUsers) {
-      const userLanguage = "eu"; // Default to Basque
+      // Default to Basque
 
       // Make some notifications read and some unread
       const isRead = Math.random() > 0.6; // 40% unread

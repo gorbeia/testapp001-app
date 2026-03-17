@@ -1,6 +1,5 @@
 import { authFetch } from "@/lib/api";
 import { Language, findMessageByLanguage, MultilingualMessage } from "@shared/schema";
-import { useAuth } from "@/lib/auth";
 
 export interface Note {
   id: string;
@@ -86,7 +85,7 @@ export const fetchNotes = async (language?: string): Promise<Note[]> => {
   }
 };
 
-export const fetchDashboardStats = async (user?: any): Promise<DashboardStats> => {
+export const fetchDashboardStats = async (): Promise<DashboardStats> => {
   try {
     // Fetch basic stats that all users can see
     const [
@@ -231,19 +230,19 @@ const fetchMemberMonthlyConsumptionsAmount = async (): Promise<number> => {
   }
 };
 
-const fetchPendingCreditsSum = async (): Promise<number> => {
-  try {
-    const response = await authFetch("/api/credits/sum?status=pending");
-    if (response.ok) {
-      const data = await response.json();
-      return data.sum || 0;
-    }
-    throw new Error("Failed to fetch pending credits sum");
-  } catch (error) {
-    console.error("Error fetching pending credits sum:", error);
-    throw error;
-  }
-};
+// const fetchPendingCreditsSum = async (): Promise<number> => {
+//   try {
+//     const response = await authFetch("/api/credits/sum?status=pending");
+//     if (response.ok) {
+//       const data = await response.json();
+//       return data.sum || 0;
+//     }
+//     throw new Error("Failed to fetch pending credits sum");
+//   } catch (error) {
+//     console.error("Error fetching pending credits sum:", error);
+//     throw error;
+//   }
+// };
 
 const fetchActiveUsersCount = async (): Promise<number> => {
   try {

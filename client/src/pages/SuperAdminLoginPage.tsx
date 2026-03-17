@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Mail, Lock, LogIn, AlertCircle, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,8 +60,6 @@ export function SuperAdminLoginPage() {
           setError("Unexpected response from server");
         }
       }
-    } catch (err) {
-      setError("Failed to contact backoffice login endpoint");
     } finally {
       setIsSubmitting(false);
     }

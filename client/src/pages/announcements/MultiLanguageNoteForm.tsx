@@ -10,7 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
 import { useLanguage } from "@/lib/i18n";
 
 interface NoteMessage {

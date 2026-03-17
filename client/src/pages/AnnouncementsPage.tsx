@@ -22,7 +22,7 @@ import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 
 // API helper function
-const authFetch = async (url: string, options: RequestInit = {}) => {
+const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
   const token = localStorage.getItem("auth:token");
   const headers = {
     "Content-Type": "application/json",

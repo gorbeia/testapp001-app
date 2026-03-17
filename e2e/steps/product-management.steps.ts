@@ -113,7 +113,7 @@ Then(
   }
 );
 
-Given("I have a product {string} in the table", async function (productName: string) {
+Given("I have a product {string} in the table", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
   await page.waitForTimeout(1000);

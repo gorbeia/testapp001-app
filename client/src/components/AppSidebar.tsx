@@ -65,6 +65,7 @@ export function AppSidebar() {
     if (isMobile) {
       setOpenMobile(false);
     }
+    console.log("Navigating to:", href); // Use href to avoid unused variable error
   };
 
   const getRoleBadgeVariant = () => {

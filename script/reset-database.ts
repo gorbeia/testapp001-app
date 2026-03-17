@@ -39,7 +39,7 @@ async function resetDatabase() {
     try {
       await client.query(`DROP TABLE IF EXISTS "${table}" CASCADE`);
       console.log(`Dropped table: ${table}`);
-    } catch (error) {
+    } catch {
       console.log(`Table ${table} does not exist or could not be dropped`);
     }
   }
@@ -79,7 +79,7 @@ async function main() {
     try {
       const url = new URL(databaseUrl);
       dbUser = url.username || "unknown";
-    } catch (error) {
+    } catch {
       console.warn("Could not parse DATABASE_URL, showing unknown user");
     }
 

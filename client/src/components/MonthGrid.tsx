@@ -42,7 +42,6 @@ const MonthGrid = ({
     const options = [];
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1; // 1-12
 
     let startYear = currentYear;
     let endYear = currentYear;

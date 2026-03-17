@@ -399,7 +399,7 @@ Then("I should see a reservation success message", async function () {
       await page.waitForSelector(`text=${text}`, { timeout: 3000 });
       found = true;
       break;
-    } catch (error) {
+    } catch {
       continue;
     }
   }
@@ -439,7 +439,7 @@ Then("the reservation should appear in the list", async function () {
   );
 
   // Check that a user name is present (using the actual user from test data)
-  const hasUserName = cardText?.includes("Miren Urrutia");
+  // const hasUserName = cardText?.includes("Miren Urrutia");
 
   // Try alternative user names if Miren Urrutia is not found
   const alternativeNames = ["Miren Urrutia", "bazkidea@txokoa.eus", "bazkidea"];

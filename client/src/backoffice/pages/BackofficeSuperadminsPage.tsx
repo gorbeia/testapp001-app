@@ -60,7 +60,7 @@ export function BackofficeSuperadminsPage() {
       if (!response.ok) throw new Error("Failed to fetch superadmins");
       const data = await response.json();
       setSuperadmins(data);
-    } catch (err) {
+    } catch {
       setError(t("failedToLoadSuperadmins"));
     } finally {
       setLoading(false);
@@ -75,13 +75,13 @@ export function BackofficeSuperadminsPage() {
         body: JSON.stringify(formData),
       });
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
+        await response.json().catch(() => ({}));
         throw new Error(t("failedToCreateSuperadmin"));
       }
       await loadSuperadmins();
       setIsCreateDialogOpen(false);
       setFormData({ email: "", name: "", password: "", isActive: true });
-    } catch (err: any) {
+    } catch {
       setError(t("failedToCreateSuperadmin"));
     }
   };
@@ -95,14 +95,14 @@ export function BackofficeSuperadminsPage() {
         body: JSON.stringify(formData),
       });
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
+        await response.json().catch(() => ({}));
         throw new Error(t("failedToUpdateSuperadmin"));
       }
       await loadSuperadmins();
       setIsEditDialogOpen(false);
       setEditingSuperadmin(null);
       setFormData({ email: "", name: "", password: "", isActive: true });
-    } catch (err: any) {
+    } catch {
       setError(t("failedToUpdateSuperadmin"));
     }
   };
@@ -112,7 +112,7 @@ export function BackofficeSuperadminsPage() {
       const response = await authFetch(`/api/backoffice/superadmins/${id}`, { method: "DELETE" });
       if (!response.ok) throw new Error(t("failedToDeleteSuperadmin"));
       await loadSuperadmins();
-    } catch (err) {
+    } catch {
       setError(t("failedToDeleteSuperadmin"));
     }
   };

@@ -78,7 +78,7 @@ Then("I should see my current month debt", async function () {
     await debtElement.waitFor({ timeout: 5000 });
     const debtText = await debtElement.textContent();
     assert(debtText && debtText.includes("€"), "Should show current month debt with euro symbol");
-  } catch (error) {
+  } catch {
     // If current month debt element doesn't exist, that's okay - just check that total pending is visible
     const pendingElement = page.locator('[data-testid="total-pending"]');
     await pendingElement.waitFor();
@@ -116,7 +116,7 @@ Then("I should see the debt details including amount and status", async function
     try {
       await amountCell.waitFor({ timeout: 3000 });
       assert(amountCell.isVisible(), "Debt amount should be visible");
-    } catch (error) {
+    } catch {
       // If no specific debt amount cells, check if table has content
       assert(
         tableContent &&
@@ -132,7 +132,7 @@ Then("I should see the debt details including amount and status", async function
     try {
       await statusCell.waitFor({ timeout: 3000 });
       assert(statusCell.isVisible(), "Debt status should be visible");
-    } catch (error) {
+    } catch {
       // If no specific status cells, check for badges
       const badges = page.locator(".badge");
       if ((await badges.count()) > 0) {

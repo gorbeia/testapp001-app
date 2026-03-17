@@ -36,7 +36,7 @@ import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 
 // API helper function
-const authFetch = async (url: string, options: RequestInit = {}) => {
+const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
   const token = localStorage.getItem("auth:token");
   const headers = {
     "Content-Type": "application/json",
@@ -84,7 +84,6 @@ export function ConsumptionsListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [selectedConsumption, setSelectedConsumption] = useState<ConsumptionWithItems | null>(null);
-  const [detailsLoading, setDetailsLoading] = useState(false);
 
   // Fetch users for filtering (page is admin-only)
   useEffect(() => {
@@ -141,7 +140,6 @@ export function ConsumptionsListPage() {
   });
 
   const fetchConsumptionDetails = async (consumptionId: string) => {
-    setDetailsLoading(true);
     try {
       const response = await authFetch(`/api/consumptions/${consumptionId}`);
       if (response.ok) {
@@ -157,8 +155,6 @@ export function ConsumptionsListPage() {
         description: "Kontsumoaren xehetasunak ezin izan dira kargatu",
         variant: "destructive",
       });
-    } finally {
-      setDetailsLoading(false);
     }
   };
 

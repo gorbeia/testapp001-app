@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
 import { useLanguage } from "@/lib/i18n";
 
 interface NoteFormProps {

@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, ShoppingCart, CreditCard, Users, AlertCircle } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
-import { useAuth, hasTreasurerAccess, hasCellarmanAccess, hasAdminAccess } from "@/lib/auth";
+import { useAuth, hasCellarmanAccess, hasAdminAccess } from "@/lib/auth";
 import { DashboardStats } from "./api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 

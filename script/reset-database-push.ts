@@ -1,4 +1,3 @@
-import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as dotenv from "dotenv";
 import { execSync } from "child_process";
@@ -16,7 +15,6 @@ async function resetDatabase() {
 
   // Create database client
   const pool = new pg.Pool({ connectionString: databaseUrl });
-  const db = drizzle(pool);
 
   try {
     // Drop all tables manually first (in dependency order)

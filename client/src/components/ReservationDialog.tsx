@@ -45,7 +45,7 @@ interface FormData {
   notes: string;
 }
 
-const authFetch = async (url: string, options: RequestInit = {}) => {
+const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
   const token = localStorage.getItem("auth:token");
   const headers = {
     "Content-Type": "application/json",
@@ -189,7 +189,7 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
       });
 
       if (response.ok) {
-        const data = await response.json();
+        await response.json();
 
         toast({
           title: t("success"),

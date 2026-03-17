@@ -1,4 +1,4 @@
-import { CreditCard, TrendingUp, CheckCircle, Eye } from "lucide-react";
+import { CreditCard, TrendingUp, CheckCircle } from "lucide-react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";

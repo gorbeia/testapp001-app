@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Plus,
   Edit2,
@@ -179,21 +179,6 @@ export default function CategoriesPage() {
     },
   });
 
-  // Reorder categories mutation
-  const reorderMutation = useMutation({
-    mutationFn: async (categoryIds: string[]) => {
-      const response = await authFetch("/api/categories/reorder", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ categoryIds }),
-      });
-      if (!response.ok) throw new Error("Failed to reorder categories");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["categories"] });
-    },
-  });
-
   const resetForm = () => {
     setFormData({
       color: "#6B7280",
@@ -234,7 +219,7 @@ export default function CategoriesPage() {
           },
         },
       });
-    } catch (error) {
+    } catch {
       // Fallback to current language data
       setFormData({
         color: category.color,

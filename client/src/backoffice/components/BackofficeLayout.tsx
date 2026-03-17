@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import React, { ReactNode } from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { BackofficeSidebar } from "./BackofficeSidebar";
 import { LanguageToggle } from "@/components/LanguageToggle";

@@ -56,7 +56,7 @@ export function BackofficeSocietiesPage() {
         }
         const data = await response.json();
         setSocieties(data);
-      } catch (err) {
+      } catch {
         setError("Failed to load societies");
       } finally {
         setLoading(false);
@@ -83,7 +83,7 @@ export function BackofficeSocietiesPage() {
       });
 
       if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
+        await response.json().catch(() => ({}));
         throw new Error(t("failedToCreateSociety"));
       }
 
@@ -106,21 +106,10 @@ export function BackofficeSocietiesPage() {
         kitchenPricePerMember: "10.00",
       });
       setIsCreateDialogOpen(false);
-    } catch (err: any) {
+    } catch {
       setError(t("failedToCreateSociety"));
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await authFetch("/api/backoffice/logout", { method: "POST" });
-    } catch (err) {
-      console.error("Logout request failed:", err);
-    } finally {
-      document.cookie = "backoffice-token=; path=/; max-age=0";
-      window.location.reload(); // Force reload to clear state and re-render login
     }
   };
 

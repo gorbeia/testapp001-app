@@ -20,7 +20,7 @@ When("I add {string} to the cart", async function (productName: string) {
   // Wait for products to load with increased timeout and better error handling
   try {
     await page.waitForSelector('[data-testid="product-card"]', { timeout: 15000 });
-  } catch (error) {
+  } catch {
     // Try alternative selectors if the main one fails
     await page.waitForSelector(".hover-elevate", { timeout: 10000 });
   }

@@ -1,4 +1,4 @@
-import { Given, When, Then } from "@cucumber/cucumber";
+import { When, Then } from "@cucumber/cucumber";
 import { getPage } from "./shared-state";
 import assert from "node:assert/strict";
 
@@ -176,7 +176,7 @@ Then("I should see a cancellation notification", async function () {
           return;
         }
       }
-    } catch (error) {
+    } catch {
       // Continue to next text
     }
   }

@@ -84,7 +84,7 @@ Then("I should see a society success message", async function () {
 
   try {
     await successToast.waitFor({ state: "visible", timeout: 3000 });
-  } catch (error) {
+  } catch {
     // Fallback: check if data was actually updated
     const nameInput = page.locator('[data-testid="input-society-name"]');
     const nameValue = await nameInput.inputValue();

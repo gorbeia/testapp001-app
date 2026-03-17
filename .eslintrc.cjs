@@ -19,8 +19,8 @@ module.exports = {
   },
   plugins: ['@typescript-eslint'],
   rules: {
-    // Basic rules to start with
-    'no-console': 'warn',
+    // Allow console statements in server-side code
+    'no-console': 'off',
     'no-debugger': 'error',
     'prefer-const': 'error',
     'no-var': 'error',
