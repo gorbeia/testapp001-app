@@ -79,6 +79,12 @@ When("I cancel the user's reservation", async function () {
       .first();
 
     if (await confirmButton.isVisible({ timeout: 3000 })) {
+      // For admin cancellations, we need to fill in the cancellation reason first
+      const reasonTextarea = page.locator('#cancellationReason');
+      if (await reasonTextarea.isVisible({ timeout: 2000 })) {
+        await reasonTextarea.fill('Test cancellation reason for E2E test');
+      }
+      
       await confirmButton.click();
       await page.waitForTimeout(2000); // Wait for cancellation to process
     } else {
