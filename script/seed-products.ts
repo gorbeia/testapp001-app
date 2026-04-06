@@ -1,28 +1,19 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Client } from "pg";
 import { products, societies, productCategories } from "../shared/schema";
 import { eq } from "drizzle-orm";
+import type { SeedDb } from "./seed-db-type";
+import { db, pool } from "../server/db";
+import { fileURLToPath } from "node:url";
 
-async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is not set");
-  }
-
-  const client = new Client({ connectionString: databaseUrl });
-  await client.connect();
-  const db = drizzle(client);
-
-  // Get the active society or the first one
+export async function seedProducts(dbConn: SeedDb) {
   let societyId = "";
-  const activeSociety = await db
+  const activeSociety = await dbConn
     .select()
     .from(societies)
     .where(eq(societies.isActive, true))
     .limit(1);
   if (activeSociety.length === 0) {
-    const firstSociety = await db.select().from(societies).limit(1);
+    const firstSociety = await dbConn.select().from(societies).limit(1);
     if (firstSociety.length === 0) {
       throw new Error("No societies found in database");
     }
@@ -33,10 +24,8 @@ async function main() {
 
   console.log("Using society ID for products:", societyId);
 
-  // Get categories to map old category names to new category IDs
-  const categories = await db.select().from(productCategories);
+  const categories = await dbConn.select().from(productCategories);
 
-  // Map old category names to category icons
   const categoryMap: Record<string, string> = {
     edariak: "Beer",
     janariak: "Utensils",
@@ -45,7 +34,6 @@ async function main() {
     bestelakoak: "ChefHat",
   };
 
-  // Helper function to get category ID by icon
   function getCategoryId(icon: string): string {
     const category = categories.find(cat => cat.icon === icon);
     if (!category) {
@@ -57,11 +45,10 @@ async function main() {
   }
 
   const demoProducts = [
-    // Beverages
     {
       name: "Kalea Garagardoa",
       description: "Garagardo lokal ekoizpena, 330ml botila",
-      categoryId: "", // Will be set below
+      categoryId: "",
       price: "3.50",
       stock: "24",
       unit: "unit",
@@ -72,7 +59,7 @@ async function main() {
     {
       name: "Txakoli Getariako",
       description: "Txakoli zuria, 750ml botila",
-      categoryId: "", // Will be set below
+      categoryId: "",
       price: "12.00",
       stock: "12",
       unit: "unit",
@@ -83,7 +70,7 @@ async function main() {
     {
       name: "Ura Mineral",
       description: "Ura minerala, 1.5L botila",
-      categoryId: "", // Will be set below
+      categoryId: "",
       price: "1.20",
       stock: "50",
       unit: "unit",
@@ -91,12 +78,10 @@ async function main() {
       supplier: "Water Supplier",
       isActive: true,
     },
-
-    // Food items
     {
       name: "Pintxo Tortilla",
       description: "Tortilla pintxoa",
-      categoryId: "", // Will be set below
+      categoryId: "",
       price: "2.50",
       stock: "20",
       unit: "unit",
@@ -107,7 +92,7 @@ async function main() {
     {
       name: "Gilda Pintxo",
       description: "Gilda klasikoa: oliba, antxoa eta piperra",
-      categoryId: "", // Will be set below
+      categoryId: "",
       price: "3.00",
       stock: "15",
       unit: "unit",
@@ -118,7 +103,7 @@ async function main() {
     {
       name: "Txistorra Sandwich",
       description: "Txistorra ogitartekoa",
-      categoryId: "", // Will be set below
+      categoryId: "",
       price: "5.50",
       stock: "10",
       unit: "unit",
@@ -126,12 +111,10 @@ async function main() {
       supplier: "Kitchen",
       isActive: true,
     },
-
-    // Snacks
     {
       name: "Patata Frita",
       description: "Patata frijituak, 150g poltsa",
-      categoryId: "", // Will be set below
+      categoryId: "",
       price: "2.00",
       stock: "30",
       unit: "unit",
@@ -142,7 +125,7 @@ async function main() {
     {
       name: "Oliba Berdea",
       description: "Oliba berdeak, 200g potea",
-      categoryId: "", // Will be set below
+      categoryId: "",
       price: "4.50",
       stock: "18",
       unit: "unit",
@@ -150,14 +133,12 @@ async function main() {
       supplier: "Local Producer",
       isActive: true,
     },
-
-    // Coffee & Tea
     {
       name: "Kafea",
       description: "Espresso kafea",
-      categoryId: "", // Will be set below
+      categoryId: "",
       price: "1.80",
-      stock: "100", // in servings
+      stock: "100",
       unit: "unit",
       minStock: "20",
       supplier: "Coffee Roaster",
@@ -166,7 +147,7 @@ async function main() {
     {
       name: "Tila Belar",
       description: "Tila belar tea, poltsa",
-      categoryId: "", // Will be set below
+      categoryId: "",
       price: "1.50",
       stock: "50",
       unit: "unit",
@@ -174,12 +155,10 @@ async function main() {
       supplier: "Tea Supplier",
       isActive: true,
     },
-
-    // Other items
     {
       name: "Sukaldeko Gatzak",
       description: "Gatz mahastua, 1kg",
-      categoryId: "", // Will be set below
+      categoryId: "",
       price: "1.00",
       stock: "5",
       unit: "kg",
@@ -190,7 +169,7 @@ async function main() {
     {
       name: "Azukrea",
       description: "Azukre zuria, 1kg",
-      categoryId: "", // Will be set below
+      categoryId: "",
       price: "2.00",
       stock: "8",
       unit: "kg",
@@ -200,22 +179,21 @@ async function main() {
     },
   ];
 
-  // Set categoryIds based on old category names
+  const oldCategoryNames = [
+    "edariak",
+    "edariak",
+    "edariak",
+    "janariak",
+    "janariak",
+    "janariak",
+    "opilekuak",
+    "opilekuak",
+    "kafea",
+    "kafea",
+    "bestelakoak",
+    "bestelakoak",
+  ];
   demoProducts.forEach((product, index) => {
-    const oldCategoryNames = [
-      "edariak",
-      "edariak",
-      "edariak",
-      "janariak",
-      "janariak",
-      "janariak",
-      "opilekuak",
-      "opilekuak",
-      "kafea",
-      "kafea",
-      "bestelakoak",
-      "bestelakoak",
-    ];
     const icon = categoryMap[oldCategoryNames[index]];
     product.categoryId = getCategoryId(icon);
   });
@@ -223,15 +201,14 @@ async function main() {
   console.log("Seeding demo products...");
 
   for (const product of demoProducts) {
-    // Check if product already exists
-    const existingProduct = await db
+    const existingProduct = await dbConn
       .select()
       .from(products)
       .where(eq(products.name, product.name))
       .limit(1);
 
     if (existingProduct.length === 0) {
-      await db.insert(products).values({
+      await dbConn.insert(products).values({
         ...product,
         societyId,
       });
@@ -242,10 +219,25 @@ async function main() {
   }
 
   console.log("Done.");
-  await client.end();
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+function isMainModule(): boolean {
+  try {
+    return process.argv[1] === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
+  seedProducts(db)
+    .catch(err => {
+      console.error(err);
+      process.exitCode = 1;
+    })
+    .finally(() =>
+      pool.end().then(() => {
+        process.exit(process.exitCode ?? 0);
+      })
+    );
+}

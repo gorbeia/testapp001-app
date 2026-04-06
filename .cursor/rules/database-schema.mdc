@@ -24,6 +24,6 @@ Use Drizzle/`sql` patterns consistent with existing tables (e.g. `defaultNow()`,
 - **Dev:** `pnpm db:push`
 - **Migrations:** `pnpm db:generate` then `pnpm db:migrate` when using migration workflow
 
-## Reset script
+## Dev reset
 
-If you add tables, update **`script/reset-database-push.ts`** so `DROP TABLE` / push workflow stays consistent with team expectations.
+`pnpm db:reset` runs **`script/reset.ts`**, which drops **all tables in `public`** dynamically (no manual table list), then `pnpm db:push`. New tables from `shared/schema.ts` are included automatically.

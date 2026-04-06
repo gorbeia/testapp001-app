@@ -1,20 +1,23 @@
-import { db } from "../server/db";
+import "dotenv/config";
 import { reservations, societies, users, tables, type Reservation } from "../shared/schema";
 import { and, eq } from "drizzle-orm";
+import type { SeedDb } from "./seed-db-type";
+import { db, pool } from "../server/db";
+import { fileURLToPath } from "node:url";
 
-export async function seedReservations() {
+export async function seedReservations(dbConn: SeedDb) {
   try {
     console.log("Seeding reservations...");
 
     // Get the active society or the first one
     let societyId = "";
-    const activeSociety = await db
+    const activeSociety = await dbConn
       .select()
       .from(societies)
       .where(eq(societies.isActive, true))
       .limit(1);
     if (activeSociety.length === 0) {
-      const firstSociety = await db.select().from(societies).limit(1);
+      const firstSociety = await dbConn.select().from(societies).limit(1);
       if (firstSociety.length === 0) {
         throw new Error("No societies found in database");
       }
@@ -26,7 +29,7 @@ export async function seedReservations() {
     console.log("Using society ID for reservations:", societyId);
 
     // Get the first user (admin) for reservations
-    const [firstUser] = await db.select().from(users).limit(1);
+    const [firstUser] = await dbConn.select().from(users).limit(1);
     if (!firstUser) {
       throw new Error("No users found in database");
     }
@@ -34,7 +37,7 @@ export async function seedReservations() {
     console.log("Using user ID for reservations:", firstUser.id);
 
     // Get all active tables for this society
-    const activeTables = await db
+    const activeTables = await dbConn
       .select()
       .from(tables)
       .where(and(eq(tables.societyId, societyId), eq(tables.isActive, true)));
@@ -49,7 +52,7 @@ export async function seedReservations() {
     );
 
     // Get the active society to use correct pricing
-    const [society] = await db
+    const [society] = await dbConn
       .select()
       .from(societies)
       .where(eq(societies.isActive, true))
@@ -345,7 +348,7 @@ export async function seedReservations() {
 
     for (const reservation of reservationsWithAmounts) {
       // Check if reservation already exists (idempotent)
-      const existing = await db
+      const existing = await dbConn
         .select()
         .from(reservations)
         .where(eq(reservations.id, reservation.id))
@@ -397,7 +400,7 @@ export async function seedReservations() {
         updatedAt: new Date(),
       };
 
-      await db.insert(reservations).values(newReservation);
+      await dbConn.insert(reservations).values(newReservation);
       addedCount++;
 
       if (wasReassigned) {
@@ -423,15 +426,26 @@ export async function seedReservations() {
   }
 }
 
-// Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  seedReservations()
+function isMainModule(): boolean {
+  try {
+    return process.argv[1] === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
+  seedReservations(db)
     .then(() => {
       console.log("Seed completed successfully");
-      process.exit(0);
     })
     .catch(error => {
       console.error("Seed failed:", error);
-      process.exit(1);
-    });
+      process.exitCode = 1;
+    })
+    .finally(() =>
+      pool.end().then(() => {
+        process.exit(process.exitCode ?? 0);
+      })
+    );
 }

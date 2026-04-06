@@ -1,11 +1,12 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Client } from "pg";
 import { users, societies } from "../shared/schema";
 import { eq } from "drizzle-orm";
 import { DEMO_SOCIETY_ALPHABETIC_ID, DEMO_SOCIETY_ID } from "./seed-demo-society";
+import type { SeedDb } from "./seed-db-type";
+import { db, pool } from "../server/db";
+import { fileURLToPath } from "node:url";
+import bcrypt from "bcrypt";
 
-// Predefined UUIDs for consistent user IDs across database resets
 const USER_UUIDS = {
   admin: "550e8400-e29b-41d4-a716-446655440001",
   diruzaina: "550e8400-e29b-41d4-a716-446655440002",
@@ -14,23 +15,14 @@ const USER_UUIDS = {
   laguna: "550e8400-e29b-41d4-a716-446655440005",
 };
 
-async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is not set");
-  }
-
-  const client = new Client({ connectionString: databaseUrl });
-  await client.connect();
-  const db = drizzle(client);
-
+export async function seedUsers(dbConn: SeedDb) {
   let societyId = "";
-  const byDemoId = await db
+  const byDemoId = await dbConn
     .select()
     .from(societies)
     .where(eq(societies.id, DEMO_SOCIETY_ID))
     .limit(1);
-  const byAlphabetic = await db
+  const byAlphabetic = await dbConn
     .select()
     .from(societies)
     .where(eq(societies.alphabeticId, DEMO_SOCIETY_ALPHABETIC_ID))
@@ -40,7 +32,7 @@ async function main() {
   } else if (byAlphabetic.length > 0) {
     societyId = byAlphabetic[0].id;
   } else {
-    const activeSociety = await db
+    const activeSociety = await dbConn
       .select()
       .from(societies)
       .where(eq(societies.isActive, true))
@@ -48,7 +40,7 @@ async function main() {
     if (activeSociety.length > 0) {
       societyId = activeSociety[0].id;
     } else {
-      const firstSociety = await db.select().from(societies).limit(1);
+      const firstSociety = await dbConn.select().from(societies).limit(1);
       if (firstSociety.length === 0) {
         throw new Error("No societies found in database");
       }
@@ -58,11 +50,14 @@ async function main() {
 
   console.log("Using society ID:", societyId);
 
+  const plainPassword = "demo";
+  const hashedPassword = await bcrypt.hash(plainPassword, 10);
+
   const demoUsers = [
     {
       id: USER_UUIDS.admin,
       username: "admin@txokoa.eus",
-      password: "demo",
+      password: hashedPassword,
       name: "Mikel Etxeberria",
       role: "bazkidea",
       function: "administratzailea",
@@ -75,7 +70,7 @@ async function main() {
     {
       id: USER_UUIDS.diruzaina,
       username: "diruzaina@txokoa.eus",
-      password: "demo",
+      password: hashedPassword,
       name: "Ane Zelaia",
       role: "bazkidea",
       function: "diruzaina",
@@ -88,7 +83,7 @@ async function main() {
     {
       id: USER_UUIDS.sotolaria,
       username: "sotolaria@txokoa.eus",
-      password: "demo",
+      password: hashedPassword,
       name: "Jon Agirre",
       role: "bazkidea",
       function: "sotolaria",
@@ -101,7 +96,7 @@ async function main() {
     {
       id: USER_UUIDS.bazkidea,
       username: "bazkidea@txokoa.eus",
-      password: "demo",
+      password: hashedPassword,
       name: "Miren Urrutia",
       role: "bazkidea",
       function: "arrunta",
@@ -114,7 +109,7 @@ async function main() {
     {
       id: USER_UUIDS.laguna,
       username: "laguna@txokoa.eus",
-      password: "demo",
+      password: hashedPassword,
       name: "Andoni Garcia",
       role: "laguna",
       function: "arrunta",
@@ -129,14 +124,29 @@ async function main() {
   console.log("Seeding demo users with predefined UUIDs...");
 
   for (const user of demoUsers) {
-    await db.insert(users).values(user).onConflictDoNothing({ target: users.username });
+    await dbConn.insert(users).values(user).onConflictDoNothing({ target: users.username });
   }
 
   console.log("Done. Users seeded with stable UUIDs.");
-  await client.end();
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+function isMainModule(): boolean {
+  try {
+    return process.argv[1] === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
+  seedUsers(db)
+    .catch(err => {
+      console.error(err);
+      process.exitCode = 1;
+    })
+    .finally(() =>
+      pool.end().then(() => {
+        process.exit(process.exitCode ?? 0);
+      })
+    );
+}

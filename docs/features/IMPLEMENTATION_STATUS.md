@@ -8,6 +8,8 @@ Status legend:
 - ❌ Not Implemented
 
 > **Scope note:** Authentication, users, reservations, consumptions, products, categories, credits/debts, notes (oharrak), notifications, society fields (including SEPA-related columns), tables, subscription types, and backoffice society management are backed by Express + Drizzle + PostgreSQL. SEPA XML generation still uses hardcoded creditor defaults in the client generator (see `credits.md`).
+>
+> **Local DB:** `pnpm db:reset` runs [`script/reset.ts`](../script/reset.ts) (drops all `public` tables, then `db:push`). `pnpm db:seed` runs [`script/seed.ts`](../script/seed.ts) (ordered demo seeds in one process).
 
 ---
 

@@ -1,28 +1,26 @@
-import { db } from "../server/db";
+import "dotenv/config";
 import { notifications, notificationMessages, users, notes, noteMessages } from "@shared/schema";
 import { eq } from "drizzle-orm";
+import type { SeedDb } from "./seed-db-type";
+import { db, pool } from "../server/db";
+import { fileURLToPath } from "node:url";
 
-async function seedNoteBasedNotifications() {
+export async function seedNotifications(dbConn: SeedDb) {
   console.log("Seeding note-based notifications...");
 
-  // Get all users
-  const allUsers = await db.select().from(users);
+  const allUsers = await dbConn.select().from(users);
 
   if (allUsers.length === 0) {
     console.log("No users found. Please seed users first.");
     return;
   }
 
-  // Get society ID from first user
   const societyId = allUsers[0].societyId;
 
-  // Clear existing notifications and messages
-  await db.delete(notifications).where(eq(notifications.societyId, societyId));
-  // Messages will be deleted automatically due to ON DELETE CASCADE
+  await dbConn.delete(notifications).where(eq(notifications.societyId, societyId));
   console.log("Cleared existing notifications and messages");
 
-  // Get existing notes with their messages
-  const notesWithMessages = await db
+  const notesWithMessages = await dbConn
     .select({
       note: notes,
       messages: noteMessages,
@@ -30,7 +28,7 @@ async function seedNoteBasedNotifications() {
     .from(notes)
     .leftJoin(noteMessages, eq(notes.id, noteMessages.noteId))
     .where(eq(noteMessages.language, "eu"))
-    .limit(5); // Create notifications for first 5 notes
+    .limit(5);
 
   if (notesWithMessages.length === 0) {
     console.log("No notes found. Please seed notes first.");
@@ -39,7 +37,6 @@ async function seedNoteBasedNotifications() {
 
   console.log(`Creating notifications for ${notesWithMessages.length} notes`);
 
-  // Create notifications for each note
   for (const noteData of notesWithMessages) {
     const note = noteData.note;
     const primaryMessage = noteData.messages;
@@ -48,26 +45,23 @@ async function seedNoteBasedNotifications() {
 
     console.log(`Processing note: ${primaryMessage.title}`);
 
-    // Get all messages for this note
-    const allMessages = await db
+    const allMessages = await dbConn
       .select()
       .from(noteMessages)
       .where(eq(noteMessages.noteId, note.id));
 
-    // Group messages by language
-    const messagesByLanguage = allMessages.reduce((acc: Record<string, any>, msg: any) => {
-      acc[msg.language] = msg;
-      return acc;
-    }, {});
+    const messagesByLanguage = allMessages.reduce(
+      (acc: Record<string, (typeof allMessages)[0]>, msg: (typeof allMessages)[0]) => {
+        acc[msg.language] = msg;
+        return acc;
+      },
+      {}
+    );
 
-    // Create notifications for all users
     for (const user of allUsers) {
-      // Default to Basque
+      const isRead = Math.random() > 0.6;
 
-      // Make some notifications read and some unread
-      const isRead = Math.random() > 0.6; // 40% unread
-
-      const [notification] = await db
+      const [notification] = await dbConn
         .insert(notifications)
         .values({
           userId: user.id,
@@ -78,13 +72,12 @@ async function seedNoteBasedNotifications() {
           isRead,
           readAt: isRead ? new Date() : null,
           defaultLanguage: "eu",
-          createdAt: new Date(note.createdAt), // Use note's creation date
+          createdAt: new Date(note.createdAt),
           updatedAt: new Date(),
         })
         .returning();
 
-      // Create notification messages with proper fallback
-      await db.insert(notificationMessages).values([
+      await dbConn.insert(notificationMessages).values([
         {
           notificationId: notification.id,
           language: "eu",
@@ -106,14 +99,23 @@ async function seedNoteBasedNotifications() {
   console.log("Note-based notifications seeded successfully!");
 }
 
-// Only run if this file is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  seedNoteBasedNotifications()
-    .then(() => process.exit(0))
-    .catch(error => {
-      console.error("Error seeding note-based notifications:", error);
-      process.exit(1);
-    });
+function isMainModule(): boolean {
+  try {
+    return process.argv[1] === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
 }
 
-export default seedNoteBasedNotifications;
+if (isMainModule()) {
+  seedNotifications(db)
+    .catch(error => {
+      console.error("Error seeding note-based notifications:", error);
+      process.exitCode = 1;
+    })
+    .finally(() =>
+      pool.end().then(() => {
+        process.exit(process.exitCode ?? 0);
+      })
+    );
+}

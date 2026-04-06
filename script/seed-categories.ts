@@ -1,28 +1,19 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Client } from "pg";
 import { productCategories, categoryMessages, societies } from "../shared/schema";
 import { eq, and } from "drizzle-orm";
+import type { SeedDb } from "./seed-db-type";
+import { db, pool } from "../server/db";
+import { fileURLToPath } from "node:url";
 
-async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is not set");
-  }
-
-  const client = new Client({ connectionString: databaseUrl });
-  await client.connect();
-  const db = drizzle(client);
-
-  // Get the active society or the first one
+export async function seedCategories(dbConn: SeedDb) {
   let societyId = "";
-  const activeSociety = await db
+  const activeSociety = await dbConn
     .select()
     .from(societies)
     .where(eq(societies.isActive, true))
     .limit(1);
   if (activeSociety.length === 0) {
-    const firstSociety = await db.select().from(societies).limit(1);
+    const firstSociety = await dbConn.select().from(societies).limit(1);
     if (firstSociety.length === 0) {
       throw new Error("No societies found in database");
     }
@@ -79,8 +70,7 @@ async function main() {
   console.log("Seeding demo categories with multilingual support...");
 
   for (const category of demoCategories) {
-    // Check if category already exists
-    const existingCategory = await db
+    const existingCategory = await dbConn
       .select()
       .from(productCategories)
       .where(eq(productCategories.color, category.color))
@@ -89,8 +79,7 @@ async function main() {
     let categoryId: string;
 
     if (existingCategory.length === 0) {
-      // Create the category
-      const [newCategory] = await db
+      const [newCategory] = await dbConn
         .insert(productCategories)
         .values({
           ...category,
@@ -104,9 +93,8 @@ async function main() {
       console.log(`Category already exists: ${category.messages.eu.name}`);
     }
 
-    // Create or update messages for each language
     for (const [language, messageData] of Object.entries(category.messages)) {
-      const existingMessage = await db
+      const existingMessage = await dbConn
         .select()
         .from(categoryMessages)
         .where(
@@ -115,7 +103,7 @@ async function main() {
         .limit(1);
 
       if (existingMessage.length === 0) {
-        await db.insert(categoryMessages).values({
+        await dbConn.insert(categoryMessages).values({
           categoryId,
           language,
           name: messageData.name,
@@ -123,7 +111,7 @@ async function main() {
         });
         console.log(`  Added ${language} message: ${messageData.name}`);
       } else {
-        await db
+        await dbConn
           .update(categoryMessages)
           .set({
             name: messageData.name,
@@ -137,10 +125,25 @@ async function main() {
   }
 
   console.log("Done.");
-  await client.end();
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+function isMainModule(): boolean {
+  try {
+    return process.argv[1] === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
+  seedCategories(db)
+    .catch(err => {
+      console.error(err);
+      process.exitCode = 1;
+    })
+    .finally(() =>
+      pool.end().then(() => {
+        process.exit(process.exitCode ?? 0);
+      })
+    );
+}

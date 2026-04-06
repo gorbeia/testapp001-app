@@ -1,40 +1,28 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Client } from "pg";
 import { subscriptionTypes, societies } from "../shared/schema";
 import { eq } from "drizzle-orm";
+import type { SeedDb } from "./seed-db-type";
+import { db, pool } from "../server/db";
+import { fileURLToPath } from "node:url";
 
-async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is not set");
-  }
-
-  const client = new Client({ connectionString: databaseUrl });
-  await client.connect();
-  const db = drizzle(client);
-
+export async function seedSubscriptions(dbConn: SeedDb) {
   console.log("Seeding subscription types...");
 
-  // Get the first society (assuming there's at least one)
-  const existingSocieties = await db.select().from(societies).limit(1);
+  const existingSocieties = await dbConn.select().from(societies).limit(1);
   if (existingSocieties.length === 0) {
     console.log("No societies found, please seed societies first.");
-    await client.end();
     return;
   }
 
   const societyId = existingSocieties[0].id;
 
-  // Check if subscription types already exist for this society
-  const existingSubscriptions = await db
+  const existingSubscriptions = await dbConn
     .select()
     .from(subscriptionTypes)
     .where(eq(subscriptionTypes.societyId, societyId));
 
   if (existingSubscriptions.length > 0) {
     console.log("Subscription types already exist, skipping seed.");
-    await client.end();
     return;
   }
 
@@ -52,14 +40,29 @@ async function main() {
   ];
 
   for (const subscriptionType of defaultSubscriptionTypes) {
-    await db.insert(subscriptionTypes).values(subscriptionType);
+    await dbConn.insert(subscriptionTypes).values(subscriptionType);
   }
 
   console.log("Done seeding subscription types.");
-  await client.end();
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+function isMainModule(): boolean {
+  try {
+    return process.argv[1] === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
+  seedSubscriptions(db)
+    .catch(err => {
+      console.error(err);
+      process.exitCode = 1;
+    })
+    .finally(() =>
+      pool.end().then(() => {
+        process.exit(process.exitCode ?? 0);
+      })
+    );
+}

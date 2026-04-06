@@ -64,9 +64,6 @@ CI is documented in the root [README](../README.md) (workflows: [`.github/workfl
 | Issue                                                                                                                                                                                                                                                 | Severity | Notes                                                                                                 |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- |
 | **No unit test runner** in use — E2E only (`pnpm test:e2e`).                                                                                                                                                                                          | Low      | `tsconfig` excludes `*.test.ts`; riskier refactors without fast tests.                                |
-| **Two DB reset scripts** — [`script/reset-database-push.ts`](../script/reset-database-push.ts) (used by `pnpm db:reset`) vs [`script/reset-database.ts`](../script/reset-database.ts) with a smaller table list; easy for the legacy script to drift. | Low      | Prefer one canonical path.                                                                            |
-
----
 
 ## End-to-end test coverage gaps
 

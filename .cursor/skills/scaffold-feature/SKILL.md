@@ -17,13 +17,13 @@ Confirm with the user (or infer from context):
 - Fields and types (`varchar`, `text`, `integer`, `boolean`, FKs)
 - Which roles can access the UI (`ProtectedRoute` / sidebar — see existing `App.tsx` / `AppSidebar.tsx`)
 - Basque route slug (e.g. `/gertaerak`) and nav label keys
-- Whether seed data is needed (`script/seed-*.ts` + `pnpm db:seed` chain)
+- Whether seed data is needed (`script/seed-*.ts` + register in `script/seed.ts`)
 
 ## Checklist (copy and track)
 
 ```
 - [ ] shared/schema.ts — pgTable + insert*Schema (drizzle-zod)
-- [ ] script/reset-database-push.ts — DROP for new tables (dependency order)
+- [ ] (No change) `script/reset.ts` — dynamic drop; new tables need no reset-script edit
 - [ ] server/routes/<feature>.ts — registerXRoutes, middleware, tenancy, Zod safeParse
 - [ ] server/routes/index.ts — import + registerXRoutes(app)
 - [ ] client/src/pages/<Feature>Page.tsx — Query + RHF + shadcn
@@ -31,7 +31,7 @@ Confirm with the user (or infer from context):
 - [ ] client/src/components/AppSidebar.tsx — nav item + access
 - [ ] client/src/lib/i18n.ts — eu + es keys
 - [ ] docs/features/<feature>.md + IMPLEMENTATION_STATUS.md
-- [ ] Optional: script/seed-<feature>.ts + package.json db:seed
+- [ ] Optional: script/seed-<feature>.ts + call from `script/seed.ts`
 - [ ] Optional: e2e/features + e2e/steps (see create-e2e-test skill)
 ```
 

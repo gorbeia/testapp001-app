@@ -1,28 +1,18 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Client } from "pg";
 import { societies } from "../shared/schema";
 import { DEMO_SOCIETY_ALPHABETIC_ID, DEMO_SOCIETY_ID } from "./seed-demo-society";
+import type { SeedDb } from "./seed-db-type";
+import { db, pool } from "../server/db";
+import { fileURLToPath } from "node:url";
 
 const SOCIETY_UUID = DEMO_SOCIETY_ID;
 
-async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is not set");
-  }
-
-  const client = new Client({ connectionString: databaseUrl });
-  await client.connect();
-  const db = drizzle(client);
-
+export async function seedSocieties(dbConn: SeedDb) {
   console.log("Seeding societies with predefined UUID...");
 
-  // Check if societies already exist
-  const existingSocieties = await db.select().from(societies);
+  const existingSocieties = await dbConn.select().from(societies);
   if (existingSocieties.length > 0) {
     console.log("Societies already exist, skipping seed.");
-    await client.end();
     return;
   }
 
@@ -43,14 +33,29 @@ async function main() {
   ];
 
   for (const society of demoSocieties) {
-    await db.insert(societies).values(society);
+    await dbConn.insert(societies).values(society);
   }
 
   console.log("Done. Society seeded with stable UUID.");
-  await client.end();
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+function isMainModule(): boolean {
+  try {
+    return process.argv[1] === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
+  seedSocieties(db)
+    .catch(err => {
+      console.error(err);
+      process.exitCode = 1;
+    })
+    .finally(() =>
+      pool.end().then(() => {
+        process.exit(process.exitCode ?? 0);
+      })
+    );
+}

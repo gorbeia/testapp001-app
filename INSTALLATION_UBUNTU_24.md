@@ -534,8 +534,7 @@ sudo apt update && sudo apt upgrade -y
 npm update
 
 # Update database schema (if needed)
-NODE_OPTIONS='--import tsx' node script/reset-database.ts
-npm run db:seed
+pnpm db:reset:seed
 ```
 
 ### Backups

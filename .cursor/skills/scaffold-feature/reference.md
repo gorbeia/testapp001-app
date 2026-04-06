@@ -28,9 +28,9 @@ export const insertWidgetSchema = createInsertSchema(widgets).pick({
 
 Add **`societyId: true`** to the pick only if the API is designed to accept it (usually **omit** and set in the handler).
 
-## Reset script (`script/reset-database-push.ts`)
+## Dev DB reset (`script/reset.ts`)
 
-Add `DROP TABLE IF EXISTS "widgets" CASCADE;` in **dependency order** (children before parents if not using CASCADE consistently — this script uses CASCADE on each line).
+`pnpm db:reset` drops **all** tables in schema `public` and runs `pnpm db:push`. New tables from `shared/schema.ts` do **not** require editing the reset script.
 
 ## Route module skeleton (`server/routes/widgets.ts`)
 

@@ -1,28 +1,19 @@
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Client } from "pg";
 import { consumptions, consumptionItems, users, products, societies } from "../shared/schema";
 import { eq } from "drizzle-orm";
+import type { SeedDb } from "./seed-db-type";
+import { db, pool } from "../server/db";
+import { fileURLToPath } from "node:url";
 
-async function main() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    throw new Error("DATABASE_URL is not set");
-  }
-
-  const client = new Client({ connectionString: databaseUrl });
-  await client.connect();
-  const db = drizzle(client);
-
-  // Get the active society or the first one
+export async function seedConsumptions(dbConn: SeedDb) {
   let societyId = "";
-  const activeSociety = await db
+  const activeSociety = await dbConn
     .select()
     .from(societies)
     .where(eq(societies.isActive, true))
     .limit(1);
   if (activeSociety.length === 0) {
-    const firstSociety = await db.select().from(societies).limit(1);
+    const firstSociety = await dbConn.select().from(societies).limit(1);
     if (firstSociety.length === 0) {
       throw new Error("No societies found in database");
     }
@@ -32,26 +23,22 @@ async function main() {
   }
 
   console.log("Using society ID for consumptions:", societyId);
-
   console.log("Seeding demo consumptions...");
 
-  // Get demo users and products
-  const demoUsers = await db.select().from(users).limit(3);
-  const demoProducts = await db.select().from(products).limit(5);
+  const demoUsers = await dbConn.select().from(users).limit(3);
+  const demoProducts = await dbConn.select().from(products).limit(5);
 
   if (demoUsers.length === 0 || demoProducts.length === 0) {
     console.log("No users or products found. Please run seed-users and seed-products first.");
-    await client.end();
     return;
   }
 
-  // Create some demo consumptions with November 2025 dates
   const novemberDates = [
-    new Date(2025, 10, 5), // November 5, 2025
-    new Date(2025, 10, 12), // November 12, 2025
-    new Date(2025, 10, 18), // November 18, 2025
-    new Date(2025, 10, 25), // November 25, 2025
-    new Date(2025, 10, 28), // November 28, 2025
+    new Date(2025, 10, 5),
+    new Date(2025, 10, 12),
+    new Date(2025, 10, 18),
+    new Date(2025, 10, 25),
+    new Date(2025, 10, 28),
   ];
 
   const demoConsumptions = [
@@ -94,7 +81,7 @@ async function main() {
   ];
 
   for (const consumptionData of demoConsumptions) {
-    const [consumption] = await db
+    const [consumption] = await dbConn
       .insert(consumptions)
       .values({
         ...consumptionData,
@@ -102,16 +89,15 @@ async function main() {
       })
       .returning();
 
-    // Add some consumption items for all consumptions
-    const itemsToAdd = Math.floor(Math.random() * 3) + 1; // 1-3 items
+    const itemsToAdd = Math.floor(Math.random() * 3) + 1;
 
     for (let i = 0; i < itemsToAdd && i < demoProducts.length; i++) {
       const product = demoProducts[i];
-      const quantity = Math.floor(Math.random() * 3) + 1; // 1-3 units
+      const quantity = Math.floor(Math.random() * 3) + 1;
       const unitPrice = parseFloat(product.price);
       const totalPrice = unitPrice * quantity;
 
-      await db.insert(consumptionItems).values({
+      await dbConn.insert(consumptionItems).values({
         consumptionId: consumption.id,
         productId: product.id,
         quantity,
@@ -123,10 +109,25 @@ async function main() {
   }
 
   console.log("Demo consumptions seeded successfully!");
-  await client.end();
 }
 
-main().catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+function isMainModule(): boolean {
+  try {
+    return process.argv[1] === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
+  seedConsumptions(db)
+    .catch(err => {
+      console.error(err);
+      process.exitCode = 1;
+    })
+    .finally(() =>
+      pool.end().then(() => {
+        process.exit(process.exitCode ?? 0);
+      })
+    );
+}

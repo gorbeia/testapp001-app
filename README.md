@@ -71,7 +71,21 @@ A modern web application built with React, TypeScript, and Express.js for managi
 pnpm db:reset:seed
 ```
 
-(`pnpm db:reset` drops app tables and runs `db:push`; it does **not** run `drizzle-kit migrate` in the classical sense.)
+(`pnpm db:reset` drops **all** `public` tables and runs `db:push`; it does **not** run `drizzle-kit migrate` in the classical sense.)
+
+### Database commands (quick reference)
+
+| Command | When to use |
+| --- | --- |
+| `pnpm docker:db:up` | Start local Postgres (Docker). |
+| `pnpm db:push` | Sync `shared/schema.ts` to the DB (typical **local dev**). |
+| `pnpm db:seed` | Load demo data via **`script/seed.ts`** (single process). |
+| `pnpm db:reset` | Wipe `public` + `db:push` (destructive; **local/dev only**). |
+| `pnpm db:reset:seed` | `db:reset` then `db:seed`. |
+| `pnpm db:generate` | Generate SQL migrations from schema (review/commit for deploy). |
+| `pnpm db:migrate` | Apply pending migrations from `./migrations`. |
+| `pnpm db:studio` | Drizzle Studio (browse data). |
+| `pnpm docker:db:reset` | Recreate Postgres volume (empty server; then `db:push` / `db:reset:seed`). |
 
 ## Running the Application
 
