@@ -137,41 +137,37 @@ When("I set the number of guests to {int}", async function (guests: number) {
   await costCard.getByText(new RegExp(`${expected}€`)).waitFor({ state: "visible", timeout: 5000 });
 });
 
-When(
-  "I select a table",
-  { timeout: 60 * 1000 },
-  async function () {
-    const page = getPage();
-    if (!page) throw new Error("Page not available");
+When("I select a table", { timeout: 60 * 1000 }, async function () {
+  const page = getPage();
+  if (!page) throw new Error("Page not available");
 
-    await page.waitForTimeout(300);
-    await page.click('[data-testid="select-table"]');
+  await page.waitForTimeout(300);
+  await page.click('[data-testid="select-table"]');
 
-    const enabled = page.locator('[role="option"]:not([data-disabled])');
-    try {
-      await enabled.first().waitFor({ state: "visible", timeout: 20000 });
-    } catch {
-      const emptyState = await page
-        .locator("text=/Ez dago mahairik|No hay mesas|no tables/i")
-        .first()
-        .isVisible()
-        .catch(() => false);
-      throw new Error(
-        emptyState
-          ? "No reservation tables for this society. Run pnpm db:seed (includes script/seed-tables.ts) or pnpm db:reset:seed."
-          : "Table dropdown has no selectable options."
-      );
-    }
-
-    const choice = enabled.last();
-    await choice.scrollIntoViewIfNeeded();
-    await choice.click();
-
-    const saveBtn = page.locator('[data-testid="button-save-reservation"]');
-    await saveBtn.waitFor({ state: "visible", timeout: 5000 });
-    assert.ok(await saveBtn.isEnabled(), "A table must be selected so reservation save is enabled");
+  const enabled = page.locator('[role="option"]:not([data-disabled])');
+  try {
+    await enabled.first().waitFor({ state: "visible", timeout: 20000 });
+  } catch {
+    const emptyState = await page
+      .locator("text=/Ez dago mahairik|No hay mesas|no tables/i")
+      .first()
+      .isVisible()
+      .catch(() => false);
+    throw new Error(
+      emptyState
+        ? "No reservation tables for this society. Run pnpm db:seed (includes script/seed-tables.ts) or pnpm db:reset:seed."
+        : "Table dropdown has no selectable options."
+    );
   }
-);
+
+  const choice = enabled.last();
+  await choice.scrollIntoViewIfNeeded();
+  await choice.click();
+
+  const saveBtn = page.locator('[data-testid="button-save-reservation"]');
+  await saveBtn.waitFor({ state: "visible", timeout: 5000 });
+  assert.ok(await saveBtn.isEnabled(), "A table must be selected so reservation save is enabled");
+});
 
 When("I select the {string} table", async function (tableName: string) {
   const page = getPage();

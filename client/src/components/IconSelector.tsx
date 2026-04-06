@@ -51,9 +51,7 @@ export function IconSelector({ value, onChange }: IconSelectorProps) {
         {SelectedIconComponent ? (
           <div className="flex items-center">
             <SelectedIconComponent className="mr-2 h-4 w-4" />
-            <span>
-              {selectedIcon ? t(selectedIcon.translationKey as TranslationKey) : value}
-            </span>
+            <span>{selectedIcon ? t(selectedIcon.translationKey as TranslationKey) : value}</span>
           </div>
         ) : (
           <span className="text-muted-foreground">{t("selectIcon")}</span>

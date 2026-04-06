@@ -583,7 +583,8 @@ export function UsersPage() {
                       <SelectItem value="none">{t("noSubscription")}</SelectItem>
                       {subscriptionTypes.map(type => (
                         <SelectItem key={type.id} value={type.id}>
-                          {type.name} - €{type.amount} ({t(type.period as SubscriptionPeriodI18nKey)})
+                          {type.name} - €{type.amount} (
+                          {t(type.period as SubscriptionPeriodI18nKey)})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -678,7 +679,8 @@ export function UsersPage() {
                         <SelectItem value="none">{t("noSubscription")}</SelectItem>
                         {subscriptionTypes.map(type => (
                           <SelectItem key={type.id} value={type.id}>
-                            {type.name} - €{type.amount} ({t(type.period as SubscriptionPeriodI18nKey)})
+                            {type.name} - €{type.amount} (
+                            {t(type.period as SubscriptionPeriodI18nKey)})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -756,13 +758,19 @@ export function UsersPage() {
               <TableBody>
                 {isLoading && !isInitialLoad ? (
                   <TableRow>
-                    <TableCell colSpan={tableColSpan} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={tableColSpan}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       {t("loading")}
                     </TableCell>
                   </TableRow>
                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={tableColSpan} className="text-center py-8 text-muted-foreground">
+                    <TableCell
+                      colSpan={tableColSpan}
+                      className="text-center py-8 text-muted-foreground"
+                    >
                       {t("noResults")}
                     </TableCell>
                   </TableRow>

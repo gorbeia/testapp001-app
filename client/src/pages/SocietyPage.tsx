@@ -216,9 +216,7 @@ export function SocietyPage() {
                 <Label>{t("sepaMode")}</Label>
                 <Select
                   value={society.sepaMode ?? "monthly"}
-                  onValueChange={(value: SepaMode) =>
-                    setSociety({ ...society, sepaMode: value })
-                  }
+                  onValueChange={(value: SepaMode) => setSociety({ ...society, sepaMode: value })}
                 >
                   <SelectTrigger data-testid="select-sepa-mode">
                     <SelectValue />
@@ -233,7 +231,9 @@ export function SocietyPage() {
                 </Select>
                 <p className="text-xs text-muted-foreground">{t("sepaModeDescription")}</p>
                 {(society.sepaMode ?? "monthly") === "disabled" && (
-                  <p className="text-xs text-amber-700 dark:text-amber-500">{t("sepaModeDisabledHint")}</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-500">
+                    {t("sepaModeDisabledHint")}
+                  </p>
                 )}
               </div>
             </CardContent>

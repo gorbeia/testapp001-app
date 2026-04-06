@@ -31,8 +31,7 @@ export async function seedNotes(dbConn: SeedDb) {
         {
           language: "eu",
           title: "Ondo etorri!",
-          content:
-            "Txokora ongi etorri! Hemen zure kontsumoak eta erreserbak kudea ditzakezu.",
+          content: "Txokora ongi etorri! Hemen zure kontsumoak eta erreserbak kudea ditzakezu.",
         },
         {
           language: "es",

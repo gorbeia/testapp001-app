@@ -240,73 +240,76 @@ export function BankTransfersPage() {
             <DialogTrigger asChild>
               <Button data-testid="button-new-transfer">{t("createTransfer")}</Button>
             </DialogTrigger>
-          <DialogContent data-testid="dialog-new-transfer">
-            <DialogHeader>
-              <DialogTitle>{t("createTransfer")}</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label>{t("filterByMember")}</Label>
-                <Select value={form.userId} onValueChange={v => setForm(f => ({ ...f, userId: v }))}>
-                  <SelectTrigger data-testid="select-transfer-user">
-                    <SelectValue placeholder={t("selectPlaceholder")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(usersQuery.data ?? []).map(u => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.name || u.username}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <DialogContent data-testid="dialog-new-transfer">
+              <DialogHeader>
+                <DialogTitle>{t("createTransfer")}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <Label>{t("filterByMember")}</Label>
+                  <Select
+                    value={form.userId}
+                    onValueChange={v => setForm(f => ({ ...f, userId: v }))}
+                  >
+                    <SelectTrigger data-testid="select-transfer-user">
+                      <SelectValue placeholder={t("selectPlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(usersQuery.data ?? []).map(u => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.name || u.username}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{t("refundAmount")}</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.amount}
+                    onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                    data-testid="input-transfer-amount"
+                  />
+                </div>
+                <div>
+                  <Label>{t("transferDate")}</Label>
+                  <Input
+                    type="date"
+                    value={form.transferDate}
+                    onChange={e => setForm(f => ({ ...f, transferDate: e.target.value }))}
+                    data-testid="input-transfer-date"
+                  />
+                </div>
+                <div>
+                  <Label>{t("transferReference")}</Label>
+                  <Input
+                    value={form.reference}
+                    onChange={e => setForm(f => ({ ...f, reference: e.target.value }))}
+                    data-testid="input-transfer-reference"
+                  />
+                </div>
+                <div>
+                  <Label>{t("notesPlaceholder")}</Label>
+                  <Textarea
+                    value={form.notes}
+                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                    data-testid="input-transfer-notes"
+                  />
+                </div>
               </div>
-              <div>
-                <Label>{t("refundAmount")}</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={form.amount}
-                  onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                  data-testid="input-transfer-amount"
-                />
-              </div>
-              <div>
-                <Label>{t("transferDate")}</Label>
-                <Input
-                  type="date"
-                  value={form.transferDate}
-                  onChange={e => setForm(f => ({ ...f, transferDate: e.target.value }))}
-                  data-testid="input-transfer-date"
-                />
-              </div>
-              <div>
-                <Label>{t("transferReference")}</Label>
-                <Input
-                  value={form.reference}
-                  onChange={e => setForm(f => ({ ...f, reference: e.target.value }))}
-                  data-testid="input-transfer-reference"
-                />
-              </div>
-              <div>
-                <Label>{t("notesPlaceholder")}</Label>
-                <Textarea
-                  value={form.notes}
-                  onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                  data-testid="input-transfer-notes"
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                onClick={() => createMut.mutate()}
-                disabled={!form.userId || !form.amount}
-                data-testid="button-save-transfer"
-              >
-                {t("create")}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+              <DialogFooter>
+                <Button
+                  onClick={() => createMut.mutate()}
+                  disabled={!form.userId || !form.amount}
+                  data-testid="button-save-transfer"
+                >
+                  {t("create")}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -382,7 +385,9 @@ export function BankTransfersPage() {
           <DialogFooter>
             <Button
               onClick={() =>
-                rejectOpen && rejectReason.trim() && rejectMut.mutate({ id: rejectOpen, reason: rejectReason })
+                rejectOpen &&
+                rejectReason.trim() &&
+                rejectMut.mutate({ id: rejectOpen, reason: rejectReason })
               }
               data-testid="button-confirm-reject"
             >

@@ -559,7 +559,7 @@ export const tables = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (t) => [unique("tables_society_id_name_unique").on(t.societyId, t.name)]
+  t => [unique("tables_society_id_name_unique").on(t.societyId, t.name)]
 );
 
 export const insertTableSchema = createInsertSchema(tables).pick({
@@ -782,10 +782,9 @@ export const updateUserProfileBodySchema = z
     phone: z.string().nullable().optional(),
     iban: z.string().nullable().optional(),
   })
-  .refine(
-    data => data.name !== undefined || data.phone !== undefined || data.iban !== undefined,
-    { message: "At least one of name, phone, iban is required" }
-  );
+  .refine(data => data.name !== undefined || data.phone !== undefined || data.iban !== undefined, {
+    message: "At least one of name, phone, iban is required",
+  });
 
 export const changePasswordBodySchema = z.object({
   currentPassword: z.string().min(1),
@@ -803,10 +802,9 @@ export const updateUserAdminBodySchema = z
     linkedMemberName: z.string().nullable().optional(),
     subscriptionTypeId: z.string().nullable().optional(),
   })
-  .refine(
-    data => Object.values(data).some(v => v !== undefined),
-    { message: "At least one field is required" }
-  );
+  .refine(data => Object.values(data).some(v => v !== undefined), {
+    message: "At least one field is required",
+  });
 
 const subscriptionPeriodSchema = z.enum(["monthly", "quarterly", "yearly", "custom"]);
 
@@ -820,18 +818,20 @@ const subscriptionTypeFieldsSchema = z.object({
   autoRenew: z.boolean().optional(),
 });
 
-export const subscriptionTypeCreateBodySchema = subscriptionTypeFieldsSchema.superRefine((data, ctx) => {
-  const raw = typeof data.amount === "number" ? data.amount : parseFloat(String(data.amount));
-  if (Number.isNaN(raw) || raw < 0) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid amount" });
+export const subscriptionTypeCreateBodySchema = subscriptionTypeFieldsSchema.superRefine(
+  (data, ctx) => {
+    const raw = typeof data.amount === "number" ? data.amount : parseFloat(String(data.amount));
+    if (Number.isNaN(raw) || raw < 0) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid amount" });
+    }
+    if (data.period === "custom" && (!data.periodMonths || data.periodMonths < 1)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "periodMonths is required and must be at least 1 for custom periods",
+      });
+    }
   }
-  if (data.period === "custom" && (!data.periodMonths || data.periodMonths < 1)) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "periodMonths is required and must be at least 1 for custom periods",
-    });
-  }
-});
+);
 
 export const subscriptionTypeUpdateBodySchema = subscriptionTypeFieldsSchema
   .partial()
@@ -895,10 +895,9 @@ export const updateNoteBodySchema = z
     messages: z.array(noteMessageBodySchema).optional(),
     isActive: z.boolean().optional(),
   })
-  .refine(
-    data => data.messages !== undefined || data.isActive !== undefined,
-    { message: "At least one of messages, isActive is required" }
-  );
+  .refine(data => data.messages !== undefined || data.isActive !== undefined, {
+    message: "At least one of messages, isActive is required",
+  });
 
 export const noteNotifyBodySchema = z.object({
   notifyUsers: z.boolean(),
@@ -922,7 +921,9 @@ export const createNotificationBodySchema = z
   })
   .refine(
     data =>
-      Boolean((data.title != null && data.title !== "") || (data.message != null && data.message !== "")) ||
+      Boolean(
+        (data.title != null && data.title !== "") || (data.message != null && data.message !== "")
+      ) ||
       (data.messages != null && Object.keys(data.messages).length > 0),
     { message: "title/message or messages is required" }
   );

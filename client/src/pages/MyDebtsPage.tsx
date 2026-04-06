@@ -101,10 +101,7 @@ export function MyDebtsPage() {
         month: monthFilter.value,
         status: statusFilter.value !== "all" ? statusFilter.value : undefined,
       }),
-    enabled:
-      !!user &&
-      !societyPending &&
-      (societyError || societyUser?.sepaMode !== "disabled"),
+    enabled: !!user && !societyPending && (societyError || societyUser?.sepaMode !== "disabled"),
     throwOnError: false, // Handle errors inline instead of throwing
   });
 

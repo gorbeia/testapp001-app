@@ -122,10 +122,10 @@
 
 ## Related routes (reference)
 
-| Path | Purpose |
-|------|---------|
-| `/erreserbak` | Society upcoming list + create |
-| `/nire-erreserbak` | Own reservations |
-| `/admin-erreserbak` | Admin management UI |
-| `/mahaiak` | Tables CRUD |
-| `/elkartea` | Society fields including reservation pricing |
+| Path                | Purpose                                      |
+| ------------------- | -------------------------------------------- |
+| `/erreserbak`       | Society upcoming list + create               |
+| `/nire-erreserbak`  | Own reservations                             |
+| `/admin-erreserbak` | Admin management UI                          |
+| `/mahaiak`          | Tables CRUD                                  |
+| `/elkartea`         | Society fields including reservation pricing |

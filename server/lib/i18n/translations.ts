@@ -18,16 +18,14 @@ export const translations = {
     financialBankTransferValidatedMessage:
       "Zure {amount} € transferentzia balioztatu da eta zure kontuan erregistratu da.",
     financialBankTransferRejectedTitle: "Transferentzia baztertua",
-    financialBankTransferRejectedMessage:
-      "Zure transferentzia baztertu da. Arrazoi bat: {reason}",
+    financialBankTransferRejectedMessage: "Zure transferentzia baztertu da. Arrazoi bat: {reason}",
     financialRefundIssuedTitle: "Itzulketa",
     financialRefundIssuedMessage: "{amount} € itzulketa erregistratu da zure kontuan.",
     financialSepaBounceTitle: "SEPA ordainketa huts egin du",
     financialSepaBounceMessage:
       "Zure {month} hilabeteko SEPA zordunketak huts egin du. Zorra berriro zain dago.",
     financialReservationChargeTitle: "Erreserba kargua",
-    financialReservationChargeMessage:
-      '"{name}" erreserbaren kargua: {amount} €.',
+    financialReservationChargeMessage: '"{name}" erreserbaren kargua: {amount} €.',
     financialSubscriptionChargeTitle: "Harpidetza kargua",
     financialSubscriptionChargeMessage: "{month} hilabeteko harpidetza: {amount} €.",
   },
@@ -49,8 +47,7 @@ export const translations = {
     financialBankTransferValidatedMessage:
       "Tu transferencia de {amount} € ha sido validada y registrada en tu cuenta.",
     financialBankTransferRejectedTitle: "Transferencia rechazada",
-    financialBankTransferRejectedMessage:
-      "Tu transferencia ha sido rechazada. Motivo: {reason}",
+    financialBankTransferRejectedMessage: "Tu transferencia ha sido rechazada. Motivo: {reason}",
     financialRefundIssuedTitle: "Reembolso",
     financialRefundIssuedMessage: "Se ha registrado un reembolso de {amount} € en tu cuenta.",
     financialSepaBounceTitle: "Fallo del adeudo SEPA",

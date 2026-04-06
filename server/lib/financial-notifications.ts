@@ -1,11 +1,6 @@
 import { db } from "../db";
 import { notifications, notificationMessages } from "@shared/schema";
-import {
-  translate,
-  translateWithParams,
-  type Language,
-  type TranslationKey,
-} from "./i18n";
+import { translate, translateWithParams, type Language, type TranslationKey } from "./i18n";
 
 export async function notifyFinancialEvent(opts: {
   userId: string;

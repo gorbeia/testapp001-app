@@ -172,7 +172,7 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
       pendingCredits: creditsSum,
       activeMembers: usersCount,
       sepaModeDisabled,
-      memberAccountBalance: sepaModeDisabled ? memberAccountBalance ?? 0 : undefined,
+      memberAccountBalance: sepaModeDisabled ? (memberAccountBalance ?? 0) : undefined,
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);

@@ -42,10 +42,7 @@ import { Search, Plus, Edit, Trash2, Settings } from "lucide-react";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import type { z } from "zod";
-import {
-  subscriptionTypeCreateBodySchema,
-  subscriptionTypeUpdateBodySchema,
-} from "@shared/schema";
+import { subscriptionTypeCreateBodySchema, subscriptionTypeUpdateBodySchema } from "@shared/schema";
 import { getErrorMessage } from "@/lib/errors";
 
 type SubscriptionCreateBody = z.infer<typeof subscriptionTypeCreateBodySchema>;

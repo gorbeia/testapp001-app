@@ -1,6 +1,13 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { credits, users, societies, type JwtSessionUser, sepaModeSchema, type SepaMode } from "@shared/schema";
+import {
+  credits,
+  users,
+  societies,
+  type JwtSessionUser,
+  sepaModeSchema,
+  type SepaMode,
+} from "@shared/schema";
 import { eq, and, inArray } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
@@ -111,9 +118,7 @@ function validateMonthsForSepaMode(mode: SepaMode, months: string[]): string | n
       [7, 8, 9],
       [10, 11, 12],
     ];
-    const ok = quarterStarts.some(
-      q => q[0] === ms[0] && q[1] === ms[1] && q[2] === ms[2]
-    );
+    const ok = quarterStarts.some(q => q[0] === ms[0] && q[1] === ms[1] && q[2] === ms[2]);
     if (!ok) return "Months must form a full calendar quarter (Q1–Q4)";
     return null;
   }
@@ -145,7 +150,10 @@ function parseMonthsFromQuery(req: Request): string[] | null {
   }
 
   if (monthsParam) {
-    const parts = monthsParam.split(",").map(s => s.trim()).filter(Boolean);
+    const parts = monthsParam
+      .split(",")
+      .map(s => s.trim())
+      .filter(Boolean);
     for (const p of parts) {
       if (!parseMonthLabel(p)) return null;
     }

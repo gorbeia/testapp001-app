@@ -1,6 +1,6 @@
 # Ubuntu 24.04 Installation Guide
 
-This guide provides step-by-step instructions for installing and setting up **Elkartearen App** on Ubuntu 24.04 LTS (the app UI is branded *Gure Txokoa* in the client).
+This guide provides step-by-step instructions for installing and setting up **Elkartearen App** on Ubuntu 24.04 LTS (the app UI is branded _Gure Txokoa_ in the client).
 
 ## Prerequisites
 

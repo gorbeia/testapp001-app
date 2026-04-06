@@ -117,16 +117,14 @@ export function AccountMovementsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" data-testid="admin-movements-count">
-              {query.isLoading ? "…" : query.data?.total ?? 0}
+              {query.isLoading ? "…" : (query.data?.total ?? 0)}
             </div>
           </CardContent>
         </Card>
 
         <Card data-testid="card-admin-movements-net">
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("movementsStatsFilteredNet")}
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">{t("movementsStatsFilteredNet")}</CardTitle>
             <Scale className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -143,14 +141,15 @@ export function AccountMovementsPage() {
 
         <Card data-testid="card-admin-movements-member-balance">
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {t("memberLedgerBalanceStat")}
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">{t("memberLedgerBalanceStat")}</CardTitle>
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {userId === "all" ? (
-              <p className="text-sm text-muted-foreground" data-testid="admin-movements-member-balance-placeholder">
+              <p
+                className="text-sm text-muted-foreground"
+                data-testid="admin-movements-member-balance-placeholder"
+              >
                 {t("selectMemberToSeeBalance")}
               </p>
             ) : (
@@ -227,7 +226,10 @@ export function AccountMovementsPage() {
           <CardTitle>{t("movementListSection")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground mb-3" data-testid="admin-movements-sign-legend">
+          <p
+            className="text-sm text-muted-foreground mb-3"
+            data-testid="admin-movements-sign-legend"
+          >
             {t("movementsSignLegend")}
           </p>
           <Table>

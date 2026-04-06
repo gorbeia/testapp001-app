@@ -83,7 +83,7 @@ This document covers **society notes** (multilingual DB content) and **in-app no
 
 ## Quick reference
 
-| Feature | Route / API | Status |
-|---------|-------------|--------|
-| Notes admin | `/oharrak`, `/api/notes` | Shipped |
+| Feature       | Route / API                             | Status  |
+| ------------- | --------------------------------------- | ------- |
+| Notes admin   | `/oharrak`, `/api/notes`                | Shipped |
 | Notifications | `/jakinarazpenak`, `/api/notifications` | Shipped |

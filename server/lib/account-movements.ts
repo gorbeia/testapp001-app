@@ -6,10 +6,7 @@ import { accountMovements, type AccountMovementType } from "@shared/schema";
  * Member **account balance** from ledger movements (sum of `amount`).
  * Negative means the member owes; positive means prepaid/credit.
  */
-export async function getMemberAccountBalance(
-  societyId: string,
-  userId: string
-): Promise<number> {
+export async function getMemberAccountBalance(societyId: string, userId: string): Promise<number> {
   const [row] = await db
     .select({
       bal: sql<string>`coalesce(sum(cast(${accountMovements.amount} as decimal)), 0)`.mapWith(
@@ -17,9 +14,7 @@ export async function getMemberAccountBalance(
       ),
     })
     .from(accountMovements)
-    .where(
-      and(eq(accountMovements.societyId, societyId), eq(accountMovements.userId, userId))
-    );
+    .where(and(eq(accountMovements.societyId, societyId), eq(accountMovements.userId, userId)));
   return row?.bal ?? 0;
 }
 

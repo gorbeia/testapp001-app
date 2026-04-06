@@ -55,47 +55,43 @@ function attachRunningBalances(rows: MovementRow[]): (MovementRow & { runningBal
 }
 
 export function registerAccountMovementRoutes(app: Express) {
-  app.get(
-    "/api/account-movements",
-    sessionMiddleware,
-    requireTreasurer,
-    async (req, res, next) => {
-      try {
-        const societyId = getUserSocietyId(req.user!);
-        const userId = req.query.userId as string | undefined;
-        const month = req.query.month as string | undefined;
-        const typeRaw = req.query.type as string | undefined;
-        const page = Math.max(1, parseInt(String(req.query.page || "1"), 10) || 1);
-        const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || "50"), 10) || 50));
-        const offset = (page - 1) * limit;
+  app.get("/api/account-movements", sessionMiddleware, requireTreasurer, async (req, res, next) => {
+    try {
+      const societyId = getUserSocietyId(req.user!);
+      const userId = req.query.userId as string | undefined;
+      const month = req.query.month as string | undefined;
+      const typeRaw = req.query.type as string | undefined;
+      const page = Math.max(1, parseInt(String(req.query.page || "1"), 10) || 1);
+      const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || "50"), 10) || 50));
+      const offset = (page - 1) * limit;
 
-        const params: unknown[] = [societyId];
-        let p = 2;
-        let userClause = "";
-        if (userId) {
-          userClause = ` AND user_id = $${p}`;
-          params.push(userId);
+      const params: unknown[] = [societyId];
+      let p = 2;
+      let userClause = "";
+      if (userId) {
+        userClause = ` AND user_id = $${p}`;
+        params.push(userId);
+        p++;
+      }
+      let monthClause = "";
+      if (month && /^\d{4}-\d{2}$/.test(month)) {
+        monthClause = ` AND to_char(created_at, 'YYYY-MM') = $${p}`;
+        params.push(month);
+        p++;
+      }
+      let typeClause = "";
+      if (typeRaw && typeRaw !== "all") {
+        const parsedType = accountMovementTypeSchema.safeParse(typeRaw);
+        if (parsedType.success) {
+          typeClause = ` AND type = $${p}`;
+          params.push(parsedType.data);
           p++;
         }
-        let monthClause = "";
-        if (month && /^\d{4}-\d{2}$/.test(month)) {
-          monthClause = ` AND to_char(created_at, 'YYYY-MM') = $${p}`;
-          params.push(month);
-          p++;
-        }
-        let typeClause = "";
-        if (typeRaw && typeRaw !== "all") {
-          const parsedType = accountMovementTypeSchema.safeParse(typeRaw);
-          if (parsedType.success) {
-            typeClause = ` AND type = $${p}`;
-            params.push(parsedType.data);
-            p++;
-          }
-        }
+      }
 
-        const filterParams = [...params];
+      const filterParams = [...params];
 
-        const countSql = `
+      const countSql = `
           WITH base AS (
             SELECT m.*, SUM(m.amount::numeric) OVER (
               PARTITION BY m.user_id ORDER BY m.created_at ASC, m.id ASC
@@ -105,23 +101,23 @@ export function registerAccountMovementRoutes(app: Express) {
           )
           SELECT COUNT(*)::int AS c FROM base WHERE 1=1 ${userClause} ${monthClause} ${typeClause}
         `;
-        const countRes = await pool.query(countSql, filterParams);
-        const total = countRes.rows[0]?.c ?? 0;
+      const countRes = await pool.query(countSql, filterParams);
+      const total = countRes.rows[0]?.c ?? 0;
 
-        const sumSql = `
+      const sumSql = `
           SELECT coalesce(sum(m.amount::numeric), 0) AS s
           FROM account_movements m
           WHERE m.society_id = $1${userClause} ${monthClause} ${typeClause}
         `;
-        const sumRes = await pool.query(sumSql, filterParams);
-        const sumAmount = parseFloat(String(sumRes.rows[0]?.s ?? 0));
+      const sumRes = await pool.query(sumSql, filterParams);
+      const sumAmount = parseFloat(String(sumRes.rows[0]?.s ?? 0));
 
-        let selectedMemberBalance: number | null = null;
-        if (userId) {
-          selectedMemberBalance = await getMemberAccountBalance(societyId, userId);
-        }
+      let selectedMemberBalance: number | null = null;
+      if (userId) {
+        selectedMemberBalance = await getMemberAccountBalance(societyId, userId);
+      }
 
-        const dataSql = `
+      const dataSql = `
           WITH base AS (
             SELECT m.*, SUM(m.amount::numeric) OVER (
               PARTITION BY m.user_id ORDER BY m.created_at ASC, m.id ASC
@@ -134,114 +130,108 @@ export function registerAccountMovementRoutes(app: Express) {
           ORDER BY created_at DESC, id DESC
           LIMIT $${p} OFFSET $${p + 1}
         `;
-        const dataParams = [...filterParams, limit, offset];
-        const dataRes = await pool.query(dataSql, dataParams);
-        type PgMov = {
-          id: string;
-          society_id: string;
-          user_id: string;
-          type: string;
-          amount: string;
-          description: string | null;
-          reference_id: string | null;
-          reference_type: string | null;
-          created_by: string | null;
-          created_at: Date;
-          running_balance: string;
-        };
+      const dataParams = [...filterParams, limit, offset];
+      const dataRes = await pool.query(dataSql, dataParams);
+      type PgMov = {
+        id: string;
+        society_id: string;
+        user_id: string;
+        type: string;
+        amount: string;
+        description: string | null;
+        reference_id: string | null;
+        reference_type: string | null;
+        created_by: string | null;
+        created_at: Date;
+        running_balance: string;
+      };
 
-        const withNames = await Promise.all(
-          (dataRes.rows as PgMov[]).map(async m => {
-            const [u] = await db
-              .select({ name: users.name, username: users.username })
+      const withNames = await Promise.all(
+        (dataRes.rows as PgMov[]).map(async m => {
+          const [u] = await db
+            .select({ name: users.name, username: users.username })
+            .from(users)
+            .where(and(eq(users.id, m.user_id), eq(users.societyId, societyId)));
+          let createdByName: string | null = null;
+          if (m.created_by) {
+            const [cu] = await db
+              .select({ name: users.name })
               .from(users)
-              .where(and(eq(users.id, m.user_id), eq(users.societyId, societyId)));
-            let createdByName: string | null = null;
-            if (m.created_by) {
-              const [cu] = await db
-                .select({ name: users.name })
-                .from(users)
-                .where(and(eq(users.id, m.created_by), eq(users.societyId, societyId)));
-              createdByName = cu?.name ?? null;
-            }
-            return {
-              id: m.id,
-              societyId: m.society_id,
-              userId: m.user_id,
-              type: m.type,
-              amount: m.amount,
-              description: m.description,
-              referenceId: m.reference_id,
-              referenceType: m.reference_type,
-              createdBy: m.created_by,
-              createdAt: m.created_at,
-              runningBalance: parseFloat(String(m.running_balance ?? 0)),
-              memberName: u?.name ?? null,
-              memberUsername: u?.username ?? null,
-              createdByName,
-            };
-          })
-        );
-
-        res.json({
-          movements: withNames,
-          total,
-          sumAmount,
-          selectedMemberBalance,
-          page,
-          limit,
-        });
-      } catch (e) {
-        next(e);
-      }
-    }
-  );
-
-  app.get(
-    "/api/account-movements/me",
-    sessionMiddleware,
-    requireAuth,
-    async (req, res, next) => {
-      try {
-        const user = req.user!;
-        const societyId = getUserSocietyId(user);
-        const month = req.query.month as string | undefined;
-        const typeRaw = req.query.type as string | undefined;
-
-        const conditions = [
-          eq(accountMovements.societyId, societyId),
-          eq(accountMovements.userId, user.id),
-        ];
-        if (month && /^\d{4}-\d{2}$/.test(month)) {
-          conditions.push(sql`to_char(${accountMovements.createdAt}, 'YYYY-MM') = ${month}`);
-        }
-        if (typeRaw && typeRaw !== "all") {
-          const parsedType = accountMovementTypeSchema.safeParse(typeRaw);
-          if (parsedType.success) {
-            conditions.push(eq(accountMovements.type, parsedType.data));
+              .where(and(eq(users.id, m.created_by), eq(users.societyId, societyId)));
+            createdByName = cu?.name ?? null;
           }
-        }
+          return {
+            id: m.id,
+            societyId: m.society_id,
+            userId: m.user_id,
+            type: m.type,
+            amount: m.amount,
+            description: m.description,
+            referenceId: m.reference_id,
+            referenceType: m.reference_type,
+            createdBy: m.created_by,
+            createdAt: m.created_at,
+            runningBalance: parseFloat(String(m.running_balance ?? 0)),
+            memberName: u?.name ?? null,
+            memberUsername: u?.username ?? null,
+            createdByName,
+          };
+        })
+      );
 
-        const rows = await db
-          .select()
-          .from(accountMovements)
-          .where(and(...conditions))
-          .orderBy(asc(accountMovements.createdAt), asc(accountMovements.id));
-
-        const balance = await getMemberAccountBalance(societyId, user.id);
-        const withRunning = attachRunningBalances(rows).sort(
-          (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-        );
-
-        res.json({
-          balance,
-          movements: withRunning,
-        });
-      } catch (e) {
-        next(e);
-      }
+      res.json({
+        movements: withNames,
+        total,
+        sumAmount,
+        selectedMemberBalance,
+        page,
+        limit,
+      });
+    } catch (e) {
+      next(e);
     }
-  );
+  });
+
+  app.get("/api/account-movements/me", sessionMiddleware, requireAuth, async (req, res, next) => {
+    try {
+      const user = req.user!;
+      const societyId = getUserSocietyId(user);
+      const month = req.query.month as string | undefined;
+      const typeRaw = req.query.type as string | undefined;
+
+      const conditions = [
+        eq(accountMovements.societyId, societyId),
+        eq(accountMovements.userId, user.id),
+      ];
+      if (month && /^\d{4}-\d{2}$/.test(month)) {
+        conditions.push(sql`to_char(${accountMovements.createdAt}, 'YYYY-MM') = ${month}`);
+      }
+      if (typeRaw && typeRaw !== "all") {
+        const parsedType = accountMovementTypeSchema.safeParse(typeRaw);
+        if (parsedType.success) {
+          conditions.push(eq(accountMovements.type, parsedType.data));
+        }
+      }
+
+      const rows = await db
+        .select()
+        .from(accountMovements)
+        .where(and(...conditions))
+        .orderBy(asc(accountMovements.createdAt), asc(accountMovements.id));
+
+      const balance = await getMemberAccountBalance(societyId, user.id);
+      const withRunning = attachRunningBalances(rows).sort(
+        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
+      );
+
+      res.json({
+        balance,
+        movements: withRunning,
+      });
+    } catch (e) {
+      next(e);
+    }
+  });
 
   app.post(
     "/api/account-movements/refund",
@@ -251,7 +241,9 @@ export function registerAccountMovementRoutes(app: Express) {
       try {
         const parsed = accountMovementRefundBodySchema.safeParse(req.body);
         if (!parsed.success) {
-          return res.status(400).json({ message: "Invalid payload", issues: parsed.error.flatten() });
+          return res
+            .status(400)
+            .json({ message: "Invalid payload", issues: parsed.error.flatten() });
         }
         const societyId = getUserSocietyId(req.user!);
         const { userId, description } = parsed.data;
@@ -306,7 +298,9 @@ export function registerAccountMovementRoutes(app: Express) {
       try {
         const parsed = accountMovementSepaBounceBodySchema.safeParse(req.body);
         if (!parsed.success) {
-          return res.status(400).json({ message: "Invalid payload", issues: parsed.error.flatten() });
+          return res
+            .status(400)
+            .json({ message: "Invalid payload", issues: parsed.error.flatten() });
         }
         const societyId = getUserSocietyId(req.user!);
         const { creditId } = parsed.data;
@@ -317,7 +311,9 @@ export function registerAccountMovementRoutes(app: Express) {
           .where(and(eq(credits.id, creditId), eq(credits.societyId, societyId)));
         if (!credit) return res.status(404).json({ message: "Credit not found" });
         if (credit.status !== "paid") {
-          return res.status(400).json({ message: "Only paid credits can be reverted for SEPA bounce" });
+          return res
+            .status(400)
+            .json({ message: "Only paid credits can be reverted for SEPA bounce" });
         }
 
         const refKey = credit.id;

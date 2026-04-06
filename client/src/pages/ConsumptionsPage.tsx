@@ -219,7 +219,9 @@ export function ConsumptionsPage() {
       });
 
       if (!consumptionResponse.ok) {
-        throw new Error(await errorMessageFromResponse(consumptionResponse, "Failed to create consumption"));
+        throw new Error(
+          await errorMessageFromResponse(consumptionResponse, "Failed to create consumption")
+        );
       }
 
       const consumption = await consumptionResponse.json();
@@ -237,7 +239,9 @@ export function ConsumptionsPage() {
       });
 
       if (!itemsResponse.ok) {
-        throw new Error(await errorMessageFromResponse(itemsResponse, "Failed to add consumption items"));
+        throw new Error(
+          await errorMessageFromResponse(itemsResponse, "Failed to add consumption items")
+        );
       }
 
       // Close the consumption
@@ -246,7 +250,9 @@ export function ConsumptionsPage() {
       });
 
       if (!closeResponse.ok) {
-        throw new Error(await errorMessageFromResponse(closeResponse, "Failed to close consumption"));
+        throw new Error(
+          await errorMessageFromResponse(closeResponse, "Failed to close consumption")
+        );
       }
 
       toast({

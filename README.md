@@ -75,16 +75,16 @@ pnpm db:reset:seed
 
 ### Database commands (quick reference)
 
-| Command | When to use |
-| --- | --- |
-| `pnpm docker:db:up` | Start local Postgres (Docker). |
-| `pnpm db:push` | Sync `shared/schema.ts` to the DB (typical **local dev**). |
-| `pnpm db:seed` | Load demo data via **`script/seed.ts`** (single process). |
-| `pnpm db:reset` | Wipe `public` + `db:push` (destructive; **local/dev only**). |
-| `pnpm db:reset:seed` | `db:reset` then `db:seed`. |
-| `pnpm db:generate` | Generate SQL migrations from schema (review/commit for deploy). |
-| `pnpm db:migrate` | Apply pending migrations from `./migrations`. |
-| `pnpm db:studio` | Drizzle Studio (browse data). |
+| Command                | When to use                                                                |
+| ---------------------- | -------------------------------------------------------------------------- |
+| `pnpm docker:db:up`    | Start local Postgres (Docker).                                             |
+| `pnpm db:push`         | Sync `shared/schema.ts` to the DB (typical **local dev**).                 |
+| `pnpm db:seed`         | Load demo data via **`script/seed.ts`** (single process).                  |
+| `pnpm db:reset`        | Wipe `public` + `db:push` (destructive; **local/dev only**).               |
+| `pnpm db:reset:seed`   | `db:reset` then `db:seed`.                                                 |
+| `pnpm db:generate`     | Generate SQL migrations from schema (review/commit for deploy).            |
+| `pnpm db:migrate`      | Apply pending migrations from `./migrations`.                              |
+| `pnpm db:studio`       | Drizzle Studio (browse data).                                              |
 | `pnpm docker:db:reset` | Recreate Postgres volume (empty server; then `db:push` / `db:reset:seed`). |
 
 ## Running the Application
@@ -186,29 +186,29 @@ There are **12** feature files under `e2e/features/` (login, users, profile, res
 
 ## Available scripts
 
-| Script                                 | Purpose                                                        |
-| -------------------------------------- | -------------------------------------------------------------- |
-| `pnpm dev`                             | Development server (Express + Vite middleware)                 |
-| `pnpm build`                           | Production build (client + server bundle)                      |
-| `pnpm start`                           | Run production bundle                                          |
-| `pnpm check`                           | TypeScript (`tsc`)                                             |
-| `pnpm lint` / `pnpm lint:fix`          | ESLint (`lint` fails on any warning)                           |
-| `pnpm lint:ci`                         | ESLint **errors only** (used by CI; ignores warning noise)     |
-| `pnpm format` / `pnpm format:check`    | Prettier                                                       |
-| `pnpm db:push`                         | Push Drizzle schema to DB                                      |
-| `pnpm db:generate` / `pnpm db:migrate` | Migrations workflow (when you use migration files)             |
-| `pnpm db:studio`                       | Drizzle Studio                                                 |
-| `pnpm db:seed`                         | Seed demo data                                                 |
-| `pnpm db:reset`                        | Drop app tables + `db:push`                                    |
-| `pnpm db:reset:seed`                   | `db:reset` then `db:seed`                                      |
-| `pnpm docker:db:up` / `down` / `reset` | Postgres via Docker Compose                                    |
-| `pnpm test:e2e`                        | Full Cucumber suite (compact **`progress-bar`** output)         |
-| `pnpm test:e2e:verbose`              | Same suite, **pretty** (verbose) formatter                       |
-| `pnpm test:e2e:only`                   | `@only` scenarios                                              |
-| `pnpm test:e2e:feature -- <path>`      | One `.feature` file                                            |
-| `pnpm test:e2e:feature:verbose -- <path>` | One feature file, **pretty** formatter                       |
-| `pnpm audit:security`                  | Dependency security audit (see below)                          |
-| `pnpm audit:security:prod`             | Same audit, **production** dependencies only (`pnpm audit -P`) |
+| Script                                    | Purpose                                                        |
+| ----------------------------------------- | -------------------------------------------------------------- |
+| `pnpm dev`                                | Development server (Express + Vite middleware)                 |
+| `pnpm build`                              | Production build (client + server bundle)                      |
+| `pnpm start`                              | Run production bundle                                          |
+| `pnpm check`                              | TypeScript (`tsc`)                                             |
+| `pnpm lint` / `pnpm lint:fix`             | ESLint (`lint` fails on any warning)                           |
+| `pnpm lint:ci`                            | ESLint **errors only** (used by CI; ignores warning noise)     |
+| `pnpm format` / `pnpm format:check`       | Prettier                                                       |
+| `pnpm db:push`                            | Push Drizzle schema to DB                                      |
+| `pnpm db:generate` / `pnpm db:migrate`    | Migrations workflow (when you use migration files)             |
+| `pnpm db:studio`                          | Drizzle Studio                                                 |
+| `pnpm db:seed`                            | Seed demo data                                                 |
+| `pnpm db:reset`                           | Drop app tables + `db:push`                                    |
+| `pnpm db:reset:seed`                      | `db:reset` then `db:seed`                                      |
+| `pnpm docker:db:up` / `down` / `reset`    | Postgres via Docker Compose                                    |
+| `pnpm test:e2e`                           | Full Cucumber suite (compact **`progress-bar`** output)        |
+| `pnpm test:e2e:verbose`                   | Same suite, **pretty** (verbose) formatter                     |
+| `pnpm test:e2e:only`                      | `@only` scenarios                                              |
+| `pnpm test:e2e:feature -- <path>`         | One `.feature` file                                            |
+| `pnpm test:e2e:feature:verbose -- <path>` | One feature file, **pretty** formatter                         |
+| `pnpm audit:security`                     | Dependency security audit (see below)                          |
+| `pnpm audit:security:prod`                | Same audit, **production** dependencies only (`pnpm audit -P`) |
 
 ### Dependency security audit
 

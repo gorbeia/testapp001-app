@@ -169,10 +169,7 @@ export function SepaExportPage() {
 
   const sepaMode: SepaMode | string = society?.sepaMode ?? "monthly";
 
-  const monthlyOpts = useMemo(
-    () => buildMonthlyOptions(new Date(), monthNames, 6),
-    [monthNames]
-  );
+  const monthlyOpts = useMemo(() => buildMonthlyOptions(new Date(), monthNames, 6), [monthNames]);
   const bimonthlyOpts = useMemo(
     () => buildBimonthlyOptions(new Date(), monthNames, 6),
     [monthNames]
@@ -248,7 +245,7 @@ export function SepaExportPage() {
     if (!months.length) return;
     setLoading(true);
     try {
-            const qs = buildSepaExportQuery(months, sepaMode);
+      const qs = buildSepaExportQuery(months, sepaMode);
       const response = await authFetch(`/api/credits/sepa-export?${qs}`);
       if (response.ok) {
         const data = await response.json();
@@ -278,7 +275,15 @@ export function SepaExportPage() {
     if (step === 2 && society && sepaMode !== "disabled" && resolvedMonthLabels.length > 0) {
       void fetchDebtData();
     }
-  }, [step, society, sepaMode, resolvedMonthLabels.join("|"), selectedPeriodKey, onDemandFrom, onDemandTo]);
+  }, [
+    step,
+    society,
+    sepaMode,
+    resolvedMonthLabels.join("|"),
+    selectedPeriodKey,
+    onDemandFrom,
+    onDemandTo,
+  ]);
 
   const toggleCredit = (id: string) => {
     setCredits(prev => prev.map(c => (c.id === id ? { ...c, selected: !c.selected } : c)));
@@ -296,7 +301,7 @@ export function SepaExportPage() {
   const sepaConfig = useMemo(() => {
     const name = society?.name?.trim() || defaultSepaConfig.creditorName;
     const iban = (society?.iban?.replace(/\s/g, "") || "").trim() || defaultSepaConfig.creditorIBAN;
-    const cid = (society?.creditorId?.trim() || "") || defaultSepaConfig.creditorId;
+    const cid = society?.creditorId?.trim() || "" || defaultSepaConfig.creditorId;
     return {
       creditorName: name,
       creditorIBAN: iban,
@@ -399,8 +404,7 @@ export function SepaExportPage() {
     );
   }
 
-  const step1Title =
-    sepaMode === "on_demand" ? t("sepaSelectRange") : t("sepaStepSelectPeriod");
+  const step1Title = sepaMode === "on_demand" ? t("sepaSelectRange") : t("sepaStepSelectPeriod");
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6" data-testid="sepa-export-page">
@@ -420,7 +424,11 @@ export function SepaExportPage() {
               {step > s ? <CheckCircle className="h-4 w-4" /> : s}
             </div>
             <span className={`text-sm ${step >= s ? "font-medium" : "text-muted-foreground"}`}>
-              {s === 1 ? step1Title : s === 2 ? t("sepaSelectDebitsTitle") : t("sepaExportStep3Title")}
+              {s === 1
+                ? step1Title
+                : s === 2
+                  ? t("sepaSelectDebitsTitle")
+                  : t("sepaExportStep3Title")}
             </span>
             {s < 3 && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
           </div>
@@ -645,11 +653,11 @@ export function SepaExportPage() {
                 <p>
                   {t("sepaCreditorLabel")}: {sepaConfig.creditorName}
                 </p>
-                <p>
-                  Creditor ID: {sepaConfig.creditorId}
-                </p>
+                <p>Creditor ID: {sepaConfig.creditorId}</p>
                 {(!society?.iban?.trim() || !society?.creditorId?.trim()) && (
-                  <p className="text-amber-700 dark:text-amber-400">{t("sepaInvalidIbanWarning")}</p>
+                  <p className="text-amber-700 dark:text-amber-400">
+                    {t("sepaInvalidIbanWarning")}
+                  </p>
                 )}
               </div>
             </div>

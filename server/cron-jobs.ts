@@ -42,7 +42,11 @@ class DebtCalculationService {
   /**
    * Run debt aggregation for one tenant (monthly credits + optional subscription ledger).
    */
-  async calculateMonthlyDebtsForSociety(societyId: string, year: number, month: number): Promise<void> {
+  async calculateMonthlyDebtsForSociety(
+    societyId: string,
+    year: number,
+    month: number
+  ): Promise<void> {
     if (!this.acquireLock(societyId)) {
       console.log(
         `[${new Date().toISOString()}] Debt calculation already in progress for society ${societyId}, skipping...`
@@ -58,7 +62,11 @@ class DebtCalculationService {
     );
 
     try {
-      const [society] = await db.select().from(societies).where(eq(societies.id, societyId)).limit(1);
+      const [society] = await db
+        .select()
+        .from(societies)
+        .where(eq(societies.id, societyId))
+        .limit(1);
 
       if (!society?.isActive) {
         console.log(`[${new Date().toISOString()}] Society ${societyId} not active, skipping`);
@@ -83,7 +91,10 @@ class DebtCalculationService {
 
   /** Scheduled / catch-up: all active societies. */
   async calculateMonthlyDebtsAllSocieties(year: number, month: number): Promise<void> {
-    const active = await db.select({ id: societies.id }).from(societies).where(eq(societies.isActive, true));
+    const active = await db
+      .select({ id: societies.id })
+      .from(societies)
+      .where(eq(societies.isActive, true));
 
     if (active.length === 0) {
       console.log(`[${new Date().toISOString()}] No active societies for debt calculation`);
@@ -209,11 +220,7 @@ class DebtCalculationService {
 
         if (subscriptionCharge > 0) {
           const subRef = `${member.id}:${monthLabel}`;
-          const exists = await movementExistsForReference(
-            activeSociety.id,
-            "subscription",
-            subRef
-          );
+          const exists = await movementExistsForReference(activeSociety.id, "subscription", subRef);
           if (!exists) {
             const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
             await insertAccountMovementRow({
@@ -295,7 +302,9 @@ class DebtCalculationService {
       }
 
       if (subscription.period === "monthly") {
-        console.log(`Adding monthly subscription charge for user ${userId}: €${subscriptionAmount}`);
+        console.log(
+          `Adding monthly subscription charge for user ${userId}: €${subscriptionAmount}`
+        );
         return subscriptionAmount;
       }
 
@@ -376,7 +385,9 @@ class DebtCalculationService {
     if (process.env.NODE_ENV === "development") {
       setTimeout(async () => {
         const now = new Date();
-        console.log(`[${now.toISOString()}] Dev: debt calculation for all societies, current month...`);
+        console.log(
+          `[${now.toISOString()}] Dev: debt calculation for all societies, current month...`
+        );
         try {
           await this.calculateMonthlyDebtsAllSocieties(now.getFullYear(), now.getMonth() + 1);
         } catch (error) {

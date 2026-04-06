@@ -158,8 +158,7 @@ export function MyMovementsPage() {
   });
 
   const pendingTransferRows = transfersQuery.data ?? [];
-  const showPendingTransfersTable =
-    !transfersQuery.isLoading && pendingTransferRows.length > 0;
+  const showPendingTransfersTable = !transfersQuery.isLoading && pendingTransferRows.length > 0;
 
   const proposalMut = useMutation({
     mutationFn: async (values: ProposalFormValues) => {
@@ -438,9 +437,7 @@ export function MyMovementsPage() {
                         ? t(BANK_TRANSFER_STATUS_I18N[row.status])
                         : row.status}
                     </TableCell>
-                    <TableCell className="max-w-[8rem] truncate">
-                      {row.reference ?? "—"}
-                    </TableCell>
+                    <TableCell className="max-w-[8rem] truncate">{row.reference ?? "—"}</TableCell>
                     <TableCell className="max-w-[12rem] truncate text-muted-foreground text-sm">
                       {row.rejectionReason ?? "—"}
                     </TableCell>
@@ -510,16 +507,10 @@ export function MyMovementsPage() {
                     <TableCell data-testid={`movement-type-${m.id}`}>
                       {t(movementTypeLabelKey(m.type))}
                     </TableCell>
-                    <TableCell
-                      className="text-right"
-                      data-testid={`movement-amount-${m.id}`}
-                    >
+                    <TableCell className="text-right" data-testid={`movement-amount-${m.id}`}>
                       {parseFloat(m.amount).toFixed(2)}€
                     </TableCell>
-                    <TableCell
-                      className="text-right"
-                      data-testid={`movement-running-${m.id}`}
-                    >
+                    <TableCell className="text-right" data-testid={`movement-running-${m.id}`}>
                       {m.runningBalance.toFixed(2)}€
                     </TableCell>
                     <TableCell className="max-w-xs truncate">{m.description ?? "—"}</TableCell>

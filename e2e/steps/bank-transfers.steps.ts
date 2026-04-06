@@ -29,9 +29,7 @@ When(
     const [response] = await Promise.all([
       page.waitForResponse(
         r =>
-          r.url().includes("/api/bank-transfers/me") &&
-          r.request().method() === "POST" &&
-          r.ok(),
+          r.url().includes("/api/bank-transfers/me") && r.request().method() === "POST" && r.ok(),
         { timeout: 20000 }
       ),
       submitBtn.click(),
@@ -40,8 +38,13 @@ When(
     const body = (await response.json()) as { id?: string; status?: string };
     assert.ok(body?.id, "Expected JSON body with transfer id from POST /api/bank-transfers/me");
     assert.strictEqual(body.status, "pending");
-    await page.waitForSelector(`[data-testid="transfer-proposal-row-${body.id}"]`, { timeout: 15000 });
-    await page.waitForSelector('[data-testid="dialog-propose-transfer"]', { state: "hidden", timeout: 15000 });
+    await page.waitForSelector(`[data-testid="transfer-proposal-row-${body.id}"]`, {
+      timeout: 15000,
+    });
+    await page.waitForSelector('[data-testid="dialog-propose-transfer"]', {
+      state: "hidden",
+      timeout: 15000,
+    });
   }
 );
 
@@ -60,16 +63,12 @@ When("I create a pending bank transfer for Miren Urrutia", async function () {
   await page.waitForTimeout(1500);
 });
 
-When(
-  "I validate the first pending bank transfer",
-  { timeout: 30 * 1000 },
-  async function () {
-    const page = getPage();
-    assert.ok(page);
-    const validateBtn = page.locator('[data-testid^="button-validate-"]').first();
-    await validateBtn.scrollIntoViewIfNeeded();
-    await validateBtn.waitFor({ state: "visible", timeout: 25000 });
-    await validateBtn.click();
-    await page.waitForTimeout(1500);
-  }
-);
+When("I validate the first pending bank transfer", { timeout: 30 * 1000 }, async function () {
+  const page = getPage();
+  assert.ok(page);
+  const validateBtn = page.locator('[data-testid^="button-validate-"]').first();
+  await validateBtn.scrollIntoViewIfNeeded();
+  await validateBtn.waitFor({ state: "visible", timeout: 25000 });
+  await validateBtn.click();
+  await page.waitForTimeout(1500);
+});

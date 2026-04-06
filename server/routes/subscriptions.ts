@@ -88,9 +88,9 @@ export function registerSubscriptionRoutes(app: Express) {
           });
         }
 
-        const { name, description, amount, period, periodMonths, isActive, autoRenew } = parsed.data;
-        const parsedAmount =
-          typeof amount === "number" ? amount : parseFloat(String(amount));
+        const { name, description, amount, period, periodMonths, isActive, autoRenew } =
+          parsed.data;
+        const parsedAmount = typeof amount === "number" ? amount : parseFloat(String(amount));
 
         const newSubscriptionType = await db
           .insert(subscriptionTypes)
@@ -135,7 +135,8 @@ export function registerSubscriptionRoutes(app: Express) {
           return res.status(400).json({ message: "Invalid subscription type ID" });
         }
 
-        const { name, description, amount, period, periodMonths, isActive, autoRenew } = parsed.data;
+        const { name, description, amount, period, periodMonths, isActive, autoRenew } =
+          parsed.data;
 
         // Check if subscription type exists and belongs to user's society
         const existingSubscription = await db
@@ -150,8 +151,7 @@ export function registerSubscriptionRoutes(app: Express) {
 
         const row = existingSubscription[0];
         const mergedPeriod = period !== undefined ? period : row.period;
-        const mergedMonths =
-          periodMonths !== undefined ? periodMonths : row.periodMonths;
+        const mergedMonths = periodMonths !== undefined ? periodMonths : row.periodMonths;
         if (mergedPeriod === "custom" && mergedMonths < 1) {
           return res.status(400).json({
             message: "periodMonths is required and must be at least 1 for custom periods",
@@ -162,8 +162,7 @@ export function registerSubscriptionRoutes(app: Express) {
         if (name !== undefined) updateData.name = name;
         if (description !== undefined) updateData.description = description;
         if (amount !== undefined) {
-          const parsedAmount =
-            typeof amount === "number" ? amount : parseFloat(String(amount));
+          const parsedAmount = typeof amount === "number" ? amount : parseFloat(String(amount));
           updateData.amount = parsedAmount.toString();
         }
         if (period !== undefined) updateData.period = period;

@@ -69,7 +69,9 @@ export function registerTableRoutes(app: Express) {
       try {
         const parsed = insertTableSchema.safeParse(req.body);
         if (!parsed.success) {
-          return res.status(400).json({ message: "Invalid table payload", issues: parsed.error.flatten() });
+          return res
+            .status(400)
+            .json({ message: "Invalid table payload", issues: parsed.error.flatten() });
         }
 
         const societyId = getUserSocietyId(req.user!);
@@ -99,7 +101,9 @@ export function registerTableRoutes(app: Express) {
 
         const parsed = updateTableSchema.safeParse(req.body);
         if (!parsed.success) {
-          return res.status(400).json({ message: "Invalid table payload", issues: parsed.error.flatten() });
+          return res
+            .status(400)
+            .json({ message: "Invalid table payload", issues: parsed.error.flatten() });
         }
 
         const [updatedTable] = await db

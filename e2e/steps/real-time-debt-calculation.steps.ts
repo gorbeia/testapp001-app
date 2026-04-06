@@ -123,7 +123,10 @@ Then(
 
     const memberRow = creditRowForMemberInCurrentMonth(page, memberName);
 
-    assert.ok(await memberRow.isVisible(), `Expected a credit row for ${memberName} in the current month`);
+    assert.ok(
+      await memberRow.isVisible(),
+      `Expected a credit row for ${memberName} in the current month`
+    );
 
     const amountElement = memberRow.locator('[data-testid^="credit-amount-"]');
     const amountText = await amountElement.textContent();

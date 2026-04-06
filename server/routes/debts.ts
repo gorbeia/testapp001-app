@@ -1,11 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import {
-  batchCreditStatusBodySchema,
-  credits,
-  users,
-  type JwtSessionUser,
-} from "@shared/schema";
+import { batchCreditStatusBodySchema, credits, users, type JwtSessionUser } from "@shared/schema";
 import { insertAccountMovementRow, movementExistsForReference } from "../lib/account-movements";
 import { eq, and, sum, inArray, desc } from "drizzle-orm";
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
@@ -45,10 +40,7 @@ export function registerDebtRoutes(app: Express) {
       const userId = user.id;
       const societyId = getUserSocietyId(user);
 
-      const conditions = [
-        eq(credits.memberId, userId),
-        eq(credits.societyId, societyId),
-      ];
+      const conditions = [eq(credits.memberId, userId), eq(credits.societyId, societyId)];
 
       if (month) {
         conditions.push(eq(credits.month, month as string));
@@ -227,11 +219,7 @@ export function registerDebtRoutes(app: Express) {
 
         if (status === "paid") {
           for (const credit of updatedCredits) {
-            const exists = await movementExistsForReference(
-              societyId,
-              "credit",
-              credit.id
-            );
+            const exists = await movementExistsForReference(societyId, "credit", credit.id);
             if (exists) continue;
             const amt = parseFloat(String(credit.totalAmount));
             if (amt <= 0) continue;

@@ -408,8 +408,7 @@ export const translations = {
     sepaExportStep3Title: "SEPA esportazioa",
     sepaExportStep3Description: "Berrikusi datuak eta deskargatu SEPA fitxategia",
     sepaDebitCount: "Kobrantza kopurua",
-    sepaMonthNamesShort:
-      "Urt,Ots,Mar,Api,Mai,Eka,Uzt,Abu,Ira,Urr,Aza,Abe",
+    sepaMonthNamesShort: "Urt,Ots,Mar,Api,Mai,Eka,Uzt,Abu,Ira,Urr,Aza,Abe",
     sepaExportSuccessXml: "SEPA XML sortuta ({count} kobrantza)",
     sepaExportSuccessCsv: "CSV sortuta ({count} lerro)",
     sepaSelectedCountLabel: "Hautatutakoak",
@@ -1014,8 +1013,7 @@ export const translations = {
     sepaExportStep3Title: "Exportación SEPA",
     sepaExportStep3Description: "Revisa los datos y descarga el archivo SEPA",
     sepaDebitCount: "Número de adeudos",
-    sepaMonthNamesShort:
-      "ene,feb,mar,abr,may,jun,jul,ago,sep,oct,nov,dic",
+    sepaMonthNamesShort: "ene,feb,mar,abr,may,jun,jul,ago,sep,oct,nov,dic",
     sepaExportSuccessXml: "SEPA XML generado ({count} adeudos)",
     sepaExportSuccessCsv: "CSV generado ({count} filas)",
     sepaSelectedCountLabel: "Seleccionados",

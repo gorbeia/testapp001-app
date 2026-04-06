@@ -395,7 +395,8 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
                 <>
                   <div className="flex justify-between text-sm">
                     <span>
-                      {t("guests")} ({formData.guests} × {society.reservationPricePerMember ?? "0"}€):
+                      {t("guests")} ({formData.guests} × {society.reservationPricePerMember ?? "0"}
+                      €):
                     </span>
                     <span>
                       {(
@@ -407,7 +408,8 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
                   {formData.useKitchen && (
                     <div className="flex justify-between text-sm mt-1">
                       <span>
-                        {t("kitchenCost")} ({formData.guests} × {society.kitchenPricePerMember ?? "0"}€):
+                        {t("kitchenCost")} ({formData.guests} ×{" "}
+                        {society.kitchenPricePerMember ?? "0"}€):
                       </span>
                       <span>
                         {(

@@ -38,10 +38,7 @@ const getEmailSubjectKey = (
 };
 
 // Helper function to create reservation notifications
-type ReservationNotificationSource = Pick<
-  Reservation,
-  "id" | "userId" | "societyId" | "startDate"
->;
+type ReservationNotificationSource = Pick<Reservation, "id" | "userId" | "societyId" | "startDate">;
 
 const createReservationNotifications = async (
   reservationData: ReservationNotificationSource,

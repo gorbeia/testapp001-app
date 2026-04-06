@@ -58,7 +58,9 @@ export function registerProductRoutes(app: Express) {
 
         const parsed = insertProductSchema.safeParse(req.body);
         if (!parsed.success) {
-          return res.status(400).json({ message: "Invalid product payload", issues: parsed.error.flatten() });
+          return res
+            .status(400)
+            .json({ message: "Invalid product payload", issues: parsed.error.flatten() });
         }
 
         const societyId = getUserSocietyId(user);
@@ -96,7 +98,9 @@ export function registerProductRoutes(app: Express) {
         const societyId = getUserSocietyId(user);
         const parsed = updateProductSchema.safeParse(req.body);
         if (!parsed.success) {
-          return res.status(400).json({ message: "Invalid product payload", issues: parsed.error.flatten() });
+          return res
+            .status(400)
+            .json({ message: "Invalid product payload", issues: parsed.error.flatten() });
         }
 
         const [updatedProduct] = await db

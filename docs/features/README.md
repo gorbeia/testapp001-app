@@ -52,25 +52,25 @@ The product has progressed beyond this phased list; use **IMPLEMENTATION_STATUS.
 
 ### Phase 1 – Foundation
 
-1. Authentication system  
-2. Basic user management  
-3. Core reservation functionality  
+1. Authentication system
+2. Basic user management
+3. Core reservation functionality
 
 ### Phase 2 – Operations
 
-1. Consumption tracking  
-2. Credit management  
-3. Inventory / products / categories  
+1. Consumption tracking
+2. Credit management
+3. Inventory / products / categories
 
 ### Phase 3 – Communication
 
-1. Notes (oharrak) and notifications  
+1. Notes (oharrak) and notifications
 
 ### Phase 4 – Advanced Features
 
-1. SEPA export hardening (creditor from DB, validation)  
-2. Advanced reporting  
-3. Operational polish  
+1. SEPA export hardening (creditor from DB, validation)
+2. Advanced reporting
+3. Operational polish
 
 ## Technical Notes
 

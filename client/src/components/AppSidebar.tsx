@@ -190,19 +190,19 @@ export function AppSidebar() {
               {menuItems.map(item => {
                 const Icon = item.icon;
                 return (
-                <SidebarMenuItem key={item.url}>
-                  <SidebarMenuButton asChild isActive={location === item.url}>
-                    <Link
-                      href={item.url}
-                      data-testid={`link-${item.url.replace("/", "") || "home"}`}
-                      onClick={() => handleNavigation(item.url)}
-                    >
-                      <Icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              );
+                  <SidebarMenuItem key={item.url}>
+                    <SidebarMenuButton asChild isActive={location === item.url}>
+                      <Link
+                        href={item.url}
+                        data-testid={`link-${item.url.replace("/", "") || "home"}`}
+                        onClick={() => handleNavigation(item.url)}
+                      >
+                        <Icon className="h-4 w-4" />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
               })}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -216,19 +216,19 @@ export function AppSidebar() {
                 {adminMenuItems.map(item => {
                   const Icon = item.icon;
                   return (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={location === item.url}>
-                      <Link
-                        href={item.url}
-                        data-testid={`link-${item.url.replace("/", "")}`}
-                        onClick={() => handleNavigation(item.url)}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton asChild isActive={location === item.url}>
+                        <Link
+                          href={item.url}
+                          data-testid={`link-${item.url.replace("/", "")}`}
+                          onClick={() => handleNavigation(item.url)}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
                 })}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -243,19 +243,19 @@ export function AppSidebar() {
                 {configMenuItems.map(item => {
                   const Icon = item.icon;
                   return (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton asChild isActive={location === item.url}>
-                      <Link
-                        href={item.url}
-                        data-testid={`link-${item.url.replace("/", "")}`}
-                        onClick={() => handleNavigation(item.url)}
-                      >
-                        <Icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton asChild isActive={location === item.url}>
+                        <Link
+                          href={item.url}
+                          data-testid={`link-${item.url.replace("/", "")}`}
+                          onClick={() => handleNavigation(item.url)}
+                        >
+                          <Icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
                 })}
               </SidebarMenu>
             </SidebarGroupContent>

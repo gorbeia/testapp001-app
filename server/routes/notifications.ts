@@ -279,11 +279,16 @@ export const createNotification = async (req: Request, res: Response, next: Next
       });
     }
 
-    const { title, message, targetUserId, messages, defaultLanguage = "eu" } = {
+    const {
+      title,
+      message,
+      targetUserId,
+      messages,
+      defaultLanguage = "eu",
+    } = {
       ...parsed.data,
       defaultLanguage: parsed.data.defaultLanguage ?? "eu",
     };
-
 
     // Only admins can create notifications for other users
     if (targetUserId && targetUserId !== user.id && user.role !== "admin") {
