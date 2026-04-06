@@ -120,9 +120,9 @@ Status legend:
    - **Status**: ✅ Implemented (+ top stat cards: balance status, period count/net; E2E: `account-movements.feature`)
 2. **Treasurer movement audit** – `/mugimenduak`, `GET /api/account-movements` (filters, running balance via SQL window; response includes `sumAmount`, `selectedMemberBalance` when a member filter is set)
    - **Status**: ✅ Implemented (+ top stat cards: filtered count, filtered sum, member saldo when filtered)
-3. **Bank transfer workflow** – `/transferentziak`, `POST/GET /api/bank-transfers`, validate/reject + ledger + notifications; members propose transfers from **`/nire-mugimenduak`** via `POST` + `GET /api/bank-transfers/me?status=pending` (table only when pending; validated lines on ledger — see `account-movements.md` F1 / F4); **gated when `bank_transfer_prepayment` is absent from society `payment_methods`** (sidebar, pages, APIs `403`)
+3. **Prepayment proposals** (UI: «Aurreordainketak» / Anticipos; impl. `bank_transfers`, `bank_transfer` ledger type) – `/transferentziak`, `POST/GET /api/bank-transfers`, validate/reject + ledger + notifications; members propose from **`/nire-mugimenduak`** via `POST` + `GET /api/bank-transfers/me?status=pending` (table only when pending; validated lines on ledger — see `account-movements.md` F1 / F4); **gated when `bank_transfer_prepayment` is absent from society `payment_methods`** (sidebar, pages, APIs `403`)
    - **Status**: ✅ Implemented (+ E2E: `bank-transfers.feature`)
-4. **Refunds** – dialog on **`/transferentziak`** (treasurer); `POST /api/account-movements/refund`; **`/itzulketak`** redirects to transfers
+4. **Refunds** – dialog on **`/transferentziak`** (treasurer prepayments page); `POST /api/account-movements/refund`; **`/itzulketak`** redirects to **`/transferentziak`**
    - **Status**: ✅ Implemented (+ E2E: `refunds.feature`)
 5. **SEPA collection on ledger** – `sepa_collection` movement (**positive** `amount` in member-balance convention) when marking credits paid (`PUT /api/credits/batch-status`)
    - **Status**: ✅ Implemented

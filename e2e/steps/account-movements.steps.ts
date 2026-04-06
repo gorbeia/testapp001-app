@@ -38,10 +38,11 @@ Then("I should see the admin movements page", async function () {
   await page.waitForSelector('[data-testid="admin-movements-page"]', { timeout: 10000 });
 });
 
-Then("I should see a bank transfer line on my movements", async function () {
+Then("I should see a prepayment line on my movements", async function () {
   const page = getPage();
   assert.ok(page);
-  await page.waitForSelector("text=Banku transferentzia", { timeout: 10000 });
+  const cell = page.locator('[data-testid^="movement-type-"]').filter({ hasText: /Aurreordainketa|Anticipo/ });
+  await cell.first().waitFor({ state: "visible", timeout: 10000 });
 });
 
 Then("I should see a refund line on my movements", async function () {

@@ -2,7 +2,7 @@ import { When } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
 import { getPage, e2eUrl } from "./shared-state";
 
-When("I navigate to the bank transfers page", async function () {
+When("I navigate to the prepayments page", async function () {
   const page = getPage();
   assert.ok(page);
   await page.goto(e2eUrl("/transferentziak"), { waitUntil: "networkidle" });
@@ -10,7 +10,7 @@ When("I navigate to the bank transfers page", async function () {
 });
 
 When(
-  "I submit a bank transfer proposal from my movements page",
+  "I submit a prepayment proposal from my movements page",
   { timeout: 30 * 1000 },
   async function () {
     const page = getPage();
@@ -48,7 +48,7 @@ When(
   }
 );
 
-When("I create a pending bank transfer for Miren Urrutia", async function () {
+When("I create a pending prepayment for Miren Urrutia", async function () {
   const page = getPage();
   assert.ok(page);
   await page.click('[data-testid="button-new-transfer"]');
@@ -63,7 +63,7 @@ When("I create a pending bank transfer for Miren Urrutia", async function () {
   await page.waitForTimeout(1500);
 });
 
-When("I validate the first pending bank transfer", { timeout: 30 * 1000 }, async function () {
+When("I validate the first pending prepayment", { timeout: 30 * 1000 }, async function () {
   const page = getPage();
   assert.ok(page);
   const validateBtn = page.locator('[data-testid^="button-validate-"]').first();

@@ -31,6 +31,9 @@ const getUserSocietyId = (user: JwtSessionUser): string => {
   return user.societyId;
 };
 
+const PREPAYMENT_PROPOSALS_DISABLED_MESSAGE =
+  "Prepayment proposals are not enabled for this society";
+
 async function prepaymentEnabledForSociety(societyId: string): Promise<boolean> {
   const [row] = await db
     .select({ paymentMethods: societies.paymentMethods })
@@ -48,7 +51,7 @@ export function registerBankTransferRoutes(app: Express) {
       if (!(await prepaymentEnabledForSociety(societyId))) {
         return res
           .status(403)
-          .json({ message: "Bank transfer prepayment is not enabled for this society" });
+          .json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
       }
       const userId = req.user!.id;
       const statusRaw = req.query.status as string | undefined;
@@ -79,7 +82,7 @@ export function registerBankTransferRoutes(app: Express) {
       if (!(await prepaymentEnabledForSociety(societyIdEarly))) {
         return res
           .status(403)
-          .json({ message: "Bank transfer prepayment is not enabled for this society" });
+          .json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
       }
       const parsed = bankTransferMemberProposalBodySchema.safeParse(req.body);
       if (!parsed.success) {
@@ -131,7 +134,7 @@ export function registerBankTransferRoutes(app: Express) {
       if (!(await prepaymentEnabledForSociety(societyIdEarly))) {
         return res
           .status(403)
-          .json({ message: "Bank transfer prepayment is not enabled for this society" });
+          .json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
       }
       const parsed = bankTransferCreateBodySchema.safeParse(req.body);
       if (!parsed.success) {
@@ -182,7 +185,7 @@ export function registerBankTransferRoutes(app: Express) {
       if (!(await prepaymentEnabledForSociety(societyId))) {
         return res
           .status(403)
-          .json({ message: "Bank transfer prepayment is not enabled for this society" });
+          .json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
       }
       const status = req.query.status as string | undefined;
       const userId = req.query.userId as string | undefined;
@@ -229,7 +232,7 @@ export function registerBankTransferRoutes(app: Express) {
         if (!(await prepaymentEnabledForSociety(societyId))) {
           return res
             .status(403)
-            .json({ message: "Bank transfer prepayment is not enabled for this society" });
+            .json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
         }
         const { id } = req.params;
 
@@ -237,9 +240,9 @@ export function registerBankTransferRoutes(app: Express) {
           .select()
           .from(bankTransfers)
           .where(and(eq(bankTransfers.id, id), eq(bankTransfers.societyId, societyId)));
-        if (!bt) return res.status(404).json({ message: "Bank transfer not found" });
+        if (!bt) return res.status(404).json({ message: "Prepayment record not found" });
         if (bt.status !== "pending") {
-          return res.status(400).json({ message: "Transfer is not pending" });
+          return res.status(400).json({ message: "Prepayment proposal is not pending" });
         }
 
         const amountNum = parseFloat(String(bt.amount));
@@ -250,7 +253,7 @@ export function registerBankTransferRoutes(app: Express) {
           userId: bt.userId,
           type: "bank_transfer",
           amount: ledgerAmount,
-          description: bt.reference ? `Bank transfer: ${bt.reference}` : "Bank transfer validated",
+          description: bt.reference ? `Prepayment: ${bt.reference}` : "Prepayment validated",
           referenceId: bt.id,
           referenceType: "bank_transfer",
           createdBy: req.user!.id,
@@ -300,7 +303,7 @@ export function registerBankTransferRoutes(app: Express) {
         if (!(await prepaymentEnabledForSociety(societyId))) {
           return res
             .status(403)
-            .json({ message: "Bank transfer prepayment is not enabled for this society" });
+            .json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
         }
         const { id } = req.params;
 
@@ -308,9 +311,9 @@ export function registerBankTransferRoutes(app: Express) {
           .select()
           .from(bankTransfers)
           .where(and(eq(bankTransfers.id, id), eq(bankTransfers.societyId, societyId)));
-        if (!bt) return res.status(404).json({ message: "Bank transfer not found" });
+        if (!bt) return res.status(404).json({ message: "Prepayment record not found" });
         if (bt.status !== "pending") {
-          return res.status(400).json({ message: "Transfer is not pending" });
+          return res.status(400).json({ message: "Prepayment proposal is not pending" });
         }
 
         const [updated] = await db

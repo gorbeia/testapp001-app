@@ -21,7 +21,7 @@ const ADMIN_MENU_ENTRIES = [
   "link-elkartea", // Society
   "link-sepa", // SEPA Export
   "link-mugimenduak", // Ledger (treasurer)
-  "link-transferentziak", // Bank transfers
+  "link-transferentziak", // Prepayments (/transferentziak)
 ];
 
 Then("I should see the main menu entries", async function () {

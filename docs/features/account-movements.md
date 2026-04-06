@@ -5,20 +5,20 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 ## Sign convention (member balance)
 
 - **Negative `amount`**: balance goes down — consumption, reservation charge, subscription charge, SEPA bounce (re-charge after failed collection).
-- **Positive `amount`**: balance goes up — validated bank transfer, SEPA collection when marking a credit paid, refund, reservation cancel/delete adjustment (reversal of prior charge).
-- **`SUM(amount)`** = **member balance**: negative ⇒ owes the society; positive ⇒ prepaid/credit (saldo a favor). There is **no** society flag that blocks positive balance; treasurer/admin discretion applies when validating transfers or issuing refunds.
+- **Positive `amount`**: balance goes up — validated **prepayment** (`bank_transfer` movement type), SEPA collection when marking a credit paid, refund, reservation cancel/delete adjustment (reversal of prior charge).
+- **`SUM(amount)`** = **member balance**: negative ⇒ owes the society; positive ⇒ prepaid/credit (saldo a favor). There is **no** society flag that blocks positive balance; treasurer/admin discretion applies when validating prepayment proposals or issuing refunds.
 
-`bank_transfers.amount`, `credits.*`, etc. keep their own “absolute money” semantics; only **`account_movements.amount`** uses this signed balance convention.
+`bank_transfers` (implementation table name for prepayment proposals), `credits.*`, etc. keep their own “absolute money” semantics; only **`account_movements.amount`** uses this signed balance convention.
 
-## F1 – Bank transfer validation
+## F1 – Prepayment proposals (treasurer validation)
 
-**As a** treasurer/admin **I want** to record and validate incoming transfers **so that** member balances reflect payments.
+**As a** treasurer/admin **I want** to record and validate member **prepayments** (transfer, Bizum, or whatever the society uses off-app) **so that** member balances reflect payments.
 
 ### Acceptance criteria
 
-- Treasurer/admin can create a pending bank transfer (user, amount > 0, transfer date, optional reference/notes).
-- A **member** can submit a **proposal** for their own transfer (`POST /api/bank-transfers/me`, pending row); **`userId` is taken from the session**, not the request body.
-- On validate: insert `account_movement` type `bank_transfer` with **positive** amount equal to the transfer; link to `bank_transfers.movementId`; notify member (eu/es).
+- Treasurer/admin can create a pending prepayment row (user, amount > 0, payment date, optional reference/notes) via `bank_transfers` / `POST /api/bank-transfers`.
+- A **member** can submit a **proposal** (`POST /api/bank-transfers/me`, pending row); **`userId` is taken from the session**, not the request body.
+- On validate: insert `account_movement` type `bank_transfer` with **positive** amount equal to the prepayment; link to `bank_transfers.movementId`; notify member (eu/es/en).
 - On reject: status `rejected` + reason; notify member.
 
 ## F2 – Refunds
@@ -46,7 +46,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 ### Acceptance criteria
 
 - List own movements; month/type filters; current balance summary (member balance).
-- Submit bank transfer proposals from this page (`POST /api/bank-transfers/me`). **UI:** only **pending** proposals are listed (`GET /api/bank-transfers/me?status=pending`); once validated, they appear as **`bank_transfer`** lines in the movement list below (rejected proposals are not on the ledger and are not shown in the pending table).
+- Submit **prepayment** proposals from this page (`POST /api/bank-transfers/me`). **UI:** only **pending** proposals are listed (`GET /api/bank-transfers/me?status=pending`); once validated, they appear as ledger lines with movement type **`bank_transfer`** (rejected proposals are not on the ledger and are not shown in the pending table).
 - When society **`sepaMode` is `disabled`**, this page is the primary member money view: **`/nire-zorrak`** redirects here and the dashboard card shows this same balance (see `credits.md` Story 1 / Story 6).
 
 ## F5 – SEPA collection in ledger
@@ -67,7 +67,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 
 ## F8 – Notifications
 
-Server notifications (eu/es/en) for: transfer validated/rejected, refund issued, SEPA bounce, reservation financial charge, subscription charge.
+Server notifications (eu/es/en) for: prepayment validated/rejected, refund issued, SEPA bounce, reservation financial charge, subscription charge.
 
 ## Society setting
 
@@ -84,7 +84,7 @@ Flipping from a legacy debt-oriented convention to member balance is done with:
 ## Future improvements (out of scope)
 
 - Period closing / locked months
-- Proof-of-transfer file uploads
+- Proof-of-payment file uploads
 - PDF/CSV account statements
 - Two-step refund approval for large amounts
 
