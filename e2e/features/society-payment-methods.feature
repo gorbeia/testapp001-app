@@ -3,41 +3,26 @@ Feature: Society payment methods (non-SEPA rails)
   I want to toggle accepted payment methods
   So that prepayment UI matches society configuration
 
-  Scenario: Treasurer UI hides prepayments when bank transfer prepayment is disabled
+  Scenario: Prepayment disabled gates treasurer and member UI
     Given the application is running
     When I open the login page
     And I log in as a admin user
     And I navigate to the society page
     And I disable bank transfer prepayment on the society page
     And I save the society changes
-    When I open the login page
-    And I log in as a admin user
+    When I re-login as a admin user
     Then I should not see the prepayments sidebar link
     When I navigate to the prepayments page by URL
     Then I should see the prepayments disabled empty state
-    When I navigate to the society page
-    And I enable bank transfer prepayment on the society page
-    And I save the society changes
-    When I open the login page
-    And I log in as a admin user
-    Then I should see the prepayments sidebar link
-
-  Scenario: Member does not see propose transfer when prepayment is disabled
-    Given the application is running
-    When I open the login page
-    And I log in as a admin user
-    And I navigate to the society page
-    And I disable bank transfer prepayment on the society page
-    And I save the society changes
-    When I open the login page
-    And I log in as a bazkide user
+    When I re-login as a bazkide user
     And I navigate to my account movements page
     Then I should not see the propose transfer button on my movements
-    When I open the login page
-    And I log in as a admin user
+    When I re-login as a admin user
     And I navigate to the society page
     And I enable bank transfer prepayment on the society page
     And I save the society changes
+    When I re-login as a admin user
+    Then I should see the prepayments sidebar link
 
   Scenario: Cash payment method flags persist after save
     Given the application is running

@@ -9,8 +9,7 @@ Given("I navigate to the consumptions page", async function () {
 
   await page.click('[data-testid="link-kontsumoak"]');
   await page.waitForLoadState("networkidle");
-  // Additional wait to ensure all API calls complete after cache removal
-  await page.waitForTimeout(1000);
+  await page.waitForSelector('[data-testid="product-card"]', { timeout: 15000 }).catch(() => {});
 });
 
 When("I add {string} to the cart", async function (productName: string) {
@@ -244,7 +243,7 @@ Then("the consumption should appear in the consumption list", async function () 
   // Login as admin
   await page.fill('[data-testid="input-society-id"]', "GT001");
   await page.fill('[data-testid="input-email"]', "admin@txokoa.eus");
-  await page.fill('[data-testid="input-password"]', "password");
+  await page.fill('[data-testid="input-password"]', "demo");
   await page.click('[data-testid="button-login"]');
   await page.waitForLoadState("networkidle");
 

@@ -16,15 +16,6 @@ Then("I should see the reservation in my reservations list", async function () {
   await reservationText.waitFor({ state: "visible", timeout: 5000 });
 });
 
-When("I log out", async function () {
-  const page = getPage();
-  if (!page) throw new Error("Page not available");
-
-  await page.click('[data-testid="user-menu"]');
-  await page.click('[data-testid="logout-button"]');
-  await page.waitForSelector('[data-testid="login-form"]', { timeout: 5000 });
-});
-
 When("I find the user's reservation", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");

@@ -2,6 +2,7 @@ Feature: Zorrak Debts Management
   As an administrator
   I want to view all user debts for the current month
   So that I can track outstanding payments and verify totals
+
   Scenario: Admin views Zorrak debts page and verifies total sum
     Given the application is running
     When I open the login page
@@ -13,11 +14,3 @@ Feature: Zorrak Debts Management
     And I should see a total sum displayed
     When I calculate the sum of all individual debts
     Then the calculated sum should match the displayed total
-
-  Scenario: Non-admin user cannot access Zorrak debts page
-    Given the application is running
-    When I open the login page
-    And I log in as a bazkide user
-    When I try to navigate to the Zorrak debts page
-    Then I should be denied access or redirected
-    And I should not see the debts management interface

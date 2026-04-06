@@ -26,13 +26,6 @@ Feature: Consumption Management
     Then I should see a success message
     And the cart should be empty
 
-  Scenario: Add a single product consumption
-    When I add "Txakoli Getariako" to the cart
-    And I click the close account button
-    And I confirm the consumption
-    Then I should see a success message
-    And the cart should be empty
-
   Scenario: Cancel consumption confirmation
     When I add "Txakoli Getariako" to the cart
     And I click the close account button

@@ -107,12 +107,10 @@ When("I capture the consumption amount from the confirmation dialog", async func
   }
 });
 
-When("I wait 3 seconds for debt calculation to complete", async function () {
+When("I allow time for debt totals to update", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not initialized");
-
-  // Wait for debt calculation to complete (more efficient than fixed timeout)
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(1500);
 });
 
 Then(

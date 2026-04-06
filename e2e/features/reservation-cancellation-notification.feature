@@ -23,17 +23,15 @@ Feature: Reservation Cancellation Notifications
     Then I should see a reservation success message
     And the reservation should appear in the list
     And I should see the reservation in my reservations list
-    
-    When I open the login page
-    And I log in as a admin user
+
+    When I re-login as a admin user
     And I should see the dashboard instead of the login form
     And I navigate to the admin reservations page
     And I find the user's reservation
     And I cancel the user's reservation
     Then the reservation should be marked as cancelled
-    
-    When I open the login page
-    And I log in as a bazkide user
+
+    When I re-login as a bazkide user
     And I should see the dashboard instead of the login form
     And I navigate to the notifications page
     Then I should see a cancellation notification

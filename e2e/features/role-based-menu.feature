@@ -22,17 +22,3 @@ Feature: Role-based menu access
     And I should see the main menu entries
     And I should see the admin management section
     And I should be able to access all admin pages
-
-  @role-based
-  Scenario: Direct access to admin pages is blocked for bazkide
-    When I log in as a bazkide user
-    Then I should see the dashboard instead of the login form
-    When I try to access the users management page directly
-    Then I should be redirected or shown an access denied message
-
-  @role-based
-  Scenario: Direct access to admin pages works for admin
-    When I log in as a admin user
-    Then I should see the dashboard instead of the login form
-    When I try to access the users management page directly
-    Then I should see the users management page

@@ -11,24 +11,24 @@ Feature: Prepayment validation (treasurer)
     And I create a pending prepayment for Miren Urrutia
     And I validate the first pending prepayment
     When I log out from the sidebar
-    And I open the login page
-    And I log in as a bazkide user
+    And I re-login as a bazkide user
     When I navigate to my account movements page
-    Then I should see a prepayment line on my movements
+    Then I should see the my movements page
+    And I should see a prepayment line on my movements
 
   Scenario: Member proposes a prepayment and treasurer validates it
     Given the application is running
     When I open the login page
     And I log in as a bazkide user
     When I navigate to my account movements page
+    Then I should see the my movements page
     And I submit a prepayment proposal from my movements page
     When I log out from the sidebar
-    And I open the login page
-    And I log in as a admin user
+    And I re-login as a admin user
     When I navigate to the prepayments page
     And I validate the first pending prepayment
     When I log out from the sidebar
-    And I open the login page
-    And I log in as a bazkide user
+    And I re-login as a bazkide user
     When I navigate to my account movements page
-    Then I should see a prepayment line on my movements
+    Then I should see the my movements page
+    And I should see a prepayment line on my movements

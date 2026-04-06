@@ -7,6 +7,29 @@ setDefaultTimeout(10 * 1000);
 
 let lastRandomUserEmail: string | undefined;
 
+const DEMO_EMAIL_BY_ROLE: Record<string, string> = {
+  bazkide: "bazkidea@txokoa.eus",
+  admin: "admin@txokoa.eus",
+  sotolaria: "sotolaria@txokoa.eus",
+  laguna: "laguna@txokoa.eus",
+};
+
+export async function fillDemoLogin(page: Page, role: string): Promise<void> {
+  const email = DEMO_EMAIL_BY_ROLE[role];
+  assert.ok(email, `Unknown demo user role: ${role}`);
+
+  await page.fill('[data-testid="input-society-id"]', "GT001");
+  await page.fill('[data-testid="input-email"]', email);
+  await page.fill('[data-testid="input-password"]', "demo");
+
+  await Promise.all([
+    page.waitForLoadState("networkidle"),
+    page.click('[data-testid="button-login"]'),
+  ]);
+
+  await page.waitForSelector('[data-testid="input-email"]', { state: "detached", timeout: 10000 });
+}
+
 BeforeAll(async function () {
   const browserInstance: Browser = await chromium.launch({
     headless: process.env.E2E_HEADED === "false",
@@ -48,6 +71,33 @@ When("I open the login page", async function () {
   await pageInstance.goto(e2eUrl("/"), { waitUntil: "networkidle" });
 });
 
+/**
+ * Reuses the current Playwright page (no close/newPage): navigates home, logs out if still
+ * authenticated, then logs in as the given seeded demo user.
+ */
+When("I re-login as a {word} user", async function (role: string) {
+  const page = getPage();
+  assert.ok(page, "Page was not initialized");
+
+  await page.goto(e2eUrl("/"), { waitUntil: "networkidle" });
+
+  const loginVisible = await page.locator('[data-testid="input-email"]').isVisible().catch(() => false);
+
+  if (!loginVisible) {
+    let logout = page.locator('[data-testid="button-logout"]');
+    if (!(await logout.isVisible().catch(() => false))) {
+      await page.locator('[data-testid="button-sidebar-toggle"]').click().catch(() => {});
+      logout = page.locator('[data-testid="button-logout"]');
+    }
+    await logout.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});
+    await logout.click().catch(() => {});
+    await page.waitForSelector('[data-testid="input-email"]', { state: "visible", timeout: 15000 });
+  }
+
+  await fillDemoLogin(page, role);
+  assert.ok(!page.url().includes("/login"), "Should be redirected from login page after re-login");
+});
+
 Then("I should see the login form", async function () {
   const page = getPage();
   assert.ok(page, "Page was not initialized");
@@ -61,30 +111,7 @@ Then("I should see the login form", async function () {
 When("I log in as a {word} user", async function (role: string) {
   const page = getPage();
   assert.ok(page, "Page was not initialized");
-
-  const emailByRole: Record<string, string> = {
-    bazkide: "bazkidea@txokoa.eus",
-    admin: "admin@txokoa.eus",
-    sotolaria: "sotolaria@txokoa.eus",
-    laguna: "laguna@txokoa.eus",
-  };
-
-  const email = emailByRole[role];
-  assert.ok(email, `Unknown demo user role: ${role}`);
-
-  await page.fill('[data-testid="input-society-id"]', "GT001");
-  await page.fill('[data-testid="input-email"]', email);
-  // Use the actual seeded password from the database
-  await page.fill('[data-testid="input-password"]', "demo");
-
-  // Click login and wait for navigation
-  await Promise.all([
-    page.waitForLoadState("networkidle"),
-    page.click('[data-testid="button-login"]'),
-  ]);
-
-  // Wait a moment for the app to store the token
-  await page.waitForTimeout(1000);
+  await fillDemoLogin(page, role);
 
   // Verify we're logged in by checking we're no longer on login page
   const currentUrl = page.url();

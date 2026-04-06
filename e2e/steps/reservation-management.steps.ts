@@ -416,9 +416,6 @@ Then("the reservation should appear in the list", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  // Wait for the reservation to appear and page to load
-  await page.waitForTimeout(3000);
-
   // Look for the reservation card with our unique name
   const uniqueReservationName = this.testReservationName;
 

@@ -12,8 +12,7 @@ Feature: Cash pending payments on consumptions page
     And I disable cash manual payment on the society page
     And I disable cash change machine payment on the society page
     And I save the society changes
-    When I open the login page
-    And I log in as a bazkide user
+    When I re-login as a bazkide user
     And I should see the dashboard instead of the login form
     And I navigate to the consumptions page
     Then I should not see pending payments category on the consumptions page
@@ -25,8 +24,7 @@ Feature: Cash pending payments on consumptions page
     And I navigate to the society page
     And I enable cash manual payment on the society page
     And I save the society changes
-    When I open the login page
-    And I log in as a bazkide user
+    When I re-login as a bazkide user
     And I should see the dashboard instead of the login form
     And I navigate to the consumptions page
     When I open the pending payments category on the consumptions page

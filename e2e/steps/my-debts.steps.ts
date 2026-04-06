@@ -2,24 +2,6 @@ import { When, Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
 import { getPage, e2eUrl } from "./shared-state";
 
-When("I navigate back to the {string} page", async function (pageName: string) {
-  const page = getPage();
-  assert(page, "Page not initialized");
-
-  const routes: Record<string, string> = {
-    "Nire Zorrak": "/nire-zorrak",
-    "Zorrak debts": "/zorrak",
-  };
-
-  const route = routes[pageName];
-  if (!route) {
-    throw new Error(`No route found for page: ${pageName}`);
-  }
-
-  await page.goto(e2eUrl(route));
-  await page.waitForLoadState("networkidle");
-});
-
 When("I navigate to the {string} page", async function (pageName: string) {
   const page = getPage();
   assert(page, "Page not initialized");

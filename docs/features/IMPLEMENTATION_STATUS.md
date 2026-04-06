@@ -119,7 +119,7 @@ Status legend:
 ## 5b. Account movements / ledger (`account-movements.md`)
 
 1. **Member movement list & balance** – `/nire-mugimenduak`, `GET /api/account-movements/me`
-   - **Status**: ✅ Implemented (+ top stat cards: balance status, period count/net; E2E: `account-movements.feature`)
+   - **Status**: ✅ Implemented (+ top stat cards: balance status, period count/net; E2E: ledger smoke via `bank-transfers.feature` / `refunds.feature` on `/nire-mugimenduak`)
 2. **Treasurer movement audit** – `/mugimenduak`, `GET /api/account-movements` (filters, running balance via SQL window; response includes `sumAmount`, `selectedMemberBalance` when a member filter is set)
    - **Status**: ✅ Implemented (+ top stat cards: filtered count, filtered sum, member saldo when filtered)
 3. **Prepayment proposals** (UI: «Aurreordainketak» / Anticipos; impl. `bank_transfers`, `bank_transfer` ledger type) – `/transferentziak`, `POST/GET /api/bank-transfers`, validate/reject + ledger + notifications; members propose from **`/nire-mugimenduak`** via `POST` + `GET /api/bank-transfers/me?status=pending` (table only when pending; validated lines on ledger — see `account-movements.md` F1 / F4); **gated when `bank_transfer_prepayment` is absent from society `payment_methods`** (sidebar, pages, APIs `403`)
