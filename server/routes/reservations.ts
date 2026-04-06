@@ -557,7 +557,7 @@ export function registerReservationRoutes(app: Express) {
         // Check access permissions
         if (
           reservation[0].userId !== user.id &&
-          !["administratzailea", "diruzaina", "sotolaria"].includes(user.role || "")
+          !["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "")
         ) {
           return res.status(403).json({ message: "Access denied" });
         }

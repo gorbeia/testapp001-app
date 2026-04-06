@@ -365,7 +365,7 @@ export function registerConsumptionRoutes(app: Express) {
         // Check permissions
         if (
           consumption.userId !== user.id &&
-          !["administratzailea", "diruzaina", "sotolaria"].includes(user.role || "")
+          !["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "")
         ) {
           return res.status(403).json({ message: "Access denied" });
         }
@@ -413,7 +413,7 @@ export function registerConsumptionRoutes(app: Express) {
             and(
               eq(consumptions.id, id),
               eq(consumptions.societyId, societyId),
-              ["administratzailea", "diruzaina", "sotolaria"].includes(user.role || "")
+              ["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "")
                 ? undefined
                 : eq(consumptions.userId, user.id)
             )
@@ -480,7 +480,7 @@ export function registerConsumptionRoutes(app: Express) {
 
         if (
           consumption[0].userId !== user.id &&
-          !["administratzailea", "diruzaina", "sotolaria"].includes(user.role || "")
+          !["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "")
         ) {
           return res.status(403).json({ message: "Access denied" });
         }
@@ -639,7 +639,7 @@ export function registerConsumptionRoutes(app: Express) {
 
         if (
           consumption[0].userId !== user.id &&
-          !["administratzailea", "diruzaina", "sotolaria"].includes(user.role || "")
+          !["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "")
         ) {
           return res.status(403).json({ message: "Access denied" });
         }
