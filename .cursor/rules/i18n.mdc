@@ -1,0 +1,28 @@
+---
+description: Bilingual EU/ES (and server translations)
+globs: client/src/lib/i18n.ts,client/src/components/LanguageProvider.tsx,client/src/components/LanguageToggle.tsx,server/lib/i18n/**/*.ts
+alwaysApply: false
+---
+
+# Internationalization
+
+## Locales
+
+- **Primary:** Euskara **`eu`**
+- **Secondary:** Castellano **`es`**
+- Server translation module also defines **`en`** in `SUPPORTED_LANGUAGES` — keep client and API behavior aligned if you add UI for `en`.
+
+## Client (`client/src/lib/i18n.ts`)
+
+- Every user-visible string: **`t("key")`** via **`useLanguage()`**.
+- Adding a key: define it under **both** `eu` and `es` maps (and `en` if used). Do not leave new UI keys in only one language.
+
+## Server (`server/lib/i18n/`)
+
+- Resolve language: **`getLanguageFromRequest(req)`** (header / query / default).
+- Static API messages: **`translate(key, language)`** or **`createI18nHelper(req)`** for request-scoped helpers — see `server/lib/i18n/index.ts`.
+- Prefer existing **TranslationKey** types in `translations.ts` when adding server messages.
+
+## Dynamic / DB content
+
+Multilingual fields often use separate rows per locale (e.g. `category_messages` with `language`) or parallel columns — **follow the pattern** of the nearest existing table in `@shared/schema.ts` (do not invent a third pattern without team agreement).

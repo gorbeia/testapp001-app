@@ -1,0 +1,29 @@
+---
+description: Drizzle schema — tables, insert schemas, migrations, reset
+globs: shared/schema.ts
+alwaysApply: false
+---
+
+# Database schema (`shared/schema.ts`)
+
+## Tables
+
+- Use **`pgTable`** from `drizzle-orm/pg-core`.
+- Tenant-owned data: include **`societyId`** referencing `societies.id` unless the table is global (e.g. shared lookup tables — follow existing patterns in this file).
+
+## Validation exports
+
+For each table that receives HTTP writes, export a **`createInsertSchema(table).pick({ ... })`** (drizzle-zod) slice that matches what APIs accept. Route handlers should **`safeParse`** against these (see `api-routes` rule).
+
+## Defaults & timestamps
+
+Use Drizzle/`sql` patterns consistent with existing tables (e.g. `defaultNow()`, `updatedAt`).
+
+## After changing schema
+
+- **Dev:** `pnpm db:push`
+- **Migrations:** `pnpm db:generate` then `pnpm db:migrate` when using migration workflow
+
+## Reset script
+
+If you add tables, update **`script/reset-database-push.ts`** so `DROP TABLE` / push workflow stays consistent with team expectations.

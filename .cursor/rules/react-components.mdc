@@ -1,0 +1,36 @@
+---
+description: React UI — shadcn, Query, forms, auth, i18n
+globs: client/src/**/*.tsx
+alwaysApply: false
+---
+
+# React / client (`client/src`)
+
+## UI primitives
+
+Use **shadcn-style** components from `@/components/ui/` (Button, Card, Dialog, Input, etc.). Compose classes with **`cn()`** from `@/lib/utils`. Prefer **Tailwind** utilities + CSS variables from `client/src/index.css`; avoid one-off global CSS unless necessary.
+
+## Data fetching
+
+Use **TanStack React Query** (`useQuery`, `useMutation`). On successful mutations, **`invalidateQueries`** for affected keys. Prefer consistent patterns with `client/src/lib/queryClient.ts` (`apiRequest` / explicit `queryFn` where the default `queryKey`-as-URL pattern does not apply).
+
+## Forms
+
+Use **`react-hook-form`** + **`@hookform/resolvers/zod`** + a **Zod** schema. Avoid large forms driven only by ad-hoc `useState` for field values (legacy pages may still do this — **new or heavily edited** forms should follow RHF + Zod).
+
+## Auth & HTTP
+
+Use **`useAuth()`** for session. For calls outside the shared query helpers, prefer **`authFetch`** from `@/lib/api` so `Authorization` and language headers stay consistent. Be aware both cookie (`credentials: "include"`) and Bearer patterns exist; don’t break login/refresh flows when changing fetch code.
+
+## i18n
+
+All user-visible strings: **`useLanguage()`** + **`t("key")`**. Add keys to **both** `eu` and `es` (and `en` if that locale is used) in `client/src/lib/i18n.ts`. Do not ship hardcoded Basque/Spanish UI copy in components.
+
+## Pages & errors
+
+- **Named exports** for page components where the codebase already does so.
+- Prefer wrapping risky page trees with **`react-error-boundary`** / `ErrorFallback` where the app already uses it.
+
+## File organization
+
+Colocate small page-specific fetch helpers in e.g. `pages/<feature>/api.ts` when it matches existing features (`dashboard`, `announcements`).

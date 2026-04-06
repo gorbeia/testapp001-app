@@ -1,0 +1,52 @@
+---
+description: Express API routes — middleware, validation, errors, tenancy
+globs: server/routes/**/*.ts
+alwaysApply: false
+---
+
+# API routes (`server/routes`)
+
+## Handler shape
+
+```typescript
+async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    // ...
+  } catch (err) {
+    next(err);
+  }
+}
+```
+
+## Middleware chain
+
+Typical order per route:
+
+1. `sessionMiddleware` — JWT from cookie `auth-token` or `Authorization: Bearer`
+2. `requireAuth` — `401` if no `req.user`
+3. Optional: `requireAdmin`, `requireTreasurer`, or inline role checks
+
+Import from `server/routes/middleware.ts` (and society helpers where the file defines them).
+
+## Validation
+
+Before **inserts/updates** from `req.body`, validate with the **`createInsertSchema(...).pick({...})`** (or a dedicated Zod schema) exported from `@shared/schema`. Use `safeParse`; on failure return `400` with a clear `message` (or field errors). **Do not** spread unchecked `req.body` into Drizzle.
+
+## Tenancy & IDs
+
+- Resolve `societyId` from **`getUserSocietyId(req.user!)`** (or equivalent) for reads/writes.
+- For updates/deletes, ensure the row belongs to that society (e.g. `and(eq(table.id, id), eq(table.societyId, societyId))`).
+
+## Errors
+
+- Expected failures: `res.status(4xx|403).json({ message: "..." })`.
+- Unexpected: `next(err)` → global handler returns `500`.
+
+## Types
+
+Avoid `any` on `req.body` / mapped entities. Prefer Zod-inferred types and Drizzle `$inferSelect` / `$inferInsert` where helpful.
+
+## Response conventions
+
+- List/detail: `res.status(200).json(...)`
+- Create: prefer `201` + created row JSON when returning the entity

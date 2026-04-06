@@ -1,0 +1,40 @@
+---
+description: Elkartearen App stack, layout, aliases, multi-tenancy
+alwaysApply: true
+---
+
+# Project context (Elkartearen App)
+
+## Stack (one line)
+
+**Vite + React&nbsp;18** SPA (`wouter`), **Express** API, **PostgreSQL** + **Drizzle ORM**, JWT in httpOnly cookies + Bearer, **Tailwind** + shadcn/Radix, **TanStack Query**, **RHF + Zod**.
+
+This is **not** Next.js. Files under `client/src/components/ui/` may contain `"use client"` from shadcn templates — it has **no effect** in Vite; ignore it for routing/SSR assumptions.
+
+## Folder map
+
+| Path | Role |
+|------|------|
+| `client/src/` | React app: pages, components, hooks, `lib/` |
+| `server/` | Express entry, `routes/`, `db.ts`, `lib/` |
+| `shared/` | Drizzle schema, shared TS (`schema.ts`, `society.ts`) |
+| `e2e/` | Cucumber features + Playwright steps |
+| `docs/features/` | Feature specs + `IMPLEMENTATION_STATUS.md` |
+| `script/` | build, seed, DB reset |
+
+## Path aliases (must use)
+
+- `@/*` → `client/src/*` (see `tsconfig.json` / `vite.config.ts`)
+- `@shared/*` → `shared/*`
+
+## Multi-tenancy
+
+Most domain rows are scoped by **`societyId`**. On the server, derive it from **`req.user`** (JWT payload) via helpers like `getUserSocietyId` — **never** trust client-sent `societyId` for authorization or row ownership on write paths.
+
+## Product / i18n
+
+**Euskara (eu)** is primary UI language; **Castellano (es)** secondary. Routes often use Basque slugs (e.g. `/erreserbak`, `/kontsumoak`).
+
+## When unsure
+
+Read adjacent route files in `server/routes/`, page files in `client/src/pages/`, and `@shared/schema` before inventing new patterns.

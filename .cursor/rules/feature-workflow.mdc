@@ -1,0 +1,23 @@
+---
+description: Feature specs and IMPLEMENTATION_STATUS tracking
+alwaysApply: true
+---
+
+# Feature workflow & docs
+
+## Where specs live
+
+- Feature requirements: **`docs/features/*.md`** (user stories: *As a / I want to / So that* + acceptance criteria).
+- **Live delivery tracker:** **`docs/features/IMPLEMENTATION_STATUS.md`** (✅ implemented, 🟡 partial/mock/UI-only, ❌ missing).
+
+## After code changes
+
+When you implement, extend, or remove a feature, **update `IMPLEMENTATION_STATUS.md`** in the same PR/conversation so status matches reality.
+
+## Conflicts
+
+If a story file under `docs/features/` disagrees with **`IMPLEMENTATION_STATUS.md`**, treat the **status doc** as the shipped-truth for "what exists now," and either fix the story file in a follow-up or note the drift in the status doc.
+
+## New work
+
+For non-trivial features: add or extend a spec under **`docs/features/`** and add/update rows in **`IMPLEMENTATION_STATUS.md`** before or alongside implementation (avoid landing code with no doc anchor).

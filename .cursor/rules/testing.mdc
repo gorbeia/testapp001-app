@@ -1,0 +1,31 @@
+---
+description: E2E — Cucumber + Playwright conventions
+globs: e2e/**/*.ts
+alwaysApply: false
+---
+
+# E2E tests (`e2e/`)
+
+## Layout
+
+- **Gherkin:** `e2e/features/**/*.feature`
+- **Steps:** `e2e/steps/**/*.ts` (`@cucumber/cucumber` + Playwright `chromium`)
+- **Shared browser state:** `e2e/steps/shared-state.ts`
+- **Base URL:** `e2e/steps/base-url.ts` — loads `.env` + `.env.local`; **`E2E_BASE_URL`** else **`VITE_API_URL`** else **`http://localhost:${PORT}`**; use `e2eUrl("/path")` from `./shared-state`
+- **Cucumber config:** `e2e/cucumber.mjs`
+
+## Commands (from repo root)
+
+- Full suite: `pnpm test:e2e` (`NODE_ENV=test`)
+- Only scenarios tagged **`@only`:** `pnpm test:e2e:only`
+- Single feature file: `pnpm test:e2e:feature -- e2e/features/<name>.feature`
+
+## Data
+
+Seed a known DB state before runs when scenarios depend on it: **`pnpm db:seed`** (and reset if needed — see README / `pnpm db:reset:seed`).
+
+## Practices
+
+- Reuse steps; avoid duplicate Playwright wiring across files.
+- Prefer stable selectors (roles, labels, test ids) over brittle CSS tied to Tailwind class strings.
+- Headed runs: see README for **`E2E_HEADED`** if supported in your env.
