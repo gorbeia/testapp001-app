@@ -4,12 +4,13 @@ import {
   subscriptionTypes,
   subscriptionTypeCreateBodySchema,
   subscriptionTypeUpdateBodySchema,
+  type User,
 } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "./middleware";
 
 // Helper function to get society ID from user
-const getUserSocietyId = (user: any): string => {
+const getUserSocietyId = (user: User): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found");
   }
@@ -23,7 +24,7 @@ export function registerSubscriptionRoutes(app: Express) {
     requireAuth,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const user = (req as any).user;
+        const user = req.user!;
         const societyId = getUserSocietyId(user);
 
         const subscriptionTypesData = await db
@@ -46,7 +47,7 @@ export function registerSubscriptionRoutes(app: Express) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
-        const user = (req as any).user;
+        const user = req.user!;
         const societyId = getUserSocietyId(user);
 
         if (!id || typeof id !== "string") {
@@ -76,7 +77,7 @@ export function registerSubscriptionRoutes(app: Express) {
     requireAdmin,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const user = (req as any).user;
+        const user = req.user!;
         const societyId = getUserSocietyId(user);
 
         const parsed = subscriptionTypeCreateBodySchema.safeParse(req.body);
@@ -119,7 +120,7 @@ export function registerSubscriptionRoutes(app: Express) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
-        const user = (req as any).user;
+        const user = req.user!;
         const societyId = getUserSocietyId(user);
 
         const parsed = subscriptionTypeUpdateBodySchema.safeParse(req.body);
@@ -190,7 +191,7 @@ export function registerSubscriptionRoutes(app: Express) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
-        const user = (req as any).user;
+        const user = req.user!;
         const societyId = getUserSocietyId(user);
 
         if (!id || typeof id !== "string") {

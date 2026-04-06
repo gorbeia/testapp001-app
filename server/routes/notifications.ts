@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import {
   notifications,
@@ -305,12 +305,15 @@ export const createNotification = async (req: Request, res: Response, next: Next
 
     // Create multilingual messages if provided
     if (messages && typeof messages === "object") {
-      const messageEntries = Object.entries(messages).map(([lang, msg]) => ({
-        notificationId: newNotification[0].id,
-        language: lang,
-        title: (msg as any).title || title,
-        message: (msg as any).message || message,
-      }));
+      const messageEntries = Object.entries(messages).map(([lang, msg]) => {
+        const payload = msg as { title?: string; message?: string };
+        return {
+          notificationId: newNotification[0].id,
+          language: lang,
+          title: payload.title ?? title ?? "",
+          message: payload.message ?? message ?? "",
+        };
+      });
 
       if (messageEntries.length > 0) {
         await db.insert(notificationMessages).values(messageEntries);
@@ -323,7 +326,7 @@ export const createNotification = async (req: Request, res: Response, next: Next
   }
 };
 
-export function registerNotificationRoutes(app: any) {
+export function registerNotificationRoutes(app: Express) {
   app.get("/api/notifications", sessionMiddleware, requireAuth, getUserNotifications);
   app.get(
     "/api/notifications/unread-count",
@@ -348,7 +351,7 @@ export function registerNotificationRoutes(app: any) {
     requireAuth,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const user = req.user as User;
+        const user = req.user!;
 
         // Mark all unread notifications that have a referenceId (indicating they're from notes) as read for this user
         await db
