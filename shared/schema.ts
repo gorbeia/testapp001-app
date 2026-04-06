@@ -1,5 +1,14 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean, integer, decimal } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  varchar,
+  timestamp,
+  boolean,
+  integer,
+  decimal,
+  unique,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -382,19 +391,26 @@ export type NoteMessage = typeof noteMessages.$inferSelect;
 export type InsertNote = z.infer<typeof insertNotesSchema>;
 export type InsertNoteMessage = z.infer<typeof insertNoteMessageSchema>;
 
-// Tables for reservations
-export const tables = pgTable("tables", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  name: varchar("name").notNull().unique(),
-  minCapacity: integer("min_capacity").default(1),
-  maxCapacity: integer("max_capacity").notNull(),
-  description: text("description"), // Optional description of the table
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+// Tables for reservations (tenant-scoped; name unique per society)
+export const tables = pgTable(
+  "tables",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    societyId: varchar("society_id")
+      .notNull()
+      .references(() => societies.id, { onDelete: "cascade" }),
+    name: varchar("name").notNull(),
+    minCapacity: integer("min_capacity").default(1),
+    maxCapacity: integer("max_capacity").notNull(),
+    description: text("description"), // Optional description of the table
+    isActive: boolean("is_active").default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [unique("tables_society_id_name_unique").on(t.societyId, t.name)]
+);
 
 export const insertTableSchema = createInsertSchema(tables).pick({
   name: true,

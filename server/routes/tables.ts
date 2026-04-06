@@ -1,8 +1,21 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { tables, reservations, type Table, type InsertTable } from "@shared/schema";
+import {
+  tables,
+  reservations,
+  insertTableSchema,
+  type Table,
+  type User,
+} from "@shared/schema";
 import { eq, and, gte, ne, count } from "drizzle-orm";
 import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
+
+const getUserSocietyId = (user: User): string => {
+  if (!user.societyId) {
+    throw new Error("User societyId not found in JWT");
+  }
+  return user.societyId;
+};
 
 export function registerTableRoutes(app: Express) {
   // Tables: get all tables (admin only)
@@ -13,7 +26,12 @@ export function registerTableRoutes(app: Express) {
     requireAdmin,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const allTables = await db.select().from(tables).orderBy(tables.name);
+        const societyId = getUserSocietyId(req.user!);
+        const allTables = await db
+          .select()
+          .from(tables)
+          .where(eq(tables.societyId, societyId))
+          .orderBy(tables.name);
         return res.status(200).json(allTables);
       } catch (err) {
         next(err);
@@ -28,10 +46,11 @@ export function registerTableRoutes(app: Express) {
     requireAuth,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
+        const societyId = getUserSocietyId(req.user!);
         const availableTables = await db
           .select()
           .from(tables)
-          .where(eq(tables.isActive, true))
+          .where(and(eq(tables.societyId, societyId), eq(tables.isActive, true)))
           .orderBy(tables.name);
         return res.status(200).json(availableTables);
       } catch (err) {
@@ -48,9 +67,17 @@ export function registerTableRoutes(app: Express) {
     requireAdmin,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const tableData: InsertTable = req.body;
+        const parsed = insertTableSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({ message: "Invalid table payload", issues: parsed.error.flatten() });
+        }
 
-        const [newTable] = await db.insert(tables).values(tableData).returning();
+        const societyId = getUserSocietyId(req.user!);
+
+        const [newTable] = await db
+          .insert(tables)
+          .values({ ...parsed.data, societyId })
+          .returning();
 
         return res.status(201).json(newTable);
       } catch (err) {
@@ -68,15 +95,17 @@ export function registerTableRoutes(app: Express) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
+        const societyId = getUserSocietyId(req.user!);
         const updateData: Partial<Table> = req.body;
 
         // Always update the updatedAt timestamp
         updateData.updatedAt = new Date();
+        delete updateData.societyId;
 
         const [updatedTable] = await db
           .update(tables)
           .set(updateData)
-          .where(eq(tables.id, id))
+          .where(and(eq(tables.id, id), eq(tables.societyId, societyId)))
           .returning();
 
         if (!updatedTable) {
@@ -99,12 +128,13 @@ export function registerTableRoutes(app: Express) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
+        const societyId = getUserSocietyId(req.user!);
 
         // Get table name first
         const [tableInfo] = await db
           .select({ name: tables.name })
           .from(tables)
-          .where(eq(tables.id, id));
+          .where(and(eq(tables.id, id), eq(tables.societyId, societyId)));
 
         if (!tableInfo) {
           return res.status(404).json({ message: "Table not found" });
@@ -117,6 +147,7 @@ export function registerTableRoutes(app: Express) {
           .from(reservations)
           .where(
             and(
+              eq(reservations.societyId, societyId),
               eq(reservations.table, tableInfo.name),
               gte(reservations.startDate, now),
               ne(reservations.status, "cancelled"),
@@ -131,7 +162,15 @@ export function registerTableRoutes(app: Express) {
           });
         }
 
-        await db.delete(tables).where(eq(tables.id, id));
+        const [deleted] = await db
+          .delete(tables)
+          .where(and(eq(tables.id, id), eq(tables.societyId, societyId)))
+          .returning({ id: tables.id });
+
+        if (!deleted) {
+          return res.status(404).json({ message: "Table not found" });
+        }
+
         return res.status(204).send();
       } catch (err) {
         next(err);

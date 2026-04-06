@@ -1,6 +1,6 @@
 import { db } from "../server/db";
 import { reservations, societies, users, tables, type Reservation } from "../shared/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 export async function seedReservations() {
   try {
@@ -33,8 +33,11 @@ export async function seedReservations() {
 
     console.log("Using user ID for reservations:", firstUser.id);
 
-    // Get all active tables
-    const activeTables = await db.select().from(tables).where(eq(tables.isActive, true));
+    // Get all active tables for this society
+    const activeTables = await db
+      .select()
+      .from(tables)
+      .where(and(eq(tables.societyId, societyId), eq(tables.isActive, true)));
     if (activeTables.length === 0) {
       console.log("No active tables found, skipping reservation seeding");
       return;

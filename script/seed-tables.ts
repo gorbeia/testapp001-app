@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
-import { tables } from "../shared/schema";
+import { eq } from "drizzle-orm";
+import { societies, tables } from "../shared/schema";
 import "dotenv/config";
 
 async function seedTables() {
@@ -11,17 +12,38 @@ async function seedTables() {
   const db = drizzle(client);
 
   try {
-    // Check if tables already exist
-    const existingTables = await db.select().from(tables).limit(1);
+    let societyId = "";
+    const activeSociety = await db
+      .select()
+      .from(societies)
+      .where(eq(societies.isActive, true))
+      .limit(1);
+    if (activeSociety.length === 0) {
+      const firstSociety = await db.select().from(societies).limit(1);
+      if (firstSociety.length === 0) {
+        console.log("No societies found, skipping table seed");
+        return;
+      }
+      societyId = firstSociety[0].id;
+    } else {
+      societyId = activeSociety[0].id;
+    }
 
-    if (existingTables.length > 0) {
-      console.log("Tables already exist, skipping seed");
+    const existingForSociety = await db
+      .select()
+      .from(tables)
+      .where(eq(tables.societyId, societyId))
+      .limit(1);
+
+    if (existingForSociety.length > 0) {
+      console.log("Tables already exist for society, skipping seed");
       return;
     }
 
     // Sample tables with different capacities and descriptions
     const sampleTables = [
       {
+        societyId,
         name: "Mahaia 1",
         minCapacity: 2,
         maxCapacity: 4,
@@ -29,6 +51,7 @@ async function seedTables() {
         isActive: true,
       },
       {
+        societyId,
         name: "Mahaia 2",
         minCapacity: 2,
         maxCapacity: 4,
@@ -36,6 +59,7 @@ async function seedTables() {
         isActive: true,
       },
       {
+        societyId,
         name: "Mahaia 3",
         minCapacity: 4,
         maxCapacity: 6,
@@ -43,6 +67,7 @@ async function seedTables() {
         isActive: true,
       },
       {
+        societyId,
         name: "Mahaia 4",
         minCapacity: 4,
         maxCapacity: 8,
@@ -50,6 +75,7 @@ async function seedTables() {
         isActive: true,
       },
       {
+        societyId,
         name: "Mahaia 5",
         minCapacity: 6,
         maxCapacity: 10,
@@ -57,6 +83,7 @@ async function seedTables() {
         isActive: true,
       },
       {
+        societyId,
         name: "Gela Pribatua",
         minCapacity: 8,
         maxCapacity: 15,
