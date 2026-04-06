@@ -26,8 +26,8 @@ Any `select` / `update` / `delete` on these from a **society app** route must en
 
 ## Severity rubric
 
-| Finding | Severity |
-|---------|----------|
+| Finding                                        | Severity                        |
+| ---------------------------------------------- | ------------------------------- |
 | `GET` list without `societyId` on tenant table | High (data leak across tenants) |
-| `PUT`/`DELETE` by id without `societyId` guard | Critical (cross-tenant write) |
-| Aggregations / sums without society filter | High |
+| `PUT`/`DELETE` by id without `societyId` guard | Critical (cross-tenant write)   |
+| Aggregations / sums without society filter     | High                            |

@@ -136,7 +136,7 @@ export function registerReservationRoutes(app: Express) {
       try {
         const user = req.user!;
         const societyId = getUserSocietyId(user);
-const { limit, month, user: userId, page = 1, search, type, status } = req.query;
+        const { limit, month, user: userId, page = 1, search, type, status } = req.query;
 
         // Check if user is admin (administratzailea or diruzaina)
         const isAdmin = user.function === "administratzailea" || user.function === "diruzaina";
@@ -308,7 +308,10 @@ const { limit, month, user: userId, page = 1, search, type, status } = req.query
             .json({ message: "Invalid limit parameter (must be between 1 and 100)" });
         }
 
-        const conditions = [eq(reservations.userId, user.id), eq(reservations.societyId, societyId)];
+        const conditions = [
+          eq(reservations.userId, user.id),
+          eq(reservations.societyId, societyId),
+        ];
 
         // Add status filter
         if (status && status !== "all") {

@@ -5,12 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -148,7 +143,11 @@ export function AdminReservationsPage() {
   };
 
   // Cancel reservation (admin)
-  const cancelReservation = async (reservationId: string, reason: string, reservationName: string) => {
+  const cancelReservation = async (
+    reservationId: string,
+    reason: string,
+    reservationName: string
+  ) => {
     try {
       const response = await authFetch(`/api/reservations/${reservationId}`, {
         method: "PUT",
@@ -248,9 +247,7 @@ export function AdminReservationsPage() {
       return (
         <Tooltip>
           <TooltipTrigger>
-            <Badge variant={getStatusBadgeVariant(status)}>
-              {getStatusLabel(status)}
-            </Badge>
+            <Badge variant={getStatusBadgeVariant(status)}>{getStatusLabel(status)}</Badge>
           </TooltipTrigger>
           <TooltipContent>
             <p className="max-w-xs">{cancellationReason}</p>
@@ -259,11 +256,7 @@ export function AdminReservationsPage() {
       );
     }
 
-    return (
-      <Badge variant={getStatusBadgeVariant(status)}>
-        {getStatusLabel(status)}
-      </Badge>
-    );
+    return <Badge variant={getStatusBadgeVariant(status)}>{getStatusLabel(status)}</Badge>;
   };
 
   // Get type badge component
@@ -313,306 +306,338 @@ export function AdminReservationsPage() {
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <TooltipProvider>
         <div className="p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">{t("reservationsManagement")}</h1>
-            <p className="text-muted-foreground">{t("reservationsManagementDescription")}</p>
+          <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">{t("reservationsManagement")}</h1>
+              <p className="text-muted-foreground">{t("reservationsManagementDescription")}</p>
+            </div>
           </div>
-        </div>
 
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
-            <Input
-              placeholder={t("searchReservation")}
-              value={searchTerm}
-              onChange={e => handleSearch(e.target.value)}
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+              <Input
+                placeholder={t("searchReservation")}
+                value={searchTerm}
+                onChange={e => handleSearch(e.target.value)}
+              />
+            </div>
+
+            <Select
+              value={statusFilter}
+              onValueChange={value => {
+                setStatusFilter(value);
+                handleFilterChange();
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {getStatusOptions().map(status => (
+                  <SelectItem key={status.value} value={status.value}>
+                    {status.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={userFilter}
+              onValueChange={value => {
+                setUserFilter(value);
+                handleFilterChange();
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("allUsers")}</SelectItem>
+                {users.map(user => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.name || user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <MonthGrid
+              selectedMonth={monthFilter}
+              onMonthChange={value => {
+                setMonthFilter(value);
+                handleFilterChange();
+              }}
+              className="w-full sm:w-48"
+              mode="all"
+              yearRange={{ past: 3, future: 3 }}
             />
           </div>
 
-          <Select
-            value={statusFilter}
-            onValueChange={value => {
-              setStatusFilter(value);
-              handleFilterChange();
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {getStatusOptions().map(status => (
-                <SelectItem key={status.value} value={status.value}>
-                  {status.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={userFilter}
-            onValueChange={value => {
-              setUserFilter(value);
-              handleFilterChange();
-            }}
-          >
-            <SelectTrigger className="w-full sm:w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("allUsers")}</SelectItem>
-              {users.map(user => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.name || user.username}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <MonthGrid
-            selectedMonth={monthFilter}
-            onMonthChange={value => {
-              setMonthFilter(value);
-              handleFilterChange();
-            }}
-            className="w-full sm:w-48"
-            mode="all"
-            yearRange={{ past: 3, future: 3 }}
-          />
-        </div>
-
-        {/* Reservations Table */}
-        <Card className="overflow-hidden">
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t("tableHeaderName")}</TableHead>
-                    <TableHead>{t("tableHeaderUser")}</TableHead>
-                    <TableHead>{t("tableHeaderDate")}</TableHead>
-                    <TableHead>{t("tableHeaderTime")}</TableHead>
-                    <TableHead>{t("tableHeaderTable")}</TableHead>
-                    <TableHead>{t("tableHeaderGuests")}</TableHead>
-                    <TableHead>{t("tableHeaderType")}</TableHead>
-                    <TableHead className="text-right">{t("tableHeaderStatus")}</TableHead>
-                    <TableHead className="text-right">{t("tableHeaderActions")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
+          {/* Reservations Table */}
+          <Card className="overflow-hidden">
+            <CardContent>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                        {t("loading")}
-                      </TableCell>
+                      <TableHead>{t("tableHeaderName")}</TableHead>
+                      <TableHead>{t("tableHeaderUser")}</TableHead>
+                      <TableHead>{t("tableHeaderDate")}</TableHead>
+                      <TableHead>{t("tableHeaderTime")}</TableHead>
+                      <TableHead>{t("tableHeaderTable")}</TableHead>
+                      <TableHead>{t("tableHeaderGuests")}</TableHead>
+                      <TableHead>{t("tableHeaderType")}</TableHead>
+                      <TableHead className="text-right">{t("tableHeaderStatus")}</TableHead>
+                      <TableHead className="text-right">{t("tableHeaderActions")}</TableHead>
                     </TableRow>
-                  ) : reservations.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                        {t("noReservationsFound")}
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    reservations.map(reservation => (
-                      <TableRow key={reservation.id}>
-                        <TableCell className="font-medium">{reservation.name}</TableCell>
-                        <TableCell>{reservation.userName || t("unknownUser")}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-gray-500" />
-                            <span>{formatDate(reservation.startDate)}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{formatTime(reservation.startDate)}</TableCell>
-                        <TableCell>{reservation.table}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 text-gray-500" />
-                            <span>{reservation.guests}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{getTypeBadge(reservation.type)}</TableCell>
-                        <TableCell className="text-right">
-                          {getStatusBadge(reservation.status, reservation.cancellationReason)}
-                        </TableCell>
-                        <TableCell className="text-right w-32">
-                          <div className="flex items-center gap-2 justify-end ml-auto">
-                            {reservation.status === "confirmed" && (
-                              <Button
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => {
-                                  setReservationToCancel(reservation);
-                                  setCancelDialogOpen(true);
-                                }}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setSelectedReservation(reservation)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
+                  </TableHeader>
+                  <TableBody>
+                    {loading ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                          {t("loading")}
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                    ) : reservations.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                          {t("noReservationsFound")}
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      reservations.map(reservation => (
+                        <TableRow key={reservation.id}>
+                          <TableCell className="font-medium">{reservation.name}</TableCell>
+                          <TableCell>{reservation.userName || t("unknownUser")}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Calendar className="h-4 w-4 text-gray-500" />
+                              <span>{formatDate(reservation.startDate)}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{formatTime(reservation.startDate)}</TableCell>
+                          <TableCell>{reservation.table}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4 text-gray-500" />
+                              <span>{reservation.guests}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{getTypeBadge(reservation.type)}</TableCell>
+                          <TableCell className="text-right">
+                            {getStatusBadge(reservation.status, reservation.cancellationReason)}
+                          </TableCell>
+                          <TableCell className="text-right w-32">
+                            <div className="flex items-center gap-2 justify-end ml-auto">
+                              {reservation.status === "confirmed" && (
+                                <Button
+                                  variant="destructive"
+                                  size="sm"
+                                  onClick={() => {
+                                    setReservationToCancel(reservation);
+                                    setCancelDialogOpen(true);
+                                  }}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedReservation(reservation)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
 
-        <PaginationControls pagination={pagination} itemType="reservationsForPagination" />
+          <PaginationControls pagination={pagination} itemType="reservationsForPagination" />
 
-        {/* Reservation Details Dialog */}
-        <Dialog open={!!selectedReservation} onOpenChange={() => setSelectedReservation(null)}>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
-            <DialogHeader>
-              <DialogTitle>{t("reservationDetailsTitle")}</DialogTitle>
-            </DialogHeader>
-            {selectedReservation && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm font-medium">{t("tableHeaderName")}</p>
-                    <p>{selectedReservation.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{t("tableHeaderUser")}</p>
-                    <p>{selectedReservation.userName || t("unknownUser")}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{t("tableHeaderType")}</p>
-                    <p>{getTypeBadge(selectedReservation.type)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{t("tableHeaderStatus")}</p>
-                    <p>{getStatusBadge(selectedReservation.status, selectedReservation.cancellationReason)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{t("tableHeaderTable")}</p>
-                    <p>{selectedReservation.table}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{t("tableHeaderGuests")}</p>
-                    <p>{selectedReservation.guests}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{t("tableHeaderDate")}</p>
-                    <p>{formatDate(selectedReservation.startDate)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">{t("tableHeaderTime")}</p>
-                    <p>{formatTime(selectedReservation.startDate)}</p>
-                  </div>
-                  {selectedReservation.totalAmount && (
+          {/* Reservation Details Dialog */}
+          <Dialog open={!!selectedReservation} onOpenChange={() => setSelectedReservation(null)}>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-auto">
+              <DialogHeader>
+                <DialogTitle>{t("reservationDetailsTitle")}</DialogTitle>
+              </DialogHeader>
+              {selectedReservation && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm font-medium">{t("cost")}</p>
-                      <p>€{selectedReservation.totalAmount}</p>
+                      <p className="text-sm font-medium">{t("tableHeaderName")}</p>
+                      <p>{selectedReservation.name}</p>
                     </div>
-                  )}
-                  {selectedReservation.status === "cancelled" && selectedReservation.cancellationReason && (
-                    <div className="col-span-2">
-                      <p className="text-sm font-medium">{t("cancellationReason")}</p>
-                      <p className="text-sm text-muted-foreground bg-muted p-2 rounded">
-                        {selectedReservation.cancellationReason}
+                    <div>
+                      <p className="text-sm font-medium">{t("tableHeaderUser")}</p>
+                      <p>{selectedReservation.userName || t("unknownUser")}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{t("tableHeaderType")}</p>
+                      <p>{getTypeBadge(selectedReservation.type)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{t("tableHeaderStatus")}</p>
+                      <p>
+                        {getStatusBadge(
+                          selectedReservation.status,
+                          selectedReservation.cancellationReason
+                        )}
                       </p>
                     </div>
-                  )}
-                  {selectedReservation.notes && (
-                    <div className="col-span-2">
-                      <p className="text-sm font-medium">{t("notes")}</p>
-                      <p>{selectedReservation.notes}</p>
+                    <div>
+                      <p className="text-sm font-medium">{t("tableHeaderTable")}</p>
+                      <p>{selectedReservation.table}</p>
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Cancel confirmation dialog */}
-        <AlertDialog
-          open={cancelDialogOpen}
-          onOpenChange={open => {
-            if (!open) {
-              setCancellationReason("");
-              setReservationToCancel(null);
-            }
-            setCancelDialogOpen(open);
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle className="flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                {t("cancelReservationTitle")}
-              </AlertDialogTitle>
-              <AlertDialogDescription>
-                {t("cancelReservationConfirmMessage")}
-              </AlertDialogDescription>
-              
-              {/* Reservation Details */}
-              {reservationToCancel && (
-                <div className="mt-4 p-3 bg-muted rounded-lg space-y-1">
-                  <div className="text-sm space-y-1">
-                    <p><span className="font-medium">{t("name")}:</span> {reservationToCancel.name}</p>
-                    <p><span className="font-medium">{t("user")}:</span> {reservationToCancel.userName || 'Unknown'}</p>
-                    <p><span className="font-medium">{t("date")}:</span> {reservationToCancel.startDate ? new Date(reservationToCancel.startDate).toLocaleDateString('eu-ES', { year: 'numeric', month: '2-digit', day: '2-digit' }).replace(/\//g, '-') : 'Invalid Date'}</p>
-                    <p><span className="font-medium">{t("guests")}:</span> {reservationToCancel.guests}</p>
-                    <p><span className="font-medium">{t("table")}:</span> {reservationToCancel.table}</p>
+                    <div>
+                      <p className="text-sm font-medium">{t("tableHeaderGuests")}</p>
+                      <p>{selectedReservation.guests}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{t("tableHeaderDate")}</p>
+                      <p>{formatDate(selectedReservation.startDate)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{t("tableHeaderTime")}</p>
+                      <p>{formatTime(selectedReservation.startDate)}</p>
+                    </div>
+                    {selectedReservation.totalAmount && (
+                      <div>
+                        <p className="text-sm font-medium">{t("cost")}</p>
+                        <p>€{selectedReservation.totalAmount}</p>
+                      </div>
+                    )}
+                    {selectedReservation.status === "cancelled" &&
+                      selectedReservation.cancellationReason && (
+                        <div className="col-span-2">
+                          <p className="text-sm font-medium">{t("cancellationReason")}</p>
+                          <p className="text-sm text-muted-foreground bg-muted p-2 rounded">
+                            {selectedReservation.cancellationReason}
+                          </p>
+                        </div>
+                      )}
+                    {selectedReservation.notes && (
+                      <div className="col-span-2">
+                        <p className="text-sm font-medium">{t("notes")}</p>
+                        <p>{selectedReservation.notes}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
-            </AlertDialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="cancellationReason" className="text-sm font-medium">
-                  {t("cancellationReason")} *
-                </label>
-                <Textarea
-                  id="cancellationReason"
-                  value={cancellationReason}
-                  onChange={e => setCancellationReason(e.target.value)}
-                  placeholder={t("enterCancellationReason")}
-                  className="min-h-[100px]"
-                  required
-                />
+            </DialogContent>
+          </Dialog>
+
+          {/* Cancel confirmation dialog */}
+          <AlertDialog
+            open={cancelDialogOpen}
+            onOpenChange={open => {
+              if (!open) {
+                setCancellationReason("");
+                setReservationToCancel(null);
+              }
+              setCancelDialogOpen(open);
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" />
+                  {t("cancelReservationTitle")}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t("cancelReservationConfirmMessage")}
+                </AlertDialogDescription>
+
+                {/* Reservation Details */}
+                {reservationToCancel && (
+                  <div className="mt-4 p-3 bg-muted rounded-lg space-y-1">
+                    <div className="text-sm space-y-1">
+                      <p>
+                        <span className="font-medium">{t("name")}:</span> {reservationToCancel.name}
+                      </p>
+                      <p>
+                        <span className="font-medium">{t("user")}:</span>{" "}
+                        {reservationToCancel.userName || "Unknown"}
+                      </p>
+                      <p>
+                        <span className="font-medium">{t("date")}:</span>{" "}
+                        {reservationToCancel.startDate
+                          ? new Date(reservationToCancel.startDate)
+                              .toLocaleDateString("eu-ES", {
+                                year: "numeric",
+                                month: "2-digit",
+                                day: "2-digit",
+                              })
+                              .replace(/\//g, "-")
+                          : "Invalid Date"}
+                      </p>
+                      <p>
+                        <span className="font-medium">{t("guests")}:</span>{" "}
+                        {reservationToCancel.guests}
+                      </p>
+                      <p>
+                        <span className="font-medium">{t("table")}:</span>{" "}
+                        {reservationToCancel.table}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </AlertDialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <label htmlFor="cancellationReason" className="text-sm font-medium">
+                    {t("cancellationReason")} *
+                  </label>
+                  <Textarea
+                    id="cancellationReason"
+                    value={cancellationReason}
+                    onChange={e => setCancellationReason(e.target.value)}
+                    placeholder={t("enterCancellationReason")}
+                    className="min-h-[100px]"
+                    required
+                  />
+                </div>
               </div>
-            </div>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  if (!cancellationReason.trim()) {
-                    toast({
-                      title: t("errorTitle"),
-                      description: t("cancellationReasonRequired"),
-                      variant: "destructive",
-                    });
-                    return;
-                  }
-                  if (reservationToCancel) {
-                    cancelReservation(reservationToCancel.id, cancellationReason, reservationToCancel.name);
-                    setCancelDialogOpen(false);
-                    setReservationToCancel(null);
-                    setCancellationReason("");
-                  }
-                }}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                {t("cancelReservationTitle")}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    if (!cancellationReason.trim()) {
+                      toast({
+                        title: t("errorTitle"),
+                        description: t("cancellationReasonRequired"),
+                        variant: "destructive",
+                      });
+                      return;
+                    }
+                    if (reservationToCancel) {
+                      cancelReservation(
+                        reservationToCancel.id,
+                        cancellationReason,
+                        reservationToCancel.name
+                      );
+                      setCancelDialogOpen(false);
+                      setReservationToCancel(null);
+                      setCancellationReason("");
+                    }
+                  }}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {t("cancelReservationTitle")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </TooltipProvider>
     </ErrorBoundary>
   );

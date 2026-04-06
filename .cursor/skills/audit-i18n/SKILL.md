@@ -11,7 +11,7 @@ description: >-
 
 ## Goal
 
-1. Find **user-visible** strings in **`client/src/**/*.tsx`** that bypass **`t()`** from `useLanguage()`.
+1. Find **user-visible** strings in **`client/src/**/\*.tsx`** that bypass **`t()`** from `useLanguage()`.
 2. Find **key mismatches** between **`eu`** and **`es`** maps in [client/src/lib/i18n.ts](client/src/lib/i18n.ts) (and `en` if present).
 
 ## Steps — hardcoded UI strings
@@ -40,14 +40,14 @@ description: >-
 
 ## Steps — server API messages (optional)
 
-If the user wants full-stack i18n audit: scan **`server/routes/**/*.ts`** for hardcoded `message:` strings returned to clients; prefer **`server/lib/i18n`** `translate` + `TranslationKey` where appropriate.
+If the user wants full-stack i18n audit: scan **`server/routes/**/\*.ts`** for hardcoded `message:` strings returned to clients; prefer **`server/lib/i18n`** `translate`+`TranslationKey` where appropriate.
 
 ## Fix pattern
 
 ```tsx
 const { t } = useLanguage();
 // Before: <CardTitle>Hurrengoak</CardTitle>
-<CardTitle>{t("dashboard.upcoming")}</CardTitle>
+<CardTitle>{t("dashboard.upcoming")}</CardTitle>;
 ```
 
 Add **`dashboard.upcoming`** (example) to both **`eu`** and **`es`** in `i18n.ts`.

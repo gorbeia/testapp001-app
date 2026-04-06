@@ -9,7 +9,9 @@ import { createInsertSchema } from "drizzle-zod";
 
 // Example: tenant-scoped entity (import `societies` from the same file’s existing definition)
 export const widgets = pgTable("widgets", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   societyId: varchar("society_id")
     .notNull()
@@ -53,10 +55,7 @@ export function registerWidgetRoutes(app: Express) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const societyId = getUserSocietyId(req.user!);
-        const rows = await db
-          .select()
-          .from(widgets)
-          .where(eq(widgets.societyId, societyId));
+        const rows = await db.select().from(widgets).where(eq(widgets.societyId, societyId));
         return res.status(200).json(rows);
       } catch (err) {
         next(err);
@@ -72,7 +71,9 @@ export function registerWidgetRoutes(app: Express) {
       try {
         const parsed = insertWidgetSchema.safeParse(req.body);
         if (!parsed.success) {
-          return res.status(400).json({ message: "Validation failed", issues: parsed.error.flatten() });
+          return res
+            .status(400)
+            .json({ message: "Validation failed", issues: parsed.error.flatten() });
         }
         const societyId = getUserSocietyId(req.user!);
         const [row] = await db

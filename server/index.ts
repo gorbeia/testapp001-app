@@ -70,8 +70,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
   app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
     console.error("Error:", err instanceof Error ? err.message : err);
-    if (res && typeof res.status === 'function') {
-      res.status(500).json({ message: 'Internal Server Error' });
+    if (res && typeof res.status === "function") {
+      res.status(500).json({ message: "Internal Server Error" });
     } else {
       next(err);
     }

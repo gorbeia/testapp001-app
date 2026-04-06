@@ -11,7 +11,7 @@ description: >-
 
 ## Goal
 
-Align **`server/routes/**/*.ts`** with `.cursor/rules/api-routes.mdc`: validate request bodies before writes using schemas from **`@shared/schema`**.
+Align **`server/routes/**/\*.ts`** with `.cursor/rules/api-routes.mdc`: validate request bodies before writes using schemas from **`@shared/schema`\*\*.
 
 ## Steps
 

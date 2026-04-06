@@ -42,7 +42,6 @@ async function convertNoteToNotifications(noteId: string, societyId: string) {
 
     // Create a notification for each user using the note content
     for (const user of societyUsers) {
-
       // Create the main notification with note content
       const [notification] = await db
         .insert(notifications)

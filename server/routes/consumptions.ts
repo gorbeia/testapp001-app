@@ -60,7 +60,10 @@ export function registerConsumptionRoutes(app: Express) {
         const { search, month } = req.query;
         const societyId = getUserSocietyId(user);
 
-        const conditions = [eq(consumptions.userId, user.id), eq(consumptions.societyId, societyId)];
+        const conditions = [
+          eq(consumptions.userId, user.id),
+          eq(consumptions.societyId, societyId),
+        ];
 
         // Add month filter
         if (month && month !== "all") {

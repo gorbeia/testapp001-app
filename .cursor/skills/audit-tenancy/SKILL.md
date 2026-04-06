@@ -11,7 +11,7 @@ description: >-
 
 ## Goal
 
-Find queries in **`server/routes/**/*.ts`** that touch **tenant-scoped** tables (see [known-global-tables.md](known-global-tables.md)) without restricting rows to the authenticated user’s **`societyId`** (from JWT).
+Find queries in **`server/routes/**/\*.ts`** that touch **tenant-scoped** tables (see [known-global-tables.md](known-global-tables.md)) without restricting rows to the authenticated user’s **`societyId`\*\* (from JWT).
 
 ## Steps
 

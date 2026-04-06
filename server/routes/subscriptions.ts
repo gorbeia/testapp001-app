@@ -85,20 +85,16 @@ export function registerSubscriptionRoutes(app: Express) {
         // Validate period
         const validPeriods = ["monthly", "quarterly", "yearly", "custom"];
         if (!validPeriods.includes(period)) {
-          return res
-            .status(400)
-            .json({
-              message: "Invalid period. Must be one of: monthly, quarterly, yearly, custom",
-            });
+          return res.status(400).json({
+            message: "Invalid period. Must be one of: monthly, quarterly, yearly, custom",
+          });
         }
 
         // Validate periodMonths for custom periods
         if (period === "custom" && (!periodMonths || periodMonths < 1)) {
-          return res
-            .status(400)
-            .json({
-              message: "periodMonths is required and must be at least 1 for custom periods",
-            });
+          return res.status(400).json({
+            message: "periodMonths is required and must be at least 1 for custom periods",
+          });
         }
 
         // Validate amount
@@ -159,21 +155,17 @@ export function registerSubscriptionRoutes(app: Express) {
         if (period) {
           const validPeriods = ["monthly", "quarterly", "yearly", "custom"];
           if (!validPeriods.includes(period)) {
-            return res
-              .status(400)
-              .json({
-                message: "Invalid period. Must be one of: monthly, quarterly, yearly, custom",
-              });
+            return res.status(400).json({
+              message: "Invalid period. Must be one of: monthly, quarterly, yearly, custom",
+            });
           }
         }
 
         // Validate periodMonths for custom periods
         if (period === "custom" && (!periodMonths || periodMonths < 1)) {
-          return res
-            .status(400)
-            .json({
-              message: "periodMonths is required and must be at least 1 for custom periods",
-            });
+          return res.status(400).json({
+            message: "periodMonths is required and must be at least 1 for custom periods",
+          });
         }
 
         // Validate amount if provided

@@ -4,7 +4,6 @@ import { credits, users, type User } from "@shared/schema";
 import { eq, and, sum, inArray, desc } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
-
 // Helper function to check if user has treasurer access
 const requireTreasurerAccess = (user: User): boolean => {
   return user.function === "diruzaina" || user.function === "administratzailea";

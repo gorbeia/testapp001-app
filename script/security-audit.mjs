@@ -16,7 +16,9 @@ function runPnpm(args) {
 // Private mirrors often omit the audit API and return 400.
 const auditRegistry = process.env.PNPM_AUDIT_REGISTRY ?? "https://registry.npmjs.org/";
 const auditBase = ["audit", "--registry", auditRegistry, "--audit-level", "moderate"];
-const auditArgs = process.argv.includes("--prod") ? ["audit", "-P", "--registry", auditRegistry, "--audit-level", "moderate"] : auditBase;
+const auditArgs = process.argv.includes("--prod")
+  ? ["audit", "-P", "--registry", auditRegistry, "--audit-level", "moderate"]
+  : auditBase;
 
 const codeAudit = runPnpm(auditArgs);
 // --severity: without it, retire defaults to "none" and always exits 0 even when vulns are listed
