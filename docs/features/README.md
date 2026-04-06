@@ -2,86 +2,90 @@
 
 ## Elkartearen App - User Stories Documentation
 
-This directory contains comprehensive user stories organized by feature area for the Elkartearen App implementation.
+This directory contains user stories organized by feature area for the Elkartearen App.
+
+**Live tracker:** [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md) (keep in sync when shipping or changing behavior).
 
 ## Available Stories
 
 ### Core Features
 
-- **[Authentication](authentication.md)** - User login, role management, and access control
-- **[Reservations](reservations.md)** - Table and equipment reservations (Erreserbak)
-- **[Consumptions](consumptions.md)** - Product consumption tracking (Kontsumoak)
-- **[Credits](credits.md)** - Credit management and SEPA export (Zorrak)
+- **[Authentication](authentication.md)** — Login, tokens (httpOnly cookies + Bearer), access control
+- **[User Management](user-management.md)** — Members and companions (`/erabiltzaileak`)
+- **[User Profile](user-profile.md)** — Self-service profile (`/profila`)
+- **[Reservations](reservations.md)** — Erreserbak (`/erreserbak`, `/nire-erreserbak`, `/admin-erreserbak`)
+- **[Consumptions](consumptions.md)** — Kontsumoak POS and history
+- **[Credits](credits.md)** — Zorrak, monthly debts, SEPA export (`/zorrak`, `/nire-zorrak`, `/sepa`)
 
 ### Communication Features
 
-- **[Communication](communication.md)** - Announcements and internal chat (Oharrak & Txata)
+- **[Communication](communication.md)** — Oharrak (notes API + `/oharrak`), Jakinarazpenak (`/jakinarazpenak`); Txata (chat) not shipped
 
 ### Management Features
 
-// user management stories
-
-- **[User Management](user-management.md)** - Manage members and companions (Erabiltzaileak)
-- **[Inventory](inventory.md)** - Product and inventory management (Produktuak)
-- **[Society Management](society-management.md)** - Society configuration and administration (Elkartea)
+- **[Inventory](inventory.md)** — Produktuak (`/produktuak`) and related stock behavior
+- **[Society Management](society-management.md)** — Elkartea (`/elkartea`), tables (`/mahaiak`), subscriptions (`/subscriptions`)
 
 ### Technical Features
 
-- **[Internationalization](internationalization.md)** - Bilingual support (Euskara/Castellano)
+- **[Internationalization](internationalization.md)** — Euskara / Castellano (`client/src/lib/i18n.ts`)
 
 ## User Roles
 
 ### Primary Users
 
-- **Bazkidea (Socio)** - Primary member with full access
-- **Laguna (Acompañante)** - Secondary user linked to a Bazkidea
+- **Bazkidea (Socio)** — Primary member with full access
+- **Laguna (Acompañante)** — Secondary user linked to a Bazkidea
 
 ### Administrative Roles
 
-- **Administratzailea (Administrator)** - System administration
-- **Diruzaina (Tesorero)** - Financial management and SEPA
-- **Sotolaria (Bodeguero)** - Inventory and stock management
+- **Administratzailea (Administrator)** — System administration
+- **Diruzaina (Tesorero)** — Financial management and SEPA
+- **Sotolaria (Bodeguero)** — Inventory and stock management
 
-## Implementation Priority
+> **Note:** Menus and middleware primarily key off **`function`** (above), not member **`role`** (`bazkidea` / `laguna`). See [authentication.md](./authentication.md).
 
-### Phase 1 - Foundation
+## Implementation Priority (historical roadmap)
 
-1. Authentication system
-2. Basic user management
-3. Core reservation functionality
+The product has progressed beyond this phased list; use **IMPLEMENTATION_STATUS.md** for current truth.
 
-### Phase 2 - Operations
+### Phase 1 – Foundation
 
-1. Consumption tracking
-2. Credit management
-3. Inventory system
+1. Authentication system  
+2. Basic user management  
+3. Core reservation functionality  
 
-### Phase 3 - Communication
+### Phase 2 – Operations
 
-1. Announcements system
-2. Internal chat
-3. Notification management
+1. Consumption tracking  
+2. Credit management  
+3. Inventory / products / categories  
 
-### Phase 4 - Advanced Features
+### Phase 3 – Communication
 
-1. SEPA export functionality
-2. Advanced reporting
-3. System optimization
+1. Notes (oharrak) and notifications  
+2. Chat (future)  
+
+### Phase 4 – Advanced Features
+
+1. SEPA export hardening (creditor from DB, validation)  
+2. Advanced reporting  
+3. Operational polish  
 
 ## Technical Notes
 
-- **Language**: Euskara (primary) + Castellano (secondary)
-- **Architecture**: React + Express.js + PostgreSQL
-- **Authentication**: Email/password with role-based access
-- **Database**: PostgreSQL with Drizzle ORM
-- **Deployment**: Docker-based setup
+- **Languages:** Euskara (primary) + Castellano (secondary); bilingual data for categories and notes in PostgreSQL
+- **Architecture:** Vite + React 18 SPA, Express API, PostgreSQL, Drizzle ORM
+- **Auth:** JWT in httpOnly cookies + Bearer; refresh token cookie; TanStack Query on client for many flows
+- **Debt calculation:** Cron + triggers aggregate consumptions/reservations into `credits` (see `credits.md`)
+- **Deployment:** Docker-based setup (see repo root README)
 
 ## Story Format
 
-Each user story follows the standard format:
+Each user story follows:
 
 - **As a** [user role]
 - **I want to** [action/goal]
 - **So that** [benefit/value]
 
-With detailed acceptance criteria for implementation guidance.
+with acceptance criteria grounded in the current implementation where verified.

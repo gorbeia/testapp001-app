@@ -1,5 +1,7 @@
 # User Profile Management
 
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#10-user-profile-user-profilemd)
+
 ## Epic: User Profile
 
 ### Story: View Personal Profile
@@ -10,16 +12,14 @@
 
 **Acceptance Criteria:**
 
-- Profile page accessible from user icon/name in header
-- Display user information: name, email, role, function, phone, IBAN
-- Show linked member information if applicable (for Laguna users)
-- Clean, organized layout with proper sections
-- Responsive design for mobile and desktop
-- **Implementation**: Implemented
+- **Route:** **`/profila`** — `UserProfile` component (linked from sidebar / header per layout).
+- Display: name, email (from `username`), **role** badge, **function** badge (unless arrunta), phone, IBAN.
+- Show **linked member** block when `linkedMemberName` / related fields are present (Laguna).
+- Responsive layout; loading/error states per implementation.
 
 ---
 
-## Future Stories (Not Implemented)
+## Edit Personal Profile
 
 ### Story: Edit Personal Profile
 
@@ -29,10 +29,11 @@
 
 **Acceptance Criteria:**
 
-- Editable fields for name, phone, IBAN
-- Save changes with validation
-- Success/error feedback
-- **Implementation**: Implemented
+- Editable fields sent with **`PUT /api/users/:id/profile`** (self-only: path id must match session user): **`name`**, **`phone`**, **`iban`**.
+- Successful save updates **`AuthContext`** / local user cache and shows feedback (toast).
+- **Note:** server re-issues JWT cookie on profile update so claims match DB.
+
+---
 
 ### Story: Change Password
 
@@ -42,7 +43,12 @@
 
 **Acceptance Criteria:**
 
-- Password change form with current password confirmation
-- Password strength validation
-- Secure password update process
-- **Implementation**: Implemented
+- Form with **current password**, **new password**, **confirm**; client enforces match + **minimum length (6)** per implementation.
+- Submits to **`POST /api/change-password`**.
+- **Engineering:** verify hashing and JWT/password alignment before production hardening (see [authentication.md](./authentication.md)).
+
+---
+
+## Related docs
+
+- [authentication.md](./authentication.md) — login, tokens, access control overview.

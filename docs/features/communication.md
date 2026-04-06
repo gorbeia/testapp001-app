@@ -1,151 +1,122 @@
-# User Stories: Communication (Oharrak & Txata)
+# User Stories: Communication — Oharrak (notes), Jakinarazpenak & Txata
 
-> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#5-communication--oharrak--txata-communicationmd)
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#6-communication--oharrak--txata-communicationmd)
 
-## Epic: Announcements (Oharrak)
+This document reflects the **shipped** design: **notes** (multilingual DB content) and **notifications** are backed by PostgreSQL + Express. **Txata (chat)** is **not** implemented in the codebase.
 
-### Story 1: Create Announcement
+---
 
-**As an** Administratzailea, Diruzaina, or Sotolaria  
-**I want to** create announcements for all users  
-**So that** I can communicate important information to the society
+## Epic: Society notes (Oharrak)
+
+> **Implementation note:** Domain model uses **`notes`** + **`note_messages`** tables (per-language title/content). REST surface: **`/api/notes`** (society-scoped via authenticated user). Admin UI: **`NotesManagementPage`** at **`/oharrak`** (`ProtectedRoute` / administratzailea). Notes can be converted into **`notifications`** for members (see notifications routes).
+
+### Story 1: Create Note
+
+**As an** Administratzailea (or role allowed by API/UI)  
+**I want to** publish society notices  
+**So that** members see important information
 
 **Acceptance Criteria:**
 
-- Rich text editor for announcement content
-- Option to set priority/importance level
-- Ability to schedule publication dates
-- Target audience selection (all users, specific roles)
-- Preview announcement before publishing
+- **Shipped:** create flow with **eu** and **es** (and extensible language keys) title/body via note messages
+- ❌ Rich-text HTML editor, scheduling, priority flags, audience targeting — **not implemented** (content is structured per implementation / plain text in messages)
 
-### Story 2: View Announcements
+---
+
+### Story 2: View Notes
 
 **As a** Bazkidea or Laguna  
-**I want to** view society announcements  
-**So that** I stay informed about important news and updates
+**I want to** read notices  
+**So that** I stay informed
 
 **Acceptance Criteria:**
 
-- Chronological list of announcements
-- Highlight new/unread announcements
-- Search and filter announcements
-- Mark announcements as read
-- Option to receive announcement notifications
+- **Shipped:** recent notes on the **dashboard** (`RecentNotes` → `GET /api/notes`)
+- **Shipped:** full list/management for admins at `/oharrak`
+- ❌ Personal read/unread state, search filters for members — **not implemented** as originally specified
 
-### Story 3: Announcement Management
+---
+
+### Story 3: Note Management
 
 **As an** Administratzailea  
-**I want to** manage announcements  
-**So that** I can maintain accurate and relevant information
+**I want to** maintain notices  
+**So that** information stays accurate
 
 **Acceptance Criteria:**
 
-- Edit existing announcements
-- Delete outdated announcements
-- Archive old announcements
-- Set expiration dates for time-sensitive announcements
-- View announcement analytics (views, reads)
+- **Shipped:** edit + delete via `/api/notes` and admin UI
+- ❌ Archive workflow, expiry dates, view analytics — **not implemented**
 
-## Epic: Internal Chat (Txata)
+---
 
-### Story 4: Send Messages
+## Epic: In-app notifications (Jakinarazpenak)
+
+### Story 4: Notifications inbox
+
+**As a** member  
+**I want to** see notifications in the app  
+**So that** I do not miss society messages
+
+**Acceptance Criteria:**
+
+- **Shipped:** **`/jakinarazpenak`** page backed by **`notifications`** + **`notification_messages`** tables and `/api/notifications` routes (see server implementation)
+- Notes flow can fan out converted notifications (implementation-specific)
+
+---
+
+## Epic: Internal Chat (Txata) — **not shipped**
+
+### Story 5: Send Messages
 
 **As a** Bazkidea or Laguna  
 **I want to** send messages to other users  
 **So that** I can communicate directly with society members
 
-**Acceptance Criteria:**
+**Status:** ❌ **Not implemented** — no chat tables, routes, or production UI in-repo (any legacy mock components are not routed in `App.tsx`).
 
-- User selection interface for message recipients
-- Individual and group messaging options
-- Real-time message delivery
-- Message history and search
-- File/image attachment support
+---
 
-### Story 5: Receive Messages
+### Story 6: Receive Messages
 
 **As a** Bazkidea or Laguna  
 **I want to** receive messages from other users  
 **So that** I can stay connected with the community
 
-**Acceptance Criteria:**
+**Status:** ❌ **Not implemented**
 
-- Real-time message notifications
-- Organized message threads
-- Read/unread status indicators
-- Reply and forward functionality
-- Message archiving options
+---
 
-### Story 6: Chat Management
+### Story 7: Chat Management
 
 **As an** Administratzailea  
-**I want to** monitor and manage the chat system  
-**So that** I can ensure appropriate communication
+**I want to** monitor and manage chat  
+**So that** communication stays appropriate
 
-**Acceptance Criteria:**
+**Status:** ❌ **Not implemented**
 
-- View all chat conversations (if necessary)
-- Moderate inappropriate content
-- Set chat usage policies
-- Block or restrict users if needed
-- Export chat logs for record-keeping
+---
 
-## Epic: Communication Preferences
+## Epic: Communication Preferences (original backlog)
 
-### Story 7: Notification Settings
+### Stories 8–9: Notification settings & templates
 
-**As a** user  
-**I want to** configure my communication preferences  
-**So that** I receive notifications in my preferred way
+**Status:** ❌ **Not implemented** (no quiet hours, channel preferences, or template library as specified in the legacy epic).
 
-**Acceptance Criteria:**
+---
 
-- Enable/disable announcement notifications
-- Configure chat notification preferences
-- Set quiet hours for notifications
-- Choose notification channels (in-app, email)
-- Emergency notification overrides
+## Epic: Communication Analytics (original backlog)
 
-### Story 8: Message Templates
+### Stories 10–11: Analytics & legal archive
 
-**As an** Administratzailea or Diruzaina  
-**I want to** create message templates  
-**So that** I can send consistent communications efficiently
+**Status:** ❌ **Not implemented**
 
-**Acceptance Criteria:**
+---
 
-- Template creation and editing
-- Variable insertion (names, dates, amounts)
-- Template categories (announcements, reminders, alerts)
-- Preview template with sample data
-- Usage analytics for templates
+## Quick reference
 
-## Epic: Communication Analytics
-
-### Story 9: Communication Analytics
-
-**As an** Administratzailea  
-**I want to** analyze communication effectiveness  
-**So that** I can improve information dissemination
-
-**Acceptance Criteria:**
-
-- Announcement read rates
-- Message response times
-- User engagement metrics
-- Most active communication periods
-- Popular announcement topics
-
-### Story 10: Communication History
-
-**As a** Diruzaina  
-**I want to** maintain communication records  
-**So that** I have documentation of important notices
-
-**Acceptance Criteria:**
-
-- Complete archive of announcements
-- Export communication history
-- Search by date, topic, or author
-- Legal compliance documentation
-- Backup and retention policies
+| Feature | Route / API | Status |
+|---------|-------------|--------|
+| Notes admin | `/oharrak`, `/api/notes` | Shipped |
+| Notifications | `/jakinarazpenak`, `/api/notifications` | Shipped |
+| Chat (Txata) | — | Not shipped |

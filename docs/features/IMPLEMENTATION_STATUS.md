@@ -4,176 +4,201 @@ Status legend:
 
 - ✅ Implemented (real feature: UI + some logic/persistence)
 - 🟡 UI Only / Mock (front-end prototype, mock data, no real backend)
+- 🟡 Partial (shipped with known gaps vs story text)
 - ❌ Not Implemented
 
-> Note: Authentication, user management, reservations, consumptions, and products are now backed by real Express + Drizzle + PostgreSQL APIs (with seed scripts). Other areas (credits/SEPA, announcements, chat, society config) still rely on mock/front-end only behavior unless noted.
+> **Scope note:** Authentication, users, reservations, consumptions, products, categories, credits/debts, notes (oharrak), notifications, society fields (including SEPA-related columns), tables, subscription types, and backoffice society management are backed by Express + Drizzle + PostgreSQL. **Taixa (chat)** has no backend/UI in the shipped app; SEPA XML generation still uses hardcoded creditor defaults in the client generator (see `credits.md`).
 
 ---
 
 ## 1. Authentication (`authentication.md`)
 
 1. **User Login** – Login form & auth context
-   - **Status**: ✅ Implemented (real API + DB-backed credentials, E2E tested; profile data still mocked on client)
-2. **Role-Based Access Control** – role-aware menus
-   - **Status**: ✅ Implemented
+   - **Status**: ✅ Implemented (real `POST /api/login` + bcrypt/legacy passwords; society alphabetic id; access + refresh httpOnly cookies; Bearer token in localStorage; E2E tested)
+2. **Role-Based Access Control** – menus & route protection
+   - **Status**: ✅ Implemented (menus and most guards use **function**: administratzailea, diruzaina, sotolaria, arrunta; member type is **role** bazkidea/laguna)
 3. **View Personal Profile** – self profile view
-   - **Status**: ✅ Implemented
+   - **Status**: ✅ Implemented (`/profila`, JWT-backed user payload + profile API)
 4. **Update Password** – change password flow
-   - **Status**: ✅ Implemented
+   - **Status**: ✅ Implemented (`POST /api/change-password` + UI; server path may need hardening for production)
 
 ---
 
 ## 2. User Management (`user-management.md`)
 
 1. **List users** – table with search/filter
-   - **Status**: ✅ Implemented (UsersPage table + filters backed by `GET /api/users`, society-scoped to the treasurer’s `societyId`, + seeded demo users)
+   - **Status**: ✅ Implemented (UsersPage + `GET /api/users`, society-scoped list; **requires** diruzaina or administratzailea; UI page is administratzailea-only)
 2. **Create a new member** – add bazkide with contact/bank details
-   - **Status**: ✅ Implemented (UsersPage + real /api/users POST + DB; create dialog wired and E2E tested)
+   - **Status**: 🟡 Partial (real `POST /api/users`; create dialog currently persists email/username + default password; several displayed fields not yet wired to POST — see PRD)
 3. **Create a companion linked to a member** – add laguna linked to bazkide
-   - **Status**: ✅ Implemented (create dialog supports laguna role with linked member selection)
+   - **Status**: 🟡 Partial (schema + admin `PUT` support linking; create-dialog link control not wired to API)
 4. **Edit user details** – update contact/role information
-   - **Status**: ✅ Implemented
+   - **Status**: ✅ Implemented (`PUT /api/users/:id`; subscription type; linked member read-only in UI)
 5. **Delete a user** – remove users
-   - **Status**: ✅ Implemented
+   - **Status**: ✅ Implemented (dependency checks)
 6. **Role-based access to user management** – restrict admin page access
+   - **Status**: ✅ Implemented (frontend + backend)
+7. **Activate / deactivate user** – `PATCH /api/users/:id/toggle-active`
    - **Status**: ✅ Implemented
+8. **Subscription type assignment** – member fee type on user
+   - **Status**: ✅ Implemented (edit dialog + `subscriptionTypeId`; types managed under `/subscriptions`)
 
 ---
 
 ## 3. Reservations (Erreserbak) (`reservations.md`)
 
-1. **Create Reservation** – date/time, event type, resources, cost
-   - **Status**: ✅ Implemented (form posts to `/api/reservations`, stored in DB with auth)
+1. **Create Reservation** – date/time, event type, table, guests, kitchen flag, cost
+   - **Status**: ✅ Implemented (`POST /api/reservations`; types: bazkaria, afaria, askaria, hamaiketakako)
 2. **View My Reservations** – list & filters
-   - **Status**: ✅ Implemented (fetches `/api/reservations`, server filters by user vs admin)
-3. **Manage All Reservations (Admin)** – global management
-   - **Status**: 🟡 Partial (admins can list/create/update/delete via API; UI is list/create only, no approval tools)
-4. **Resource Configuration** – tables, equipment, pricing
-   - **Status**: ❌ Not Implemented
-5. **Cost Calculation** – breakdown per resource
-   - **Status**: 🟡 Partial (simple per-guest/kitchen formula in UI; stored with reservation, no backend validation)
-6. **Cost Integration with Credits** – push to Zorrak
-   - **Status**: ❌ Not Implemented
+   - **Status**: ✅ Implemented (`/nire-erreserbak`, `GET /api/reservations/user`)
+3. **Society reservation list** – upcoming/filter for all members
+   - **Status**: ✅ Implemented (`/erreserbak`, `GET /api/reservations` with upcoming filter)
+4. **Manage All Reservations (Admin UI)** – global management
+   - **Status**: 🟡 Partial (`/admin-erreserbak`: list/cancel/detail; no in-place edit; administratzailea-only UI; API treats diruzaina as admin for some list queries)
+5. **Resource configuration (tables)** – capacity & availability metadata
+   - **Status**: ✅ Implemented (`/mahaiak`, `tables` CRUD; not tenant-scoped in schema — see tech debt)
+6. **Per-society reservation pricing** – guest & kitchen rates
+   - **Status**: ✅ Implemented (fields on `societies`, editable via `/elkartea` where allowed)
+7. **Cost calculation** – guest × rates + optional kitchen
+   - **Status**: 🟡 Partial (client-computed `totalAmount`; stored as sent; no server-side recomputation)
+8. **Cost integration with credits (Zorrak)** – monthly debt rows
+   - **Status**: 🟡 Partial (`DebtCalculationService` / cron aggregates reservations + consumptions into `credits`; not “charge at booking” UX)
 
 ---
 
 ## 4. Consumptions (Kontsumoak) (`consumptions.md`)
 
-1. **Register Bar Consumption** – product grid + cart
-   - **Status**: ✅ Implemented (real products list, creates consumptions + items + closes via API, updates stock)
-2. **View Consumption History** – historical list
-   - **Status**: 🟡 Partial (admin list/detail via `/kontsumoak-zerrenda`; no member self-history UI)
-3. **Manage All Consumptions (Sotolaria)** – global view
-   - **Status**: ✅ Implemented (admin list/detail + API auth for role-based access)
-4. **Close Consumption Session** – summarize & close
-   - **Status**: ✅ Implemented (consumption close endpoint persists status/closedAt)
-5. **Consumption Categories** – category filters & reports
-   - **Status**: 🟡 Partial (category filters on products; no analytics/reporting)
-6. **Inventory Update from Consumptions** – stock decrement
-   - **Status**: ✅ Implemented (consumption items decrement stock and create stock movement records)
-7. **Consumption Analytics** – trends, peaks, revenue
+1. **Register bar consumption (session flow)** – create session, add lines, close
+   - **Status**: ✅ Implemented (`POST /api/consumptions`, `POST .../items`, `POST .../close`; stock decrement on items)
+2. **View consumption history (member)** – personal list
+   - **Status**: ✅ Implemented (`/nire-konsumoak`, `GET /api/consumptions/user`)
+3. **Manage all consumptions (staff)** – society list/detail
+   - **Status**: ✅ Implemented (`/kontsumoak-zerrenda`, `GET /api/consumptions` with role-based scope)
+4. **Close consumption session**
+   - **Status**: ✅ Implemented
+5. **Product categories (admin)** – bilingual labels, reorder, soft delete
+   - **Status**: ✅ Implemented (`/kategoriak`, `GET/POST/PUT/DELETE /api/categories`; filters on POS)
+6. **Consumption categories as analytics**
+   - **Status**: ❌ Not Implemented (no reporting dashboards)
+7. **Inventory update from consumptions** – stock + movements
+   - **Status**: ✅ Implemented (`stock_movements` with type consumption; stock can go negative)
+8. **Consumption analytics**
    - **Status**: ❌ Not Implemented
 
 ---
 
 ## 5. Credits / Zorrak & SEPA (`credits.md`)
 
-1. **View Pending Credits (Bazkidea)** – personal debt view
-   - **Status**: 🟡 UI Only / Mock
-2. **Monthly Credit Summary (Diruzaina)** – per-month overview
-   - **Status**: 🟡 UI Only / Mock
-3. **Credit Reset After Payment** – reset to zero
+1. **View pending credits (member)** – personal debt view
+   - **Status**: ✅ Implemented (`/nire-zorrak`, `GET /api/credits/member/current`)
+2. **Monthly credit summary (treasurer/admin)** – per-month overview
+   - **Status**: ✅ Implemented (`/zorrak`, `GET /api/credits` — tighten `societyId` filters in API for multi-tenant hardening)
+3. **Credit reset / mark paid after payment**
+   - **Status**: 🟡 Partial (`PUT /api/credits/batch-status`; no rich audit UI)
+4. **Generate SEPA export** – debtor list + pain.008-style XML in browser
+   - **Status**: ✅ Implemented (`/sepa`, `GET /api/credits/sepa-export?month=YYYY-MM` + client XML builder)
+5. **SEPA data validation** – IBAN/creditor checks
    - **Status**: ❌ Not Implemented
-4. **Generate SEPA List** – list for SEPA export
-   - **Status**: ❌ Not Implemented
-5. **SEPA Data Validation** – IBAN/creditor validation
-   - **Status**: ❌ Not Implemented
-6. **Society Information for SEPA** – creditor config
-   - **Status**: ❌ Not Implemented (only env placeholders)
-7. **Payment Status Tracking** – sent/paid/rejected
-   - **Status**: ❌ Not Implemented
-8. **Credit Notifications** – notify members
-   - **Status**: ❌ Not Implemented
-9. **Financial Dashboard** – KPIs & charts
-   - **Status**: 🟡 UI Only / Mock (simple cards over mocks)
-10. **Export Financial Reports** – statements, YTD, etc.
+6. **Society information for SEPA** – creditor config in generated file
+   - **Status**: 🟡 Partial (`societies.iban` / `creditorId` + `/elkartea`; generator defaults still hardcoded)
+7. **Payment status tracking** – sent/paid/return/reject workflows
+   - **Status**: ❌ Not Implemented (beyond basic `status` / `paidAmount` on `credits`)
+8. **Credit notifications**
+   - **Status**: ❌ Not Implemented (dedicated credit alerts)
+9. **Financial dashboard widgets** – debt highlights on home
+   - **Status**: 🟡 Partial (real sums from credits APIs on dashboard cards)
+10. **Export financial reports** – statements, YTD bundles
     - **Status**: ❌ Not Implemented
 
 ---
 
 ## 6. Communication – Oharrak & Txata (`communication.md`)
 
-### Announcements (Oharrak)
+> **Shipped scope:** Oharrak are **DB-backed notes** (`notes` / `note_messages`, `/api/notes`, `/oharrak`). **Jakinarazpenak** (`/jakinarazpenak`, `/api/notifications`) are separate. **Txata** (chat) is not implemented.
 
-1. **Create Announcement** – admins post notices
-   - **Status**: 🟡 UI Only / Mock
-2. **View Announcements** – list & read
-   - **Status**: 🟡 UI Only / Mock
-3. **Announcement Management** – edit/delete/archive
-   - **Status**: ❌ Not Implemented
+### Notes (Oharrak)
+
+1. **Create notes** – multilingual title/body (eu/es)
+   - **Status**: ✅ Implemented (`notes` + `note_messages`, `POST /api/notes`, admin UI `/oharrak`)
+2. **View notes** – read society notices
+   - **Status**: ✅ Implemented (dashboard `RecentNotes` + full admin management)
+3. **Note management** – edit/delete
+   - **Status**: 🟡 Partial (CRUD; no archive/expiry/analytics as in original epic)
+
+### Notifications (Jakinarazpenak)
+
+4. **In-app notifications** – list/read DB notifications
+   - **Status**: ✅ Implemented (`/jakinarazpenak`, `notifications` + `notification_messages`; can be fed from notes)
 
 ### Chat (Txata)
 
-4. **Send Messages** – 1:1 / group messages
-   - **Status**: 🟡 UI Only / Mock (local state only)
-5. **Receive Messages** – conversations
-   - **Status**: 🟡 UI Only / Mock (mock history)
-6. **Chat Management / Moderation** – admin tools
-   - **Status**: ❌ Not Implemented
+5. **Send / receive / moderate chat**
+   - **Status**: ❌ Not Implemented (no chat tables or routes in repo)
 
-### Preferences & Analytics
+### Preferences & analytics (original epic 7–10)
 
-7–10. Notification settings, templates, analytics, history
-
-- **Status**: ❌ Not Implemented
+    - **Status**: ❌ Not Implemented
 
 ---
 
 ## 7. Inventory Management (Produktuak) (`inventory.md`)
 
-Most stories here require real products/stock tables and movement logs, which are not present yet.
-
-1. **Add / Update / View Products**
-   - **Status**: ✅ Implemented (ProductsPage backed by `/api/products` CRUD + PostgreSQL)
-2. **Stock Management & Movements**
-   - **Status**: 🟡 Partial (stock decremented and movements recorded on consumptions; no UI for movements, no purchase/adjust flows)
-3. **Purchases & Suppliers**
+1. **Add / update / view products**
+   - **Status**: ✅ Implemented (`/produktuak`, `/api/products` CRUD; cellarman-gated UI)
+2. **Product categories**
+   - **Status**: ✅ Implemented (see Consumptions §5; `/kategoriak`)
+3. **Stock management & movements**
+   - **Status**: 🟡 Partial (consumption-driven decrement + `stock_movements` rows; direct `stock` edit via product PUT without movement; **no** movements list API/UI)
+4. **Low stock awareness**
+   - **Status**: 🟡 Partial (`minStock` + banner on ProductsPage; no push notifications)
+5. **Purchases & suppliers**
+   - **Status**: ❌ Not Implemented (supplier string on product only)
+6. **Inventory analytics & optimization**
    - **Status**: ❌ Not Implemented
-4. **Inventory Analytics & Optimization**
-   - **Status**: ❌ Not Implemented
-
-(Exact sub-story breakdown should be refined once the ProductsPage and related backend are implemented.)
 
 ---
 
 ## 8. Society Management (Elkartea) (`society-management.md`)
 
-All these stories depend on dedicated tables and admin UIs; currently only environment placeholders exist.
-
-1. **Society Information & SEPA Config**
-   - **Status**: ❌ Not Implemented (env template only)
-2. **Rules, Policies, Role Assignment/Transfer**
-   - **Status**: ❌ Not Implemented
-3. **Operating Hours, Resources, Fees**
-   - **Status**: ❌ Not Implemented
-4. **Statistics, Compliance, Backup/Recovery**
+1. **Society information & SEPA-related fields**
+   - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id`; UI is treasurer route — confirm middleware alignment with diruzaina-only treasurers)
+2. **Tables (resource config for reservations)**
+   - **Status**: ✅ Implemented (`/mahaiak` — see Reservations)
+3. **Subscription types**
+   - **Status**: ✅ Implemented (`/subscriptions`, `subscription_types` table)
+4. **Rules, policies, role transfers, operating hours, compliance, backup UX**
    - **Status**: ❌ Not Implemented
 
 ---
 
 ## 9. Internationalization (Euskara/Castellano) (`internationalization.md`)
 
-1. **Primary Language (Euskara)** – full UI in EU
-   - **Status**: ✅ Implemented (frontend)
-2. **Secondary Language (Castellano)** – switch + translations
-   - **Status**: 🟡 Partially (mechanism implemented; content completeness may vary)
-     3–12. Language preferences, translation workflows, analytics, QA
-   - **Status**: ❌ Not Implemented (beyond base i18n framework)
+1. **Primary language (Euskara)**
+   - **Status**: ✅ Implemented (`client/src/lib/i18n.ts`, default eu)
+2. **Secondary language (Castellano)**
+   - **Status**: ✅ Implemented (toggle, `localStorage`; some hardcoded strings remain in components)
+3. **Language preference beyond SPA keys**
+   - **Status**: 🟡 Partial (no profile-synced locale; server i18n middleware influences API messages; DB-backed bilingual content for categories/notes)
+4. **Workflows, analytics, QA tooling (stories 3–8, 11–12)**
+   - **Status**: ❌ Not Implemented
+
+---
+
+## 10. User profile (`user-profile.md`)
+
+Documented alongside auth; shipped as `/profila` with profile edit + password change — see Authentication §3–4 and `user-profile.md`.
+
+---
+
+## 11. Platform backoffice (not in legacy story index)
+
+- **Superadmin login, society list, superadmin users** (`/elkarteapp/kudeaketa/*`): Implemented (separate cookie; `superadmins` table)
 
 ---
 
 ## Notes for Future Work
 
-- Back-end API & database models still needed for credits/SEPA, announcements, chat, and society configuration; existing domains (auth, users, reservations, consumptions, products) should continue to be hardened and expanded.
-- Once additional endpoints and tables exist, update each story here from 🟡/❌ toward ✅.
-- Keeping this file in sync with `docs/features/*.md` will provide a clear roadmap and progress tracker.
+- Harden multi-tenant queries (e.g. credits list/export, product mutations) with explicit `societyId` WHERE clauses where missing.
+- Align treasurer vs administratzailea access for society `PUT`, Zorrak UI, and `/elkartea`.
+- Replace or wire SEPA XML creditor metadata to `societies` fields.
+- Keeping this file in sync with `docs/features/*.md` remains the shipped-truth tracker for product and engineering.

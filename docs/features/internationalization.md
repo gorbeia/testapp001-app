@@ -1,6 +1,14 @@
 # User Stories: Internationalization (Euskara/Castellano)
 
-> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#8-internationalization-euskaracastellano-internationalizationmd)
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#9-internationalization-euskaracastellano-internationalizationmd)
+
+## Shipped implementation (summary)
+
+- **SPA:** large **`translations`** map in **`client/src/lib/i18n.ts`** (keys with **`eu`** and **`es`**); default **`eu`**.
+- **`LanguageProvider`:** **`LanguageToggle`** in the header; preference persisted in **`localStorage`** (`language` key); sets **`document.documentElement.lang`**.
+- **Server:** i18n middleware influences API / Accept-Language handling (see `server/lib/i18n/`).
+- **DB-backed bilingual content:** **`category_messages`**, **`note_messages`** (and related APIs) store per-language strings instead of hardcoded UI keys.
+- **Gaps:** some components still contain hardcoded user-visible strings; there is no EU/ES in URL paths for the SPA; profile-stored locale is not implemented.
 
 ## Epic: Language Support
 
@@ -12,11 +20,8 @@
 
 **Acceptance Criteria:**
 
-- All interface elements translated to Euskara
-- Euskara as default language on first visit
-- Complete terminology consistency
-- Cultural context appropriate translations
-- Proper grammar and syntax
+- **Shipped:** Euskara default and primary key set in `i18n.ts`
+- Ongoing: eliminate residual hardcoded strings (audit with `.cursor/skills/audit-i18n/SKILL.md`)
 
 ### Story 2: Secondary Language (Castellano)
 
@@ -26,11 +31,8 @@
 
 **Acceptance Criteria:**
 
-- Language switcher in prominent location
-- Complete Castellano translation
-- Instant language switching without data loss
-- Persistent language preference
-- Consistent translation quality
+- **Shipped:** switcher toggles `es`; persistence via **`localStorage`**
+- Ongoing: parity on every key; fix stray literals in components
 
 ### Story 3: Language Preference Management
 
@@ -40,11 +42,8 @@
 
 **Acceptance Criteria:**
 
-- Profile language setting
-- Browser language detection
-- Session language persistence
-- Option to reset to default
-- Language preference export
+- **Partial:** SPA persistence (localStorage) **implemented**
+- ❌ Profile-synced locale, automatic browser-locale detection, export — **not implemented**
 
 ## Epic: Content Translation
 
@@ -130,11 +129,8 @@
 
 **Acceptance Criteria:**
 
-- Translation key management
-- Dynamic language switching
-- Performance optimization
-- Translation caching
-- Fallback mechanisms
+- **Shipped (partial):** manual key object (`eu`/`es`), hook/API consumed by components, dynamic switching without reload, localStorage persistence
+- ❌ Build-time extraction, translation cache layer, TMS integration — **not implemented**
 
 ### Story 10: Content Delivery
 
@@ -144,11 +140,8 @@
 
 **Acceptance Criteria:**
 
-- URL-based language routing
-- API language negotiation
-- Database language storage
-- Email language preferences
-- Export language selection
+- **Partial:** Accept-Language / middleware on API; **DB** stores localized rows for categories and notes
+- ❌ URL-prefix i18n routing for the SPA, email template locale selection, export language picker — **not implemented**
 
 ## Epic: Quality Assurance
 

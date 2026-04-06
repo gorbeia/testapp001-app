@@ -1,10 +1,10 @@
 # User Stories: Consumptions (Kontsumoak)
 
-> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#3-consumptions-kontsumoak-consumptionsmd)
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#4-consumptions-kontsumoak-consumptionsmd)
 
 ## Epic: Consumption Registration
 
-### Story 1: Register Bar Consumption
+### Story 1: Register Bar Consumption (session flow)
 
 **As a** Bazkidea or Laguna  
 **I want to** register products consumed at the bar  
@@ -12,12 +12,18 @@
 
 **Acceptance Criteria:**
 
-- Product selection interface with search
-- Quantity entry for each product
-- Real-time cost calculation
-- Confirmation of consumption registration
+- **Shipped flow** (`/kontsumoak`, `ConsumptionsPage`):
+  1. **`POST /api/consumptions`** — open a consumption session (tab) for the current user / society
+  2. **`POST /api/consumptions/:id/items`** — add cart lines (product id, quantity); server snapshots **unit price** from product, updates **`consumptions.totalAmount`**, **decrements `products.stock`**, appends **`stock_movements`** (`type: consumption`, negative quantity). **Debt calculation** runs after relevant writes.
+  3. **`POST /api/consumptions/:id/close`** — sets **`closedAt`** / **`closedBy`**; stock already updated on item POST
+- Product grid with **category filter** and search (categories from `/api/categories`)
+- Cart with quantity adjusters and running totals
+- Confirmation / feedback in UI (toasts, dialogs per implementation)
+- ❌ Blocking sales when stock is zero — **not enforced** (stock may go negative)
 
-### Story 2: View Consumption History
+---
+
+### Story 2: View Consumption History (member)
 
 **As a** Bazkidea or Laguna  
 **I want to** see my consumption history  
@@ -25,58 +31,72 @@
 
 **Acceptance Criteria:**
 
-- Chronological list of personal consumptions
-- Filter by date range
-- Show associated costs and running totals
-- Export consumption reports
+- **Shipped**: `MyConsumptionsPage` at **`/nire-konsumoak`**, `GET /api/consumptions/user` with search/month style filters
+- List + detail (items via `/api/consumptions/:id/items` per client wiring)
+- ❌ Export consumption reports — **not implemented**
 
-## Epic: Consumption Management (Sotolaria)
+---
 
-### Story 3: Manage All Consumptions
+### Story 3: Close Consumption Session
 
-**As a** Sotolaria  
-**I want to** view and manage all consumptions  
-**So that** I can monitor sales and inventory usage
-
-**Acceptance Criteria:**
-
-- Complete consumption list across all users
-- Filter by date, user, or product
-- Ability to correct consumption entries
-- Real-time sales analytics
-- Export consumption reports for accounting
-
-### Story 4: Consumption Categories
-
-**As a** Sotolaria  
-**I want to** categorize products for better tracking  
-**So that** I can analyze sales patterns by category
+**As a** system / operator  
+**I want to** close a consumption tab when finished  
+**So that** no further lines are added and the session has a clear end time
 
 **Acceptance Criteria:**
 
-- Product category management
-- Assign categories to products
-- Category-based consumption reports
-- Sales analysis by category
-- Inventory tracking by category
+- **Shipped**: `POST /api/consumptions/:id/close` persists close metadata; POS flow calls it after posting items
+
+---
+
+## Epic: Consumption Management (staff)
+
+### Story 4: Manage All Consumptions
+
+**As a** Sotolaria, Diruzaina, or Administratzailea (per API rules)  
+**I want to** view society consumptions  
+**So that** I can monitor sales and support members
+
+**Acceptance Criteria:**
+
+- **Shipped**: `ConsumptionsListPage` at **`/kontsumoak-zerrenda`**, `GET /api/consumptions` with **`userId`** / **`month`** filters
+- Detail fetch: `GET /api/consumptions/:id` (+ items)
+- ❌ Correcting line items after the fact, analytics dashboards, CSV export — **not implemented**
+
+---
+
+### Story 5: Product Categories (admin)
+
+**As a** Sotolaria / treasurer / admin (per `/api/categories` rules)  
+**I want to** manage product categories with Basque and Spanish labels  
+**So that** the POS and catalog stay organized
+
+**Acceptance Criteria:**
+
+- **Shipped**: **`/kategoriak`** — CRUD + reorder + soft delete; bilingual names/descriptions via **`category_messages`**; `/api/categories` respects `Accept-Language`
+- Products must reference a category (`ProductsPage` / `/api/products`)
+- ❌ Category-based **reports** and revenue analytics — **not implemented** (see Story 7 below)
+
+---
 
 ## Epic: Inventory Integration
 
-### Story 5: Inventory Update
+### Story 6: Inventory Update from Consumptions
 
 **As a** system  
-**I want to** automatically update inventory when consumptions are registered  
-**So that** stock levels remain accurate
+**I want to** update inventory when consumption lines are posted  
+**So that** stock levels stay aligned with sales
 
 **Acceptance Criteria:**
 
-- Automatic stock reduction on consumption
-- Low stock alerts for popular items
-- Integration with product management
-- Historical consumption data for reordering
-- Prevent sales of out-of-stock items
+- **Shipped**: decrement on **`POST .../items`**; **`stock_movements`** audit row per decrement
+- **Shipped**: `minStock` on products + low-stock cue on **`/produktuak`** (banner / highlights)
+- ❌ Automatic reorder suggestions, push alerts — **not implemented**
+- Manual stock edits via **`PUT /api/products`** change `stock` **without** creating a movement (see `inventory.md`)
 
-### Story 6: Consumption Analytics
+---
+
+### Story 7: Consumption Analytics
 
 **As a** Diruzaina or Administratzailea  
 **I want to** analyze consumption patterns  
@@ -84,8 +104,4 @@
 
 **Acceptance Criteria:**
 
-- Consumption trends over time
-- Popular products analysis
-- Peak consumption periods
-- User consumption patterns
-- Revenue analysis by product category
+- ❌ Trends, peaks, category revenue reports — **not implemented** (may use raw SQL/API counts in future)

@@ -1,8 +1,12 @@
 # User Management
 
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#2-user-management-user-managementmd)
+
 ## Overview
 
 User management covers creating, viewing, updating and deleting members (bazkideak) and companions (lagunak) from the administration UI, including role/function assignment and linking companions to members.
+
+**Route:** `/erabiltzaileak` — **`UsersPage`** (SPA access: **`administratzailea`** via `ProtectedRoute`; **`GET /api/users`** allows diruzaina or administratzailea).
 
 ---
 
@@ -16,10 +20,10 @@ User management covers creating, viewing, updating and deleting members (bazkide
 
 **Acceptance criteria**
 
-- The list shows name, email, role, function, phone, linked member (if any).
+- The list shows name, email, role, function, phone, IBAN (truncated), linked member (if any), **subscription type**, **active/inactive** state.
 - Both bazkideak and lagunak are visible in the same table.
-- I can filter by role (bazkidea / laguna / all).
-- I can search by name or email.
+- I can filter by role (bazkidea / laguna / all) and **status** (active / inactive / all).
+- I can search by name or email (client-side on fetched rows).
 
 ---
 
@@ -31,11 +35,10 @@ User management covers creating, viewing, updating and deleting members (bazkide
 
 **Acceptance criteria**
 
-- From the Users page I can open a "New user" dialog.
-- I can enter name, email, phone, role, function and IBAN.
-- On save, the user is stored in the database and appears in the table.
-- A success notification is shown after creation.
-- Validation prevents saving without at least email and role.
+- From the Users page I can open a "New user" dialog with fields for name, email, phone, role, function, IBAN, subscription type, etc.
+- **Shipped gap:** the create handler currently persists **`username`/email** and **`password`** (often a demo password); other visible inputs may **not** be wired into `POST /api/users` — follow-up needed to align UI with API body (`insertUserSchema` / route validation).
+- A success notification is shown after creation when the API succeeds.
+- Validation should require email (and role per product rules) — behavior matches current client checks.
 
 ---
 
@@ -47,10 +50,9 @@ User management covers creating, viewing, updating and deleting members (bazkide
 
 **Acceptance criteria**
 
-- In the "New user" dialog I can choose role = laguna.
-- When role is laguna, I can select a linked bazkide from a dropdown.
-- The linked member’s name is visible in the users table.
-- The relationship is stored in the database.
+- In the "New user" dialog I can choose role = laguna and see a linked-member control.
+- **Partial gap:** linked member is **not** reliably persisted from create — use **`PUT /api/users/:id`** after creation or fix the dialog binding. Schema supports **`linkedMemberId`** / **`linkedMemberName`**.
+- When populated, the linked member’s name appears in the table.
 
 ---
 
@@ -63,8 +65,9 @@ User management covers creating, viewing, updating and deleting members (bazkide
 **Acceptance criteria**
 
 - From each row I can open an "Edit" action.
-- I can change name, phone, role, function, IBAN and linked member.
-- Changes are saved to the database and reflected in the table.
+- I can change name, phone, role, function, IBAN, **subscription type** (`subscriptionTypeId`).
+- **Note:** linked member is **read-only** in edit UI today; backend **`PUT /api/users/:id`** can still accept link fields if extended.
+- Changes are saved with **`PUT /api/users/:id`** and reflected in the table.
 - A confirmation or success notification is shown after saving.
 
 ---
@@ -79,9 +82,8 @@ User management covers creating, viewing, updating and deleting members (bazkide
 
 - From each row I can choose a "Delete" option.
 - Before deletion the system asks for confirmation (localized text).
-- On confirm, the user is removed from the database and from the table.
+- On confirm, **`DELETE /api/users/:id`** runs; dependency errors return **400** with detail.
 - A small notification confirms the deletion.
-- If the user cannot be deleted due to constraints, a clear error is shown.
 
 ---
 
@@ -93,6 +95,32 @@ User management covers creating, viewing, updating and deleting members (bazkide
 
 **Acceptance criteria**
 
-- Only Administratzailea (and, if desired, Diruzaina) can access `/erabiltzaileak`.
-- Non-authorized users attempting to access the page are redirected or shown an error.
-- This restriction is enforced on both frontend navigation and backend APIs.
+- Only **administratzailea** can open `/erabiltzaileak` in the SPA today (treasurer-only access is a product decision).
+- Non-authorized users attempting direct URLs get **AccessDenied** / redirect behavior per `ProtectedRoute`.
+- **Backend:** mutations require **`requireAdmin`**; listing uses **`requireTreasurer`** (diruzaina can call API without having the Users UI).
+
+---
+
+### 7. Activate / deactivate user
+
+- **As a** Administratzailea
+- **I want to** toggle whether a user may use the system
+- **So that** former members do not retain active access
+
+**Acceptance criteria**
+
+- Row action calls **`PATCH /api/users/:id/toggle-active`**.
+- **`isActive`** flips server-side and the table updates after refetch.
+
+---
+
+### 8. Assign subscription type
+
+- **As a** Administratzailea
+- **I want to** attach a membership fee plan to a user
+- **So that** subscription metadata is stored on the member record
+
+**Acceptance criteria**
+
+- Types are managed under **`/subscriptions`**.
+- User edit dialog sets **`subscriptionTypeId`**; table shows plan name/amount.

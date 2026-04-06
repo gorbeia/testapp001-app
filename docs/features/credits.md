@@ -1,10 +1,16 @@
-# User Stories: Credits (Zorrak)
+# User Stories: Credits (Zorrak) & SEPA
 
-> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#4-credits--zorrak--sepa-creditsmd)
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#5-credits--zorrak--sepa-creditsmd)
+
+## Data model & automation (cross-cutting)
+
+Monthly **`credits`** rows are stored per member and society (`consumptionAmount`, `reservationAmount`, `totalAmount`, `status`, `paidAmount`, etc.). **`DebtCalculationService`** (cron in `server/cron-jobs.ts` and triggers after relevant consumption/reservation flows) aggregates consumptions and reservations into those rows.
+
+---
 
 ## Epic: Credit Management
 
-### Story 1: View Pending Credits
+### Story 1: View Pending Credits (Bazkidea)
 
 **As a** Bazkidea  
 **I want to** view my accumulated debt  
@@ -12,55 +18,61 @@
 
 **Acceptance Criteria:**
 
-- Display current total pending credits
-- Breakdown of credits by month/event
-- Historical view of credit accumulation
-- Payment history and cleared credits
-- Option to download credit statement
+- ✅ Display current pending (and related) credit rows for the logged-in member
+- ✅ Breakdown by month where data exists (consumption vs reservation components when present)
+- Historical / paid rows depend on API filters and UI presentation
+- Export of a formal statement: not implemented as a dedicated feature
+- **Shipped**: `MyDebtsPage` at `/nire-zorrak`, `GET /api/credits/member/current`
 
-### Story 2: Monthly Credit Summary
+---
 
-**As a** Diruzaina  
-**I want to** generate monthly credit reports  
+### Story 2: Monthly Credit Summary (Diruzaina / admin)
+
+**As a** Diruzaina or Administratzailea  
+**I want to** see society-wide credit rows by period  
 **So that** I can prepare billing information
 
 **Acceptance Criteria:**
 
-- Filter credits by month and year
-- List all Bazkidea with pending credits
-- Calculate totals for billing period
-- Export credit list to Google Sheets
-- Mark credits as "processed for billing"
+- ✅ Filter/list credits by month (and society, via authenticated user’s tenant)
+- ✅ List members with amounts for the selected period (via credits API)
+- Totals for the period are derivable from listed rows
+- ❌ Export credit list to Google Sheets — **not implemented** (no Sheets export)
+- 🟡 Mark credits as paid / batch update — **partial** (`PUT /api/credits/batch-status`)
+- **Shipped UI**: `CreditsPage` at `/zorrak` (route currently **administratzailea** in the SPA; API also allows treasurer — align product/access if needed)
+
+---
 
 ### Story 3: Credit Reset After Payment
 
 **As a** Diruzaina  
-**I want to** reset credits to zero after bank payment  
+**I want to** reset or reconcile credits after bank payment  
 **So that** accounts reflect current status
 
 **Acceptance Criteria:**
 
-- Select credits to clear (by month or individual)
-- Confirmation before resetting
-- Audit trail of credit resets
-- Notification to affected Bazkidea
-- Archive cleared credit records
+- 🟡 Batch status updates (e.g. mark as paid) — **implemented at API level**
+- ❌ Granular per-line reset UI, rich audit trail, and member notifications — **not implemented**
+
+---
 
 ## Epic: SEPA Export
 
 ### Story 4: Generate SEPA List
 
 **As a** Diruzaina  
-**I want to** generate a list of credits for SEPA export  
-**So that** I can create bank payment files
+**I want to** produce debit collection data for the bank  
+**So that** I can create payment files
 
 **Acceptance Criteria:**
 
-- Select billing period for SEPA generation
-- Include only Bazkidea with positive credits
-- Verify IBAN information for each user
-- Calculate total amounts for SEPA file
-- Export to Google Sheets format
+- ✅ Select billing month (`YYYY-MM`)
+- ✅ Include members with pending credits and required debtor fields (API joins `users` for IBAN, etc.)
+- ✅ Build SEPA XML (pain.008-style) in the browser from export rows
+- ❌ Export to Google Sheets — **not implemented** (XML download path instead)
+- **Shipped**: `SepaExportPage` at `/sepa`, `GET /api/credits/sepa-export?month=YYYY-MM`
+
+---
 
 ### Story 5: SEPA Data Validation
 
@@ -70,25 +82,22 @@
 
 **Acceptance Criteria:**
 
-- Check IBAN format validity
-- Verify Bazkide_ID consistency
-- Validate creditor information
-- Flag missing or invalid data
-- Provide error correction interface
+- ❌ IBAN format validation, creditor consistency checks, dedicated error UI — **not implemented**
 
-### Story 6: Society Information Management
+---
 
-**As an** Administratzailea  
-**I want to** manage society information for SEPA  
-**So that** bank transfers identify the correct creditor
+### Story 6: Society Information Management (creditor / SEPA metadata)
+
+**As an** Administratzailea (or treasurer, subject to API alignment)  
+**I want to** manage society bank and creditor identifiers  
+**So that** transfers identify the correct creditor
 
 **Acceptance Criteria:**
 
-- Configure society name (Izena)
-- Set society IBAN (cuenta emisora)
-- Manage Creditor ID for SEPA compliance
-- Update contact information
-- Validate SEPA configuration
+- 🟡 Society **`iban`** and **`creditorId`** (and related contact fields) exist in DB and are editable via **`/elkartea`** (`GET /api/societies/user`, `PUT /api/societies/:id`)
+- 🟡 **Gap**: the client SEPA XML generator still uses **hardcoded default creditor** values; production should read from `societies` (or env) and match the PRD
+
+---
 
 ## Epic: Payment Tracking
 
@@ -100,11 +109,10 @@
 
 **Acceptance Criteria:**
 
-- Mark credits as "sent to bank"
-- Track return/rejection status
-- Record payment confirmation dates
-- Generate payment status reports
-- Handle payment exceptions
+- 🟡 Basic `status` / `paidAmount` on `credits` — present
+- ❌ Bank file submission state, returns, rejections, exception workflows — **not implemented**
+
+---
 
 ### Story 8: Credit Notifications
 
@@ -114,27 +122,24 @@
 
 **Acceptance Criteria:**
 
-- Monthly credit summary notifications
-- Alert when credits exceed threshold
-- Notification when credits are cleared
-- Payment confirmation messages
-- Options for notification preferences
+- ❌ Dedicated credit notification product — **not implemented** (general notifications exist separately; see `communication.md`)
+
+---
 
 ## Epic: Financial Reporting
 
 ### Story 9: Financial Dashboard
 
 **As a** Diruzaina or Administratzailea  
-**I want to** view financial analytics  
+**I want to** view financial highlights  
 **So that** I can understand the society's financial health
 
 **Acceptance Criteria:**
 
-- Total credits overview by period
-- Payment collection rates
-- Average credit per Bazkidea
-- Monthly revenue trends
-- Comparison with previous periods
+- 🟡 Dashboard cards use **real** credit/debt endpoints for the logged-in user (and role-dependent stats)
+- ❌ Full KPI suite and historical charts as originally specified — **not implemented**
+
+---
 
 ### Story 10: Export Financial Reports
 
@@ -144,8 +149,11 @@
 
 **Acceptance Criteria:**
 
-- Monthly financial statements
-- Year-to-date summaries
-- Individual Bazkidea credit reports
-- SEPA export history
-- Payment collection analytics
+- ❌ Monthly statements, YTD packs, dedicated export history — **not implemented**
+
+---
+
+## Technical notes (engineering)
+
+- Harden multi-tenant queries on credit list/sum/export routes with explicit `societyId` filters where not already enforced.
+- Wire `SepaDirectDebitGenerator` defaults to `societies` (and validate IBAN) to close the gap between Story 6 and Story 4.

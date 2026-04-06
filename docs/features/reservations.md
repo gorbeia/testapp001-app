@@ -1,26 +1,32 @@
 # User Stories: Reservations (Erreserbak)
 
-> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#2-reservations-erreserbak-reservationsmd)
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#3-reservations-erreserbak-reservationsmd)
 
 ## Epic: Table and Equipment Reservations
 
 ### Story 1: Create Reservation
 
 **As a** Bazkidea or Laguna  
-**I want to** reserve tables and kitchen equipment  
-**So that** I can organize events and ensure availability
+**I want to** reserve a table (and optional kitchen use) for an event  
+**So that** I can organize activities and ensure availability
 
 **Acceptance Criteria:**
 
-- List view (table) of upcoming reservations; no calendar UI
-- Button to open a form for a new reservation
-- Select table(s) for reservation
-- Select kitchen equipment (cooking surface, griddle, ovens)
-- Choose event type: hamaiketako, comida, merienda, cena, cumpleaños
-- A table reserved for an event type is unavailable for additional reservations of that event type on the same day
-- Automatic cost calculation based on selected resources
-- Confirmation of reservation with details
-- Event-day consumptions are **not** logged within the reservation flow; they are recorded later as standard consumptions (bar tab) with no special “event consumption” feature.
+- List view of upcoming society reservations at `/erreserbak` (table/card style); **no full-page calendar grid** of bookings
+- Button/dialog to create a new reservation
+- **One table** selected from **`/api/tables/available`** (options may be disabled when guest count is outside min/max capacity)
+- **Event types** stored as `type` string: `bazkaria`, `afaria`, `askaria`, `hamaiketakako` (UI labels from i18n)
+- **Kitchen use** is a single boolean **`useKitchen`** (not separate equipment: griddle, ovens, etc.)
+- **Guests** count (integer); **Name/title** for the reservation (`name` field)
+- **Date**: single `startDate` timestamp (date picker in UI; time follows browser/local Date handling)
+- **Conflict rule (server)**: same table **name**, same `startDate` (exact instant), same `type`, among non-cancelled rows — server does not implement broader overlap ranges
+- **Cost (client-calculated, stored as sent):**  
+  `totalAmount = guests × reservationPricePerMember + (useKitchen ? guests × kitchenPricePerMember : 0)`  
+  Rates come from the **`societies`** row (`reservationPricePerMember`, `kitchenPricePerMember`), editable under `/elkartea` where API allows
+- New reservations are persisted with **`status`** defaulting to **`confirmed`** via API
+- Event-day consumptions are **not** part of this flow; they are normal bar consumptions later
+
+---
 
 ### Story 2: View My Reservations
 
@@ -30,47 +36,59 @@
 
 **Acceptance Criteria:**
 
-- List of current/future reservations with dates (table view)
-- Historical view of past reservations
-- Ability for the creator to cancel their upcoming reservations (with time limits)
-- View reservation details including costs
-- Export personal reservation list (no calendar export)
+- **Shipped**: `MyReservationsPage` at `/nire-erreserbak`, backed by `GET /api/reservations/user`
+- Table/list with filters (status, type, month search pattern per implementation)
+- Detail view with cost breakdown (UI recomputes breakdown from society rates for display; may differ if rates changed after booking)
+- Creator can cancel upcoming **pending/confirmed** reservations per UI rules; cancellation uses `PUT /api/reservations/:id` with cancellation fields
+- ❌ Export personal reservation list — **not verified / not a first-class feature** in PRD scope (refine if E2E/product requires it)
 
-### Story 3: Reservation Calendar
+---
+
+### Story 3: Reservation “calendar”
 
 **As a** Bazkidea or Laguna  
 **I want to** see a calendar of all reservations  
 **So that** I can plan around existing bookings
 
-## Epic: Reservation Management (Sotolaria/Administratzailea)
+**Reality / scope:**
+
+- **No** month-grid calendar of all society bookings exists
+- **`MonthGrid`** on `/erreserbak` is a **month filter** control, not a schedule view
+- Treat this story as **future work** unless product adds a true shared calendar
+
+---
+
+## Epic: Reservation Management (Administratzailea)
 
 ### Story 4: Manage All Reservations
 
-**As a** Sotolaria or Administratzailea  
-**I want to** view and manage all reservations  
+**As an** Administratzailea (UI); Diruzaina (partial API behaviour)  
+**I want to** view and manage society reservations  
 **So that** I can coordinate resources and resolve conflicts
 
 **Acceptance Criteria:**
 
-- Complete reservation list with all users
-- Ability to modify or cancel any reservation
-- Conflict detection and resolution tools
-- Resource availability overview
-- Export reservation reports by date range
+- **Shipped (partial UI)**: `AdminReservationsPage` at **`/admin-erreserbak`** — society list, filters, detail, cancel (with reason when cancelling another user’s booking)
+- **SPA access**: page is **`administratzailea` only**; `GET /api/reservations` elsewhere may treat **diruzaina** like admin for query scoping — product may want to align UI + API
+- ❌ Edit-in-place (change date, table, guests without cancel/recreate) — **not implemented**
+- ❌ Dedicated conflict-resolution workspace beyond create-time duplicate check — **not implemented**
+
+---
 
 ### Story 5: Resource Configuration
 
 **As an** Administratzailea  
-**I want to** configure available resources and pricing  
-**So that** the reservation system reflects actual capacity
+**I want to** configure tables and pricing inputs  
+**So that** the reservation system reflects capacity
 
 **Acceptance Criteria:**
 
-- Define table types and quantities
-- Configure kitchen equipment inventory
-- Set pricing for different resources
-- Define time slots and availability rules
-- Configure event types and associated costs
+- **Tables**: **`/mahaiak`** — CRUD for table **name**, **minCapacity**, **maxCapacity**, **isActive** (`/api/tables`, admin middleware). **Note:** `tables` are **not** `societyId`-scoped in schema today — multi-tenant hardening may be required
+- **Pricing**: per-guest and per-guest-kitchen **decimals on `societies`**, edited via **`/elkartea`**
+- ❌ Separate inventory for “ovens / grills” etc. — **not implemented** (only `useKitchen` flag)
+- ❌ Time-slot rules engine — **not implemented**
+
+---
 
 ## Epic: Reservation Costs
 
@@ -82,20 +100,32 @@
 
 **Acceptance Criteria:**
 
-- Real-time cost calculation during reservation
-- Breakdown of costs by resource (tables, equipment, event type)
-- Total cost display before confirmation
-- Receipt generation after reservation
+- Live total in create dialog from formula in Story 1
+- Breakdown in detail UI uses same guest × rate model
+- ❌ Server-side recomputation / validation of `totalAmount` on `POST` — **not implemented** (client-sent value is stored)
+- ❌ Receipt generation — **not implemented**
+
+---
 
 ### Story 7: Cost Integration with Credits
 
 **As a** system  
-**I want to** automatically charge reservation costs to the responsible Bazkidea  
-**So that** accounting is accurate and automated
+**I want to** include reservation amounts in monthly member debt  
+**So that** accounting stays aligned with bookings
 
 **Acceptance Criteria:**
 
-- Automatic charge to Bazkidea's credit account
-- Clear indication of cost responsibility
-- Integration with Zorrak (credits) system
-- Notification of charges to responsible party
+- **Shipped (partial):** monthly **`credits.reservationAmount`** (and totals) are populated by **debt calculation** from `reservations.totalAmount` (non-cancelled, in-month) plus consumptions — see `credits.md` and `server/cron-jobs.ts`
+- ❌ Immediate “charge notification” or per-booking credit line — **not implemented**
+
+---
+
+## Related routes (reference)
+
+| Path | Purpose |
+|------|---------|
+| `/erreserbak` | Society upcoming list + create |
+| `/nire-erreserbak` | Own reservations |
+| `/admin-erreserbak` | Admin management UI |
+| `/mahaiak` | Tables CRUD |
+| `/elkartea` | Society fields including reservation pricing |

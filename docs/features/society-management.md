@@ -1,22 +1,20 @@
 # User Stories: Society Management (Elkartea)
 
-> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#7-society-management-elkartea-society-managementmd)
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#8-society-management-elkartea-society-managementmd)
 
 ## Epic: Society Configuration
 
 ### Story 1: Society Information
 
-**As an** Administratzailea  
+**As an** Administratzailea or Diruzaina (see access alignment note below)  
 **I want to** configure basic society information  
 **So that** the application reflects the society's identity
 
 **Acceptance Criteria:**
 
-- Society name configuration (Izena)
-- Contact information management
-- Society description and details
-- Logo and branding elements
-- Society establishment date
+- **Shipped (partial):** `SocietyPage` at **`/elkartea`** loads **`GET /api/societies/user`** and saves **`PUT /api/societies/:id`** with name, address, phone, email, **IBAN**, **creditorId**, and **reservation pricing** fields (`reservationPricePerMember`, `kitchenPricePerMember`)
+- **Route note:** SPA uses **`ProtectedRoute` “treasurer”**; `PUT` middleware may require **`administratzailea`** only — verify alignment for diruzaina-only treasurers
+- ❌ Logo upload, long description, establishment date fields — **not implemented**
 
 ### Story 2: SEPA Configuration
 
@@ -26,11 +24,9 @@
 
 **Acceptance Criteria:**
 
-- Society IBAN configuration (cuenta emisora)
-- Creditor ID setup for SEPA compliance
-- Bank contact information
-- Payment processing preferences
-- SEPA file format specifications
+- **Partial:** IBAN + creditor id stored on **`societies`** and editable via Story 1 UI
+- **Gap:** SEPA XML builder may still use **hardcoded creditor defaults** — see [credits.md](./credits.md) Story 6
+- ❌ Dedicated SEPA wizard, bank API preferences, pain.008 versioning UI — **not implemented**
 
 ### Story 3: Society Rules and Policies
 
@@ -114,11 +110,8 @@
 
 **Acceptance Criteria:**
 
-- Table configuration and numbering
-- Kitchen equipment setup
-- Capacity limits and rules
-- Resource availability schedules
-- Maintenance scheduling for equipment
+- **Shipped:** reservation **tables** CRUD at **`/mahaiak`**, **`/api/tables`** — name, min/max capacity, active flag (see [reservations.md](./reservations.md) Story 5 for tenancy caveats)
+- ❌ Kitchen equipment inventory, maintenance schedules, availability calendars — **not implemented** (reservations use a single **`useKitchen`** boolean + society-wide kitchen rate)
 
 ### Story 9: Fee Structure
 
@@ -128,11 +121,9 @@
 
 **Acceptance Criteria:**
 
-- Set table reservation fees
-- Configure equipment usage costs
-- Define event type pricing
-- Set member fee schedules
-- Create special pricing rules
+- **Shipped:** per-guest reservation rate + per-guest kitchen rate on **`societies`**, edited via **`/elkartea`**
+- **Shipped:** **subscription types** — fee plans with amount/period at **`/subscriptions`** (`subscription_types` table); assign **`subscriptionTypeId`** on users (see [user-management.md](./user-management.md))
+- ❌ Event-type-specific prices, special pricing rules engine — **not implemented** (event `type` is stored but not priced differently in code)
 
 ## Epic: Reporting and Compliance
 
