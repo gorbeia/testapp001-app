@@ -14,6 +14,11 @@ import { eq, and, gte, desc, count, sql, like, or, between } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { debtCalculationService } from "../cron-jobs";
 import { insertAccountMovementRow } from "../lib/account-movements";
+import {
+  assertPrepaymentDebitAllowed,
+  notifyIfCrossedPrepaymentFloor,
+  prepaymentFloorHttpBody,
+} from "../lib/prepayment-ledger-floor";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -40,6 +45,11 @@ export function registerConsumptionRoutes(app: Express) {
             message: "Invalid consumption payload",
             issues: parsed.error.flatten(),
           });
+        }
+
+        const prepaymentCheckCreate = await assertPrepaymentDebitAllowed(societyId, user.id, 0);
+        if (!prepaymentCheckCreate.allowed) {
+          return res.status(403).json(prepaymentFloorHttpBody(prepaymentCheckCreate));
         }
 
         const consumptionData = {
@@ -479,6 +489,30 @@ export function registerConsumptionRoutes(app: Express) {
           return res.status(400).json({ message: "Consumption is closed" });
         }
 
+        let debitTotal = 0;
+        for (const item of items) {
+          const productRow = await db
+            .select()
+            .from(products)
+            .where(eq(products.id, item.productId))
+            .limit(1);
+          if (!productRow.length) {
+            return res.status(404).json({ message: `Product ${item.productId} not found` });
+          }
+          const unitPrice = parseFloat(productRow[0].price);
+          debitTotal += unitPrice * item.quantity;
+        }
+
+        const billedUserId = consumption[0].userId;
+        const prepaymentCheckItems = await assertPrepaymentDebitAllowed(
+          societyId,
+          billedUserId,
+          debitTotal
+        );
+        if (!prepaymentCheckItems.allowed) {
+          return res.status(403).json(prepaymentFloorHttpBody(prepaymentCheckItems));
+        }
+
         const addedItems = [];
         let totalAmount = parseFloat(consumption[0].totalAmount || "0");
 
@@ -561,6 +595,19 @@ export function registerConsumptionRoutes(app: Express) {
           `[CONSUMPTION-ITEMS-ADDED] Triggering debt calculation for user ${user.id}, total: ${totalAmount}`
         );
         await debtCalculationService.calculateCurrentMonthDebtsForSociety(societyId);
+
+        if (debitTotal > 0) {
+          try {
+            await notifyIfCrossedPrepaymentFloor({
+              societyId,
+              userId: billedUserId,
+              balanceBefore: prepaymentCheckItems.balanceBefore,
+              debitTotal,
+            });
+          } catch (e) {
+            console.error("Prepayment floor notification failed:", e);
+          }
+        }
 
         return res.status(201).json({ items: addedItems, totalAmount: totalAmount.toString() });
       } catch (err) {

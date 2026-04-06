@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
   Minus,
@@ -37,6 +38,10 @@ import {
 } from "@/components/ui/table";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
+import {
+  prepaymentLedgerStatusQueryKey,
+  usePrepaymentLedgerStatus,
+} from "@/hooks/usePrepaymentLedgerStatus";
 import { getErrorMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth";
 import { authFetch } from "@/lib/api";
@@ -129,6 +134,9 @@ async function errorMessageFromResponse(res: Response, fallback: string): Promis
 export function ConsumptionsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: ledgerStatus } = usePrepaymentLedgerStatus();
+  const prepaymentBlocks = Boolean(ledgerStatus?.enforced && ledgerStatus?.belowFloor);
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -251,6 +259,14 @@ export function ConsumptionsPage() {
     filteredPendingSubscriptions.length === 0;
 
   const addToCartProduct = (product: Product) => {
+    if (prepaymentBlocks) {
+      toast({
+        title: t("errorTitle"),
+        description: t("prepaymentLedgerBannerDescription"),
+        variant: "destructive",
+      });
+      return;
+    }
     setCart(prev => {
       const existing = prev.find(
         (item): item is Extract<CartLine, { kind: "product" }> =>
@@ -319,6 +335,17 @@ export function ConsumptionsPage() {
   };
 
   const updateQuantity = (lineId: string, delta: number) => {
+    if (prepaymentBlocks && delta > 0) {
+      const line = cart.find(l => l.lineId === lineId);
+      if (line?.kind === "product") {
+        toast({
+          title: t("errorTitle"),
+          description: t("prepaymentLedgerBannerDescription"),
+          variant: "destructive",
+        });
+        return;
+      }
+    }
     setCart(prev => {
       const line = prev.find(l => l.lineId === lineId);
       if (!line) return prev;
@@ -353,8 +380,18 @@ export function ConsumptionsPage() {
     (l): l is Extract<CartLine, { kind: "subscription" }> => l.kind === "subscription"
   );
 
+  const closeAccountProductDebitBlocked = prepaymentBlocks && productLines.length > 0;
+
   const handleCloseAccount = () => {
     if (cart.length === 0) return;
+    if (closeAccountProductDebitBlocked) {
+      toast({
+        title: t("errorTitle"),
+        description: t("prepaymentLedgerBannerDescription"),
+        variant: "destructive",
+      });
+      return;
+    }
     setShowConfirmDialog(true);
   };
 
@@ -446,6 +483,7 @@ export function ConsumptionsPage() {
       }
 
       setCart([]);
+      await queryClient.invalidateQueries({ queryKey: prepaymentLedgerStatusQueryKey });
       if (cashEnabled) {
         await loadPendingCashItems();
       }
@@ -660,6 +698,7 @@ export function ConsumptionsPage() {
                         </div>
                         <Button
                           size="sm"
+                          disabled={prepaymentBlocks}
                           onClick={e => {
                             e.stopPropagation();
                             addToCartProduct(product);
@@ -828,7 +867,7 @@ export function ConsumptionsPage() {
                         size="icon"
                         className="h-7 w-7"
                         onClick={() => updateQuantity(item.lineId, 1)}
-                        disabled={item.kind !== "product"}
+                        disabled={item.kind !== "product" || (prepaymentBlocks && item.kind === "product")}
                         data-testid={`button-increase-quantity-${item.lineId}`}
                       >
                         <Plus className="h-3 w-3" />
@@ -856,7 +895,7 @@ export function ConsumptionsPage() {
           <div className="p-4 border-t">
             <Button
               className="w-full"
-              disabled={cart.length === 0 || isClosingAccount}
+              disabled={cart.length === 0 || isClosingAccount || closeAccountProductDebitBlocked}
               onClick={handleCloseAccount}
               data-testid="mobile-button-close-account"
             >
@@ -873,7 +912,7 @@ export function ConsumptionsPage() {
           </div>
           <Button
             className="w-full"
-            disabled={cart.length === 0 || isClosingAccount}
+            disabled={cart.length === 0 || isClosingAccount || closeAccountProductDebitBlocked}
             onClick={handleCloseAccount}
             data-testid="button-close-account"
           >

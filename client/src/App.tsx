@@ -12,6 +12,7 @@ import { useAuth } from "@/lib/auth";
 import { LoginForm } from "@/components/LoginForm";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
+import { PrepaymentLedgerBanner } from "@/components/PrepaymentLedgerBanner";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Dashboard } from "@/pages/dashboard";
 import { ReservationsPage } from "@/pages/ReservationsPage";
@@ -211,6 +212,7 @@ function AuthenticatedApp() {
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
           <AppHeader />
+          <PrepaymentLedgerBanner />
           <main className="flex-1 overflow-auto">
             <AppRoutes />
           </main>

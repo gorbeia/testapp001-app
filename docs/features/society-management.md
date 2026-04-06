@@ -12,7 +12,7 @@
 
 **Acceptance Criteria:**
 
-- **Shipped (partial):** `SocietyPage` at **`/elkartea`** loads **`GET /api/societies/user`** and saves **`PUT /api/societies/:id`** with name, address, phone, email, **IBAN**, **creditorId**, **`sepaMode`** (SEPA billing cadence / off via checkbox + cadence select), **`paymentMethods`** (JSON array: prepayment-with-proposal rail `bank_transfer_prepayment`, manual cash, cash change machine — cash options are configuration only for now; the rail is not limited to wire transfer in product copy), and **reservation pricing** fields (`reservationPricePerMember`, `kitchenPricePerMember`)
+- **Shipped (partial):** `SocietyPage` at **`/elkartea`** loads **`GET /api/societies/user`** and saves **`PUT /api/societies/:id`** with name, address, phone, email, **IBAN**, **creditorId**, **`sepaMode`** (SEPA billing cadence / off via checkbox + cadence select), **`paymentMethods`** (JSON array: prepayment-with-proposal rail `bank_transfer_prepayment`, manual cash, cash change machine — cash options are configuration only for now; the rail is not limited to wire transfer in product copy), optional **`prepaymentMinLedgerBalance`** when prepayment is enabled (minimum allowed member ledger balance / max debt — see [prepayment-ledger-floor.md](./prepayment-ledger-floor.md)), and **reservation pricing** fields (`reservationPricePerMember`, `kitchenPricePerMember`)
 - **Route note:** SPA uses **`ProtectedRoute` “treasurer”**; `PUT` middleware may require **`administratzailea`** only — verify alignment for diruzaina-only treasurers
 - ❌ Logo upload, long description, establishment date fields — **not implemented**
 

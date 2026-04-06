@@ -67,7 +67,11 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 
 ## F8 – Notifications
 
-Server notifications (eu/es/en) for: prepayment validated/rejected, refund issued, SEPA bounce, reservation financial charge, subscription charge.
+Server notifications (eu/es/en) for: prepayment validated/rejected, refund issued, SEPA bounce, reservation financial charge, subscription charge, **prepayment ledger floor crossed** (debit moves balance from at/above configured floor to below).
+
+## F9 – Prepayment minimum ledger balance
+
+When the society enables **`bank_transfer_prepayment`** and sets **`prepaymentMinLedgerBalance`**, new **reservation** charges and **consumption** debits that would leave the member balance **below** that floor are rejected (`403`, code `prepayment_ledger_floor`). Members see status via **`GET /api/me/prepayment-ledger-status`** and an in-app banner when below the floor. See [prepayment-ledger-floor.md](./prepayment-ledger-floor.md).
 
 ## Society setting
 

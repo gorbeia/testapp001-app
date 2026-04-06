@@ -23,6 +23,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { usePrepaymentLedgerStatus } from "@/hooks/usePrepaymentLedgerStatus";
 import { useLanguage } from "@/lib/i18n";
 import { format } from "date-fns";
 import { eu, es } from "date-fns/locale";
@@ -59,6 +60,9 @@ const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
 export function ReservationDialog({ open, onOpenChange, onSuccess }: ReservationDialogProps) {
   const { t, language } = useLanguage();
   const { toast } = useToast();
+  const { data: ledgerStatus } = usePrepaymentLedgerStatus();
+  const prepaymentBlocks =
+    Boolean(ledgerStatus?.enforced && ledgerStatus?.belowFloor);
   const [society, setSociety] = useState<Society | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(false);
@@ -149,6 +153,14 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
   }, [open]);
 
   const handleCreateReservation = async () => {
+    if (prepaymentBlocks) {
+      toast({
+        title: t("error"),
+        description: t("prepaymentLedgerBannerDescription"),
+        variant: "destructive",
+      });
+      return;
+    }
     if (!formData.name) {
       toast({
         title: t("error"),
@@ -449,7 +461,7 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
             <Button
               onClick={handleCreateReservation}
               data-testid="button-save-reservation"
-              disabled={!formData.name || !formData.table || loading}
+              disabled={!formData.name || !formData.table || loading || prepaymentBlocks}
             >
               {loading ? t("loading") : t("reserve")}
             </Button>

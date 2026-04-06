@@ -394,6 +394,15 @@ export const translations = {
       "Aurreordainketa (proposamenak; diruzainak balioztatzen du)",
     paymentMethodCashManual: "Dirutan eskuz",
     paymentMethodCashMachine: "Diru kanbio automatikodun makina",
+    prepaymentMinLedgerBalanceLabel: "Aurreordainketaren gutxieneko saldoa (€)",
+    prepaymentMinLedgerBalanceHelp:
+      "Aurreordainketa aktibo dagoenean, kidearen saldoa (mugimenduen batura) ezin da maila hau baino txikiagoa izan. Adib: -50ek gehienez 50 € zor onartzen du; 0ek ez du zorrik onartzen. Hutsik utzi murrizketa eza.",
+    prepaymentMinLedgerBalancePlaceholder: "Adib: -50 edo 0 (hutsik = murrizketarik ez)",
+    prepaymentLedgerBannerTitle: "Saldoa baimendutako minimoaren azpitik dago",
+    prepaymentLedgerBannerDescription:
+      "Ez duzu erreserbarik edo kontsumorik egin ahal aurreordainketa moduan saldoa zuzen arte. Egin aurreordainketa bat edo ikusi zure mugimenduak.",
+    prepaymentLedgerBannerLinkMovements: "Nire mugimenduak",
+    prepaymentLedgerBannerLinkPrepayment: "Aurreordainketak",
     sepaCadenceLabel: "SEPA kobrantza maiztasuna",
     sepaCadenceDescription:
       "Zenbat alditan sortu SEPA fitxategia: hilabetean behin, bi hilabetean behin, hiruhilekoan edo eskuzko tartea.",
@@ -1029,6 +1038,15 @@ export const translations = {
     paymentMethodBankTransferPrepayment: "Anticipo (propuestas; validación del tesorero)",
     paymentMethodCashManual: "Efectivo manual",
     paymentMethodCashMachine: "Máquina de cambio automático",
+    prepaymentMinLedgerBalanceLabel: "Saldo mínimo con modo anticipo (€)",
+    prepaymentMinLedgerBalanceHelp:
+      "Con el anticipo activo, el saldo del socio (suma de movimientos) no puede quedar por debajo de este valor. Ej.: -50 admite como mucho 50 € de deuda; 0 no admite deuda. Vacío = sin límite.",
+    prepaymentMinLedgerBalancePlaceholder: "Ej.: -50 o 0 (vacío = sin límite)",
+    prepaymentLedgerBannerTitle: "Saldo por debajo del mínimo permitido",
+    prepaymentLedgerBannerDescription:
+      "Con el modo anticipo no puedes reservar ni registrar consumos hasta regularizar el saldo. Haz un anticipo o revisa tus movimientos.",
+    prepaymentLedgerBannerLinkMovements: "Mis movimientos",
+    prepaymentLedgerBannerLinkPrepayment: "Anticipos",
     sepaCadenceLabel: "Frecuencia de cobro SEPA",
     sepaCadenceDescription:
       "Cada cuánto generar el archivo SEPA: mensual, bimestral, trimestral o rango manual.",

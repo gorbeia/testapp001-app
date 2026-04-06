@@ -50,7 +50,7 @@ Status legend:
 ## 3. Reservations (Erreserbak) (`reservations.md`)
 
 1. **Create Reservation** – date/time, event type, table, guests, kitchen flag, cost
-   - **Status**: ✅ Implemented (`POST /api/reservations`; types: bazkaria, afaria, askaria, hamaiketakako)
+   - **Status**: ✅ Implemented (`POST /api/reservations`; types: bazkaria, afaria, askaria, hamaiketakako; **prepayment ledger floor** enforced when society has optional minimum balance + prepayment method — see §5b.10 / `prepayment-ledger-floor.md`)
 2. **View My Reservations** – list & filters
    - **Status**: ✅ Implemented (`/nire-erreserbak`, `GET /api/reservations/user`)
 3. **Society reservation list** – upcoming/filter for all members
@@ -71,7 +71,7 @@ Status legend:
 ## 4. Consumptions (Kontsumoak) (`consumptions.md`)
 
 1. **Register bar consumption (session flow)** – create session, add lines, close
-   - **Status**: ✅ Implemented (`POST /api/consumptions`, `POST .../items`, `POST .../close`; stock decrement on items)
+   - **Status**: ✅ Implemented (`POST /api/consumptions`, `POST .../items`, `POST .../close`; stock decrement on items; **prepayment ledger floor** on create/items — see §5b.10 / `prepayment-ledger-floor.md`)
 2. **View consumption history (member)** – personal list
    - **Status**: ✅ Implemented (`/nire-konsumoak`, `GET /api/consumptions/user`)
 3. **Manage all consumptions (staff)** – society list/detail
@@ -135,6 +135,8 @@ Status legend:
 8. **Subscription fees on ledger** – `DebtCalculationService` posts `subscription` movement + `credits.subscription_amount` for all societies (including **`sepaMode` = `disabled`**); `disabled` affects SEPA export only
    - **Status**: ✅ Implemented (multi-tenant cron + per-society real-time triggers; see `server/cron-jobs.ts`)
 9. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
+10. **Prepayment minimum ledger balance** – optional `prepaymentMinLedgerBalance` on `societies` when `bank_transfer_prepayment` is enabled; `GET /api/me/prepayment-ledger-status`; server enforcement on reservation create + consumption create/items; `notifyFinancialEvent` when a debit crosses from at/above floor to below; member `PrepaymentLedgerBanner` + treasurer field on **`/elkartea`**
+   - **Status**: ✅ Implemented (see `prepayment-ledger-floor.md`; E2E: `prepayment-ledger-floor.feature`, scripts `db:seed:prepayment-floor-e2e` / `db:undo:prepayment-floor-e2e`)
 
 ---
 
@@ -183,7 +185,7 @@ Status legend:
 ## 8. Society Management (Elkartea) (`society-management.md`)
 
 1. **Society information & SEPA-related fields**
-   - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id` — **administratzailea** + **diruzaina** own-tenant; **`payment_methods`** on societies: SEPA checkbox + cadence, bank prepayment + cash placeholders; prepayment gates transfers UI/API; cash methods stored only; E2E: `society-payment-methods.feature` for cash flag persistence)
+   - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id` — **administratzailea** + **diruzaina** own-tenant; **`payment_methods`** on societies: SEPA checkbox + cadence, bank prepayment + cash placeholders; **optional `prepaymentMinLedgerBalance`** (prepayment-only UI) for max-debt / minimum-balance enforcement on ledger debits; prepayment gates transfers UI/API; cash methods stored only; E2E: `society-payment-methods.feature` for cash flag persistence)
 2. **Tables (resource config for reservations)**
    - **Status**: ✅ Implemented (`/mahaiak` — see Reservations)
 3. **Subscription types**

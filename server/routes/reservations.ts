@@ -16,6 +16,11 @@ import { translateWithParams, formatDate, translations } from "../lib/i18n";
 import { debtCalculationService } from "../cron-jobs";
 import { insertAccountMovementRow, movementExistsForReference } from "../lib/account-movements";
 import { notifyFinancialEvent } from "../lib/financial-notifications";
+import {
+  assertPrepaymentDebitAllowed,
+  notifyIfCrossedPrepaymentFloor,
+  prepaymentFloorHttpBody,
+} from "../lib/prepayment-ledger-floor";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -620,6 +625,12 @@ export function registerReservationRoutes(app: Express) {
           });
         }
 
+        const resTotalPreview = Math.max(0, parseFloat(String(rest.totalAmount ?? "0")));
+        const prepaymentCheck = await assertPrepaymentDebitAllowed(societyId, user.id, resTotalPreview);
+        if (!prepaymentCheck.allowed) {
+          return res.status(403).json(prepaymentFloorHttpBody(prepaymentCheck));
+        }
+
         const reservationData = {
           ...rest,
           startDate,
@@ -643,6 +654,16 @@ export function registerReservationRoutes(app: Express) {
             referenceType: "reservation",
             createdBy: user.id,
           });
+          try {
+            await notifyIfCrossedPrepaymentFloor({
+              societyId,
+              userId: resRow.userId,
+              balanceBefore: prepaymentCheck.balanceBefore,
+              debitTotal: resTotal,
+            });
+          } catch (e) {
+            console.error("Prepayment floor notification failed:", e);
+          }
           try {
             await notifyFinancialEvent({
               userId: resRow.userId,

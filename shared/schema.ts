@@ -80,6 +80,14 @@ export const societies = pgTable("societies", {
     .$type<SocietyPaymentMethod[]>()
     .notNull()
     .default(sql`'["bank_transfer_prepayment"]'::jsonb`),
+  /**
+   * When prepayment is enabled: minimum allowed sum of ledger amounts for members (same sign as balance).
+   * Null = no floor. Example -50 means balance must stay >= -50€ (max 50€ debt).
+   */
+  prepaymentMinLedgerBalance: decimal("prepayment_min_ledger_balance", {
+    precision: 10,
+    scale: 2,
+  }),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1008,6 +1016,7 @@ export const updateSocietySettingsBodySchema = insertSocietySchema
   .extend({
     sepaMode: sepaModeSchema.optional(),
     paymentMethods: societyPaymentMethodsSchema.optional(),
+    prepaymentMinLedgerBalance: z.union([z.string(), z.number()]).nullable().optional(),
   })
   .refine(data => Object.values(data).some(v => v !== undefined), {
     message: "At least one field is required",
@@ -1024,6 +1033,7 @@ export const backofficeCreateSocietyBodySchema = z.object({
   kitchenPricePerMember: z.union([z.string(), z.number()]).nullish(),
   sepaMode: sepaModeSchema.nullish(),
   paymentMethods: societyPaymentMethodsSchema.nullish(),
+  prepaymentMinLedgerBalance: z.union([z.string(), z.number()]).nullish(),
 });
 
 export const createSuperadminBodySchema = insertSuperadminSchema;

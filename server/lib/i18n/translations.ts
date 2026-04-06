@@ -27,6 +27,9 @@ export const translations = {
       "Zure {month} hilabeteko SEPA zordunketak huts egin du. Zorra berriro zain dago.",
     financialReservationChargeTitle: "Erreserba kargua",
     financialReservationChargeMessage: '"{name}" erreserbaren kargua: {amount} €.',
+    financialPrepaymentFloorBreachedTitle: "Saldoa baimendutako mugatik haratago",
+    financialPrepaymentFloorBreachedMessage:
+      "Zure kontu-saldoa ({balance} €) elkarteak ezarritako gutxienekoa ({floor} €) baino txikiagoa da. Egiten aurreordainketa bat.",
     financialSubscriptionChargeTitle: "Harpidetza kargua",
     financialSubscriptionChargeMessage: "{month} hilabeteko harpidetza: {amount} €.",
   },
@@ -57,6 +60,9 @@ export const translations = {
       "El adeudo SEPA de {month} ha fallado. La deuda vuelve a estar pendiente.",
     financialReservationChargeTitle: "Cargo por reserva",
     financialReservationChargeMessage: 'Cargo por la reserva "{name}": {amount} €.',
+    financialPrepaymentFloorBreachedTitle: "Saldo por debajo del mínimo permitido",
+    financialPrepaymentFloorBreachedMessage:
+      "El saldo de tu cuenta ({balance} €) es inferior al mínimo fijado por la sociedad ({floor} €). Realiza un anticipo.",
     financialSubscriptionChargeTitle: "Cuota de suscripción",
     financialSubscriptionChargeMessage: "Cuota de suscripción {month}: {amount} €.",
   },
@@ -87,6 +93,9 @@ export const translations = {
       "Your SEPA collection for {month} failed. The debt is pending again.",
     financialReservationChargeTitle: "Reservation charge",
     financialReservationChargeMessage: 'Charge for reservation "{name}": {amount} €.',
+    financialPrepaymentFloorBreachedTitle: "Balance below allowed threshold",
+    financialPrepaymentFloorBreachedMessage:
+      "Your account balance ({balance} €) is below the society minimum ({floor} €). Please make a prepayment.",
     financialSubscriptionChargeTitle: "Subscription charge",
     financialSubscriptionChargeMessage: "Subscription charge for {month}: {amount} €.",
   },

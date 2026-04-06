@@ -34,6 +34,7 @@ interface Society {
   kitchenPricePerMember: string;
   sepaMode?: SepaMode | string;
   paymentMethods?: SocietyPaymentMethod[] | null;
+  prepaymentMinLedgerBalance?: string | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -114,6 +115,12 @@ export function SocietyPage() {
         kitchenPricePerMember: society.kitchenPricePerMember,
         sepaMode: society.sepaMode ?? "monthly",
         paymentMethods: normalizeSocietyPaymentMethods(society.paymentMethods),
+        prepaymentMinLedgerBalance:
+          society.prepaymentMinLedgerBalance === undefined ||
+          society.prepaymentMinLedgerBalance === null ||
+          String(society.prepaymentMinLedgerBalance).trim() === ""
+            ? null
+            : String(society.prepaymentMinLedgerBalance),
       };
 
       const response = await fetch(`/api/societies/${society.id}`, {
@@ -161,6 +168,7 @@ export function SocietyPage() {
   }
 
   const paymentMethods = normalizeSocietyPaymentMethods(society.paymentMethods);
+  const prepaymentEnabled = paymentMethods.includes("bank_transfer_prepayment");
   const sepaEnabled = (society.sepaMode ?? "monthly") !== "disabled";
   const sepaCadenceValue: SepaCadenceMode = sepaEnabled
     ? SEPA_CADENCE_MODES.includes(society.sepaMode as SepaCadenceMode)
@@ -309,9 +317,69 @@ export function SocietyPage() {
                   </p>
                 )}
 
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Checkbox
+                        id="pm-bank_transfer_prepayment"
+                        data-testid="checkbox-payment-bank_transfer_prepayment"
+                        checked={paymentMethods.includes("bank_transfer_prepayment")}
+                        onCheckedChange={checked =>
+                          setSociety({
+                            ...society,
+                            paymentMethods: togglePaymentMethod(
+                              society.paymentMethods,
+                              "bank_transfer_prepayment",
+                              checked === true
+                            ),
+                          })
+                        }
+                      />
+                      <Label
+                        htmlFor="pm-bank_transfer_prepayment"
+                        className="font-normal cursor-pointer whitespace-normal"
+                      >
+                        {t("paymentMethodBankTransferPrepayment")}
+                      </Label>
+                    </div>
+                    {prepaymentEnabled ? (
+                      <div className="flex flex-col gap-1 min-w-[10rem] max-w-xs flex-1 basis-[12rem]">
+                        <Label htmlFor="prepayment-min-balance" className="sr-only">
+                          {t("prepaymentMinLedgerBalanceLabel")}
+                        </Label>
+                        <Input
+                          id="prepayment-min-balance"
+                          type="text"
+                          inputMode="decimal"
+                          placeholder={t("prepaymentMinLedgerBalancePlaceholder")}
+                          aria-label={t("prepaymentMinLedgerBalanceLabel")}
+                          value={
+                            society.prepaymentMinLedgerBalance === null ||
+                            society.prepaymentMinLedgerBalance === undefined
+                              ? ""
+                              : String(society.prepaymentMinLedgerBalance)
+                          }
+                          onChange={e =>
+                            setSociety({
+                              ...society,
+                              prepaymentMinLedgerBalance: e.target.value === "" ? null : e.target.value,
+                            })
+                          }
+                          data-testid="input-prepayment-min-ledger-balance"
+                          className="h-9"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                  {prepaymentEnabled ? (
+                    <p className="text-xs text-muted-foreground pl-6 max-w-lg">
+                      {t("prepaymentMinLedgerBalanceHelp")}
+                    </p>
+                  ) : null}
+                </div>
+
                 {(
                   [
-                    ["bank_transfer_prepayment", "paymentMethodBankTransferPrepayment"] as const,
                     ["cash_manual", "paymentMethodCashManual"] as const,
                     ["cash_change_machine", "paymentMethodCashMachine"] as const,
                   ] as const

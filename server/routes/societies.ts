@@ -130,10 +130,19 @@ export function registerSocietyRoutes(app: Express) {
         });
       }
 
+      const { prepaymentMinLedgerBalance: floorRaw, ...restSettings } = parsed.data;
+      const floorDb =
+        floorRaw === undefined
+          ? undefined
+          : floorRaw === null
+            ? null
+            : String(floorRaw);
+
       const [updatedSociety] = await db
         .update(societies)
         .set({
-          ...parsed.data,
+          ...restSettings,
+          ...(floorDb !== undefined ? { prepaymentMinLedgerBalance: floorDb } : {}),
           updatedAt: new Date(),
         })
         .where(eq(societies.id, id))
