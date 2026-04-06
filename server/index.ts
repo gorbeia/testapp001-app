@@ -39,7 +39,7 @@ export function log(message: string, source = "express") {
 app.use((req: Request, res: Response, next: NextFunction) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  let capturedJsonResponse: unknown = undefined;
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
@@ -68,8 +68,8 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   // Start the cron job service for automatic debt calculations
   debtCalculationService.startMonthlyCalculationCron();
 
-  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    console.error('Error:', err.message);
+  app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
+    console.error("Error:", err instanceof Error ? err.message : err);
     if (res && typeof res.status === 'function') {
       res.status(500).json({ message: 'Internal Server Error' });
     } else {
@@ -87,24 +87,39 @@ app.use((req: Request, res: Response, next: NextFunction) => {
     await setupVite(httpServer, app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
+  // PORT / HOST: default all interfaces for Docker/Replit; set HOST=127.0.0.1 if listen fails (some sandboxes).
   const port = parseInt(process.env.PORT || "5000", 10);
+  const host = process.env.HOST ?? "0.0.0.0";
 
-  const server = httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-      // Run catch-up calculation after server starts
-      debtCalculationService.checkAndRunCatchupCalculation();
+  // reusePort is not supported on macOS and throws ENOTSUP; only enable when explicitly requested (e.g. Linux + multi-process).
+  const listenOptions: { port: number; host: string; reusePort?: boolean } = { port, host };
+  if (process.env.REUSE_PORT === "true" || process.env.SO_REUSEPORT === "1") {
+    listenOptions.reusePort = true;
+  }
+
+  httpServer.on("error", (err: Error & { code?: string }) => {
+    if (err.code === "EADDRINUSE") {
+      log(
+        `port ${port} is already in use — stop the other process (e.g. another pnpm dev), or set PORT=5001 in .env. Hint: lsof -i :${port} | grep LISTEN`,
+        "express"
+      );
+      if (process.platform === "darwin" && port === 5000) {
+        log(
+          "on macOS, port 5000 is often taken by AirPlay Receiver (Control Center). Disable: System Settings → General → AirDrop & Handoff → AirPlay Receiver → Off",
+          "express"
+        );
+      }
+      process.exit(1);
     }
-  );
+    console.error(err);
+    process.exit(1);
+  });
+
+  const server = httpServer.listen(listenOptions, () => {
+    log(`serving on http://${host}:${port}`);
+    // Run catch-up calculation after server starts
+    debtCalculationService.checkAndRunCatchupCalculation();
+  });
 
   // Graceful shutdown
   process.on("SIGTERM", () => {

@@ -1,5 +1,4 @@
 import { useLanguage } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
 import { useState, useEffect } from "react";
 import {
   Note,
@@ -19,7 +18,6 @@ import { AlertCircle } from "lucide-react";
 
 export function Dashboard() {
   const { t } = useLanguage();
-  const { user } = useAuth();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(true);
   const [notesError, setNotesError] = useState<string | null>(null);
@@ -76,7 +74,7 @@ export function Dashboard() {
     setLoadingStats(true);
     setStatsError(null);
     try {
-      const statsData = await fetchDashboardStats(user);
+      const statsData = await fetchDashboardStats();
       setStats(statsData);
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
