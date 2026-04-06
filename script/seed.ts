@@ -12,6 +12,7 @@ import { seedReservations } from "./seed-reservations";
 import { seedNotes } from "./seed-notes";
 import { seedNotifications } from "./seed-notifications";
 import { seedSubscriptions } from "./seed-subscriptions";
+import { seedCashPosFixtures } from "./seed-cash-pos-fixtures";
 
 async function runAllSeeds() {
   console.log("Running database seed pipeline...\n");
@@ -26,6 +27,7 @@ async function runAllSeeds() {
   await seedNotes(db);
   await seedNotifications(db);
   await seedSubscriptions(db);
+  await seedCashPosFixtures(db);
   console.log("\nAll seed steps finished.");
 }
 

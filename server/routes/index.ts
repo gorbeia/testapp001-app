@@ -123,6 +123,7 @@ import { registerUserRoutes } from "./users";
 import { registerSubscriptionRoutes } from "./subscriptions";
 import { registerCategoryRoutes } from "./categories";
 import { registerBackofficeRoutes, backofficeSessionMiddleware } from "./backoffice";
+import { registerCashSettlementRoutes } from "./cash-settlements";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   // Apply session middleware to all routes
@@ -148,6 +149,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // Register consumption routes
   registerConsumptionRoutes(app);
+  registerCashSettlementRoutes(app);
 
   // Register reservation routes
   registerReservationRoutes(app);

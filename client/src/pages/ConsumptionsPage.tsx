@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-type RequestInit = globalThis.RequestInit;
+import { useState, useEffect, useCallback } from "react";
 import {
   Plus,
   Minus,
@@ -13,6 +12,8 @@ import {
   Utensils,
   Coffee,
   ChefHat,
+  Wallet,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,9 +39,12 @@ import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth";
+import { authFetch } from "@/lib/api";
 import type { Product } from "@shared/schema";
+import { societyAllowsCashPayment } from "@shared/schema";
 
-// Icon mapping function
+const PENDING_PAYMENTS_FILTER = "pending_payments";
+
 const getCategoryIcon = (iconName: string) => {
   switch (iconName) {
     case "Beer":
@@ -52,11 +56,10 @@ const getCategoryIcon = (iconName: string) => {
     case "ChefHat":
       return ChefHat;
     default:
-      return Utensils; // Default fallback
+      return Utensils;
   }
 };
 
-// Define Category type for frontend
 type Category = {
   id: string;
   name: string;
@@ -66,6 +69,47 @@ type Category = {
   sortOrder: number;
   isActive: boolean;
 };
+
+type PendingReservation = {
+  id: string;
+  name: string;
+  status: string;
+  startDate: string;
+  totalAmount: string;
+};
+
+type PendingSubscription = {
+  creditId: string;
+  month: string;
+  amount: string;
+};
+
+type CartLine =
+  | {
+      kind: "product";
+      lineId: string;
+      productId: string;
+      name: string;
+      price: number;
+      quantity: number;
+    }
+  | {
+      kind: "reservation";
+      lineId: string;
+      reservationId: string;
+      name: string;
+      price: number;
+      quantity: 1;
+    }
+  | {
+      kind: "subscription";
+      lineId: string;
+      month: string;
+      creditId: string;
+      name: string;
+      price: number;
+      quantity: 1;
+    };
 
 async function errorMessageFromResponse(res: Response, fallback: string): Promise<string> {
   try {
@@ -82,51 +126,55 @@ async function errorMessageFromResponse(res: Response, fallback: string): Promis
   return fallback;
 }
 
-// API helper function
-const authFetch = async (url: string, options: RequestInit = {}) => {
-  const token = localStorage.getItem("auth:token");
-  const headers = {
-    "Content-Type": "application/json",
-    ...(token && { Authorization: `Bearer ${token}` }),
-    ...options.headers,
-  };
-
-  return fetch(url, { ...options, headers });
-};
-
-interface CartItem {
-  productId: string;
-  name: string;
-  price: number;
-  quantity: number;
-}
-
 export function ConsumptionsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartLine[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cashEnabled, setCashEnabled] = useState(false);
+  const [pendingReservations, setPendingReservations] = useState<PendingReservation[]>([]);
+  const [pendingSubscriptions, setPendingSubscriptions] = useState<PendingSubscription[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
   const [isClosingAccount, setIsClosingAccount] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isCartExpanded, setIsCartExpanded] = useState(false);
 
-  // Fetch products and categories from API
+  const loadPendingCashItems = useCallback(async () => {
+    setLoadingPending(true);
+    try {
+      const res = await authFetch("/api/me/pending-cash-items");
+      if (!res.ok) {
+        setPendingReservations([]);
+        setPendingSubscriptions([]);
+        return;
+      }
+      const data = await res.json();
+      setPendingReservations(data.reservations ?? []);
+      setPendingSubscriptions(data.subscriptions ?? []);
+    } catch {
+      setPendingReservations([]);
+      setPendingSubscriptions([]);
+    } finally {
+      setLoadingPending(false);
+    }
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [productsResponse, categoriesResponse] = await Promise.all([
+        const [productsResponse, categoriesResponse, societyResponse] = await Promise.all([
           authFetch("/api/products"),
           authFetch("/api/categories"),
+          authFetch("/api/societies/user"),
         ]);
 
         if (productsResponse.ok) {
           const productsData = await productsResponse.json();
-          // Only show active products
           setProducts(productsData.filter((product: Product) => product.isActive));
         } else {
           throw new Error("Failed to fetch products");
@@ -140,11 +188,23 @@ export function ConsumptionsPage() {
           console.error("Categories API error:", errorText);
           throw new Error(`Failed to fetch categories: ${errorText}`);
         }
+
+        if (societyResponse.ok) {
+          const society = await societyResponse.json();
+          const allow = societyAllowsCashPayment(society.paymentMethods);
+          setCashEnabled(allow);
+          if (!allow) {
+            setPendingReservations([]);
+            setPendingSubscriptions([]);
+          }
+        } else {
+          setCashEnabled(false);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
         toast({
-          title: "Error",
-          description: "Produktuak ezin izan dira kargatu",
+          title: t("errorTitle"),
+          description: t("productsLoadFailed"),
           variant: "destructive",
         });
       } finally {
@@ -153,7 +213,19 @@ export function ConsumptionsPage() {
     };
 
     fetchData();
-  }, [toast]);
+  }, [toast, t]);
+
+  useEffect(() => {
+    if (cashEnabled) {
+      loadPendingCashItems();
+    }
+  }, [cashEnabled, loadPendingCashItems]);
+
+  useEffect(() => {
+    if (!cashEnabled && categoryFilter === PENDING_PAYMENTS_FILTER) {
+      setCategoryFilter("all");
+    }
+  }, [cashEnabled, categoryFilter]);
 
   const filteredProducts = products.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
@@ -161,17 +233,41 @@ export function ConsumptionsPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const addToCart = (product: Product) => {
+  const q = searchTerm.toLowerCase();
+  const filteredPendingReservations = pendingReservations.filter(
+    r =>
+      r.name.toLowerCase().includes(q) ||
+      r.id.toLowerCase().includes(q) ||
+      parseFloat(r.totalAmount).toFixed(2).includes(q)
+  );
+  const filteredPendingSubscriptions = pendingSubscriptions.filter(
+    s => s.month.includes(q) || s.amount.toString().includes(q)
+  );
+
+  const showPendingGrid = categoryFilter === PENDING_PAYMENTS_FILTER && cashEnabled;
+  const pendingGridEmpty =
+    !loadingPending &&
+    filteredPendingReservations.length === 0 &&
+    filteredPendingSubscriptions.length === 0;
+
+  const addToCartProduct = (product: Product) => {
     setCart(prev => {
-      const existing = prev.find(item => item.productId === product.id);
+      const existing = prev.find(
+        (item): item is Extract<CartLine, { kind: "product" }> =>
+          item.kind === "product" && item.productId === product.id
+      );
       if (existing) {
         return prev.map(item =>
-          item.productId === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.kind === "product" && item.productId === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
         );
       }
       return [
         ...prev,
         {
+          kind: "product",
+          lineId: product.id,
           productId: product.id,
           name: product.name,
           price: parseFloat(product.price),
@@ -181,24 +277,81 @@ export function ConsumptionsPage() {
     });
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const addReservationToCart = (r: PendingReservation) => {
+    const price = parseFloat(r.totalAmount);
+    if (!Number.isFinite(price) || price <= 0) return;
+    const lineId = `res:${r.id}`;
     setCart(prev => {
-      return prev
-        .map(item =>
-          item.productId === productId
-            ? { ...item, quantity: Math.max(0, item.quantity + delta) }
-            : item
-        )
-        .filter(item => item.quantity > 0);
+      if (prev.some(item => item.lineId === lineId)) return prev;
+      return [
+        ...prev,
+        {
+          kind: "reservation",
+          lineId,
+          reservationId: r.id,
+          name: r.name,
+          price,
+          quantity: 1,
+        },
+      ];
     });
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart(prev => prev.filter(item => item.productId !== productId));
+  const addSubscriptionToCart = (s: PendingSubscription) => {
+    const price = parseFloat(s.amount);
+    if (!Number.isFinite(price) || price <= 0) return;
+    const lineId = `sub:${s.month}`;
+    setCart(prev => {
+      if (prev.some(item => item.lineId === lineId)) return prev;
+      return [
+        ...prev,
+        {
+          kind: "subscription",
+          lineId,
+          month: s.month,
+          creditId: s.creditId,
+          name: `${t("pendingPaymentSubscriptionBadge")} — ${s.month}`,
+          price,
+          quantity: 1,
+        },
+      ];
+    });
+  };
+
+  const updateQuantity = (lineId: string, delta: number) => {
+    setCart(prev => {
+      const line = prev.find(l => l.lineId === lineId);
+      if (!line) return prev;
+      if (line.kind !== "product") {
+        if (delta < 0) {
+          return prev.filter(l => l.lineId !== lineId);
+        }
+        return prev;
+      }
+      return prev
+        .map(item =>
+          item.lineId === lineId && item.kind === "product"
+            ? { ...item, quantity: Math.max(0, item.quantity + delta) }
+            : item
+        )
+        .filter(item => (item.kind === "product" ? item.quantity > 0 : true));
+    });
+  };
+
+  const removeFromCart = (lineId: string) => {
+    setCart(prev => prev.filter(item => item.lineId !== lineId));
   };
 
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const productLines = cart.filter((l): l is Extract<CartLine, { kind: "product" }> => l.kind === "product");
+  const reservationLines = cart.filter(
+    (l): l is Extract<CartLine, { kind: "reservation" }> => l.kind === "reservation"
+  );
+  const subscriptionLines = cart.filter(
+    (l): l is Extract<CartLine, { kind: "subscription" }> => l.kind === "subscription"
+  );
 
   const handleCloseAccount = () => {
     if (cart.length === 0) return;
@@ -210,57 +363,82 @@ export function ConsumptionsPage() {
     setIsClosingAccount(true);
 
     try {
-      // Create consumption session
-      const consumptionResponse = await authFetch("/api/consumptions", {
-        method: "POST",
-        body: JSON.stringify({
-          notes: "Bar kontsumoa",
-        }),
-      });
+      if (productLines.length > 0) {
+        const consumptionResponse = await authFetch("/api/consumptions", {
+          method: "POST",
+          body: JSON.stringify({
+            notes: "Bar kontsumoa",
+          }),
+        });
 
-      if (!consumptionResponse.ok) {
-        throw new Error(
-          await errorMessageFromResponse(consumptionResponse, "Failed to create consumption")
-        );
+        if (!consumptionResponse.ok) {
+          throw new Error(
+            await errorMessageFromResponse(consumptionResponse, "Failed to create consumption")
+          );
+        }
+
+        const consumption = await consumptionResponse.json();
+
+        const itemsResponse = await authFetch(`/api/consumptions/${consumption.id}/items`, {
+          method: "POST",
+          body: JSON.stringify({
+            items: productLines.map(item => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              notes: null,
+            })),
+          }),
+        });
+
+        if (!itemsResponse.ok) {
+          throw new Error(
+            await errorMessageFromResponse(itemsResponse, "Failed to add consumption items")
+          );
+        }
+
+        const closeResponse = await authFetch(`/api/consumptions/${consumption.id}/close`, {
+          method: "POST",
+        });
+
+        if (!closeResponse.ok) {
+          throw new Error(
+            await errorMessageFromResponse(closeResponse, "Failed to close consumption")
+          );
+        }
       }
 
-      const consumption = await consumptionResponse.json();
-
-      // Add items to consumption
-      const itemsResponse = await authFetch(`/api/consumptions/${consumption.id}/items`, {
-        method: "POST",
-        body: JSON.stringify({
-          items: cart.map(item => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            notes: null,
-          })),
-        }),
-      });
-
-      if (!itemsResponse.ok) {
-        throw new Error(
-          await errorMessageFromResponse(itemsResponse, "Failed to add consumption items")
-        );
+      if (reservationLines.length > 0 || subscriptionLines.length > 0) {
+        const cashRes = await authFetch("/api/me/cash-settlements", {
+          method: "POST",
+          body: JSON.stringify({
+            reservationIds: reservationLines.map(l => l.reservationId),
+            subscriptionMonths: subscriptionLines.map(l => l.month),
+          }),
+        });
+        if (!cashRes.ok) {
+          throw new Error(
+            await errorMessageFromResponse(cashRes, "Failed to record cash settlements")
+          );
+        }
       }
 
-      // Close the consumption
-      const closeResponse = await authFetch(`/api/consumptions/${consumption.id}/close`, {
-        method: "POST",
-      });
-
-      if (!closeResponse.ok) {
-        throw new Error(
-          await errorMessageFromResponse(closeResponse, "Failed to close consumption")
-        );
+      if (productLines.length > 0 && reservationLines.length + subscriptionLines.length > 0) {
+        toast({
+          title: t("success"),
+          description: t("cashAndConsumptionSaved", { amount: cartTotal.toFixed(2) }),
+        });
+      } else if (productLines.length > 0) {
+        toast({
+          title: t("success"),
+          description: t("accountClosed", { amount: cartTotal.toFixed(2) }),
+        });
+      } else {
+        toast({
+          title: t("success"),
+          description: t("cashSettlementSaved", { amount: cartTotal.toFixed(2) }),
+        });
       }
 
-      toast({
-        title: t("success"),
-        description: t("accountClosed", { amount: cartTotal.toFixed(2) }),
-      });
-
-      // Refresh products to update stock levels
       const productsResponse = await authFetch("/api/products");
       if (productsResponse.ok) {
         const data = await productsResponse.json();
@@ -268,17 +446,22 @@ export function ConsumptionsPage() {
       }
 
       setCart([]);
+      if (cashEnabled) {
+        await loadPendingCashItems();
+      }
     } catch (error: unknown) {
       console.error("Error saving consumption:", error);
       toast({
         title: "Error",
-        description: getErrorMessage(error) || "Kontsumoa ezin izan da gorde",
+        description: getErrorMessage(error) || t("consumptionSaveError"),
         variant: "destructive",
       });
     } finally {
       setIsClosingAccount(false);
     }
   };
+
+  const pendingCategoryColor = "#64748b";
 
   return (
     <div className="flex flex-col lg:flex-row h-[calc(100vh-4rem)]" data-testid="bar-page">
@@ -306,7 +489,7 @@ export function ConsumptionsPage() {
                 variant={categoryFilter === "all" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setCategoryFilter("all")}
-                data-testid={`button-filter-all`}
+                data-testid="button-filter-all"
               >
                 {t("allTime")}
               </Button>
@@ -331,17 +514,121 @@ export function ConsumptionsPage() {
                   </Button>
                 );
               })}
+              {cashEnabled && (
+                <Button
+                  variant={categoryFilter === PENDING_PAYMENTS_FILTER ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => {
+                    setSearchTerm("");
+                    setCategoryFilter(PENDING_PAYMENTS_FILTER);
+                    void loadPendingCashItems();
+                  }}
+                  data-testid="button-filter-pending-payments"
+                  className={categoryFilter === PENDING_PAYMENTS_FILTER ? "" : "border-2"}
+                  style={{
+                    borderColor:
+                      categoryFilter === PENDING_PAYMENTS_FILTER ? undefined : pendingCategoryColor,
+                    backgroundColor:
+                      categoryFilter === PENDING_PAYMENTS_FILTER
+                        ? pendingCategoryColor
+                        : undefined,
+                    color: categoryFilter === PENDING_PAYMENTS_FILTER ? "white" : pendingCategoryColor,
+                  }}
+                >
+                  <Wallet className="mr-1 h-3 w-3" />
+                  {t("pendingPaymentsCategory")}
+                </Button>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {loading ? (
+            {loading || (showPendingGrid && loadingPending) ? (
               <div className="col-span-full text-center py-8 text-muted-foreground">
-                Kargatzen...
+                {t("loading")}
               </div>
+            ) : showPendingGrid ? (
+              pendingGridEmpty ? (
+                <div
+                  className="col-span-full text-center py-8 text-muted-foreground"
+                  data-testid="pending-payments-empty"
+                >
+                  {t("noPendingCashItems")}
+                </div>
+              ) : (
+                <>
+                  {filteredPendingReservations.map(r => (
+                    <Card
+                      key={r.id}
+                      className="hover-elevate"
+                      data-testid={`pending-card-reservation-${r.id}`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex flex-col gap-2">
+                          <span className="font-medium text-sm line-clamp-2">{r.name}</span>
+                          <div className="flex items-center justify-between gap-2">
+                            <Badge variant="secondary" className="text-xs">
+                              <Calendar className="h-3 w-3 mr-1 inline" />
+                              {t("pendingPaymentReservationBadge")}
+                            </Badge>
+                            <span className="font-bold">
+                              {parseFloat(r.totalAmount).toFixed(2)}€
+                            </span>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={e => {
+                              e.stopPropagation();
+                              addReservationToCart(r);
+                            }}
+                            className="w-full mt-2"
+                            data-testid={`button-add-reservation-${r.id}`}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            {t("addToCart")}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                  {filteredPendingSubscriptions.map(s => (
+                    <Card
+                      key={s.creditId}
+                      className="hover-elevate"
+                      data-testid={`pending-card-subscription-${s.month}`}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex flex-col gap-2">
+                          <span className="font-medium text-sm">
+                            {t("pendingPaymentSubscriptionBadge")} — {s.month}
+                          </span>
+                          <div className="flex items-center justify-between gap-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {t("pendingPaymentSubscriptionBadge")}
+                            </Badge>
+                            <span className="font-bold">{parseFloat(s.amount).toFixed(2)}€</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={e => {
+                              e.stopPropagation();
+                              addSubscriptionToCart(s);
+                            }}
+                            className="w-full mt-2"
+                            data-testid={`button-add-subscription-${s.month}`}
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            {t("addToCart")}
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </>
+              )
             ) : filteredProducts.length === 0 ? (
               <div className="col-span-full text-center py-8 text-muted-foreground">
-                Ez da produkturik aurkitu
+                {t("noProductsFound")}
               </div>
             ) : (
               filteredProducts.map(product => {
@@ -350,14 +637,14 @@ export function ConsumptionsPage() {
                 const isLowStock = stock <= minStock;
 
                 return (
-                  <Card key={product.id} className="hover-elevate" data-testid={`product-card`}>
+                  <Card key={product.id} className="hover-elevate" data-testid="product-card">
                     <CardContent className="p-4">
                       <div className="flex flex-col gap-2">
                         <span className="font-medium text-sm">{product.name}</span>
                         <div className="flex items-center justify-between gap-2">
                           <Badge variant="secondary" className="text-xs">
                             {categories.find(c => c.id === product.categoryId)?.name ||
-                              "Kategoria ezezaguna"}
+                              t("unknownCategory")}
                           </Badge>
                           <span className="font-bold">{parseFloat(product.price).toFixed(2)}€</span>
                         </div>
@@ -367,7 +654,7 @@ export function ConsumptionsPage() {
                           </span>
                           {isLowStock && (
                             <Badge variant="destructive" className="text-xs">
-                              Baxua
+                              {t("lowStock")}
                             </Badge>
                           )}
                         </div>
@@ -375,13 +662,13 @@ export function ConsumptionsPage() {
                           size="sm"
                           onClick={e => {
                             e.stopPropagation();
-                            addToCart(product);
+                            addToCartProduct(product);
                           }}
                           className="w-full mt-2"
                           data-testid="button-add-to-cart"
                         >
                           <Plus className="h-4 w-4 mr-1" />
-                          Gehitu
+                          {t("addToCart")}
                         </Button>
                       </div>
                     </CardContent>
@@ -393,8 +680,7 @@ export function ConsumptionsPage() {
         </div>
       </div>
 
-      <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l bg-card flex flex-col lg:max-h-none">
-        {/* Cart Header with Handle - Always Visible */}
+      <div className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l bg-card flex flex-col lg:h-[calc(100vh-4rem)] lg:sticky lg:top-16 lg:self-start">
         <div className="p-4 border-b lg:hidden">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -428,7 +714,6 @@ export function ConsumptionsPage() {
           )}
         </div>
 
-        {/* Desktop Cart Header */}
         <div className="p-4 border-b hidden lg:block">
           <h3 className="font-semibold flex items-center gap-2">
             <ShoppingCart className="h-4 w-4" />
@@ -441,7 +726,6 @@ export function ConsumptionsPage() {
           </h3>
         </div>
 
-        {/* Collapsible Cart Content - Mobile Only */}
         <div
           className={`lg:hidden transition-all duration-300 ease-in-out ${isCartExpanded ? "max-h-96" : "max-h-0"} overflow-hidden`}
         >
@@ -457,9 +741,9 @@ export function ConsumptionsPage() {
               ) : (
                 cart.map(item => (
                   <div
-                    key={item.productId}
+                    key={item.lineId}
                     className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50"
-                    data-testid={`mobile-cart-item-${item.productId}`}
+                    data-testid={`mobile-cart-item-${item.lineId}`}
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{item.name}</p>
@@ -472,8 +756,8 @@ export function ConsumptionsPage() {
                         variant="outline"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => updateQuantity(item.productId, -1)}
-                        data-testid={`mobile-button-decrease-quantity-${item.productId}`}
+                        onClick={() => updateQuantity(item.lineId, -1)}
+                        data-testid={`mobile-button-decrease-quantity-${item.lineId}`}
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
@@ -482,8 +766,9 @@ export function ConsumptionsPage() {
                         variant="outline"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => updateQuantity(item.productId, 1)}
-                        data-testid={`mobile-button-increase-quantity-${item.productId}`}
+                        onClick={() => updateQuantity(item.lineId, 1)}
+                        disabled={item.kind !== "product"}
+                        data-testid={`mobile-button-increase-quantity-${item.lineId}`}
                       >
                         <Plus className="h-3 w-3" />
                       </Button>
@@ -491,8 +776,8 @@ export function ConsumptionsPage() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => removeFromCart(item.productId)}
-                        data-testid={`mobile-button-remove-${item.productId}`}
+                        onClick={() => removeFromCart(item.lineId)}
+                        data-testid={`mobile-button-remove-${item.lineId}`}
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -504,8 +789,7 @@ export function ConsumptionsPage() {
           </ScrollArea>
         </div>
 
-        {/* Desktop Cart Content - Always Visible */}
-        <div className="hidden lg:block">
+        <div className="hidden lg:flex lg:flex-col lg:flex-1 lg:min-h-0">
           <ScrollArea className="flex-1">
             <div className="p-4 space-y-3">
               {cart.length === 0 ? (
@@ -518,9 +802,9 @@ export function ConsumptionsPage() {
               ) : (
                 cart.map(item => (
                   <div
-                    key={item.productId}
+                    key={item.lineId}
                     className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50"
-                    data-testid={`cart-item-${item.productId}`}
+                    data-testid={`cart-item-${item.lineId}`}
                   >
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{item.name}</p>
@@ -533,8 +817,8 @@ export function ConsumptionsPage() {
                         variant="outline"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => updateQuantity(item.productId, -1)}
-                        data-testid={`button-decrease-quantity-${item.productId}`}
+                        onClick={() => updateQuantity(item.lineId, -1)}
+                        data-testid={`button-decrease-quantity-${item.lineId}`}
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
@@ -543,8 +827,9 @@ export function ConsumptionsPage() {
                         variant="outline"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => updateQuantity(item.productId, 1)}
-                        data-testid={`button-increase-quantity-${item.productId}`}
+                        onClick={() => updateQuantity(item.lineId, 1)}
+                        disabled={item.kind !== "product"}
+                        data-testid={`button-increase-quantity-${item.lineId}`}
                       >
                         <Plus className="h-3 w-3" />
                       </Button>
@@ -552,8 +837,8 @@ export function ConsumptionsPage() {
                         variant="ghost"
                         size="icon"
                         className="h-7 w-7"
-                        onClick={() => removeFromCart(item.productId)}
-                        data-testid={`button-remove-${item.productId}`}
+                        onClick={() => removeFromCart(item.lineId)}
+                        data-testid={`button-remove-${item.lineId}`}
                       >
                         <X className="h-3 w-3" />
                       </Button>
@@ -565,7 +850,6 @@ export function ConsumptionsPage() {
           </ScrollArea>
         </div>
 
-        {/* Cart Footer - Mobile (Collapsible) */}
         <div
           className={`lg:hidden transition-all duration-300 ease-in-out ${isCartExpanded ? "block" : "hidden"}`}
         >
@@ -577,13 +861,12 @@ export function ConsumptionsPage() {
               data-testid="mobile-button-close-account"
             >
               <Receipt className="mr-2 h-4 w-4" />
-              {isClosingAccount ? "Gordetzen..." : t("closeAccount")}
+              {isClosingAccount ? t("cashSaving") : t("closeAccount")}
             </Button>
           </div>
         </div>
 
-        {/* Cart Footer - Desktop */}
-        <div className="hidden lg:block p-4 border-t mt-auto">
+        <div className="hidden lg:block p-4 border-t mt-auto shrink-0">
           <div className="flex justify-between items-center mb-4">
             <span className="font-medium">{t("total")}:</span>
             <span className="text-xl font-bold">{cartTotal.toFixed(2)}€</span>
@@ -595,12 +878,11 @@ export function ConsumptionsPage() {
             data-testid="button-close-account"
           >
             <Receipt className="mr-2 h-4 w-4" />
-            {isClosingAccount ? "Gordetzen..." : t("closeAccount")}
+            {isClosingAccount ? t("cashSaving") : t("closeAccount")}
           </Button>
         </div>
       </div>
 
-      {/* Confirmation Dialog */}
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="max-w-2xl" data-testid="confirmation-dialog">
           <DialogHeader>
@@ -608,13 +890,12 @@ export function ConsumptionsPage() {
           </DialogHeader>
 
           <div className="space-y-6">
-            {/* Member and Total Info */}
             <div className="bg-muted p-4 rounded-lg">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">{t("idea")}</p>
                   <p className="text-lg font-bold" data-testid="member-name">
-                    {user?.name || user?.email || "Ezezaguna"}
+                    {user?.name || user?.email || "—"}
                   </p>
                 </div>
                 <div className="text-right">
@@ -626,9 +907,8 @@ export function ConsumptionsPage() {
               </div>
             </div>
 
-            {/* Items Table */}
             <div>
-              <h3 className="text-lg font-semibold mb-3">{t("products")}</h3>
+              <h3 className="text-lg font-semibold mb-3">{t("confirmationProductsAndPayments")}</h3>
               <ScrollArea className="h-48 border rounded-md">
                 <Table data-testid="confirmation-items-table">
                   <TableHeader>
@@ -641,8 +921,12 @@ export function ConsumptionsPage() {
                   </TableHeader>
                   <TableBody>
                     {cart.map(item => (
-                      <TableRow key={item.productId}>
-                        <TableCell className="font-medium">{item.name}</TableCell>
+                      <TableRow key={item.lineId} data-testid={`confirmation-row-${item.lineId}`}>
+                        <TableCell className="font-medium">
+                          {item.kind === "product"
+                            ? item.name
+                            : `${item.name} (${item.kind === "reservation" ? t("pendingPaymentReservationBadge") : t("pendingPaymentSubscriptionBadge")})`}
+                        </TableCell>
                         <TableCell className="text-center">{item.quantity}</TableCell>
                         <TableCell className="text-right">{item.price.toFixed(2)}€</TableCell>
                         <TableCell className="font-medium text-right">
@@ -655,7 +939,6 @@ export function ConsumptionsPage() {
               </ScrollArea>
             </div>
 
-            {/* Final Total */}
             <div className="border-t pt-4">
               <div className="flex justify-between items-center">
                 <span className="text-lg font-semibold">{t("total")}:</span>
@@ -671,7 +954,7 @@ export function ConsumptionsPage() {
               disabled={isClosingAccount}
               data-testid="button-cancel-consumption"
             >
-              Utzi
+              {t("cancel")}
             </Button>
             <Button
               onClick={confirmCloseAccount}
@@ -680,7 +963,7 @@ export function ConsumptionsPage() {
               data-testid="button-confirm-consumption"
             >
               <Receipt className="mr-2 h-4 w-4" />
-              {isClosingAccount ? "Gordetzen..." : "Baieztatu eta Gorde"}
+              {isClosingAccount ? t("cashSaving") : t("confirmAndSaveConsumption")}
             </Button>
           </DialogFooter>
         </DialogContent>

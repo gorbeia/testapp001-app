@@ -56,6 +56,7 @@ const MOVEMENT_TYPES = [
   "bank_transfer",
   "refund",
   "adjustment",
+  "cash_payment",
 ] as const;
 
 type BankTransferMeRow = {

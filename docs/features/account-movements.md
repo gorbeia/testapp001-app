@@ -5,7 +5,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 ## Sign convention (member balance)
 
 - **Negative `amount`**: balance goes down — consumption, reservation charge, subscription charge, SEPA bounce (re-charge after failed collection).
-- **Positive `amount`**: balance goes up — validated **prepayment** (`bank_transfer` movement type), SEPA collection when marking a credit paid, refund, reservation cancel/delete adjustment (reversal of prior charge).
+- **Positive `amount`**: balance goes up — validated **prepayment** (`bank_transfer` movement type), SEPA collection when marking a credit paid, **cash settlement at the bar** (`cash_payment`, e.g. `reservation_cash` / `subscription_cash` reference types), refund, reservation cancel/delete adjustment (reversal of prior charge).
 - **`SUM(amount)`** = **member balance**: negative ⇒ owes the society; positive ⇒ prepaid/credit (saldo a favor). There is **no** society flag that blocks positive balance; treasurer/admin discretion applies when validating prepayment proposals or issuing refunds.
 
 `bank_transfers` (implementation table name for prepayment proposals), `credits.*`, etc. keep their own “absolute money” semantics; only **`account_movements.amount`** uses this signed balance convention.

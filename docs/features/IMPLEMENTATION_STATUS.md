@@ -86,6 +86,8 @@ Status legend:
    - **Status**: ✅ Implemented (`stock_movements` with type consumption; stock can go negative)
 8. **Consumption analytics**
    - **Status**: ❌ Not Implemented
+9. **Cash settlement (pending reservations / subscription) on POS** — when society cash methods enabled
+   - **Status**: ✅ Implemented (`GET /api/me/pending-cash-items`, `POST /api/me/cash-settlements`, `ConsumptionsPage` pending category + cart; `cash_payment` ledger type; cron aligns **`credits`**; E2E `consumption-cash-pending.feature`; `seedCashPosFixtures` + demo reservation)
 
 ---
 

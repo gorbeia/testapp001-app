@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { societies } from "../shared/schema";
+import { societies, type SocietyPaymentMethod } from "../shared/schema";
 import { DEMO_SOCIETY_ALPHABETIC_ID, DEMO_SOCIETY_ID } from "./seed-demo-society";
 import type { SeedDb } from "./seed-db-type";
 import { db, pool } from "../server/db";
@@ -29,6 +29,7 @@ export async function seedSocieties(dbConn: SeedDb) {
       reservationPricePerMember: "2.00",
       kitchenPricePerMember: "3.00",
       sepaMode: "monthly",
+      paymentMethods: ["bank_transfer_prepayment", "cash_manual"] as SocietyPaymentMethod[],
       isActive: true,
     },
   ];

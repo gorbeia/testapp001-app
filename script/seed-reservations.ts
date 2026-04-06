@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import type { SeedDb } from "./seed-db-type";
 import { db, pool } from "../server/db";
 import { fileURLToPath } from "node:url";
+import { DEMO_SOCIETY_ALPHABETIC_ID, DEMO_SOCIETY_ID } from "./seed-demo-society";
 
 export async function seedReservations(dbConn: SeedDb) {
   try {
@@ -299,9 +300,13 @@ export async function seedReservations(dbConn: SeedDb) {
       }
     }
 
-    // Smart table assignment function
-    const findBestTable = (guestCount: number, excludeTables: string[] = []): string | null => {
-      const suitableTables = activeTables.filter(
+    // Smart table assignment function (scoped to a society's table list)
+    const findBestTable = (
+      guestCount: number,
+      tableList: typeof activeTables,
+      excludeTables: string[] = []
+    ): string | null => {
+      const suitableTables = tableList.filter(
         table =>
           !excludeTables.includes(table.name) &&
           guestCount >= (table.minCapacity ?? 1) &&
@@ -327,7 +332,52 @@ export async function seedReservations(dbConn: SeedDb) {
       `Generated ${historicalReservations.length} historical reservations for pagination testing`
     );
 
-    // Combine all reservations
+    const bazkideaId = "550e8400-e29b-41d4-a716-446655440004";
+    /** Same tenant as `seed-users` / `seed-tables` / cash POS fixtures — not necessarily `isActive`. */
+    let cashPosE2eSocietyId = societyId;
+    const demoByStableId = await dbConn
+      .select({ id: societies.id })
+      .from(societies)
+      .where(eq(societies.id, DEMO_SOCIETY_ID))
+      .limit(1);
+    if (demoByStableId.length > 0) {
+      cashPosE2eSocietyId = demoByStableId[0].id;
+    } else {
+      const demoByAlpha = await dbConn
+        .select({ id: societies.id })
+        .from(societies)
+        .where(eq(societies.alphabeticId, DEMO_SOCIETY_ALPHABETIC_ID))
+        .limit(1);
+      if (demoByAlpha.length > 0) {
+        cashPosE2eSocietyId = demoByAlpha[0].id;
+      }
+    }
+
+    const cashPosE2eReservation: Omit<
+      Reservation,
+      | "createdAt"
+      | "updatedAt"
+      | "totalAmount"
+      | "cancellationReason"
+      | "cancelledBy"
+      | "cancelledAt"
+    > = {
+      id: "b2c3d4e5-f6a7-4890-bcde-f10000000001",
+      userId: bazkideaId,
+      name: "Kutxa Erreserba E2E",
+      type: "bazkaria",
+      status: "confirmed",
+      startDate: new Date("2026-06-15T19:00:00Z"),
+      guests: 4,
+      useKitchen: false,
+      table: "Mahaia 1",
+      notes: "Seed: bazkidea unpaid for cash POS E2E",
+      societyId: cashPosE2eSocietyId,
+    };
+
+    const CASH_POS_E2E_RESERVATION_ID = "b2c3d4e5-f6a7-4890-bcde-f10000000001";
+
+    // Combine all reservations (cash POS E2E is synced after the loop — demo tenant + tables)
     const allReservations = [
       ...dummyReservations,
       ...mikelNovemberReservations,
@@ -360,7 +410,7 @@ export async function seedReservations(dbConn: SeedDb) {
       }
 
       // Verify that the table exists and is active
-      const tableExists = activeTables.some(table => table.name === reservation.table);
+      const tableExists = activeTables.some(t => t.name === reservation.table);
       if (!tableExists) {
         console.log(
           `Table '${reservation.table}' not found or inactive for reservation '${reservation.name}' (skipping)`
@@ -381,7 +431,7 @@ export async function seedReservations(dbConn: SeedDb) {
         reservation.guests > table.maxCapacity
       ) {
         // Try to find a better table
-        const betterTable = findBestTable(reservation.guests ?? 1);
+        const betterTable = findBestTable(reservation.guests ?? 1, activeTables);
         if (betterTable) {
           assignedTable = betterTable;
           wasReassigned = true;
@@ -411,6 +461,92 @@ export async function seedReservations(dbConn: SeedDb) {
         console.log(
           `Added reservation: ${reservation.name} at ${assignedTable} for ${reservation.guests} guests`
         );
+      }
+    }
+
+    // Cash POS / pending-payments E2E: always tied to demo society + its tables (not "active" society).
+    {
+      const cashE2eTables = await dbConn
+        .select()
+        .from(tables)
+        .where(and(eq(tables.societyId, cashPosE2eSocietyId), eq(tables.isActive, true)));
+
+      if (cashE2eTables.length === 0) {
+        console.log(
+          "Cash POS E2E: no active tables on demo society — skipping Kutxa Erreserba E2E fixture"
+        );
+      } else {
+        const [demoForPricing] = await dbConn
+          .select()
+          .from(societies)
+          .where(eq(societies.id, cashPosE2eSocietyId))
+          .limit(1);
+        const rp = parseFloat(demoForPricing?.reservationPricePerMember ?? "2");
+        const kp = parseFloat(demoForPricing?.kitchenPricePerMember ?? "3");
+        const guests = cashPosE2eReservation.guests ?? 0;
+        const totalAmountStr = (
+          guests * rp + (cashPosE2eReservation.useKitchen ? guests * kp : 0)
+        ).toString();
+
+        let assignedTable = cashPosE2eReservation.table;
+        const initialTable = cashE2eTables.find(t => t.name === assignedTable);
+        if (
+          !initialTable ||
+          guests < (initialTable.minCapacity ?? 1) ||
+          guests > initialTable.maxCapacity
+        ) {
+          const better = findBestTable(guests, cashE2eTables);
+          if (better) assignedTable = better;
+        }
+
+        const tableOk = cashE2eTables.some(t => t.name === assignedTable);
+        if (!tableOk) {
+          console.log(
+            "Cash POS E2E: could not assign a table on demo society — skipping Kutxa Erreserba E2E fixture"
+          );
+        } else {
+          const now = new Date();
+          const [existingE2e] = await dbConn
+            .select()
+            .from(reservations)
+            .where(eq(reservations.id, CASH_POS_E2E_RESERVATION_ID))
+            .limit(1);
+
+          if (existingE2e) {
+            await dbConn
+              .update(reservations)
+              .set({
+                userId: cashPosE2eReservation.userId,
+                societyId: cashPosE2eSocietyId,
+                name: cashPosE2eReservation.name,
+                type: cashPosE2eReservation.type,
+                status: cashPosE2eReservation.status,
+                startDate: cashPosE2eReservation.startDate,
+                guests: cashPosE2eReservation.guests,
+                useKitchen: cashPosE2eReservation.useKitchen,
+                table: assignedTable,
+                notes: cashPosE2eReservation.notes,
+                totalAmount: totalAmountStr,
+                cancellationReason: null,
+                cancelledBy: null,
+                cancelledAt: null,
+                updatedAt: now,
+              })
+              .where(eq(reservations.id, CASH_POS_E2E_RESERVATION_ID));
+            console.log("Cash POS E2E: updated Kutxa Erreserba E2E on demo tenant");
+          } else {
+            await dbConn.insert(reservations).values({
+              ...cashPosE2eReservation,
+              id: CASH_POS_E2E_RESERVATION_ID,
+              societyId: cashPosE2eSocietyId,
+              table: assignedTable,
+              totalAmount: totalAmountStr,
+              createdAt: now,
+              updatedAt: now,
+            });
+            console.log("Cash POS E2E: inserted Kutxa Erreserba E2E on demo tenant");
+          }
+        }
       }
     }
 

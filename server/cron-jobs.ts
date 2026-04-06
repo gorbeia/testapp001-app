@@ -1,6 +1,6 @@
 import cron from "node-cron";
 import { db } from "./db";
-import { eq, and, gte, lte, ne, sql } from "drizzle-orm";
+import { eq, and, gte, lte, ne, notExists, sql } from "drizzle-orm";
 import {
   users,
   consumptions,
@@ -8,6 +8,9 @@ import {
   societies,
   credits,
   subscriptionTypes,
+  accountMovements,
+  ACCOUNT_MOVEMENT_REF_RESERVATION_CASH,
+  ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH,
   type Society,
 } from "@shared/schema";
 import { insertAccountMovementRow, movementExistsForReference } from "./lib/account-movements";
@@ -160,7 +163,19 @@ class DebtCalculationService {
               eq(reservations.societyId, activeSociety.id),
               gte(reservations.startDate, startDate),
               lte(reservations.startDate, endDate),
-              ne(reservations.status, "cancelled")
+              ne(reservations.status, "cancelled"),
+              notExists(
+                db
+                  .select()
+                  .from(accountMovements)
+                  .where(
+                    and(
+                      eq(accountMovements.societyId, activeSociety.id),
+                      eq(accountMovements.referenceType, ACCOUNT_MOVEMENT_REF_RESERVATION_CASH),
+                      eq(accountMovements.referenceId, reservations.id)
+                    )
+                  )
+              )
             )
           );
 
@@ -173,27 +188,35 @@ class DebtCalculationService {
           month
         );
 
-        const totalAmount = consumptionAmount + reservationAmount + subscriptionCharge;
+        const subRef = `${member.id}:${monthLabel}`;
+        const subscriptionSettledByCash = await movementExistsForReference(
+          activeSociety.id,
+          ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH,
+          subRef
+        );
+        const effectiveSubscription = subscriptionSettledByCash ? 0 : subscriptionCharge;
+
+        const totalAmount = consumptionAmount + reservationAmount + effectiveSubscription;
+
+        const [existingCredit] = await db
+          .select()
+          .from(credits)
+          .where(
+            and(
+              eq(credits.memberId, member.id),
+              eq(credits.societyId, activeSociety.id),
+              eq(credits.month, monthLabel)
+            )
+          );
 
         if (totalAmount > 0) {
-          const [existingCredit] = await db
-            .select()
-            .from(credits)
-            .where(
-              and(
-                eq(credits.memberId, member.id),
-                eq(credits.societyId, activeSociety.id),
-                eq(credits.month, monthLabel)
-              )
-            );
-
           if (existingCredit) {
             await db
               .update(credits)
               .set({
                 consumptionAmount: consumptionAmount.toString(),
                 reservationAmount: reservationAmount.toString(),
-                subscriptionAmount: subscriptionCharge.toString(),
+                subscriptionAmount: effectiveSubscription.toString(),
                 totalAmount: totalAmount.toString(),
                 updatedAt: new Date(),
               })
@@ -207,19 +230,29 @@ class DebtCalculationService {
               monthNumber: month,
               consumptionAmount: consumptionAmount.toString(),
               reservationAmount: reservationAmount.toString(),
-              subscriptionAmount: subscriptionCharge.toString(),
+              subscriptionAmount: effectiveSubscription.toString(),
               totalAmount: totalAmount.toString(),
               status: "pending",
             });
           }
 
           console.log(
-            `[${activeSociety.id}] ${member.name}: ${totalAmount.toFixed(2)}€ (consumption: ${consumptionAmount.toFixed(2)}€, reservation: ${reservationAmount.toFixed(2)}€, subscription: ${subscriptionCharge.toFixed(2)}€)`
+            `[${activeSociety.id}] ${member.name}: ${totalAmount.toFixed(2)}€ (consumption: ${consumptionAmount.toFixed(2)}€, reservation: ${reservationAmount.toFixed(2)}€, subscription: ${effectiveSubscription.toFixed(2)}€)`
           );
+        } else if (existingCredit) {
+          await db
+            .update(credits)
+            .set({
+              consumptionAmount: consumptionAmount.toString(),
+              reservationAmount: reservationAmount.toString(),
+              subscriptionAmount: effectiveSubscription.toString(),
+              totalAmount: "0",
+              updatedAt: new Date(),
+            })
+            .where(eq(credits.id, existingCredit.id));
         }
 
         if (subscriptionCharge > 0) {
-          const subRef = `${member.id}:${monthLabel}`;
           const exists = await movementExistsForReference(activeSociety.id, "subscription", subRef);
           if (!exists) {
             const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);

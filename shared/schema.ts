@@ -48,6 +48,12 @@ export function societyAllowsBankTransferPrepayment(raw: unknown): boolean {
   return normalizeSocietyPaymentMethods(raw).includes("bank_transfer_prepayment");
 }
 
+/** Society accepts in-person cash settlement at POS (manual or change machine). */
+export function societyAllowsCashPayment(raw: unknown): boolean {
+  const methods = normalizeSocietyPaymentMethods(raw);
+  return methods.includes("cash_manual") || methods.includes("cash_change_machine");
+}
+
 export const societies = pgTable("societies", {
   id: varchar("id")
     .primaryKey()
@@ -389,6 +395,7 @@ export const accountMovementTypeSchema = z.enum([
   "bank_transfer",
   "refund",
   "adjustment",
+  "cash_payment",
 ]);
 
 export type AccountMovementType = z.infer<typeof accountMovementTypeSchema>;
@@ -467,6 +474,30 @@ export const accountMovementRefundBodySchema = z.object({
 export const accountMovementSepaBounceBodySchema = z.object({
   creditId: z.string().min(1),
 });
+
+/** YYYY-MM */
+export const creditMonthLabelSchema = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/);
+
+export const cashSettlementBodySchema = z
+  .object({
+    reservationIds: z.array(z.string().min(1)).optional(),
+    subscriptionMonths: z.array(creditMonthLabelSchema).optional(),
+  })
+  .superRefine((val, ctx) => {
+    const n = (val.reservationIds?.length ?? 0) + (val.subscriptionMonths?.length ?? 0);
+    if (n === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one reservationIds or subscriptionMonths entry is required",
+      });
+    }
+  });
+
+export type CashSettlementBody = z.infer<typeof cashSettlementBodySchema>;
+
+/** `account_movements.reference_type` for idempotent cash settlement rows */
+export const ACCOUNT_MOVEMENT_REF_RESERVATION_CASH = "reservation_cash";
+export const ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH = "subscription_cash";
 
 export const bankTransferCreateBodySchema = z.object({
   userId: z.string().min(1),

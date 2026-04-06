@@ -9,6 +9,7 @@ const TYPE_TO_I18N = {
   bank_transfer: "movementTypeBank_transfer",
   refund: "movementTypeRefund",
   adjustment: "movementTypeAdjustment",
+  cash_payment: "movementTypeCash_payment",
 } as const satisfies Record<string, TranslationKey>;
 
 export function movementTypeLabelKey(type: string): TranslationKey {

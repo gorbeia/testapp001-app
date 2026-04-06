@@ -16,6 +16,7 @@
     "db:reset:seed": "pnpm db:reset && pnpm db:seed",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx script/seed.ts",
+    "db:repair:cash-e2e": "tsx script/repair-cash-pos-e2e-state.ts",
     "test:e2e": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js e2e/features/**/*.feature --import e2e/steps/**/*.ts --format progress-bar",
     "test:e2e:verbose": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js e2e/features/**/*.feature --import e2e/steps/**/*.ts --format @cucumber/pretty-formatter",
     "test:e2e:only": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js e2e/features/**/*.feature --import e2e/steps/**/*.ts --format progress-bar --tags '@only'",

@@ -34,6 +34,7 @@ const MOVEMENT_TYPES = [
   "bank_transfer",
   "refund",
   "adjustment",
+  "cash_payment",
 ] as const;
 
 type UserRow = { id: string; name: string | null; username: string };

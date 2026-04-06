@@ -23,6 +23,23 @@
 
 ---
 
+### Story 1b: Cash settlement of pending reservation and subscription (POS)
+
+**As a** Bazkidea or Laguna  
+**I want** to settle unpaid reservations and due subscription amounts in cash from the bar page  
+**So that** my ledger reflects payment when the society enables cash methods
+
+**Acceptance Criteria:**
+
+- **Shipped** when society **`payment_methods`** includes **`cash_manual`** and/or **`cash_change_machine`** (`societyAllowsCashPayment`):
+  - **`GET /api/me/pending-cash-items`** — lists unpaid `confirmed`/`completed` reservations (no `reservation_cash` settlement) and pending **`credits`** rows with **`subscriptionAmount > 0`** without **`subscription_cash`** for that month; **`403`** if cash not enabled.
+  - **`POST /api/me/cash-settlements`** — idempotent **`cash_payment`** movements (`reservation_cash` / `subscription_cash` refs); full amounts only; **`403`** if cash not enabled; triggers current-month debt recalculation.
+- **`/kontsumoak`**: synthetic **pending payments** category after DB categories; reservation/subscription lines as **same card grid** as products; cart supports **mixed** product + pending lines; confirm runs consumption and/or cash settlement as needed.
+- **Cron / credits**: monthly rollup **excludes** reservations settled by cash and **zeros** subscription slice in **`credits`** when **`subscription_cash`** exists for that month ref (see `server/cron-jobs.ts`).
+- **E2E**: `@consumption-cash-pending` feature; demo **`seedCashPosFixtures`** + seeded bazkidea reservation **`Kutxa Erreserba E2E`**.
+
+---
+
 ### Story 2: View Consumption History (member)
 
 **As a** Bazkidea or Laguna  
