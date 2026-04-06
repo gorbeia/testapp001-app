@@ -17,7 +17,6 @@ import {
   Palette,
   List,
   Landmark,
-  Undo2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -142,9 +141,6 @@ export function AppSidebar() {
       : []),
     ...(hasTreasurerAccess(user)
       ? [{ title: t("bankTransfersMenu"), url: "/transferentziak", icon: Landmark }]
-      : []),
-    ...(hasTreasurerAccess(user)
-      ? [{ title: t("refundsMenu"), url: "/itzulketak", icon: Undo2 }]
       : []),
   ];
 

@@ -122,7 +122,7 @@ Status legend:
    - **Status**: ✅ Implemented
 3. **Bank transfer workflow** – `/transferentziak`, `POST/GET /api/bank-transfers`, validate/reject + ledger + notifications
    - **Status**: ✅ Implemented (+ E2E: `bank-transfers.feature`)
-4. **Refunds** – `/itzulketak`, `POST /api/account-movements/refund`
+4. **Refunds** – dialog on **`/transferentziak`** (treasurer); `POST /api/account-movements/refund`; **`/itzulketak`** redirects to transfers
    - **Status**: ✅ Implemented (+ E2E: `refunds.feature`)
 5. **SEPA collection on ledger** – `sepa_collection` movement (**positive** `amount` in member-balance convention) when marking credits paid (`PUT /api/credits/batch-status`)
    - **Status**: ✅ Implemented

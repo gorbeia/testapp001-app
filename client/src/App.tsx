@@ -1,5 +1,5 @@
 import React from "react";
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, Redirect } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -29,7 +29,6 @@ import { SepaExportPage } from "@/pages/SepaExportPage";
 import { MyMovementsPage } from "@/pages/MyMovementsPage";
 import { AccountMovementsPage } from "@/pages/AccountMovementsPage";
 import { BankTransfersPage } from "@/pages/BankTransfersPage";
-import { RefundsPage } from "@/pages/RefundsPage";
 import { TablesPage } from "@/pages/TablesPage";
 import { UserProfile } from "@/components/UserProfile";
 import OharrakPage from "@/pages/announcements";
@@ -88,7 +87,7 @@ function AppRoutes() {
       <Route path="/itzulketak">
         {() => (
           <ProtectedRoute requiredAccess="treasurer">
-            <RefundsPage />
+            <Redirect to="/transferentziak" />
           </ProtectedRoute>
         )}
       </Route>

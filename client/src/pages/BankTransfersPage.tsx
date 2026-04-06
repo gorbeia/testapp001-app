@@ -50,6 +50,7 @@ export function BankTransfersPage() {
   const { toast } = useToast();
   const qc = useQueryClient();
   const [open, setOpen] = React.useState(false);
+  const [refundOpen, setRefundOpen] = React.useState(false);
   const [rejectOpen, setRejectOpen] = React.useState<string | null>(null);
   const [rejectReason, setRejectReason] = React.useState("");
   const [form, setForm] = React.useState({
@@ -58,6 +59,11 @@ export function BankTransfersPage() {
     transferDate: "",
     reference: "",
     notes: "",
+  });
+  const [refundForm, setRefundForm] = React.useState({
+    userId: "",
+    amount: "",
+    description: "",
   });
 
   const usersQuery = useQuery({
@@ -118,6 +124,31 @@ export function BankTransfersPage() {
     },
   });
 
+  const refundMut = useMutation({
+    mutationFn: async () => {
+      const res = await authFetch("/api/account-movements/refund", {
+        method: "POST",
+        body: JSON.stringify({
+          userId: refundForm.userId,
+          amount: parseFloat(refundForm.amount),
+          description: refundForm.description,
+        }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["account-movements-me"] });
+      qc.invalidateQueries({ queryKey: ["account-movements-admin"] });
+      setRefundOpen(false);
+      setRefundForm({ userId: "", amount: "", description: "" });
+      toast({ title: t("success") });
+    },
+    onError: () => {
+      toast({ title: t("error"), variant: "destructive" });
+    },
+  });
+
   const rejectMut = useMutation({
     mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
       const res = await authFetch(`/api/bank-transfers/${id}/reject`, {
@@ -139,14 +170,76 @@ export function BankTransfersPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4" data-testid="bank-transfers-page">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap justify-between items-center gap-2">
         <h1 className="text-2xl font-bold" data-testid="bank-transfers-title">
           {t("bankTransfersMenu")}
         </h1>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button data-testid="button-new-transfer">{t("createTransfer")}</Button>
-          </DialogTrigger>
+        <div className="flex flex-wrap gap-2">
+          <Dialog open={refundOpen} onOpenChange={setRefundOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline" data-testid="button-issue-refund">
+                {t("issueRefund")}
+              </Button>
+            </DialogTrigger>
+            <DialogContent data-testid="dialog-issue-refund">
+              <DialogHeader>
+                <DialogTitle>{t("issueRefund")}</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3">
+                <div>
+                  <Label>{t("filterByMember")}</Label>
+                  <Select
+                    value={refundForm.userId}
+                    onValueChange={v => setRefundForm(f => ({ ...f, userId: v }))}
+                  >
+                    <SelectTrigger data-testid="select-refund-user">
+                      <SelectValue placeholder={t("selectPlaceholder")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(usersQuery.data ?? []).map(u => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.name || u.username}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>{t("refundAmount")}</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={refundForm.amount}
+                    onChange={e => setRefundForm(f => ({ ...f, amount: e.target.value }))}
+                    data-testid="input-refund-amount"
+                  />
+                </div>
+                <div>
+                  <Label>{t("refundDescription")}</Label>
+                  <Textarea
+                    value={refundForm.description}
+                    onChange={e => setRefundForm(f => ({ ...f, description: e.target.value }))}
+                    data-testid="input-refund-description"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button
+                  onClick={() => refundMut.mutate()}
+                  disabled={
+                    !refundForm.userId || !refundForm.amount || !refundForm.description.trim()
+                  }
+                  data-testid="button-submit-refund"
+                >
+                  {t("issueRefund")}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button data-testid="button-new-transfer">{t("createTransfer")}</Button>
+            </DialogTrigger>
           <DialogContent data-testid="dialog-new-transfer">
             <DialogHeader>
               <DialogTitle>{t("createTransfer")}</DialogTitle>
@@ -214,6 +307,7 @@ export function BankTransfersPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>

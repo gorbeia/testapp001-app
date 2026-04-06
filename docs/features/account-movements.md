@@ -26,6 +26,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 
 ### Acceptance criteria
 
+- UI: treasurer **`/transferentziak`** page — “issue refund” opens a dialog (same flow as before); bookmark **`/itzulketak`** redirects to **`/transferentziak`**.
 - POST refund with user, amount, description; inserts type `refund` with **positive** amount; notifies member.
 
 ## F3 – Admin movements (`/mugimenduak`)
