@@ -121,7 +121,7 @@ Status legend:
 2. **Treasurer movement audit** – `/mugimenduak`, `GET /api/account-movements` (filters, running balance via SQL window; response includes `sumAmount`, `selectedMemberBalance` when a member filter is set)
    - **Status**: ✅ Implemented (+ top stat cards: filtered count, filtered sum, member saldo when filtered)
 3. **Prepayment proposals** (UI: «Aurreordainketak» / Anticipos; impl. `bank_transfers`, `bank_transfer` ledger type) – `/transferentziak`, `POST/GET /api/bank-transfers`, validate/reject + ledger + notifications; members propose from **`/nire-mugimenduak`** via `POST` + `GET /api/bank-transfers/me?status=pending` (table only when pending; validated lines on ledger — see `account-movements.md` F1 / F4); **gated when `bank_transfer_prepayment` is absent from society `payment_methods`** (sidebar, pages, APIs `403`)
-   - **Status**: ✅ Implemented (+ E2E: `bank-transfers.feature`)
+   - **Status**: ✅ Implemented (+ E2E: `bank-transfers.feature`, `society-payment-methods.feature` for prepayment gating)
 4. **Refunds** – dialog on **`/transferentziak`** (treasurer prepayments page); `POST /api/account-movements/refund`; **`/itzulketak`** redirects to **`/transferentziak`**
    - **Status**: ✅ Implemented (+ E2E: `refunds.feature`)
 5. **SEPA collection on ledger** – `sepa_collection` movement (**positive** `amount` in member-balance convention) when marking credits paid (`PUT /api/credits/batch-status`)
@@ -181,7 +181,7 @@ Status legend:
 ## 8. Society Management (Elkartea) (`society-management.md`)
 
 1. **Society information & SEPA-related fields**
-   - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id` — **administratzailea** + **diruzaina** own-tenant; **`payment_methods`** on societies: SEPA checkbox + cadence, bank prepayment + cash placeholders; prepayment gates transfers UI/API; cash methods stored only)
+   - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id` — **administratzailea** + **diruzaina** own-tenant; **`payment_methods`** on societies: SEPA checkbox + cadence, bank prepayment + cash placeholders; prepayment gates transfers UI/API; cash methods stored only; E2E: `society-payment-methods.feature` for cash flag persistence)
 2. **Tables (resource config for reservations)**
    - **Status**: ✅ Implemented (`/mahaiak` — see Reservations)
 3. **Subscription types**
