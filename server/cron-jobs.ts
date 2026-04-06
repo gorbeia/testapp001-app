@@ -65,15 +65,7 @@ class DebtCalculationService {
         return;
       }
 
-      const skipSubscriptionMovements = society.sepaMode === "disabled";
-
-      await this.runMemberDebtLoop(
-        society,
-        year,
-        month,
-        monthLabel,
-        skipSubscriptionMovements
-      );
+      await this.runMemberDebtLoop(society, year, month, monthLabel);
 
       console.log(
         `[${new Date().toISOString()}] Debt calculation completed for society ${societyId}, ${monthLabel}`
@@ -114,8 +106,7 @@ class DebtCalculationService {
     activeSociety: Society,
     year: number,
     month: number,
-    monthLabel: string,
-    skipSubscriptionMovements: boolean
+    monthLabel: string
   ): Promise<void> {
     const members = await db
       .select()
@@ -216,7 +207,7 @@ class DebtCalculationService {
           );
         }
 
-        if (!skipSubscriptionMovements && subscriptionCharge > 0) {
+        if (subscriptionCharge > 0) {
           const subRef = `${member.id}:${monthLabel}`;
           const exists = await movementExistsForReference(
             activeSociety.id,

@@ -4,7 +4,7 @@
 
 ## Data model & automation (cross-cutting)
 
-Monthly **`credits`** rows are stored per member and society (`consumptionAmount`, `reservationAmount`, `totalAmount`, `status`, `paidAmount`, etc.). **`DebtCalculationService`** (cron in `server/cron-jobs.ts` and triggers after relevant consumption/reservation flows) aggregates consumptions and reservations into those rows **per society** (`societyId` from JWT on real-time triggers; scheduled job processes **all** `isActive` societies). Society **`sepaMode`** (`monthly` | `bimonthly` | `quarterly` | `on_demand` | `disabled`) controls SEPA export period validation and UI; when **`disabled`**, subscription ledger movements/notifications are skipped (credits rows still update for consumptions/reservations).
+Monthly **`credits`** rows are stored per member and society (`consumptionAmount`, `reservationAmount`, `totalAmount`, `status`, `paidAmount`, etc.). **`DebtCalculationService`** (cron in `server/cron-jobs.ts` and triggers after relevant consumption/reservation flows) aggregates consumptions and reservations into those rows **per society** (`societyId` from JWT on real-time triggers; scheduled job processes **all** `isActive` societies). Society **`sepaMode`** (`monthly` | `bimonthly` | `quarterly` | `on_demand` | `disabled`) controls **SEPA export** period validation and UI (and disables export when **`disabled`**). **Subscription fees** are still written to **`credits`** and posted as **`subscription`** rows on **`account_movements`** (member balance) for every mode, so societies without SEPA can charge periodic fees from the ledger.
 
 ---
 

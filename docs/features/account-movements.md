@@ -58,7 +58,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 
 ## F7 – Subscription fees
 
-**When** monthly debt calculation runs **then** subscription charge is added to `credits.totalAmount` / `subscriptionAmount`. A `subscription` ledger movement (**negative** amount) is posted once per member per month (idempotent key) **unless** society **`sepaMode`** is **`disabled`** (society handles fees outside this app; credits still reflect subscription amounts for reporting).
+**When** monthly debt calculation runs **then** subscription charge is added to `credits.totalAmount` / `subscriptionAmount`. A `subscription` ledger movement (**negative** amount) is posted once per member per month when `subscriptionCharge > 0` (idempotent key). This applies to **all** `sepaMode` values, including **`disabled`**: the fee hits **member balance** (saldoa); **`sepaMode: disabled`** only turns off in-app SEPA XML export, not ledger subscription charges.
 
 ## F8 – Notifications
 
@@ -66,7 +66,7 @@ Server notifications (eu/es/en) for: transfer validated/rejected, refund issued,
 
 ## Society setting
 
-- `sepaMode`: when `disabled`, no `subscription` ledger movements or subscription charge notifications (see `credits.md`).
+- `sepaMode`: when `disabled`, SEPA export and related UI/API are off; **`subscription` ledger movements and subscription charge notifications still run** when debt calculation posts a subscription fee (see `credits.md`).
 
 ## Data migration
 

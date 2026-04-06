@@ -130,7 +130,7 @@ Status legend:
    - **Status**: ✅ Implemented
 7. **Consumption / reservation lines on ledger** – movements on item add, reservation create; cancellation/deletion adjustment
    - **Status**: ✅ Implemented
-8. **Subscription fees on ledger** – `DebtCalculationService` posts `subscription` movement + `credits.subscription_amount` (skipped when society **`sepaMode` = `disabled`**)
+8. **Subscription fees on ledger** – `DebtCalculationService` posts `subscription` movement + `credits.subscription_amount` for all societies (including **`sepaMode` = `disabled`**); `disabled` affects SEPA export only
    - **Status**: ✅ Implemented (multi-tenant cron + per-society real-time triggers; see `server/cron-jobs.ts`)
 9. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
 
