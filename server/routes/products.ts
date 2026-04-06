@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { products, type User } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { products, insertProductSchema, updateProductSchema, type User } from "@shared/schema";
+import { and, eq } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
 // Helper function to get society ID from JWT (no DB query needed)
@@ -51,14 +51,17 @@ export function registerProductRoutes(app: Express) {
           return res.status(403).json({ message: "Admin access required" });
         }
 
-        const productData = req.body;
+        const parsed = insertProductSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({ message: "Invalid product payload", issues: parsed.error.flatten() });
+        }
+
         const societyId = getUserSocietyId(user);
 
-        // Auto-assign the user's society ID
         const [newProduct] = await db
           .insert(products)
           .values({
-            ...productData,
+            ...parsed.data,
             societyId,
           })
           .returning();
@@ -85,11 +88,16 @@ export function registerProductRoutes(app: Express) {
           return res.status(403).json({ message: "Admin access required" });
         }
 
-        const updateData = req.body;
+        const societyId = getUserSocietyId(user);
+        const parsed = updateProductSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({ message: "Invalid product payload", issues: parsed.error.flatten() });
+        }
+
         const [updatedProduct] = await db
           .update(products)
-          .set({ ...updateData, updatedAt: new Date() })
-          .where(eq(products.id, id))
+          .set({ ...parsed.data, updatedAt: new Date() })
+          .where(and(eq(products.id, id), eq(products.societyId, societyId)))
           .returning();
 
         if (!updatedProduct) {
@@ -118,7 +126,11 @@ export function registerProductRoutes(app: Express) {
           return res.status(403).json({ message: "Admin access required" });
         }
 
-        const [deletedProduct] = await db.delete(products).where(eq(products.id, id)).returning();
+        const societyId = getUserSocietyId(user);
+        const [deletedProduct] = await db
+          .delete(products)
+          .where(and(eq(products.id, id), eq(products.societyId, societyId)))
+          .returning();
 
         if (!deletedProduct) {
           return res.status(404).json({ message: "Product not found" });

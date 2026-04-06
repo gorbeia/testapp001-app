@@ -147,8 +147,10 @@ export const insertProductSchema = createInsertSchema(products).pick({
   minStock: true,
   supplier: true,
   isActive: true,
-  societyId: true,
 });
+
+/** PATCH-style product updates; tenant is never taken from the client. */
+export const updateProductSchema = insertProductSchema.partial();
 
 export const insertProductCategorySchema = createInsertSchema(productCategories).pick({
   color: true,

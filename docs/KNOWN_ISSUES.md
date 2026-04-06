@@ -6,10 +6,7 @@ This document records problems identified during codebase reviews (security, con
 
 ## Multi-tenancy and data isolation
 
-| Issue                                                                                                                                                                                   | Severity | Notes                                                                                                                                                                         |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Product `PUT` / `DELETE`** use `eq(products.id, id)` only, not `and(..., eq(products.societyId, societyId))`.                                                                         | Medium   | Cross-tenant ID guessing could update/delete another society’s product. [`server/routes/products.ts`](../server/routes/products.ts).                                          |
-| **`POST /api/products`** spreads `req.body` including potential **`societyId` override** from the client before merging server `societyId`.                                             | Medium   | Trust boundary: client should not control tenant. Validate body with a schema that **omits** `societyId` or strip it after validation.                                        |
+_No open items from the last review._
 
 ---
 
