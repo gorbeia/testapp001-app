@@ -17,6 +17,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 ### Acceptance criteria
 
 - Treasurer/admin can create a pending bank transfer (user, amount > 0, transfer date, optional reference/notes).
+- A **member** can submit a **proposal** for their own transfer (`POST /api/bank-transfers/me`, pending row); **`userId` is taken from the session**, not the request body.
 - On validate: insert `account_movement` type `bank_transfer` with **positive** amount equal to the transfer; link to `bank_transfers.movementId`; notify member (eu/es).
 - On reject: status `rejected` + reason; notify member.
 
@@ -45,6 +46,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 ### Acceptance criteria
 
 - List own movements; month/type filters; current balance summary (member balance).
+- Submit bank transfer proposals from this page (`POST /api/bank-transfers/me`). **UI:** only **pending** proposals are listed (`GET /api/bank-transfers/me?status=pending`); once validated, they appear as **`bank_transfer`** lines in the movement list below (rejected proposals are not on the ledger and are not shown in the pending table).
 - When society **`sepaMode` is `disabled`**, this page is the primary member money view: **`/nire-zorrak`** redirects here and the dashboard card shows this same balance (see `credits.md` Story 1 / Story 6).
 
 ## F5 – SEPA collection in ledger

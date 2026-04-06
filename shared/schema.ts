@@ -444,6 +444,10 @@ export const bankTransferCreateBodySchema = z.object({
   notes: z.string().optional(),
 });
 
+export const bankTransferMemberProposalBodySchema = bankTransferCreateBodySchema.omit({
+  userId: true,
+});
+
 export const bankTransferRejectBodySchema = z.object({
   rejectionReason: z.string().min(1),
 });

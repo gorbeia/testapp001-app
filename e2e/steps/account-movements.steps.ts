@@ -5,7 +5,12 @@ import { getPage, e2eUrl } from "./shared-state";
 When("I log out from the sidebar", async function () {
   const page = getPage();
   assert.ok(page);
-  await page.click('[data-testid="button-logout"]');
+  const logout = page.locator('[data-testid="button-logout"]');
+  if (!(await logout.isVisible())) {
+    await page.click('[data-testid="button-sidebar-toggle"]');
+    await logout.waitFor({ state: "visible", timeout: 5000 });
+  }
+  await logout.click();
   await page.waitForSelector('[data-testid="input-email"]', { timeout: 10000 });
 });
 
