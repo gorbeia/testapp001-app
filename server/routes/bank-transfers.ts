@@ -8,7 +8,7 @@ import {
   type JwtSessionUser,
 } from "@shared/schema";
 import { and, desc, eq, sql } from "drizzle-orm";
-import { sessionMiddleware, requireAuth } from "./middleware";
+import { sessionMiddleware } from "./middleware";
 import {
   assertBalanceAllowsMovement,
   getMemberLedgerBalance,

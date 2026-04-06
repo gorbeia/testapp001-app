@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/lib/i18n";
 import { format } from "date-fns";
 import { eu, es } from "date-fns/locale";
-import type { Table } from "@shared/schema";
+import type { Society, Table } from "@shared/schema";
 
 interface ReservationDialogProps {
   open: boolean;
@@ -59,7 +59,7 @@ const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
 export function ReservationDialog({ open, onOpenChange, onSuccess }: ReservationDialogProps) {
   const { t, language } = useLanguage();
   const { toast } = useToast();
-  const [society, setSociety] = useState<any>(null);
+  const [society, setSociety] = useState<Society | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -97,8 +97,8 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
   const calculateTotal = (guests: number, kitchen: boolean) => {
     if (!society) return "0";
 
-    const reservationPrice = parseFloat(society.reservationPricePerMember) || 2;
-    const kitchenPrice = parseFloat(society.kitchenPricePerMember) || 3;
+    const reservationPrice = parseFloat(society.reservationPricePerMember ?? "") || 2;
+    const kitchenPrice = parseFloat(society.kitchenPricePerMember ?? "") || 3;
 
     const guestCharge = guests * reservationPrice;
     const kitchenCharge = kitchen ? guests * kitchenPrice : 0;
@@ -110,7 +110,7 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
     try {
       const response = await authFetch("/api/societies/user");
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as Society;
         setSociety(data);
       }
     } catch (error) {
@@ -395,20 +395,25 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
                 <>
                   <div className="flex justify-between text-sm">
                     <span>
-                      {t("guests")} ({formData.guests} × {society.reservationPricePerMember}€):
+                      {t("guests")} ({formData.guests} × {society.reservationPricePerMember ?? "0"}€):
                     </span>
                     <span>
-                      {(formData.guests * parseFloat(society.reservationPricePerMember)).toFixed(2)}
+                      {(
+                        formData.guests * parseFloat(society.reservationPricePerMember ?? "0")
+                      ).toFixed(2)}
                       €
                     </span>
                   </div>
                   {formData.useKitchen && (
                     <div className="flex justify-between text-sm mt-1">
                       <span>
-                        {t("kitchenCost")} ({formData.guests} × {society.kitchenPricePerMember}€):
+                        {t("kitchenCost")} ({formData.guests} × {society.kitchenPricePerMember ?? "0"}€):
                       </span>
                       <span>
-                        {(formData.guests * parseFloat(society.kitchenPricePerMember)).toFixed(2)}€
+                        {(
+                          formData.guests * parseFloat(society.kitchenPricePerMember ?? "0")
+                        ).toFixed(2)}
+                        €
                       </span>
                     </div>
                   )}

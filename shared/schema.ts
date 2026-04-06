@@ -641,8 +641,10 @@ export const isValidLanguage = (lang: string): lang is Language => {
   return ["eu", "es", "en"].includes(lang);
 };
 
-export const hasMessages = (content: any): content is { messages: MultilingualMessage[] } => {
-  return content && Array.isArray(content.messages) && content.messages.length > 0;
+export const hasMessages = (content: unknown): content is { messages: MultilingualMessage[] } => {
+  if (content === null || typeof content !== "object") return false;
+  const messages = (content as { messages?: unknown }).messages;
+  return Array.isArray(messages) && messages.length > 0;
 };
 
 export const findMessageByLanguage = (

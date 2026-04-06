@@ -1,4 +1,4 @@
-import type { Request } from "express";
+import type { NextFunction, Request, Response } from "express";
 import { translations, type Language, type TranslationKey } from "./translations";
 
 // Export translations for use in other modules
@@ -109,7 +109,7 @@ export function createI18nHelper(req: Request): I18nHelper {
 /**
  * Middleware to attach i18n helper to request
  */
-export function i18nMiddleware(req: Request, res: any, next: any) {
+export function i18nMiddleware(req: Request, res: Response, next: NextFunction) {
   req.i18n = createI18nHelper(req);
   next();
 }

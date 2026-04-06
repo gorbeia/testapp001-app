@@ -17,6 +17,7 @@ import {
   Carrot,
   ShoppingBag,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -49,7 +50,7 @@ import { IconSelector } from "@/components/IconSelector";
 
 // Icon mapping function
 const getIconComponent = (iconName: string) => {
-  const iconMap: Record<string, React.ComponentType<any>> = {
+  const iconMap: Record<string, LucideIcon> = {
     Package: Package,
     Coffee: Coffee,
     Wine: Wine,

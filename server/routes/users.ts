@@ -12,7 +12,6 @@ import {
   updateUserAdminBodySchema,
   updateUserProfileBodySchema,
   type JwtSessionUser,
-  type User,
 } from "@shared/schema";
 import { eq, and, count } from "drizzle-orm";
 import bcrypt from "bcrypt";

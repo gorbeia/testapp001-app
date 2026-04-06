@@ -26,7 +26,7 @@ import PaginationControls from "@/components/PaginationControls";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/lib/api";
-import type { Reservation } from "@shared/schema";
+import type { Reservation, Society } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import { ReservationDialog } from "@/components/ReservationDialog";
@@ -70,14 +70,14 @@ export function MyReservationsPage() {
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [society, setSociety] = useState<any>(null);
+  const [society, setSociety] = useState<Society | null>(null);
 
   // Load society data
   const loadSociety = async () => {
     try {
       const response = await authFetch("/api/societies/user");
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as Society;
         setSociety(data);
       }
     } catch (error) {
@@ -242,8 +242,8 @@ export function MyReservationsPage() {
     }
 
     const guests = reservation.guests || 0;
-    const reservationPrice = parseFloat(society.reservationPricePerMember) || 2;
-    const kitchenPrice = parseFloat(society.kitchenPricePerMember) || 3;
+    const reservationPrice = parseFloat(society.reservationPricePerMember ?? "") || 2;
+    const kitchenPrice = parseFloat(society.kitchenPricePerMember ?? "") || 3;
 
     const reservationCost = guests * reservationPrice;
     const kitchenCost = reservation.useKitchen ? guests * kitchenPrice : 0;
