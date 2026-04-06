@@ -6,6 +6,8 @@ import {
   bankTransferMemberProposalBodySchema,
   bankTransferRejectBodySchema,
   bankTransferStatusSchema,
+  societies,
+  societyAllowsBankTransferPrepayment,
   users,
   type JwtSessionUser,
 } from "@shared/schema";
@@ -29,10 +31,25 @@ const getUserSocietyId = (user: JwtSessionUser): string => {
   return user.societyId;
 };
 
+async function prepaymentEnabledForSociety(societyId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ paymentMethods: societies.paymentMethods })
+    .from(societies)
+    .where(eq(societies.id, societyId))
+    .limit(1);
+  if (!row) return false;
+  return societyAllowsBankTransferPrepayment(row.paymentMethods);
+}
+
 export function registerBankTransferRoutes(app: Express) {
   app.get("/api/bank-transfers/me", sessionMiddleware, requireAuth, async (req, res, next) => {
     try {
       const societyId = getUserSocietyId(req.user!);
+      if (!(await prepaymentEnabledForSociety(societyId))) {
+        return res
+          .status(403)
+          .json({ message: "Bank transfer prepayment is not enabled for this society" });
+      }
       const userId = req.user!.id;
       const statusRaw = req.query.status as string | undefined;
 
@@ -58,6 +75,12 @@ export function registerBankTransferRoutes(app: Express) {
 
   app.post("/api/bank-transfers/me", sessionMiddleware, requireAuth, async (req, res, next) => {
     try {
+      const societyIdEarly = getUserSocietyId(req.user!);
+      if (!(await prepaymentEnabledForSociety(societyIdEarly))) {
+        return res
+          .status(403)
+          .json({ message: "Bank transfer prepayment is not enabled for this society" });
+      }
       const parsed = bankTransferMemberProposalBodySchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid payload", issues: parsed.error.flatten() });
@@ -104,6 +127,12 @@ export function registerBankTransferRoutes(app: Express) {
 
   app.post("/api/bank-transfers", sessionMiddleware, requireTreasurer, async (req, res, next) => {
     try {
+      const societyIdEarly = getUserSocietyId(req.user!);
+      if (!(await prepaymentEnabledForSociety(societyIdEarly))) {
+        return res
+          .status(403)
+          .json({ message: "Bank transfer prepayment is not enabled for this society" });
+      }
       const parsed = bankTransferCreateBodySchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ message: "Invalid payload", issues: parsed.error.flatten() });
@@ -150,6 +179,11 @@ export function registerBankTransferRoutes(app: Express) {
   app.get("/api/bank-transfers", sessionMiddleware, requireTreasurer, async (req, res, next) => {
     try {
       const societyId = getUserSocietyId(req.user!);
+      if (!(await prepaymentEnabledForSociety(societyId))) {
+        return res
+          .status(403)
+          .json({ message: "Bank transfer prepayment is not enabled for this society" });
+      }
       const status = req.query.status as string | undefined;
       const userId = req.query.userId as string | undefined;
       const month = req.query.month as string | undefined;
@@ -192,6 +226,11 @@ export function registerBankTransferRoutes(app: Express) {
     async (req, res, next) => {
       try {
         const societyId = getUserSocietyId(req.user!);
+        if (!(await prepaymentEnabledForSociety(societyId))) {
+          return res
+            .status(403)
+            .json({ message: "Bank transfer prepayment is not enabled for this society" });
+        }
         const { id } = req.params;
 
         const [bt] = await db
@@ -258,6 +297,11 @@ export function registerBankTransferRoutes(app: Express) {
             .json({ message: "Invalid payload", issues: parsed.error.flatten() });
         }
         const societyId = getUserSocietyId(req.user!);
+        if (!(await prepaymentEnabledForSociety(societyId))) {
+          return res
+            .status(403)
+            .json({ message: "Bank transfer prepayment is not enabled for this society" });
+        }
         const { id } = req.params;
 
         const [bt] = await db

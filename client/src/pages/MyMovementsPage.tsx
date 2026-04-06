@@ -44,6 +44,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { societyAllowsBankTransferPrepayment } from "@shared/schema";
 
 const MOVEMENT_TYPES = [
   "all",
@@ -126,6 +127,17 @@ export function MyMovementsPage() {
   const [type, setType] = useState<string>("all");
   const month = monthFilter.value;
 
+  const societyQuery = useQuery({
+    queryKey: ["societies", "user"],
+    queryFn: async () => {
+      const res = await authFetch("/api/societies/user");
+      if (!res.ok) throw new Error("society");
+      return res.json() as { paymentMethods?: unknown };
+    },
+  });
+
+  const prepaymentEnabled = societyAllowsBankTransferPrepayment(societyQuery.data?.paymentMethods);
+
   const query = useQuery({
     queryKey: ["account-movements-me", month, type],
     queryFn: async () => {
@@ -150,6 +162,7 @@ export function MyMovementsPage() {
 
   const transfersQuery = useQuery({
     queryKey: ["bank-transfers-me", "pending"],
+    enabled: prepaymentEnabled && societyQuery.isSuccess,
     queryFn: async () => {
       const res = await authFetch("/api/bank-transfers/me?status=pending");
       if (!res.ok) throw new Error("bank-transfers-me");
@@ -278,176 +291,180 @@ export function MyMovementsPage() {
         </Card>
       </div>
 
-      <Card data-testid="my-transfer-proposals-section">
-        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Landmark className="h-4 w-4" />
-              {t("transferProposalsSection")}
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">{t("transferProposalPendingHelp")}</p>
-          </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            data-testid="button-propose-transfer"
-            onClick={() => {
-              proposalForm.reset({
-                amount: "",
-                transferDate: new Date().toISOString().slice(0, 10),
-                reference: "",
-                notes: "",
-              });
-              setProposalOpen(true);
-            }}
-          >
-            {t("proposeTransfer")}
-          </Button>
-          {proposalOpen ? (
-            <Dialog
-              open
-              onOpenChange={next => {
-                if (!next) setProposalOpen(false);
+      {prepaymentEnabled && societyQuery.isSuccess ? (
+        <Card data-testid="my-transfer-proposals-section">
+          <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-2">
+            <div className="space-y-1">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Landmark className="h-4 w-4" />
+                {t("transferProposalsSection")}
+              </CardTitle>
+              <p className="text-sm text-muted-foreground">{t("transferProposalPendingHelp")}</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              data-testid="button-propose-transfer"
+              onClick={() => {
+                proposalForm.reset({
+                  amount: "",
+                  transferDate: new Date().toISOString().slice(0, 10),
+                  reference: "",
+                  notes: "",
+                });
+                setProposalOpen(true);
               }}
             >
-              <DialogContent data-testid="dialog-propose-transfer">
-                <DialogHeader>
-                  <DialogTitle>{t("proposeTransferDialogTitle")}</DialogTitle>
-                </DialogHeader>
-                <Form {...proposalForm}>
-                  <form
-                    onSubmit={proposalForm.handleSubmit(onProposalSubmit)}
-                    className="space-y-4"
-                  >
-                    <FormField
-                      control={proposalForm.control}
-                      name="amount"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("amount")}</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="text"
-                              inputMode="decimal"
-                              autoComplete="off"
-                              data-testid="input-transfer-proposal-amount"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={proposalForm.control}
-                      name="transferDate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("transferDate")}</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="date"
-                              data-testid="input-transfer-proposal-date"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={proposalForm.control}
-                      name="reference"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("transferReference")}</FormLabel>
-                          <FormControl>
-                            <Input data-testid="input-transfer-proposal-reference" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={proposalForm.control}
-                      name="notes"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>{t("notes")}</FormLabel>
-                          <FormControl>
-                            <Textarea data-testid="input-transfer-proposal-notes" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <DialogFooter>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setProposalOpen(false)}
-                      >
-                        {t("cancel")}
-                      </Button>
-                      <Button
-                        type="submit"
-                        disabled={proposalMut.isPending}
-                        data-testid="button-submit-transfer-proposal"
-                      >
-                        {proposalMut.isPending ? t("saving") : t("save")}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
-          ) : null}
-        </CardHeader>
-        {showPendingTransfersTable ? (
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("date")}</TableHead>
-                  <TableHead>{t("transferDate")}</TableHead>
-                  <TableHead className="text-right">{t("amount")}</TableHead>
-                  <TableHead>{t("status")}</TableHead>
-                  <TableHead>{t("transferReference")}</TableHead>
-                  <TableHead>{t("rejectionReason")}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingTransferRows.map(row => (
-                  <TableRow key={row.id} data-testid={`transfer-proposal-row-${row.id}`}>
-                    <TableCell data-testid={`transfer-proposal-created-${row.id}`}>
-                      {new Date(row.createdAt).toLocaleString()}
-                    </TableCell>
-                    <TableCell data-testid={`transfer-proposal-date-${row.id}`}>
-                      {row.transferDate}
-                    </TableCell>
-                    <TableCell
-                      className="text-right"
-                      data-testid={`transfer-proposal-amount-${row.id}`}
+              {t("proposeTransfer")}
+            </Button>
+            {proposalOpen ? (
+              <Dialog
+                open
+                onOpenChange={next => {
+                  if (!next) setProposalOpen(false);
+                }}
+              >
+                <DialogContent data-testid="dialog-propose-transfer">
+                  <DialogHeader>
+                    <DialogTitle>{t("proposeTransferDialogTitle")}</DialogTitle>
+                  </DialogHeader>
+                  <Form {...proposalForm}>
+                    <form
+                      onSubmit={proposalForm.handleSubmit(onProposalSubmit)}
+                      className="space-y-4"
                     >
-                      {parseFloat(row.amount).toFixed(2)}€
-                    </TableCell>
-                    <TableCell data-testid={`transfer-proposal-status-${row.id}`}>
-                      {BANK_TRANSFER_STATUS_I18N[row.status]
-                        ? t(BANK_TRANSFER_STATUS_I18N[row.status])
-                        : row.status}
-                    </TableCell>
-                    <TableCell className="max-w-[8rem] truncate">{row.reference ?? "—"}</TableCell>
-                    <TableCell className="max-w-[12rem] truncate text-muted-foreground text-sm">
-                      {row.rejectionReason ?? "—"}
-                    </TableCell>
+                      <FormField
+                        control={proposalForm.control}
+                        name="amount"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("amount")}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="text"
+                                inputMode="decimal"
+                                autoComplete="off"
+                                data-testid="input-transfer-proposal-amount"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={proposalForm.control}
+                        name="transferDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("transferDate")}</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="date"
+                                data-testid="input-transfer-proposal-date"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={proposalForm.control}
+                        name="reference"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("transferReference")}</FormLabel>
+                            <FormControl>
+                              <Input data-testid="input-transfer-proposal-reference" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={proposalForm.control}
+                        name="notes"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>{t("notes")}</FormLabel>
+                            <FormControl>
+                              <Textarea data-testid="input-transfer-proposal-notes" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <DialogFooter>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setProposalOpen(false)}
+                        >
+                          {t("cancel")}
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={proposalMut.isPending}
+                          data-testid="button-submit-transfer-proposal"
+                        >
+                          {proposalMut.isPending ? t("saving") : t("save")}
+                        </Button>
+                      </DialogFooter>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            ) : null}
+          </CardHeader>
+          {showPendingTransfersTable ? (
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("date")}</TableHead>
+                    <TableHead>{t("transferDate")}</TableHead>
+                    <TableHead className="text-right">{t("amount")}</TableHead>
+                    <TableHead>{t("status")}</TableHead>
+                    <TableHead>{t("transferReference")}</TableHead>
+                    <TableHead>{t("rejectionReason")}</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        ) : null}
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {pendingTransferRows.map(row => (
+                    <TableRow key={row.id} data-testid={`transfer-proposal-row-${row.id}`}>
+                      <TableCell data-testid={`transfer-proposal-created-${row.id}`}>
+                        {new Date(row.createdAt).toLocaleString()}
+                      </TableCell>
+                      <TableCell data-testid={`transfer-proposal-date-${row.id}`}>
+                        {row.transferDate}
+                      </TableCell>
+                      <TableCell
+                        className="text-right"
+                        data-testid={`transfer-proposal-amount-${row.id}`}
+                      >
+                        {parseFloat(row.amount).toFixed(2)}€
+                      </TableCell>
+                      <TableCell data-testid={`transfer-proposal-status-${row.id}`}>
+                        {BANK_TRANSFER_STATUS_I18N[row.status]
+                          ? t(BANK_TRANSFER_STATUS_I18N[row.status])
+                          : row.status}
+                      </TableCell>
+                      <TableCell className="max-w-[8rem] truncate">
+                        {row.reference ?? "—"}
+                      </TableCell>
+                      <TableCell className="max-w-[12rem] truncate text-muted-foreground text-sm">
+                        {row.rejectionReason ?? "—"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          ) : null}
+        </Card>
+      ) : null}
 
       <div className="flex flex-wrap gap-4">
         <div className="w-full sm:w-48" data-testid="filter-month-movements">

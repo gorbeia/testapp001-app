@@ -12,7 +12,7 @@
 
 **Acceptance Criteria:**
 
-- **Shipped (partial):** `SocietyPage` at **`/elkartea`** loads **`GET /api/societies/user`** and saves **`PUT /api/societies/:id`** with name, address, phone, email, **IBAN**, **creditorId**, **`sepaMode`** (SEPA billing cadence / off), and **reservation pricing** fields (`reservationPricePerMember`, `kitchenPricePerMember`)
+- **Shipped (partial):** `SocietyPage` at **`/elkartea`** loads **`GET /api/societies/user`** and saves **`PUT /api/societies/:id`** with name, address, phone, email, **IBAN**, **creditorId**, **`sepaMode`** (SEPA billing cadence / off via checkbox + cadence select), **`paymentMethods`** (JSON array: bank transfer prepayment, manual cash, cash change machine — cash options are configuration only for now), and **reservation pricing** fields (`reservationPricePerMember`, `kitchenPricePerMember`)
 - **Route note:** SPA uses **`ProtectedRoute` “treasurer”**; `PUT` middleware may require **`administratzailea`** only — verify alignment for diruzaina-only treasurers
 - ❌ Logo upload, long description, establishment date fields — **not implemented**
 
@@ -24,7 +24,8 @@
 
 **Acceptance Criteria:**
 
-- **Shipped:** IBAN, creditor id, and **`sepaMode`** on **`societies`**, editable via **`/elkartea`**; backoffice create can set **`sepaMode`**
+- **Shipped:** IBAN, creditor id, **`sepaMode`**, and **`paymentMethods`** on **`societies`**, editable via **`/elkartea`** (unified payment-methods card); backoffice create can set **`sepaMode`** and optional **`paymentMethods`**
+- **Shipped:** When **bank transfer prepayment** is not selected, **`/transferentziak`**, treasurer bank-transfer APIs, and the transfer-proposal block on **My movements** are hidden/disabled; **SEPA / monthly debt pages** remain gated only by **`sepaMode !== disabled`**
 - **Shipped:** SEPA XML uses society creditor data when present (see [credits.md](./credits.md) Story 6)
 - ❌ Dedicated SEPA wizard, bank API preferences, pain.008 versioning UI — **not implemented**
 

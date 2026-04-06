@@ -372,6 +372,20 @@ export const translations = {
     tableManagement: "Mahaien Kudeaketa",
     societyData: "Elkarte Datuak",
     sepaConfiguration: "SEPA Konfigurazioa",
+    societyPaymentMethodsCardTitle: "Ordainketa bideak",
+    societyPaymentMethodsCardDescription: "Aukeratu elkarteak onartzen dituen ordainketa bideak.",
+    societyAcceptedPaymentMethods: "Onartutako ordainketa bideak",
+    paymentMethodSepa: "SEPA zordunketa (hilabeteko zorrak eta XML esportazioa)",
+    paymentMethodBankTransferPrepayment: "Banku transferentzia (aurreordainketa / proposamenak)",
+    paymentMethodCashManual: "Dirutan eskuz",
+    paymentMethodCashMachine: "Diru kanbio automatikodun makina",
+    sepaCadenceLabel: "SEPA kobrantza maiztasuna",
+    sepaCadenceDescription:
+      "Zenbat alditan sortu SEPA fitxategia: hilabetean behin, bi hilabetean behin, hiruhilekoan edo eskuzko tartea.",
+    bankTransfersPrepaymentDisabledTitle: "Banku transferentziak ez daude gaituta",
+    bankTransfersPrepaymentDisabledDescription:
+      "Elkarteak ez du banku transferentziaren aurreordainketa gaituta. Diruzainak ordainketa bideak gaitu ditzake /elkartea atalean.",
+    bankTransfersPrepaymentDisabledGoToSociety: "Joan elkartearen ezarpenetara",
     sepaMode: "SEPA kobrantzaren modua",
     sepaModeDescription:
       "Zenbat alditan sortu SEPA fitxategiak: hilabetean behin, bi hilabetean behin, hiruhilekoan, eskuzko tartea, edo desgaituta (beste ordainketa bide batzuk).",
@@ -977,6 +991,20 @@ export const translations = {
     tableManagement: "Gestión de Mesas",
     societyData: "Datos de la Sociedad",
     sepaConfiguration: "Configuración SEPA",
+    societyPaymentMethodsCardTitle: "Medios de pago",
+    societyPaymentMethodsCardDescription: "Elige los medios de pago que acepta la sociedad.",
+    societyAcceptedPaymentMethods: "Medios de pago aceptados",
+    paymentMethodSepa: "SEPA adeudo directo (deudas mensuales y exportación XML)",
+    paymentMethodBankTransferPrepayment: "Transferencia bancaria (prepago / propuestas)",
+    paymentMethodCashManual: "Efectivo manual",
+    paymentMethodCashMachine: "Máquina de cambio automático",
+    sepaCadenceLabel: "Frecuencia de cobro SEPA",
+    sepaCadenceDescription:
+      "Cada cuánto generar el archivo SEPA: mensual, bimestral, trimestral o rango manual.",
+    bankTransfersPrepaymentDisabledTitle: "Transferencias no disponibles",
+    bankTransfersPrepaymentDisabledDescription:
+      "La sociedad no tiene activado el prepago por transferencia. La tesorería puede activarlo en los datos de la sociedad (/elkartea).",
+    bankTransfersPrepaymentDisabledGoToSociety: "Ir a datos de la sociedad",
     sepaMode: "Modo de cobro SEPA",
     sepaModeDescription:
       "Cada cuánto generar archivos SEPA: mensual, bimestral, trimestral, rango manual o desactivado (otros medios de pago).",

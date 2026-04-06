@@ -19,13 +19,13 @@ When("I set SEPA mode to on_demand", async function () {
 When("I set SEPA mode to disabled", async function () {
   const page = getPage();
   assert.ok(page);
-  await page.click('[data-testid="select-sepa-mode"]');
-  await page.getByRole("option", { name: /desactivado|desgaituta/i }).click();
+  await page.getByTestId("checkbox-payment-sepa").setChecked(false);
 });
 
 When("I set SEPA mode to monthly", async function () {
   const page = getPage();
   assert.ok(page);
+  await page.getByTestId("checkbox-payment-sepa").setChecked(true);
   await page.click('[data-testid="select-sepa-mode"]');
   await page.getByRole("option", { name: /Mensual|Hilabeteka/i }).click();
 });

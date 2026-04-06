@@ -37,6 +37,7 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/lib/i18n";
 import { useAuth, hasAdminAccess, hasTreasurerAccess, hasCellarmanAccess } from "@/lib/auth";
 import { authFetch } from "@/lib/api";
+import { societyAllowsBankTransferPrepayment } from "@shared/schema";
 
 type NavItem = { title: string; url: string; icon: LucideIcon };
 
@@ -47,6 +48,7 @@ export function AppSidebar() {
   const { isMobile, setOpenMobile } = useSidebar();
   const [societyName, setSocietyName] = useState<string | null>(null);
   const [societySepaMode, setSocietySepaMode] = useState<string | null>(null);
+  const [allowsBankTransferPrepayment, setAllowsBankTransferPrepayment] = useState(true);
 
   useEffect(() => {
     const loadSociety = async () => {
@@ -62,6 +64,7 @@ export function AppSidebar() {
           } else {
             setSocietySepaMode("monthly");
           }
+          setAllowsBankTransferPrepayment(societyAllowsBankTransferPrepayment(data.paymentMethods));
         }
       } catch (error) {
         console.error("Error loading society for sidebar:", error);
@@ -141,7 +144,7 @@ export function AppSidebar() {
     ...(hasTreasurerAccess(user)
       ? [{ title: t("adminMovements"), url: "/mugimenduak", icon: List }]
       : []),
-    ...(hasTreasurerAccess(user)
+    ...(hasTreasurerAccess(user) && allowsBankTransferPrepayment
       ? [{ title: t("bankTransfersMenu"), url: "/transferentziak", icon: Landmark }]
       : []),
   ];

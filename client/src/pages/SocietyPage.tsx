@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Building2, Save, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -11,11 +12,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { SepaMode } from "@shared/schema";
+import type { SepaMode, SocietyPaymentMethod } from "@shared/schema";
+import { normalizeSocietyPaymentMethods } from "@shared/schema";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "@/components/ErrorBoundary";
+
+const SEPA_CADENCE_MODES = ["monthly", "bimonthly", "quarterly", "on_demand"] as const;
+type SepaCadenceMode = (typeof SEPA_CADENCE_MODES)[number];
 
 interface Society {
   id: string;
@@ -28,9 +33,21 @@ interface Society {
   reservationPricePerMember: string;
   kitchenPricePerMember: string;
   sepaMode?: SepaMode | string;
+  paymentMethods?: SocietyPaymentMethod[] | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+function togglePaymentMethod(
+  current: SocietyPaymentMethod[] | null | undefined,
+  method: SocietyPaymentMethod,
+  checked: boolean
+): SocietyPaymentMethod[] {
+  const set = new Set(normalizeSocietyPaymentMethods(current));
+  if (checked) set.add(method);
+  else set.delete(method);
+  return Array.from(set);
 }
 
 export function SocietyPage() {
@@ -38,6 +55,7 @@ export function SocietyPage() {
   const { toast } = useToast();
   const [society, setSociety] = useState<Society | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const lastSepaCadenceRef = useRef<SepaCadenceMode>("monthly");
 
   // Load current society from API
   useEffect(() => {
@@ -52,8 +70,15 @@ export function SocietyPage() {
         });
 
         if (response.ok) {
-          const data = await response.json();
-          setSociety(data);
+          const data = (await response.json()) as Society;
+          const normalized: Society = {
+            ...data,
+            paymentMethods: normalizeSocietyPaymentMethods(data.paymentMethods),
+          };
+          setSociety(normalized);
+          if (normalized.sepaMode && normalized.sepaMode !== "disabled") {
+            lastSepaCadenceRef.current = normalized.sepaMode as SepaCadenceMode;
+          }
         } else {
           const errorText = await response.text();
           console.error("API error:", response.status, errorText);
@@ -88,6 +113,7 @@ export function SocietyPage() {
         reservationPricePerMember: society.reservationPricePerMember,
         kitchenPricePerMember: society.kitchenPricePerMember,
         sepaMode: society.sepaMode ?? "monthly",
+        paymentMethods: normalizeSocietyPaymentMethods(society.paymentMethods),
       };
 
       const response = await fetch(`/api/societies/${society.id}`, {
@@ -100,8 +126,15 @@ export function SocietyPage() {
       });
 
       if (response.ok) {
-        const savedSociety = await response.json();
+        const raw = (await response.json()) as Society;
+        const savedSociety: Society = {
+          ...raw,
+          paymentMethods: normalizeSocietyPaymentMethods(raw.paymentMethods),
+        };
         setSociety(savedSociety);
+        if (savedSociety.sepaMode && savedSociety.sepaMode !== "disabled") {
+          lastSepaCadenceRef.current = savedSociety.sepaMode as SepaCadenceMode;
+        }
         toast({
           title: t("success"),
           description: t("societyUpdated"),
@@ -126,6 +159,14 @@ export function SocietyPage() {
   if (!society) {
     return <div>{t("noSocietyData")}</div>;
   }
+
+  const paymentMethods = normalizeSocietyPaymentMethods(society.paymentMethods);
+  const sepaEnabled = (society.sepaMode ?? "monthly") !== "disabled";
+  const sepaCadenceValue: SepaCadenceMode = sepaEnabled
+    ? SEPA_CADENCE_MODES.includes(society.sepaMode as SepaCadenceMode)
+      ? (society.sepaMode as SepaCadenceMode)
+      : "monthly"
+    : lastSepaCadenceRef.current;
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
@@ -183,58 +224,119 @@ export function SocietyPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card data-testid="card-payment-methods">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building2 className="h-5 w-5" />
-                {t("sepaConfiguration")}
+                {t("societyPaymentMethodsCardTitle")}
               </CardTitle>
-              <CardDescription>{t("paymentDataRequired")}</CardDescription>
+              <CardDescription>{t("societyPaymentMethodsCardDescription")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>{t("societyIban")}</Label>
-                <Input
-                  value={society.iban}
-                  onChange={e => setSociety({ ...society, iban: e.target.value })}
-                  placeholder="ES00 0000 0000 0000 0000 0000"
-                  data-testid="input-society-iban"
-                />
-                <p className="text-xs text-muted-foreground">{t("accountForReceivingPayments")}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>{t("creditorId")}</Label>
-                <Input
-                  value={society.creditorId}
-                  onChange={e => setSociety({ ...society, creditorId: e.target.value })}
-                  placeholder="ES00000X00000000"
-                  data-testid="input-creditor-id"
-                />
-                <p className="text-xs text-muted-foreground">{t("sepaCreditorIdentifier")}</p>
-              </div>
-              <div className="space-y-2">
-                <Label>{t("sepaMode")}</Label>
-                <Select
-                  value={society.sepaMode ?? "monthly"}
-                  onValueChange={(value: SepaMode) => setSociety({ ...society, sepaMode: value })}
-                >
-                  <SelectTrigger data-testid="select-sepa-mode">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="monthly">{t("sepaModeMonthly")}</SelectItem>
-                    <SelectItem value="bimonthly">{t("sepaModeBimonthly")}</SelectItem>
-                    <SelectItem value="quarterly">{t("sepaModeQuarterly")}</SelectItem>
-                    <SelectItem value="on_demand">{t("sepaModeOnDemand")}</SelectItem>
-                    <SelectItem value="disabled">{t("sepaModeDisabled")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-xs text-muted-foreground">{t("sepaModeDescription")}</p>
-                {(society.sepaMode ?? "monthly") === "disabled" && (
-                  <p className="text-xs text-amber-700 dark:text-amber-500">
+              <div className="space-y-3 rounded-md border p-3">
+                <p className="text-sm font-medium">{t("societyAcceptedPaymentMethods")}</p>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="pm-sepa"
+                    checked={sepaEnabled}
+                    data-testid="checkbox-payment-sepa"
+                    onCheckedChange={checked => {
+                      const on = checked === true;
+                      if (on) {
+                        setSociety({
+                          ...society,
+                          sepaMode: lastSepaCadenceRef.current,
+                        });
+                      } else {
+                        if (society.sepaMode && society.sepaMode !== "disabled") {
+                          lastSepaCadenceRef.current = society.sepaMode as SepaCadenceMode;
+                        }
+                        setSociety({ ...society, sepaMode: "disabled" });
+                      }
+                    }}
+                  />
+                  <Label htmlFor="pm-sepa" className="font-normal cursor-pointer">
+                    {t("paymentMethodSepa")}
+                  </Label>
+                </div>
+                {sepaEnabled ? (
+                  <div className="space-y-4 pl-6">
+                    <div className="space-y-2">
+                      <Label>{t("sepaCadenceLabel")}</Label>
+                      <Select
+                        value={sepaCadenceValue}
+                        onValueChange={(value: SepaCadenceMode) => {
+                          lastSepaCadenceRef.current = value;
+                          setSociety({ ...society, sepaMode: value });
+                        }}
+                      >
+                        <SelectTrigger data-testid="select-sepa-mode">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="monthly">{t("sepaModeMonthly")}</SelectItem>
+                          <SelectItem value="bimonthly">{t("sepaModeBimonthly")}</SelectItem>
+                          <SelectItem value="quarterly">{t("sepaModeQuarterly")}</SelectItem>
+                          <SelectItem value="on_demand">{t("sepaModeOnDemand")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">{t("sepaCadenceDescription")}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("societyIban")}</Label>
+                      <Input
+                        value={society.iban}
+                        onChange={e => setSociety({ ...society, iban: e.target.value })}
+                        placeholder="ES00 0000 0000 0000 0000 0000"
+                        data-testid="input-society-iban"
+                      />
+                      <p className="text-xs text-muted-foreground">{t("accountForReceivingPayments")}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("creditorId")}</Label>
+                      <Input
+                        value={society.creditorId}
+                        onChange={e => setSociety({ ...society, creditorId: e.target.value })}
+                        placeholder="ES00000X00000000"
+                        data-testid="input-creditor-id"
+                      />
+                      <p className="text-xs text-muted-foreground">{t("sepaCreditorIdentifier")}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-xs text-amber-700 dark:text-amber-500 pl-0">
                     {t("sepaModeDisabledHint")}
                   </p>
                 )}
+
+                {(
+                  [
+                    ["bank_transfer_prepayment", "paymentMethodBankTransferPrepayment"] as const,
+                    ["cash_manual", "paymentMethodCashManual"] as const,
+                    ["cash_change_machine", "paymentMethodCashMachine"] as const,
+                  ] as const
+                ).map(([method, labelKey]) => (
+                  <div key={method} className="flex items-center gap-2">
+                    <Checkbox
+                      id={`pm-${method}`}
+                      data-testid={`checkbox-payment-${method}`}
+                      checked={paymentMethods.includes(method)}
+                      onCheckedChange={checked =>
+                        setSociety({
+                          ...society,
+                          paymentMethods: togglePaymentMethod(
+                            society.paymentMethods,
+                            method,
+                            checked === true
+                          ),
+                        })
+                      }
+                    />
+                    <Label htmlFor={`pm-${method}`} className="font-normal cursor-pointer">
+                      {t(labelKey)}
+                    </Label>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>

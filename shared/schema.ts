@@ -9,6 +9,7 @@ import {
   decimal,
   date,
   unique,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
@@ -22,6 +23,30 @@ export const sepaModeSchema = z.enum([
   "disabled",
 ]);
 export type SepaMode = z.infer<typeof sepaModeSchema>;
+
+/** Non-SEPA accepted payment rails (SEPA is `sepaMode` on the same table). */
+export const societyPaymentMethodSchema = z.enum([
+  "bank_transfer_prepayment",
+  "cash_manual",
+  "cash_change_machine",
+]);
+export type SocietyPaymentMethod = z.infer<typeof societyPaymentMethodSchema>;
+
+export const societyPaymentMethodsSchema = z.array(societyPaymentMethodSchema);
+
+export const DEFAULT_SOCIETY_PAYMENT_METHODS: SocietyPaymentMethod[] = ["bank_transfer_prepayment"];
+
+/** Resolves DB/API value; null/invalid → legacy default; empty array kept when explicitly stored. */
+export function normalizeSocietyPaymentMethods(raw: unknown): SocietyPaymentMethod[] {
+  if (raw == null) return [...DEFAULT_SOCIETY_PAYMENT_METHODS];
+  const parsed = societyPaymentMethodsSchema.safeParse(raw);
+  if (!parsed.success) return [...DEFAULT_SOCIETY_PAYMENT_METHODS];
+  return Array.from(new Set(parsed.data));
+}
+
+export function societyAllowsBankTransferPrepayment(raw: unknown): boolean {
+  return normalizeSocietyPaymentMethods(raw).includes("bank_transfer_prepayment");
+}
 
 export const societies = pgTable("societies", {
   id: varchar("id")
@@ -44,6 +69,11 @@ export const societies = pgTable("societies", {
   ),
   /** SEPA export cadence and whether the society uses automated SEPA billing. */
   sepaMode: text("sepa_mode").notNull().default("monthly"),
+  /** Optional payment rails besides SEPA (bank prepayment, cash placeholders). */
+  paymentMethods: jsonb("payment_methods")
+    .$type<SocietyPaymentMethod[]>()
+    .notNull()
+    .default(sql`'["bank_transfer_prepayment"]'::jsonb`),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -83,10 +113,12 @@ export const insertSocietySchema = createInsertSchema(societies)
     reservationPricePerMember: true,
     kitchenPricePerMember: true,
     sepaMode: true,
+    paymentMethods: true,
     isActive: true,
   })
   .extend({
     sepaMode: sepaModeSchema.optional(),
+    paymentMethods: societyPaymentMethodsSchema.optional(),
   });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -939,10 +971,12 @@ export const updateSocietySettingsBodySchema = insertSocietySchema
     reservationPricePerMember: true,
     kitchenPricePerMember: true,
     sepaMode: true,
+    paymentMethods: true,
   })
   .partial()
   .extend({
     sepaMode: sepaModeSchema.optional(),
+    paymentMethods: societyPaymentMethodsSchema.optional(),
   })
   .refine(data => Object.values(data).some(v => v !== undefined), {
     message: "At least one field is required",
@@ -958,6 +992,7 @@ export const backofficeCreateSocietyBodySchema = z.object({
   reservationPricePerMember: z.union([z.string(), z.number()]).nullish(),
   kitchenPricePerMember: z.union([z.string(), z.number()]).nullish(),
   sepaMode: sepaModeSchema.nullish(),
+  paymentMethods: societyPaymentMethodsSchema.nullish(),
 });
 
 export const createSuperadminBodySchema = insertSuperadminSchema;

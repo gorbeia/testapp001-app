@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLanguage } from "@/lib/i18n";
 import { authFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -31,6 +31,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
+import { Link } from "wouter";
+import { societyAllowsBankTransferPrepayment } from "@shared/schema";
 
 type UserRow = { id: string; name: string | null; username: string };
 
@@ -66,8 +68,20 @@ export function BankTransfersPage() {
     description: "",
   });
 
+  const societyQuery = useQuery({
+    queryKey: ["societies", "user"],
+    queryFn: async () => {
+      const res = await authFetch("/api/societies/user");
+      if (!res.ok) throw new Error("society");
+      return res.json() as { paymentMethods?: unknown };
+    },
+  });
+
+  const prepaymentEnabled = societyAllowsBankTransferPrepayment(societyQuery.data?.paymentMethods);
+
   const usersQuery = useQuery({
     queryKey: ["users-bank-transfers"],
+    enabled: societyQuery.isSuccess && prepaymentEnabled,
     queryFn: async () => {
       const res = await authFetch("/api/users");
       if (!res.ok) throw new Error("users");
@@ -77,6 +91,7 @@ export function BankTransfersPage() {
 
   const listQuery = useQuery({
     queryKey: ["bank-transfers"],
+    enabled: societyQuery.isSuccess && prepaymentEnabled,
     queryFn: async () => {
       const res = await authFetch("/api/bank-transfers");
       if (!res.ok) throw new Error("list");
@@ -167,6 +182,43 @@ export function BankTransfersPage() {
   });
 
   const pending = (listQuery.data ?? []).filter(x => x.status === "pending");
+
+  if (societyQuery.isLoading) {
+    return <div className="p-4 sm:p-6">{t("loading")}</div>;
+  }
+
+  if (societyQuery.isError) {
+    return (
+      <div className="p-4 sm:p-6 text-destructive" data-testid="bank-transfers-society-error">
+        {t("error")}
+      </div>
+    );
+  }
+
+  if (societyQuery.isSuccess && !prepaymentEnabled) {
+    return (
+      <div
+        className="p-4 sm:p-6 space-y-4 sm:space-y-6"
+        data-testid="bank-transfers-prepayment-disabled"
+      >
+        <div>
+          <h2 className="text-2xl font-bold">{t("bankTransfersMenu")}</h2>
+          <p className="text-muted-foreground">{t("bankTransfersPrepaymentDisabledDescription")}</p>
+        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("bankTransfersPrepaymentDisabledTitle")}</CardTitle>
+            <CardDescription>{t("bankTransfersPrepaymentDisabledDescription")}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button asChild variant="secondary">
+              <Link href="/elkartea">{t("bankTransfersPrepaymentDisabledGoToSociety")}</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 sm:p-6 space-y-4" data-testid="bank-transfers-page">

@@ -7,7 +7,7 @@ Status legend:
 - 🟡 Partial (shipped with known gaps vs story text)
 - ❌ Not Implemented
 
-> **Scope note:** Authentication, users, reservations, consumptions, products, categories, credits/debts, notes (oharrak), notifications, society fields (including SEPA-related columns), tables, subscription types, and backoffice society management are backed by Express + Drizzle + PostgreSQL. SEPA XML generation still uses hardcoded creditor defaults in the client generator (see `credits.md`).
+> **Scope note:** Authentication, users, reservations, consumptions, products, categories, credits/debts, notes (oharrak), notifications, society fields (including SEPA-related columns and **`payment_methods`** for transfer prepayment + cash placeholders), tables, subscription types, and backoffice society management are backed by Express + Drizzle + PostgreSQL. SEPA XML generation still uses hardcoded creditor defaults in the client generator (see `credits.md`).
 >
 > **Local DB:** `pnpm db:reset` runs [`script/reset.ts`](../script/reset.ts) (drops all `public` tables, then `db:push`). `pnpm db:seed` runs [`script/seed.ts`](../script/seed.ts) (ordered demo seeds in one process).
 
@@ -120,7 +120,7 @@ Status legend:
    - **Status**: ✅ Implemented (+ top stat cards: balance status, period count/net; E2E: `account-movements.feature`)
 2. **Treasurer movement audit** – `/mugimenduak`, `GET /api/account-movements` (filters, running balance via SQL window; response includes `sumAmount`, `selectedMemberBalance` when a member filter is set)
    - **Status**: ✅ Implemented (+ top stat cards: filtered count, filtered sum, member saldo when filtered)
-3. **Bank transfer workflow** – `/transferentziak`, `POST/GET /api/bank-transfers`, validate/reject + ledger + notifications; members propose transfers from **`/nire-mugimenduak`** via `POST` + `GET /api/bank-transfers/me?status=pending` (table only when pending; validated lines on ledger — see `account-movements.md` F1 / F4)
+3. **Bank transfer workflow** – `/transferentziak`, `POST/GET /api/bank-transfers`, validate/reject + ledger + notifications; members propose transfers from **`/nire-mugimenduak`** via `POST` + `GET /api/bank-transfers/me?status=pending` (table only when pending; validated lines on ledger — see `account-movements.md` F1 / F4); **gated when `bank_transfer_prepayment` is absent from society `payment_methods`** (sidebar, pages, APIs `403`)
    - **Status**: ✅ Implemented (+ E2E: `bank-transfers.feature`)
 4. **Refunds** – dialog on **`/transferentziak`** (treasurer); `POST /api/account-movements/refund`; **`/itzulketak`** redirects to transfers
    - **Status**: ✅ Implemented (+ E2E: `refunds.feature`)
@@ -181,7 +181,7 @@ Status legend:
 ## 8. Society Management (Elkartea) (`society-management.md`)
 
 1. **Society information & SEPA-related fields**
-   - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id` — **administratzailea** + **diruzaina** own-tenant; prepaid-balance toggle shipped)
+   - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id` — **administratzailea** + **diruzaina** own-tenant; **`payment_methods`** on societies: SEPA checkbox + cadence, bank prepayment + cash placeholders; prepayment gates transfers UI/API; cash methods stored only)
 2. **Tables (resource config for reservations)**
    - **Status**: ✅ Implemented (`/mahaiak` — see Reservations)
 3. **Subscription types**
