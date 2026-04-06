@@ -181,7 +181,7 @@ export function SepaExportPage() {
     }
   };
 
-  const generateCSV = (credits: any[]) => {
+  const generateCSV = (credits: Credit[]) => {
     const headers = ["ID", "Bazkidea", "IBAN", "Kopurua"];
     const rows = credits.map(credit => [
       credit.id,

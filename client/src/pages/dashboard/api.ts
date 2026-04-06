@@ -43,6 +43,22 @@ export interface UpcomingReservation {
   guests: number;
 }
 
+/** Row from `/api/credits/member/current` (pending sum uses `totalAmount`). */
+interface MemberPendingCreditRow {
+  totalAmount: string;
+}
+
+/** Raw row from `/api/reservations` list before mapping to `UpcomingReservation`. */
+interface ReservationsListApiRow {
+  id: string;
+  userName?: string;
+  name?: string;
+  startDate: string;
+  type: string;
+  table: number;
+  guests: number;
+}
+
 export const fetchNotes = async (language?: string): Promise<Note[]> => {
   try {
     const response = await authFetch("/api/notes");
@@ -262,10 +278,10 @@ const fetchUserTotalPendingDebt = async (): Promise<number> => {
   try {
     const response = await authFetch("/api/credits/member/current?status=pending");
     if (response.ok) {
-      const data = await response.json();
-      // Sum up all pending amounts across all months
+      const data = (await response.json()) as MemberPendingCreditRow[];
       return data.reduce(
-        (sum: number, credit: any) => sum + (parseFloat(credit.totalAmount) || 0),
+        (sum: number, credit: MemberPendingCreditRow) =>
+          sum + (parseFloat(credit.totalAmount) || 0),
         0
       );
     }
@@ -283,8 +299,8 @@ export const fetchUpcomingReservations = async (limit = 4): Promise<UpcomingRese
     );
     if (response.ok) {
       const result = await response.json();
-      const data = result.data || result; // Handle both paginated and direct array responses
-      return data.map((reservation: any) => ({
+      const data = (result.data || result) as ReservationsListApiRow[];
+      return data.map(reservation => ({
         id: reservation.id,
         member: reservation.userName || reservation.name || "Unknown",
         date: reservation.startDate,

@@ -41,14 +41,40 @@ import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Edit, Trash2, Link2, UserX, UserCheck } from "lucide-react";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
+import type { SubscriptionType as SubscriptionTypeEntity } from "@shared/schema";
 
-// API function to fetch users
-const fetchUsers = async (statusFilter?: string) => {
+/** Shape of `/api/users` list rows (passwords never returned). */
+type UsersApiRow = {
+  id: string;
+  username: string;
+  name: string | null;
+  role: string | null;
+  function: string | null;
+  phone: string | null;
+  iban: string | null;
+  linkedMemberId: string | null;
+  linkedMemberName: string | null;
+  subscriptionTypeId: string | null;
+  societyId: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  subscriptionType: {
+    id: string;
+    name: string;
+    amount: string;
+    period: string;
+  } | null;
+};
+
+const fetchUsers = async (statusFilter?: string): Promise<UsersApiRow[]> => {
   const statusParam = statusFilter === "all" ? "" : `?status=${statusFilter}`;
   const response = await authFetch(`/api/users${statusParam}`);
   if (!response.ok) throw new Error("Failed to fetch users");
-  return response.json();
+  return (await response.json()) as UsersApiRow[];
 };
+
+type SubscriptionPeriodI18nKey = "monthly" | "quarterly" | "yearly" | "custom";
 
 type UsersPageUser = {
   id: string;
@@ -104,7 +130,7 @@ export function UsersPage() {
   // Fetch subscription types for dropdown
   const { data: subscriptionTypes = [] } = useQuery({
     queryKey: ["subscription-types"],
-    queryFn: async () => {
+    queryFn: async (): Promise<SubscriptionTypeEntity[]> => {
       const response = await authFetch("/api/subscription-types");
       if (!response.ok) throw new Error("Failed to fetch subscription types");
       return response.json();
@@ -112,7 +138,7 @@ export function UsersPage() {
   });
 
   // Transform API data to component format
-  const users: UsersPageUser[] = rawUsers.map((dbUser: any) => ({
+  const users: UsersPageUser[] = rawUsers.map((dbUser: UsersApiRow) => ({
     id: dbUser.id,
     name: dbUser.name ?? dbUser.username,
     email: dbUser.username,
@@ -524,9 +550,9 @@ export function UsersPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">{t("noSubscription")}</SelectItem>
-                      {subscriptionTypes.map((type: any) => (
+                      {subscriptionTypes.map(type => (
                         <SelectItem key={type.id} value={type.id}>
-                          {type.name} - €{type.amount} ({t(type.period)})
+                          {type.name} - €{type.amount} ({t(type.period as SubscriptionPeriodI18nKey)})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -619,9 +645,9 @@ export function UsersPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">{t("noSubscription")}</SelectItem>
-                        {subscriptionTypes.map((type: any) => (
+                        {subscriptionTypes.map(type => (
                           <SelectItem key={type.id} value={type.id}>
-                            {type.name} - €{type.amount} ({t(type.period)})
+                            {type.name} - €{type.amount} ({t(type.period as SubscriptionPeriodI18nKey)})
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -740,7 +766,7 @@ export function UsersPage() {
                             </span>
                             <span className="text-xs text-muted-foreground">
                               €{user.subscriptionType.amount} (
-                              {t(user.subscriptionType.period as any)})
+                              {t(user.subscriptionType.period as SubscriptionPeriodI18nKey)}
                             </span>
                           </div>
                         ) : (

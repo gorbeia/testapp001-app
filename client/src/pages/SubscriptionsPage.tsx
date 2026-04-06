@@ -41,16 +41,47 @@ import { Switch } from "@/components/ui/switch";
 import { Search, Plus, Edit, Trash2, Settings } from "lucide-react";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
+import type { z } from "zod";
+import {
+  subscriptionTypeCreateBodySchema,
+  subscriptionTypeUpdateBodySchema,
+} from "@shared/schema";
+import { getErrorMessage } from "@/lib/errors";
 
-// API function to fetch subscription types
-const fetchSubscriptionTypes = async () => {
+type SubscriptionCreateBody = z.infer<typeof subscriptionTypeCreateBodySchema>;
+type SubscriptionUpdateBody = z.infer<typeof subscriptionTypeUpdateBodySchema>;
+type SubscriptionPeriod = SubscriptionCreateBody["period"];
+
+type SubscriptionFormState = {
+  name: string;
+  description: string;
+  amount: string;
+  period: SubscriptionPeriod;
+  periodMonths: number;
+  isActive: boolean;
+  autoRenew: boolean;
+};
+
+type SubscriptionTypeRow = {
+  id: string;
+  name: string;
+  description: string | null;
+  amount: string;
+  period: SubscriptionPeriod;
+  periodMonths: number;
+  isActive: boolean;
+  autoRenew: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const fetchSubscriptionTypes = async (): Promise<SubscriptionTypeRow[]> => {
   const response = await authFetch("/api/subscription-types");
   if (!response.ok) throw new Error("Failed to fetch subscription types");
   return response.json();
 };
 
-// API function to create subscription type
-const createSubscriptionType = async (data: any) => {
+const createSubscriptionType = async (data: SubscriptionCreateBody) => {
   const response = await authFetch("/api/subscription-types", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -61,7 +92,7 @@ const createSubscriptionType = async (data: any) => {
 };
 
 // API function to update subscription type
-const updateSubscriptionType = async (id: string, data: any) => {
+const updateSubscriptionType = async (id: string, data: SubscriptionUpdateBody) => {
   const response = await authFetch(`/api/subscription-types/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
@@ -80,19 +111,6 @@ const deleteSubscriptionType = async (id: string) => {
   return response.json();
 };
 
-type SubscriptionType = {
-  id: string;
-  name: string;
-  description: string | null;
-  amount: string;
-  period: string;
-  periodMonths: number;
-  isActive: boolean;
-  autoRenew: boolean;
-  createdAt: string;
-  updatedAt: string;
-};
-
 export function SubscriptionsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
@@ -102,10 +120,9 @@ export function SubscriptionsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [editingSubscription, setEditingSubscription] = useState<SubscriptionType | null>(null);
+  const [editingSubscription, setEditingSubscription] = useState<SubscriptionTypeRow | null>(null);
 
-  // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<SubscriptionFormState>({
     name: "",
     description: "",
     amount: "",
@@ -115,12 +132,11 @@ export function SubscriptionsPage() {
     autoRenew: false,
   });
 
-  // Fetch subscription types
   const {
     data: subscriptionTypes = [],
     isLoading,
     error,
-  } = useQuery({
+  } = useQuery<SubscriptionTypeRow[]>({
     queryKey: ["subscription-types"],
     queryFn: fetchSubscriptionTypes,
   });
@@ -137,10 +153,10 @@ export function SubscriptionsPage() {
         description: t("subscriptionTypeCreated"),
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: t("error"),
-        description: error.message || t("failedToCreateSubscriptionType"),
+        description: getErrorMessage(error) || t("failedToCreateSubscriptionType"),
         variant: "destructive",
       });
     },
@@ -148,7 +164,8 @@ export function SubscriptionsPage() {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => updateSubscriptionType(id, data),
+    mutationFn: ({ id, data }: { id: string; data: SubscriptionUpdateBody }) =>
+      updateSubscriptionType(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscription-types"] });
       setIsEditDialogOpen(false);
@@ -159,10 +176,10 @@ export function SubscriptionsPage() {
         description: t("subscriptionTypeUpdated"),
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: t("error"),
-        description: error.message || t("failedToUpdateSubscriptionType"),
+        description: getErrorMessage(error) || t("failedToUpdateSubscriptionType"),
         variant: "destructive",
       });
     },
@@ -178,10 +195,10 @@ export function SubscriptionsPage() {
         description: t("subscriptionTypeDeleted"),
       });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: t("error"),
-        description: error.message || t("failedToDeleteSubscriptionType"),
+        description: getErrorMessage(error) || t("failedToDeleteSubscriptionType"),
         variant: "destructive",
       });
     },
@@ -208,7 +225,7 @@ export function SubscriptionsPage() {
     }
   };
 
-  const handleEdit = (subscription: SubscriptionType) => {
+  const handleEdit = (subscription: SubscriptionTypeRow) => {
     setEditingSubscription(subscription);
     setFormData({
       name: subscription.name,
@@ -228,7 +245,7 @@ export function SubscriptionsPage() {
     }
   };
 
-  const filteredSubscriptions = subscriptionTypes.filter((subscription: SubscriptionType) => {
+  const filteredSubscriptions = subscriptionTypes.filter((subscription: SubscriptionTypeRow) => {
     const matchesSearch =
       subscription.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       subscription.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -314,7 +331,9 @@ export function SubscriptionsPage() {
                   <Label htmlFor="period">{t("period")}</Label>
                   <Select
                     value={formData.period}
-                    onValueChange={value => setFormData({ ...formData, period: value })}
+                    onValueChange={value =>
+                      setFormData({ ...formData, period: value as SubscriptionPeriod })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -438,7 +457,7 @@ export function SubscriptionsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredSubscriptions.map((subscription: SubscriptionType) => (
+                filteredSubscriptions.map(subscription => (
                   <TableRow key={subscription.id}>
                     <TableCell className="font-medium">{subscription.name}</TableCell>
                     <TableCell>{subscription.description || "-"}</TableCell>
@@ -528,7 +547,9 @@ export function SubscriptionsPage() {
                 <Label htmlFor="edit-period">{t("period")}</Label>
                 <Select
                   value={formData.period}
-                  onValueChange={value => setFormData({ ...formData, period: value })}
+                  onValueChange={value =>
+                    setFormData({ ...formData, period: value as SubscriptionPeriod })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
