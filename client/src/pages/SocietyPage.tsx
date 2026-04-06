@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
-import { Building2, Save, DollarSign } from "lucide-react";
+import { Building2, Save, DollarSign, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorBoundary } from "react-error-boundary";
@@ -19,6 +20,7 @@ interface Society {
   email: string;
   reservationPricePerMember: string;
   kitchenPricePerMember: string;
+  allowPositiveBalance?: boolean;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -230,6 +232,28 @@ export function SocietyPage() {
                     data-testid="input-kitchen-price-per-member"
                   />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Wallet className="h-5 w-5" />
+                {t("payment")}
+              </CardTitle>
+              <CardDescription>{t("allowPrepaidBalance")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={society.allowPositiveBalance !== false}
+                  onCheckedChange={checked =>
+                    setSociety({ ...society, allowPositiveBalance: checked })
+                  }
+                  data-testid="switch-allow-prepaid"
+                />
+                <span className="text-sm text-muted-foreground">{t("allowPrepaidBalance")}</span>
               </div>
             </CardContent>
           </Card>

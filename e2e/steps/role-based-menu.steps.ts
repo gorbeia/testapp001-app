@@ -10,6 +10,7 @@ const MAIN_MENU_ENTRIES = [
   "link-kontsumoak", // General Consumptions (shown to all users)
   "link-nire-konsumoak", // My Consumptions
   "link-nire-zorrak", // Personal Debts
+  "link-nire-mugimenduak", // Account movements (member)
   "link-oharrak", // Announcements
 ];
 
@@ -19,6 +20,9 @@ const ADMIN_MENU_ENTRIES = [
   "link-produktuak", // Products
   "link-elkartea", // Society
   "link-sepa", // SEPA Export
+  "link-mugimenduak", // Ledger (treasurer)
+  "link-transferentziak", // Bank transfers
+  "link-itzulketak", // Refunds
 ];
 
 Then("I should see the main menu entries", async function () {
@@ -60,11 +64,13 @@ Then("I should see the admin management section", async function () {
   const productsLink = await page.$('[data-testid="link-produktuak"]');
   const societyLink = await page.$('[data-testid="link-elkartea"]');
   const sepaLink = await page.$('[data-testid="link-sepa"]');
+  const movementsLink = await page.$('[data-testid="link-mugimenduak"]');
 
   assert.ok(usersLink, "Users link should be visible for admin user");
   assert.ok(productsLink, "Products link should be visible for admin user");
   assert.ok(societyLink, "Society link should be visible for admin user");
   assert.ok(sepaLink, "SEPA link should be visible for admin user");
+  assert.ok(movementsLink, "Admin movements link should be visible for admin user");
 });
 
 Then("I should not be able to access admin pages directly", { timeout: 15000 }, async function () {
@@ -80,6 +86,9 @@ Then("I should not be able to access admin pages directly", { timeout: 15000 }, 
     "/zorrak", // Debts
     "/sepa", // SEPA
     "/elkartea", // Society
+    "/mugimenduak",
+    "/transferentziak",
+    "/itzulketak",
   ];
 
   for (const pagePath of adminPages) {

@@ -23,7 +23,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import MonthGrid from "@/components/MonthGrid";
 import { useLanguage } from "@/lib/i18n";
-import { useAuth, hasAdminAccess } from "@/lib/auth";
+import { useAuth, hasAdminAccess, hasTreasurerAccess } from "@/lib/auth";
+import { authFetch } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Credit } from "@shared/schema";
 
@@ -68,13 +69,7 @@ const fetchCredits = async (filters?: { month?: string; status?: string }) => {
   if (filters?.month) params.append("month", filters.month);
   if (filters?.status) params.append("status", filters.status);
 
-  const token = localStorage.getItem("auth:token");
-  const response = await fetch(`/api/credits?${params}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-    },
-  });
+  const response = await authFetch(`/api/credits?${params}`);
 
   if (!response.ok) {
     // Handle different error types appropriately
@@ -97,6 +92,7 @@ export function CreditsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCredits, setSelectedCredits] = useState<Set<string>>(new Set());
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
+  const [bouncingId, setBouncingId] = useState<string | null>(null);
 
   // Use URL filter hook for month and status
   // const currentDate = new Date();
@@ -108,6 +104,7 @@ export function CreditsPage() {
   });
 
   const isAdmin = hasAdminAccess(user);
+  const canTreasurer = hasTreasurerAccess(user);
 
   const queryClient = useQueryClient();
 
@@ -188,11 +185,8 @@ export function CreditsPage() {
 
     setIsMarkingAsPaid(true);
     try {
-      const response = await fetch("/api/credits/batch-status", {
+      const response = await authFetch("/api/credits/batch-status", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
         body: JSON.stringify({
           creditIds: Array.from(selectedCredits),
           status: "paid",
@@ -206,6 +200,7 @@ export function CreditsPage() {
       // Clear selection and refresh data
       setSelectedCredits(new Set());
       queryClient.invalidateQueries({ queryKey: ["credits"] });
+      queryClient.invalidateQueries({ queryKey: ["account-movements-admin"] });
 
       toast({
         title: "Eguneratuta",
@@ -220,6 +215,29 @@ export function CreditsPage() {
       });
     } finally {
       setIsMarkingAsPaid(false);
+    }
+  };
+
+  const handleSepaBounce = async (creditId: string) => {
+    if (!window.confirm(t("sepaBounceConfirm"))) return;
+    setBouncingId(creditId);
+    try {
+      const response = await authFetch("/api/account-movements/sepa-bounce", {
+        method: "POST",
+        body: JSON.stringify({ creditId }),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || "bounce failed");
+      }
+      queryClient.invalidateQueries({ queryKey: ["credits"] });
+      queryClient.invalidateQueries({ queryKey: ["account-movements-admin"] });
+      toast({ title: t("success"), description: t("sepaBounce") });
+    } catch (e) {
+      console.error(e);
+      toast({ title: t("error"), variant: "destructive" });
+    } finally {
+      setBouncingId(null);
     }
   };
 
@@ -353,13 +371,14 @@ export function CreditsPage() {
                 <TableHead className="text-right">{t("amount")}</TableHead>
                 <TableHead className="text-right">{t("status")}</TableHead>
                 <TableHead className="text-right">{t("payment")}</TableHead>
+                {canTreasurer && <TableHead className="text-right">{t("actions")}</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCredits.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={isAdmin ? 6 : 5}
+                    colSpan={isAdmin ? (canTreasurer ? 7 : 6) : canTreasurer ? 6 : 5}
                     className="text-center py-8 text-muted-foreground"
                     data-testid="no-results-message"
                   >
@@ -408,6 +427,21 @@ export function CreditsPage() {
                         </div>
                       )}
                     </TableCell>
+                    {canTreasurer && (
+                      <TableCell className="text-right">
+                        {credit.status === "paid" && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={bouncingId === credit.id}
+                            onClick={() => handleSepaBounce(credit.id)}
+                            data-testid={`button-sepa-bounce-${credit.id}`}
+                          >
+                            {t("sepaBounce")}
+                          </Button>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

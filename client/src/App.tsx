@@ -26,6 +26,10 @@ import { UsersPage } from "@/pages/UsersPage";
 import { ProductsPage } from "@/pages/ProductsPage";
 import { SocietyPage } from "@/pages/SocietyPage";
 import { SepaExportPage } from "@/pages/SepaExportPage";
+import { MyMovementsPage } from "@/pages/MyMovementsPage";
+import { AccountMovementsPage } from "@/pages/AccountMovementsPage";
+import { BankTransfersPage } from "@/pages/BankTransfersPage";
+import { RefundsPage } from "@/pages/RefundsPage";
 import { TablesPage } from "@/pages/TablesPage";
 import { UserProfile } from "@/components/UserProfile";
 import OharrakPage from "@/pages/announcements";
@@ -66,6 +70,28 @@ function AppRoutes() {
         )}
       </Route>
       <Route path="/nire-zorrak" component={MyDebtsPage} />
+      <Route path="/nire-mugimenduak" component={MyMovementsPage} />
+      <Route path="/mugimenduak">
+        {() => (
+          <ProtectedRoute requiredAccess="treasurer">
+            <AccountMovementsPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/transferentziak">
+        {() => (
+          <ProtectedRoute requiredAccess="treasurer">
+            <BankTransfersPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/itzulketak">
+        {() => (
+          <ProtectedRoute requiredAccess="treasurer">
+            <RefundsPage />
+          </ProtectedRoute>
+        )}
+      </Route>
       <Route path="/oharrak">
         {() => (
           <ProtectedRoute requiredAccess="admin">

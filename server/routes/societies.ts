@@ -9,6 +9,9 @@ import {
 import { eq } from "drizzle-orm";
 import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
 
+const canManageOwnSocietySettings = (user: JwtSessionUser): boolean =>
+  user.function === "administratzailea" || user.function === "diruzaina";
+
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
@@ -107,9 +110,15 @@ export function registerSocietyRoutes(app: Express) {
     }
   });
 
-  app.put("/api/societies/:id", requireAdmin, async (req, res, next) => {
+  app.put("/api/societies/:id", sessionMiddleware, requireAuth, async (req, res, next) => {
     try {
+      if (!req.user || !canManageOwnSocietySettings(req.user)) {
+        return res.status(403).json({ message: "Treasurer or admin access required" });
+      }
       const { id } = req.params;
+      if (getUserSocietyId(req.user) !== id) {
+        return res.status(403).json({ message: "You can only update your own society" });
+      }
       const parsed = updateSocietySettingsBodySchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({

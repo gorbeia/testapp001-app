@@ -25,6 +25,8 @@ async function resetDatabase() {
       DROP TABLE IF EXISTS "notifications" CASCADE;
       DROP TABLE IF EXISTS "note_messages" CASCADE;
       DROP TABLE IF EXISTS "notes" CASCADE;
+      DROP TABLE IF EXISTS "bank_transfers" CASCADE;
+      DROP TABLE IF EXISTS "account_movements" CASCADE;
       DROP TABLE IF EXISTS "credits" CASCADE;
       DROP TABLE IF EXISTS "reservations" CASCADE;
       DROP TABLE IF EXISTS "tables" CASCADE;

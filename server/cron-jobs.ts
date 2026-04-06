@@ -9,6 +9,8 @@ import {
   credits,
   subscriptionTypes,
 } from "@shared/schema";
+import { insertAccountMovementRow, movementExistsForReference } from "./lib/account-movements";
+import { notifyFinancialEvent } from "./lib/financial-notifications";
 
 class DebtCalculationService {
   private static instance: DebtCalculationService;
@@ -95,10 +97,17 @@ class DebtCalculationService {
 
           const reservationAmount = reservationResults[0]?.total || 0;
 
-          // Calculate total amount (kitchen costs are already included in reservation.totalAmount)
-          const totalAmount = consumptionAmount + reservationAmount;
+          const subscriptionCharge = await this.calculateSubscriptionCharge(
+            member.id,
+            activeSociety.id,
+            year,
+            month
+          );
 
-          // Only process credits if member has actual debts
+          // Calculate total amount (kitchen costs are already included in reservation.totalAmount)
+          const totalAmount = consumptionAmount + reservationAmount + subscriptionCharge;
+
+          // Only process credits if member has actual debts (including subscription-only months)
           if (totalAmount > 0) {
             // Check if credit already exists for this member and month
             const [existingCredit] = await db
@@ -119,6 +128,7 @@ class DebtCalculationService {
                 .set({
                   consumptionAmount: consumptionAmount.toString(),
                   reservationAmount: reservationAmount.toString(),
+                  subscriptionAmount: subscriptionCharge.toString(),
                   totalAmount: totalAmount.toString(),
                   updatedAt: new Date(),
                 })
@@ -133,14 +143,50 @@ class DebtCalculationService {
                 monthNumber: month,
                 consumptionAmount: consumptionAmount.toString(),
                 reservationAmount: reservationAmount.toString(),
+                subscriptionAmount: subscriptionCharge.toString(),
                 totalAmount: totalAmount.toString(),
                 status: "pending",
               });
             }
 
             console.log(
-              `Updated ${member.name}: ${totalAmount.toFixed(2)}€ (consumption: ${consumptionAmount.toFixed(2)}€, reservation: ${reservationAmount.toFixed(2)}€)`
+              `Updated ${member.name}: ${totalAmount.toFixed(2)}€ (consumption: ${consumptionAmount.toFixed(2)}€, reservation: ${reservationAmount.toFixed(2)}€, subscription: ${subscriptionCharge.toFixed(2)}€)`
             );
+          }
+
+          if (subscriptionCharge > 0) {
+            const subRef = `${member.id}:${monthLabel}`;
+            const exists = await movementExistsForReference(
+              activeSociety.id,
+              "subscription",
+              subRef
+            );
+            if (!exists) {
+              const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+              await insertAccountMovementRow({
+                societyId: activeSociety.id,
+                userId: member.id,
+                type: "subscription",
+                amount: subscriptionCharge.toFixed(2),
+                description: `Subscription — ${monthLabel}`,
+                referenceId: subRef,
+                referenceType: "subscription",
+                createdBy: null,
+                createdAt: endOfMonth,
+              });
+              try {
+                await notifyFinancialEvent({
+                  userId: member.id,
+                  societyId: activeSociety.id,
+                  referenceId: subRef,
+                  titleKey: "financialSubscriptionChargeTitle",
+                  messageKey: "financialSubscriptionChargeMessage",
+                  params: { month: monthLabel, amount: subscriptionCharge.toFixed(2) },
+                });
+              } catch (notifyErr) {
+                console.error("Subscription charge notification failed:", notifyErr);
+              }
+            }
           }
 
           totalDebts += totalAmount;
@@ -165,7 +211,7 @@ class DebtCalculationService {
     }
   }
 
-  private async calculateSubscriptionCharge(
+  async calculateSubscriptionCharge(
     userId: string,
     societyId: string,
     year: number,

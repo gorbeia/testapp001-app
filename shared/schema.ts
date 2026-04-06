@@ -7,6 +7,7 @@ import {
   boolean,
   integer,
   decimal,
+  date,
   unique,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
@@ -31,6 +32,8 @@ export const societies = pgTable("societies", {
   kitchenPricePerMember: decimal("kitchen_price_per_member", { precision: 10, scale: 2 }).default(
     "10.00"
   ),
+  /** When false, member ledger balance may not go below zero (no prepaid credit). */
+  allowPositiveBalance: boolean("allow_positive_balance").notNull().default(true),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -68,6 +71,7 @@ export const insertSocietySchema = createInsertSchema(societies).pick({
   email: true,
   reservationPricePerMember: true,
   kitchenPricePerMember: true,
+  allowPositiveBalance: true,
   isActive: true,
 });
 
@@ -320,6 +324,7 @@ export const credits = pgTable("credits", {
   monthNumber: integer("month_number").notNull(), // 1-12
   consumptionAmount: decimal("consumption_amount", { precision: 10, scale: 2 }).default("0"),
   reservationAmount: decimal("reservation_amount", { precision: 10, scale: 2 }).default("0"),
+  subscriptionAmount: decimal("subscription_amount", { precision: 10, scale: 2 }).default("0"),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).default("0"),
   status: text("status").notNull().default("pending"), // "pending", "paid", "partial"
   paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default("0"),
@@ -327,6 +332,106 @@ export const credits = pgTable("credits", {
   markedAsPaidAt: timestamp("marked_as_paid_at"), // When it was marked as paid
   calculatedAt: timestamp("calculated_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const accountMovementTypeSchema = z.enum([
+  "consumption",
+  "reservation",
+  "subscription",
+  "sepa_collection",
+  "sepa_bounce",
+  "bank_transfer",
+  "refund",
+  "adjustment",
+]);
+
+export type AccountMovementType = z.infer<typeof accountMovementTypeSchema>;
+
+export const accountMovements = pgTable("account_movements", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
+  userId: varchar("user_id")
+    .notNull()
+    .references(() => users.id),
+  type: text("type").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  description: text("description"),
+  referenceId: varchar("reference_id"),
+  referenceType: text("reference_type"),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const bankTransferStatusSchema = z.enum(["pending", "validated", "rejected"]);
+
+export const bankTransfers = pgTable("bank_transfers", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
+  userId: varchar("user_id")
+    .notNull()
+    .references(() => users.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  transferDate: date("transfer_date").notNull(),
+  reference: text("reference"),
+  notes: text("notes"),
+  status: text("status").notNull().default("pending"),
+  validatedBy: varchar("validated_by").references(() => users.id),
+  validatedAt: timestamp("validated_at"),
+  rejectionReason: text("rejection_reason"),
+  movementId: varchar("movement_id").references(() => accountMovements.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertAccountMovementSchema = createInsertSchema(accountMovements).pick({
+  societyId: true,
+  userId: true,
+  type: true,
+  amount: true,
+  description: true,
+  referenceId: true,
+  referenceType: true,
+  createdBy: true,
+});
+
+export const insertBankTransferSchema = createInsertSchema(bankTransfers).pick({
+  societyId: true,
+  userId: true,
+  amount: true,
+  transferDate: true,
+  reference: true,
+  notes: true,
+  status: true,
+});
+
+export const accountMovementRefundBodySchema = z.object({
+  userId: z.string().min(1),
+  amount: z.union([z.coerce.number().positive(), z.string()]),
+  description: z.string().min(1),
+});
+
+export const accountMovementSepaBounceBodySchema = z.object({
+  creditId: z.string().min(1),
+});
+
+export const bankTransferCreateBodySchema = z.object({
+  userId: z.string().min(1),
+  amount: z.union([z.coerce.number().positive(), z.string()]),
+  transferDate: z.coerce.date(),
+  reference: z.string().optional(),
+  notes: z.string().optional(),
+});
+
+export const bankTransferRejectBodySchema = z.object({
+  rejectionReason: z.string().min(1),
 });
 
 export const notes = pgTable("notes", {
@@ -411,6 +516,8 @@ export type InsertReservation = z.infer<typeof insertReservationSchema>;
 export type Reservation = typeof reservations.$inferSelect;
 export type Credit = typeof credits.$inferSelect;
 export type InsertCredit = typeof credits.$inferSelect;
+export type AccountMovement = typeof accountMovements.$inferSelect;
+export type BankTransfer = typeof bankTransfers.$inferSelect;
 export type Note = typeof notes.$inferSelect;
 export type NoteMessage = typeof noteMessages.$inferSelect;
 export type InsertNote = z.infer<typeof insertNotesSchema>;
@@ -810,6 +917,7 @@ export const updateSocietySettingsBodySchema = insertSocietySchema
     email: true,
     reservationPricePerMember: true,
     kitchenPricePerMember: true,
+    allowPositiveBalance: true,
   })
   .partial()
   .refine(data => Object.values(data).some(v => v !== undefined), {

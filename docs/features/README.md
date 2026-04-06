@@ -16,6 +16,7 @@ This directory contains user stories organized by feature area for the Elkartear
 - **[Reservations](reservations.md)** — Erreserbak (`/erreserbak`, `/nire-erreserbak`, `/admin-erreserbak`)
 - **[Consumptions](consumptions.md)** — Kontsumoak POS and history
 - **[Credits](credits.md)** — Zorrak, monthly debts, SEPA export (`/zorrak`, `/nire-zorrak`, `/sepa`)
+- **[Account movements](account-movements.md)** — Ledger, transfers, refunds, SEPA bounce (`/nire-mugimenduak`, `/mugimenduak`, `/transferentziak`, `/itzulketak`)
 
 ### Communication Features
 

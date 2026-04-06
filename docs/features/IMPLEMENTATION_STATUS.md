@@ -112,6 +112,30 @@ Status legend:
 
 ---
 
+## 5b. Account movements / ledger (`account-movements.md`)
+
+1. **Member movement list & balance** – `/nire-mugimenduak`, `GET /api/account-movements/me`
+   - **Status**: ✅ Implemented (+ E2E: `account-movements.feature`)
+2. **Treasurer movement audit** – `/mugimenduak`, `GET /api/account-movements` (filters, running balance via SQL window)
+   - **Status**: ✅ Implemented
+3. **Bank transfer workflow** – `/transferentziak`, `POST/GET /api/bank-transfers`, validate/reject + ledger + notifications
+   - **Status**: ✅ Implemented (+ E2E: `bank-transfers.feature`)
+4. **Refunds** – `/itzulketak`, `POST /api/account-movements/refund`
+   - **Status**: ✅ Implemented (+ E2E: `refunds.feature`)
+5. **SEPA collection on ledger** – `sepa_collection` movement when marking credits paid (`PUT /api/credits/batch-status`)
+   - **Status**: ✅ Implemented
+6. **SEPA bounce** – `POST /api/account-movements/sepa-bounce`, `/zorrak` action column (+ E2E: `sepa-bounce.feature`)
+   - **Status**: ✅ Implemented
+7. **Consumption / reservation lines on ledger** – movements on item add, reservation create; cancellation/deletion adjustment
+   - **Status**: ✅ Implemented
+8. **Subscription fees on ledger** – `DebtCalculationService` posts `subscription` movement + `credits.subscription_amount`
+   - **Status**: ✅ Implemented
+9. **Society `allow_positive_balance`** – `/elkartea` toggle; guards refunds/transfers
+   - **Status**: ✅ Implemented (`PUT /api/societies/:id` allows **administratzailea** + **diruzaina** for own society)
+10. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
+
+---
+
 ## 6. Communication – Oharrak & Jakinarazpenak (`communication.md`)
 
 > **Shipped scope:** Oharrak are **DB-backed notes** (`notes` / `note_messages`, `/api/notes`, `/oharrak`). **Jakinarazpenak** (`/jakinarazpenak`, `/api/notifications`) are separate.
@@ -157,7 +181,7 @@ Status legend:
 ## 8. Society Management (Elkartea) (`society-management.md`)
 
 1. **Society information & SEPA-related fields**
-   - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id`; UI is treasurer route — confirm middleware alignment with diruzaina-only treasurers)
+   - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id` — **administratzailea** + **diruzaina** own-tenant; prepaid-balance toggle shipped)
 2. **Tables (resource config for reservations)**
    - **Status**: ✅ Implemented (`/mahaiak` — see Reservations)
 3. **Subscription types**

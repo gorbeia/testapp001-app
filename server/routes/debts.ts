@@ -6,6 +6,7 @@ import {
   users,
   type JwtSessionUser,
 } from "@shared/schema";
+import { insertAccountMovementRow, movementExistsForReference } from "../lib/account-movements";
 import { eq, and, sum, inArray, desc } from "drizzle-orm";
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { sessionMiddleware, requireAuth } from "./middleware";
@@ -223,6 +224,29 @@ export function registerDebtRoutes(app: Express) {
           .set(updateData)
           .where(and(inArray(credits.id, uniqueCreditIds), eq(credits.societyId, societyId)))
           .returning();
+
+        if (status === "paid") {
+          for (const credit of updatedCredits) {
+            const exists = await movementExistsForReference(
+              societyId,
+              "sepa_collection",
+              credit.id
+            );
+            if (exists) continue;
+            const amt = parseFloat(String(credit.totalAmount));
+            if (amt <= 0) continue;
+            await insertAccountMovementRow({
+              societyId,
+              userId: credit.memberId,
+              type: "sepa_collection",
+              amount: (-amt).toFixed(2),
+              description: `SEPA collection — ${credit.month}`,
+              referenceId: credit.id,
+              referenceType: "credit",
+              createdBy: req.user!.id,
+            });
+          }
+        }
 
         res.json({
           message: `Updated ${updatedCredits.length} credits`,

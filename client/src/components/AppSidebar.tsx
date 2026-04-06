@@ -15,6 +15,9 @@ import {
   Table as TableIcon,
   CreditCard as SubscriptionIcon,
   Palette,
+  List,
+  Landmark,
+  Undo2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -107,6 +110,7 @@ export function AppSidebar() {
     { title: t("myReservations"), url: "/nire-erreserbak", icon: Calendar },
     { title: t("myConsumptions"), url: "/nire-konsumoak", icon: Receipt },
     { title: t("credits"), url: "/nire-zorrak", icon: CreditCard },
+    { title: t("myMovements"), url: "/nire-mugimenduak", icon: List },
     { title: t("announcements"), url: "/oharrak", icon: Megaphone },
   ];
 
@@ -126,6 +130,15 @@ export function AppSidebar() {
       : []),
     ...(hasTreasurerAccess(user)
       ? [{ title: t("sepaExport"), url: "/sepa", icon: FileSpreadsheet }]
+      : []),
+    ...(hasTreasurerAccess(user)
+      ? [{ title: t("adminMovements"), url: "/mugimenduak", icon: List }]
+      : []),
+    ...(hasTreasurerAccess(user)
+      ? [{ title: t("bankTransfersMenu"), url: "/transferentziak", icon: Landmark }]
+      : []),
+    ...(hasTreasurerAccess(user)
+      ? [{ title: t("refundsMenu"), url: "/itzulketak", icon: Undo2 }]
       : []),
   ];
 
