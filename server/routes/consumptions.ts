@@ -110,8 +110,6 @@ export function registerConsumptionRoutes(app: Express) {
 
         res.json(userConsumptions);
       } catch (error) {
-        console.error("Error fetching user consumptions:", error);
-        res.status(500).json({ message: "Internal server error" });
         next(error);
       }
     }
@@ -432,8 +430,6 @@ export function registerConsumptionRoutes(app: Express) {
 
         res.json(items);
       } catch (error) {
-        console.error("Error fetching consumption items:", error);
-        res.status(500).json({ message: "Internal server error" });
         next(error);
       }
     }

@@ -389,8 +389,6 @@ export function registerReservationRoutes(app: Express) {
           },
         });
       } catch (error) {
-        console.error("Error fetching user reservations:", error);
-        res.status(500).json({ message: "Internal server error" });
         next(error);
       }
     }
@@ -659,7 +657,6 @@ export function registerReservationRoutes(app: Express) {
           reservations: updatedReservations || [],
         });
       } catch (error) {
-        console.error("Error creating reservation:", error);
         next(error);
       }
     }
@@ -694,21 +691,9 @@ export function registerReservationRoutes(app: Express) {
         }
 
         // Check access permissions - users can only cancel their own reservations, but admins can cancel any
-        console.error(
-          "CANCEL DEBUG - User ID:",
-          user.id,
-          "User role:",
-          user.role,
-          "User function:",
-          user.function,
-          "Reservation user ID:",
-          reservation[0].userId
-        );
         if (user.function !== "administratzailea" && reservation[0].userId !== user.id) {
-          console.error("CANCEL DEBUG - Permission denied - not admin and not owner");
           return res.status(403).json({ message: "You can only cancel your own reservations" });
         }
-        console.error("CANCEL DEBUG - Permission granted for cancellation");
         const isAdmin =
           ["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "") ||
           ["administratzailea", "diruzaina", "sotolaria"].includes(user.role || "");

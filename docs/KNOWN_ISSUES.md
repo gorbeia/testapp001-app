@@ -18,10 +18,7 @@ _POST/PUT/PATCH handlers that accept JSON bodies in [`server/routes/`](../server
 
 ## Error handling
 
-| Issue                                                                                                            | Severity | Notes                                                                                                                                                                                                                                         |
-| ---------------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Double error response** — some `catch` blocks call **`res.status(500).json(...)`** and then **`next(error)`**. | Medium   | Can cause “headers already sent” or duplicate handling. Example pattern in [`server/routes/consumptions.ts`](../server/routes/consumptions.ts) (e.g. user consumptions fetch path). Prefer **either** send JSON **or** `next(err)`, not both. |
-| **Verbose debug logging** in hot paths (e.g. reservation cancel).                                                | Low      | Noise and possible PII in logs; review [`server/routes/reservations.ts`](../server/routes/reservations.ts) for `console.error` debug blocks.                                                                                                  |
+_No open items from the last review._ (`next(err)` for unexpected errors; global handler in [`server/index.ts`](../server/index.ts).)
 
 ---
 
