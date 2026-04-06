@@ -364,7 +364,7 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
             </Label>
           </div>
 
-          <Card className="bg-muted/50">
+          <Card className="bg-muted/50" data-testid="reservation-cost-card">
             <CardContent className="pt-4">
               {society ? (
                 <>

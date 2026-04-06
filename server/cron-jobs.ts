@@ -70,7 +70,8 @@ class DebtCalculationService {
               and(
                 eq(consumptions.userId, member.id),
                 eq(consumptions.societyId, activeSociety.id),
-                gte(consumptions.createdAt, startDate)
+                gte(consumptions.createdAt, startDate),
+                lte(consumptions.createdAt, endDate)
               )
             );
 

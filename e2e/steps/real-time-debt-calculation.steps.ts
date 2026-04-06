@@ -1,4 +1,5 @@
 import { Given, When, Then } from "@cucumber/cucumber";
+import type { Page } from "playwright";
 import assert from "node:assert/strict";
 import { getPage, e2eUrl } from "./shared-state";
 
@@ -13,6 +14,22 @@ const testState: TestState = {
   finalDebt: 0,
   consumptionAmount: 0,
 };
+
+/** YYYY-MM — same label as `credit.month` in the credits table */
+function currentMonthLabel(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, "0")}`;
+}
+
+/** One row per member per month; avoid `.first()` across all months */
+function creditRowForMemberInCurrentMonth(page: Page, memberName: string) {
+  const month = currentMonthLabel();
+  return page
+    .locator('[data-testid^="row-credit-"]')
+    .filter({ hasText: month })
+    .filter({ hasText: memberName })
+    .first();
+}
 
 Given("I navigate to the credits page", async function () {
   const page = getPage();
@@ -58,11 +75,7 @@ Then('I find the debt amount for "Miren Urrutia"', async function () {
   const page = getPage();
   if (!page) throw new Error("Page not initialized");
 
-  // Find Miren Urrutia's row and extract the debt amount
-  const mirenRow = page
-    .locator('[data-testid^="row-credit-"]')
-    .filter({ hasText: "Miren Urrutia" })
-    .first();
+  const mirenRow = creditRowForMemberInCurrentMonth(page, "Miren Urrutia");
 
   if (await mirenRow.isVisible()) {
     const amountElement = mirenRow.locator('[data-testid^="credit-amount-"]');
@@ -108,11 +121,7 @@ Then(
     const page = getPage();
     if (!page) throw new Error("Page not initialized");
 
-    // Find the member's row again and extract the new debt amount
-    const memberRow = page
-      .locator('[data-testid^="row-credit-"]')
-      .filter({ hasText: memberName })
-      .first();
+    const memberRow = creditRowForMemberInCurrentMonth(page, memberName);
 
     if (await memberRow.isVisible()) {
       const amountElement = memberRow.locator('[data-testid^="credit-amount-"]');
@@ -130,14 +139,6 @@ Then(
 
 Then("the debt increase should match the consumption total", async function () {
   const debtIncrease = testState.finalDebt - testState.initialDebt;
-
-  // Debug logging
-  console.log('Debt calculation debug:');
-  console.log('Initial debt:', testState.initialDebt);
-  console.log('Final debt:', testState.finalDebt);
-  console.log('Debt increase:', debtIncrease);
-  console.log('Consumption amount:', testState.consumptionAmount);
-  console.log('Difference:', Math.abs(debtIncrease - testState.consumptionAmount));
 
   // Allow for small floating point differences
   assert.ok(Math.abs(debtIncrease - testState.consumptionAmount) < 0.01);

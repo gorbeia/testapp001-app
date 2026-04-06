@@ -42,10 +42,7 @@ When("I find the user's reservation", async function () {
   }
 
   // Look for the reservation in the admin table (check first page)
-  let reservationRow = page
-    .locator("table tr")
-    .filter({ hasText: uniqueReservationName })
-    .first();
+  let reservationRow = page.locator("table tr").filter({ hasText: uniqueReservationName }).first();
 
   // If not found on first page, check if there are pagination controls and search through pages
   let found = false;
@@ -59,11 +56,11 @@ When("I find the user's reservation", async function () {
     } catch {
       // Reservation not found on current page, try next page
       const nextButton = page.locator('button[aria-label="Next page"]');
-      if (await nextButton.isVisible() && await nextButton.isEnabled()) {
+      if ((await nextButton.isVisible()) && (await nextButton.isEnabled())) {
         await nextButton.click();
         await page.waitForTimeout(1000);
         currentPage++;
-        
+
         // Re-locate the reservation row on the new page
         reservationRow = page
           .locator("table tr")
@@ -77,7 +74,9 @@ When("I find the user's reservation", async function () {
   }
 
   if (!found) {
-    throw new Error(`Reservation "${uniqueReservationName}" not found in admin table after searching ${currentPage} pages`);
+    throw new Error(
+      `Reservation "${uniqueReservationName}" not found in admin table after searching ${currentPage} pages`
+    );
   }
 
   // Store the reservation row for later use
@@ -117,46 +116,57 @@ When("I cancel the user's reservation", async function () {
 
     if (await confirmButton.isVisible({ timeout: 3000 })) {
       // For admin cancellations, we need to fill in the cancellation reason first
-      const reasonTextarea = page.locator('#cancellationReason');
+      const reasonTextarea = page.locator("#cancellationReason");
       if (await reasonTextarea.isVisible({ timeout: 2000 })) {
-        await reasonTextarea.fill('Test cancellation reason for E2E test');
+        await reasonTextarea.fill("Test cancellation reason for E2E test");
       }
-      
+
       await confirmButton.click();
-      
-      console.log('Cancellation clicked, waiting for completion...');
-      
+
+      console.log("Cancellation clicked, waiting for completion...");
+
       // Wait for either success toast OR error dialog to stay open (indicating failure)
       try {
         await Promise.race([
-          page.waitForSelector('text=Erreserba ezeztatua', { timeout: 5000 }),
-          page.waitForSelector('text=Errorea erreserba ezeztatzean', { timeout: 5000 }),
-          page.waitForSelector('div[role="alertdialog"][data-state="open"]', { timeout: 5000 })
+          page.waitForSelector("text=Erreserba ezeztatua", { timeout: 5000 }),
+          page.waitForSelector("text=Errorea erreserba ezeztatzean", { timeout: 5000 }),
+          page.waitForSelector('div[role="alertdialog"][data-state="open"]', { timeout: 5000 }),
         ]);
-        
+
         // Check which one appeared
-        const successToast = await page.locator('text=Erreserba ezeztatua').isVisible().catch(() => false);
-        const errorToast = await page.locator('text=Errorea erreserba ezeztatzean').isVisible().catch(() => false);
-        const dialogStillOpen = await page.locator('div[role="alertdialog"][data-state="open"]').isVisible().catch(() => false);
-        
+        const successToast = await page
+          .locator("text=Erreserba ezeztatua")
+          .isVisible()
+          .catch(() => false);
+        const errorToast = await page
+          .locator("text=Errorea erreserba ezeztatzean")
+          .isVisible()
+          .catch(() => false);
+        const dialogStillOpen = await page
+          .locator('div[role="alertdialog"][data-state="open"]')
+          .isVisible()
+          .catch(() => false);
+
         if (successToast) {
-          console.log('Success toast detected');
+          console.log("Success toast detected");
         } else if (errorToast) {
-          console.log('Error toast detected - cancellation failed');
+          console.log("Error toast detected - cancellation failed");
         } else if (dialogStillOpen) {
-          console.log('Dialog still open - cancellation may have failed');
+          console.log("Dialog still open - cancellation may have failed");
         }
-        
       } catch {
-        console.log('No response detected - checking if dialog closed anyway...');
+        console.log("No response detected - checking if dialog closed anyway...");
       }
-      
+
       // Check if dialog is still open
-      const dialogOpen = await page.locator('div[role="alertdialog"][data-state="open"]').isVisible().catch(() => false);
+      const dialogOpen = await page
+        .locator('div[role="alertdialog"][data-state="open"]')
+        .isVisible()
+        .catch(() => false);
       if (dialogOpen) {
-        console.log('Dialog is still open - cancellation likely failed');
+        console.log("Dialog is still open - cancellation likely failed");
         // Close it to continue
-        await page.keyboard.press('Escape');
+        await page.keyboard.press("Escape");
       }
     } else {
       throw new Error("Confirmation button not found in cancel dialog");
@@ -176,15 +186,18 @@ Then("the reservation should be marked as cancelled", async function () {
   await page.waitForLoadState("networkidle");
 
   // Try to find the reservation again
-  const reservationRow = page.locator("table tr").filter({ hasText: uniqueReservationName }).first();
+  const reservationRow = page
+    .locator("table tr")
+    .filter({ hasText: uniqueReservationName })
+    .first();
 
   if (await reservationRow.isVisible()) {
     // Check if the reservation is marked as cancelled by looking for the destructive badge
-    const cancelledBadge = reservationRow.locator('div.bg-destructive.text-destructive-foreground');
+    const cancelledBadge = reservationRow.locator("div.bg-destructive.text-destructive-foreground");
     const isCancelled = await cancelledBadge.isVisible();
 
     // Also check if the badge contains "Ezeztatua" text
-    const cancelledText = await reservationRow.locator('text=Ezeztatua').isVisible();
+    const cancelledText = await reservationRow.locator("text=Ezeztatua").isVisible();
     const finalIsCancelled = isCancelled || cancelledText;
 
     // Check if cancel button is removed
@@ -195,13 +208,13 @@ Then("the reservation should be marked as cancelled", async function () {
         .count()) > 0;
 
     // Debug logging
-    console.log('Reservation cancellation debug:');
-    console.log('Reservation name:', uniqueReservationName);
-    console.log('Is visible:', await reservationRow.isVisible());
-    console.log('Badge visible:', isCancelled);
-    console.log('Cancelled text visible:', cancelledText);
-    console.log('Is cancelled:', finalIsCancelled);
-    console.log('Has cancel button:', hasCancelButton);
+    console.log("Reservation cancellation debug:");
+    console.log("Reservation name:", uniqueReservationName);
+    console.log("Is visible:", await reservationRow.isVisible());
+    console.log("Badge visible:", isCancelled);
+    console.log("Cancelled text visible:", cancelledText);
+    console.log("Is cancelled:", finalIsCancelled);
+    console.log("Has cancel button:", hasCancelButton);
 
     // Success if either marked as cancelled or cancel button is gone
     const success = finalIsCancelled || !hasCancelButton;
@@ -211,7 +224,7 @@ Then("the reservation should be marked as cancelled", async function () {
     );
   } else {
     // Reservation removed from list after cancellation - this is also success
-    console.log('Reservation is no longer visible (cancelled)');
+    console.log("Reservation is no longer visible (cancelled)");
     assert.ok(true, "Reservation is no longer visible (cancelled)");
   }
 });
@@ -251,7 +264,7 @@ Then("I should see a cancellation notification", async function () {
             elementText.includes("bertan behera"))
         ) {
           this.cancellationNotificationText = elementText;
-          console.log('Found cancellation notification:', elementText);
+          console.log("Found cancellation notification:", elementText);
           return;
         }
       }

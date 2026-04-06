@@ -1,6 +1,12 @@
 import { Given, When, Then } from "@cucumber/cucumber";
+import type { Page } from "playwright";
 import { getPage, e2eUrl } from "./shared-state";
 import assert from "node:assert/strict";
+
+/** Cost breakdown inside the new-reservation dialog (not other .bg-muted/50 on the page). */
+function reservationCostCard(page: Page) {
+  return page.locator('[data-testid="dialog-content"] [data-testid="reservation-cost-card"]');
+}
 
 Given("I navigate to the reservations page", async function () {
   const page = getPage();
@@ -219,7 +225,7 @@ Then("I should see the correct cost calculation", async function () {
   if (!page) throw new Error("Page not available");
 
   // Check the cost breakdown card
-  const costCard = page.locator(".bg-muted\\/50");
+  const costCard = reservationCostCard(page);
   await costCard.waitFor({ state: "visible", timeout: 5000 });
 
   const cardText = await costCard.textContent();
@@ -231,7 +237,7 @@ Then("I should see the correct cost calculation", async function () {
   assert.ok(cardText?.includes("45.00€"), "Kitchen charge should be 45.00€ for 15 guests");
 
   // Verify total cost (30€ + 45€ = 75€)
-  assert.ok(cardText?.includes("75€"), "Total cost should be 75€");
+  assert.ok(/75(?:\.00)?€/.test(cardText || ""), "Total cost should be 75€ with kitchen");
 });
 
 Then("I should see the correct cost calculation without kitchen", async function () {
@@ -239,7 +245,7 @@ Then("I should see the correct cost calculation without kitchen", async function
   if (!page) throw new Error("Page not available");
 
   // Check the cost breakdown card
-  const costCard = page.locator(".bg-muted\\/50");
+  const costCard = reservationCostCard(page);
   await costCard.waitFor({ state: "visible", timeout: 5000 });
 
   const cardText = await costCard.textContent();
@@ -248,7 +254,7 @@ Then("I should see the correct cost calculation without kitchen", async function
   assert.ok(cardText?.includes("10.00€"), "Base cost should be 10.00€ for 5 guests");
 
   // Verify total cost without kitchen (only base cost)
-  assert.ok(cardText?.includes("10€"), "Total cost should be 10€ without kitchen");
+  assert.ok(/10(?:\.00)?€/.test(cardText || ""), "Total cost should be 10€ without kitchen");
 
   // Verify no kitchen charge is mentioned
   assert.ok(!cardText?.includes(" Sukaldaritza:"), "No kitchen charge should be shown");
@@ -261,14 +267,14 @@ Then(
     if (!page) throw new Error("Page not available");
 
     // Check the cost breakdown card
-    const costCard = page.locator(".bg-muted\\/50");
+    const costCard = reservationCostCard(page);
     await costCard.waitFor({ state: "visible", timeout: 5000 });
 
     const cardText = await costCard.textContent();
 
     // Calculate expected cost (guests × 2€)
     const expectedCost = (guests * 2).toFixed(2);
-    const expectedCostNoDecimals = (guests * 2).toString();
+    const totalEuros = guests * 2;
 
     // Verify base cost
     assert.ok(
@@ -276,10 +282,10 @@ Then(
       `Base cost should be ${expectedCost}€ for ${guests} guests`
     );
 
-    // Verify total cost without kitchen (only base cost)
+    // Verify total cost without kitchen (line uses integer string e.g. "10€" or could be "10.00€")
     assert.ok(
-      cardText?.includes(`${expectedCostNoDecimals}€`),
-      `Total cost should be ${expectedCostNoDecimals}€ without kitchen`
+      new RegExp(`${totalEuros}(?:\\.00)?€`).test(cardText || ""),
+      `Total cost should be ${totalEuros}€ without kitchen`
     );
 
     // Verify no kitchen charge is mentioned
@@ -292,7 +298,7 @@ Then("I should see the base cost calculation", async function () {
   if (!page) throw new Error("Page not available");
 
   // Check the cost breakdown card
-  const costCard = page.locator(".bg-muted\\/50");
+  const costCard = reservationCostCard(page);
   await costCard.waitFor({ state: "visible", timeout: 5000 });
 
   const cardText = await costCard.textContent();
@@ -305,18 +311,19 @@ Then("I should see the updated cost with kitchen", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  // Check the cost breakdown card
-  const costCard = page.locator(".bg-muted\\/50");
+  const costCard = reservationCostCard(page);
   await costCard.waitFor({ state: "visible", timeout: 5000 });
+
+  // Allow React to apply kitchen line + total after checkbox
+  await costCard.getByText(/30\.00€/).waitFor({ state: "visible", timeout: 5000 });
 
   const cardText = await costCard.textContent();
 
   // Verify kitchen charge appears (10 guests × 3€ = 30€)
   assert.ok(cardText?.includes("30.00€"), "Kitchen charge should be 30.00€ for 10 guests");
 
-  // Verify total cost updates to include kitchen (20€ + 30€ = 50€)
-  // The card shows "Kostu totala:50€" so we need to check for "50€" instead of "50.00€"
-  assert.ok(cardText?.includes("50€"), "Total cost should be 50€ with kitchen");
+  // Total line uses integer string (50€) unless formatting changes
+  assert.ok(/50(?:\.00)?€/.test(cardText || ""), "Total cost should be 50€ with kitchen");
 });
 
 When("I change guests to {int}", async function (guests: number) {
@@ -333,8 +340,7 @@ Then("I should see the recalculated cost", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  // Check the cost breakdown card
-  const costCard = page.locator(".bg-muted\\/50");
+  const costCard = reservationCostCard(page);
   await costCard.waitFor({ state: "visible", timeout: 5000 });
 
   const cardText = await costCard.textContent();
@@ -345,8 +351,7 @@ Then("I should see the recalculated cost", async function () {
   // Verify kitchen charge (5 guests × 3€ = 15€)
   assert.ok(cardText?.includes("15.00€"), "Kitchen charge should be 15.00€ for 5 guests");
 
-  // Verify total cost (10€ + 15€ = 25€)
-  assert.ok(cardText?.includes("25€"), "Total cost should be 25€");
+  assert.ok(/25(?:\.00)?€/.test(cardText || ""), "Total cost should be 25€");
 });
 
 When("I disable kitchen equipment", async function () {
@@ -363,8 +368,7 @@ Then("I should see the cost without kitchen", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  // Check the cost breakdown card
-  const costCard = page.locator(".bg-muted\\/50");
+  const costCard = reservationCostCard(page);
   await costCard.waitFor({ state: "visible", timeout: 5000 });
 
   const cardText = await costCard.textContent();
