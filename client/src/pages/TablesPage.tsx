@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useLanguage } from "@/lib/i18n";
+import { getErrorMessage } from "@/lib/errors";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -180,10 +181,10 @@ export function TablesPage() {
       }
 
       handleCloseDialog();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: t("error"),
-        description: error.message || "Ezin izan da mahaia gorde",
+        description: getErrorMessage(error) || "Ezin izan da mahaia gorde",
         variant: "destructive",
       });
     }
@@ -205,10 +206,10 @@ export function TablesPage() {
         title: t("success"),
         description: t("tableDeleted"),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: t("error"),
-        description: error.message || "Ezin izan da mahaia ezabatu",
+        description: getErrorMessage(error) || "Ezin izan da mahaia ezabatu",
         variant: "destructive",
       });
     }

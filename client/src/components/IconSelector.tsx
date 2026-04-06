@@ -17,7 +17,7 @@ import {
   Carrot,
   ShoppingBag,
 } from "lucide-react";
-import { useLanguage } from "@/lib/i18n";
+import { useLanguage, type TranslationKey } from "@/lib/i18n";
 
 const iconOptions = [
   { name: "Package", icon: Package, translationKey: "iconPackage" },
@@ -51,7 +51,9 @@ export function IconSelector({ value, onChange }: IconSelectorProps) {
         {SelectedIconComponent ? (
           <div className="flex items-center">
             <SelectedIconComponent className="mr-2 h-4 w-4" />
-            <span>{selectedIcon ? t(selectedIcon.translationKey as any) : value}</span>
+            <span>
+              {selectedIcon ? t(selectedIcon.translationKey as TranslationKey) : value}
+            </span>
           </div>
         ) : (
           <span className="text-muted-foreground">{t("selectIcon")}</span>
@@ -80,7 +82,7 @@ export function IconSelector({ value, onChange }: IconSelectorProps) {
                     <IconComponent className="h-4 w-4" />
                   </span>
                   <SelectPrimitive.ItemText>
-                    {t(option.translationKey as any)}
+                    {t(option.translationKey as TranslationKey)}
                   </SelectPrimitive.ItemText>
                   <SelectPrimitive.ItemIndicator className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
                     <Check className="h-4 w-4" />

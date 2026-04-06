@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { getErrorMessage } from "@/lib/errors";
 import { Plus, Search, Package, Edit, Trash2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -196,11 +197,11 @@ export function ProductsPage() {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || "Failed to create product");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating product:", error);
       toast({
         title: "Error",
-        description: error.message || "Produktua ezin izan da sortu",
+        description: getErrorMessage(error) || "Produktua ezin izan da sortu",
         variant: "destructive",
       });
     }
@@ -229,11 +230,11 @@ export function ProductsPage() {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || "Failed to delete product");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error deleting product:", error);
       toast({
         title: "Error",
-        description: error.message || "Produktua ezin izan da ezabatu",
+        description: getErrorMessage(error) || "Produktua ezin izan da ezabatu",
         variant: "destructive",
       });
     }
@@ -279,11 +280,11 @@ export function ProductsPage() {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || "Failed to update product");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating product:", error);
       toast({
         title: "Error",
-        description: error.message || "Produktua ezin izan da eguneratu",
+        description: getErrorMessage(error) || "Produktua ezin izan da eguneratu",
         variant: "destructive",
       });
     }

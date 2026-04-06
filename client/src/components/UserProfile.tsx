@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Mail, Phone, CreditCard, Users, User as UserIcon, Edit2, Save, X } from "lucide-react";
+import { getErrorMessage } from "@/lib/errors";
 
 export function UserProfile() {
   const { t } = useLanguage();
@@ -154,11 +155,11 @@ export function UserProfile() {
         title: t("profileUpdated"),
         description: t("profileUpdatedSuccessfully"),
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error updating profile:", error);
       toast({
         title: t("error"),
-        description: error.message || t("errorUpdatingProfile"),
+        description: getErrorMessage(error) || t("errorUpdatingProfile"),
         variant: "destructive",
       });
     } finally {
@@ -212,11 +213,11 @@ export function UserProfile() {
         confirmPassword: "",
       });
       setIsChangingPassword(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error changing password:", error);
       toast({
         title: t("error"),
-        description: error.message || t("errorChangingPassword"),
+        description: getErrorMessage(error) || t("errorChangingPassword"),
         variant: "destructive",
       });
     }

@@ -16,6 +16,7 @@ import {
   CreditCard as SubscriptionIcon,
   Palette,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -34,6 +35,8 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/lib/i18n";
 import { useAuth, hasAdminAccess, hasTreasurerAccess, hasCellarmanAccess } from "@/lib/auth";
 import { authFetch } from "@/lib/api";
+
+type NavItem = { title: string; url: string; icon: LucideIcon };
 
 export function AppSidebar() {
   const { t } = useLanguage();
@@ -97,7 +100,7 @@ export function AppSidebar() {
     }
   };
 
-  const menuItems = [
+  const menuItems: NavItem[] = [
     { title: t("dashboard"), url: "/", icon: Home },
     { title: t("consumptions"), url: "/kontsumoak", icon: ShoppingCart },
     { title: t("reservations"), url: "/erreserbak", icon: Calendar },
@@ -107,7 +110,7 @@ export function AppSidebar() {
     { title: t("announcements"), url: "/oharrak", icon: Megaphone },
   ];
 
-  const adminMenuItems = [
+  const adminMenuItems: NavItem[] = [
     ...(hasAdminAccess(user) ? [{ title: t("users"), url: "/erabiltzaileak", icon: Users }] : []),
     ...(hasAdminAccess(user)
       ? [{ title: t("reservationsManagement"), url: "/admin-erreserbak", icon: Calendar }]
@@ -126,7 +129,7 @@ export function AppSidebar() {
       : []),
   ];
 
-  const configMenuItems = [
+  const configMenuItems: NavItem[] = [
     ...(hasAdminAccess(user) ? [{ title: t("tables"), url: "/mahaiak", icon: TableIcon }] : []),
     ...(hasAdminAccess(user)
       ? [{ title: t("productCategories"), url: "/kategoriak", icon: Palette }]
@@ -167,7 +170,9 @@ export function AppSidebar() {
           <SidebarGroupLabel>{t("menu")}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item: any) => (
+              {menuItems.map(item => {
+                const Icon = item.icon;
+                return (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton asChild isActive={location === item.url}>
                     <Link
@@ -175,12 +180,13 @@ export function AppSidebar() {
                       data-testid={`link-${item.url.replace("/", "") || "home"}`}
                       onClick={() => handleNavigation(item.url)}
                     >
-                      <item.icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" />
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
+              );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -190,7 +196,9 @@ export function AppSidebar() {
             <SidebarGroupLabel>{t("management")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {adminMenuItems.map(item => (
+                {adminMenuItems.map(item => {
+                  const Icon = item.icon;
+                  return (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild isActive={location === item.url}>
                       <Link
@@ -198,12 +206,13 @@ export function AppSidebar() {
                         data-testid={`link-${item.url.replace("/", "")}`}
                         onClick={() => handleNavigation(item.url)}
                       >
-                        <item.icon className="h-4 w-4" />
+                        <Icon className="h-4 w-4" />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
+                );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -214,7 +223,9 @@ export function AppSidebar() {
             <SidebarGroupLabel>{t("configuration")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {configMenuItems.map(item => (
+                {configMenuItems.map(item => {
+                  const Icon = item.icon;
+                  return (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton asChild isActive={location === item.url}>
                       <Link
@@ -222,12 +233,13 @@ export function AppSidebar() {
                         data-testid={`link-${item.url.replace("/", "")}`}
                         onClick={() => handleNavigation(item.url)}
                       >
-                        <item.icon className="h-4 w-4" />
+                        <Icon className="h-4 w-4" />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
-                ))}
+                );
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

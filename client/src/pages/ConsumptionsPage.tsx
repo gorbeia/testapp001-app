@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/table";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
+import { getErrorMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth";
 import type { Product } from "@shared/schema";
 
@@ -261,11 +262,11 @@ export function ConsumptionsPage() {
       }
 
       setCart([]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error saving consumption:", error);
       toast({
         title: "Error",
-        description: error.message || "Kontsumoa ezin izan da gorde",
+        description: getErrorMessage(error) || "Kontsumoa ezin izan da gorde",
         variant: "destructive",
       });
     } finally {
