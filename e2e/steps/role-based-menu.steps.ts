@@ -1,6 +1,6 @@
 import { When, Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
-import { getPage } from "./shared-state";
+import { getPage, e2eUrl } from "./shared-state";
 
 // Main menu entries that all users should see
 const MAIN_MENU_ENTRIES = [
@@ -84,7 +84,7 @@ Then("I should not be able to access admin pages directly", { timeout: 15000 }, 
 
   for (const pagePath of adminPages) {
     try {
-      await page.goto(`http://localhost:5000${pagePath}`, {
+      await page.goto(e2eUrl(pagePath), {
         waitUntil: "domcontentloaded",
         timeout: 3000,
       });
@@ -119,7 +119,7 @@ Then("I should be able to access all admin pages", async function () {
   ];
 
   for (const adminPage of adminPages) {
-    await page.goto(`http://localhost:5000${adminPage.path}`, { waitUntil: "networkidle" });
+    await page.goto(e2eUrl(adminPage.path), { waitUntil: "networkidle" });
 
     // Check that we can access the page (no redirect to dashboard)
     const currentUrl = page.url();
@@ -143,7 +143,7 @@ Then("I should be able to access all admin pages", async function () {
 When("I try to access the users management page directly", async function () {
   const page = getPage();
   assert.ok(page, "Page was not initialized");
-  await page.goto("http://localhost:5000/erabiltzaileak", { waitUntil: "domcontentloaded" });
+  await page.goto(e2eUrl("/erabiltzaileak"), { waitUntil: "domcontentloaded" });
 });
 
 Then("I should be redirected or shown an access denied message", async function () {

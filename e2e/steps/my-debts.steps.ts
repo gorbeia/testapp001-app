@@ -1,6 +1,6 @@
 import { When, Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
-import { getPage } from "./shared-state";
+import { getPage, e2eUrl } from "./shared-state";
 
 When("I navigate back to the {string} page", async function (pageName: string) {
   const page = getPage();
@@ -16,7 +16,7 @@ When("I navigate back to the {string} page", async function (pageName: string) {
     throw new Error(`No route found for page: ${pageName}`);
   }
 
-  await page.goto(`http://localhost:5000${route}`);
+  await page.goto(e2eUrl(route));
   await page.waitForLoadState("networkidle");
 });
 
@@ -34,7 +34,7 @@ When("I navigate to the {string} page", async function (pageName: string) {
     throw new Error(`No route found for page: ${pageName}`);
   }
 
-  await page.goto(`http://localhost:5000${route}`);
+  await page.goto(e2eUrl(route));
   await page.waitForLoadState("networkidle");
 });
 
@@ -161,7 +161,7 @@ Then("I should see my debt has increased", async function () {
   const page = getPage();
   assert(page, "Page not initialized");
 
-  await page.goto("http://localhost:5000/nire-zorrak");
+  await page.goto(e2eUrl("/nire-zorrak"));
   await page.waitForLoadState("networkidle");
 
   const pendingElement = page.locator('[data-testid="total-pending"]');

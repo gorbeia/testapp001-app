@@ -1,6 +1,8 @@
 // Shared state for E2E tests (TypeScript version)
 import { Page, Browser } from "playwright";
 
+export { e2eUrl, E2E_BASE_URL } from "./base-url";
+
 let browser: Browser | null = null;
 let page: Page | null = null;
 

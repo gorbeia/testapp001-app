@@ -1,6 +1,6 @@
 import { Given, When, Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
-import { getPage } from "./shared-state";
+import { getPage, e2eUrl } from "./shared-state";
 
 interface TestState {
   initialDebt: number;
@@ -18,7 +18,7 @@ Given("I navigate to the credits page", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not initialized");
 
-  await page.goto("http://localhost:5000/zorrak");
+  await page.goto(e2eUrl("/zorrak"));
   await page.waitForLoadState("networkidle");
 
   // Wait for credits page to load

@@ -1,5 +1,5 @@
 import { When, Then } from "@cucumber/cucumber";
-import { getPage } from "./shared-state";
+import { getPage, e2eUrl } from "./shared-state";
 import assert from "node:assert/strict";
 
 Then("I should see the reservation in my reservations list", async function () {
@@ -225,7 +225,7 @@ When("I navigate to the notifications page", async function () {
     await notificationsLink.click();
     await page.waitForLoadState("networkidle");
   } else {
-    await page.goto("http://localhost:5000/jakinarazpenak");
+    await page.goto(e2eUrl("/jakinarazpenak"));
     await page.waitForLoadState("networkidle");
   }
 });

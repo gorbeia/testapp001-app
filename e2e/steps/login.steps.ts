@@ -1,7 +1,7 @@
 import { Given, When, Then, BeforeAll, AfterAll, setDefaultTimeout } from "@cucumber/cucumber";
 import { chromium, Browser, Page } from "playwright";
 import assert from "node:assert/strict";
-import { getBrowser, setBrowser, getPage, setPage } from "./shared-state";
+import { getBrowser, setBrowser, getPage, setPage, e2eUrl } from "./shared-state";
 
 setDefaultTimeout(10 * 1000);
 
@@ -29,7 +29,7 @@ AfterAll(async function () {
 });
 
 Given("the application is running", async function () {
-  // Assumes `pnpm dev` is already running on localhost:5000
+  // Assumes `pnpm dev` is already running at E2E_BASE_URL (see .env)
   // This step is a no-op placeholder.
 });
 
@@ -45,7 +45,7 @@ When("I open the login page", async function () {
 
   const pageInstance: Page = await browserInstance.newPage();
   setPage(pageInstance);
-  await pageInstance.goto("http://localhost:5000/", { waitUntil: "networkidle" });
+  await pageInstance.goto(e2eUrl("/"), { waitUntil: "networkidle" });
 });
 
 Then("I should see the login form", async function () {
@@ -134,7 +134,7 @@ Then("I should see a login error message and still see the login form", async fu
 When("I open the users management page", async function () {
   const page = getPage();
   assert.ok(page, "Page was not initialized");
-  await page.goto("http://localhost:5000/erabiltzaileak", { waitUntil: "networkidle" });
+  await page.goto(e2eUrl("/erabiltzaileak"), { waitUntil: "networkidle" });
 
   // Ensure the page has rendered the users toolbar before proceeding
   await page.waitForSelector('[data-testid="button-new-user"]', { timeout: 5000 });

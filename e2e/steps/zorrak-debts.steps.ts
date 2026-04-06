@@ -1,13 +1,13 @@
 import { When, Then } from "@cucumber/cucumber";
 import assert from "node:assert";
-import { getPage } from "./shared-state";
+import { getPage, e2eUrl } from "./shared-state";
 
 When("I navigate to the Zorrak debts page", async function () {
   const page = getPage();
   assert(page, "Page should be initialized");
 
   // Navigate to debts page
-  await page.goto("http://localhost:5000/zorrak");
+  await page.goto(e2eUrl("/zorrak"));
   await page.waitForLoadState("networkidle");
 });
 
@@ -172,7 +172,7 @@ When("I try to navigate to the Zorrak debts page", async function () {
   assert(page, "Page should be initialized");
 
   // Try to navigate to debts page
-  await page.goto("http://localhost:5000/zorrak");
+  await page.goto(e2eUrl("/zorrak"));
   await page.waitForLoadState("networkidle");
 });
 

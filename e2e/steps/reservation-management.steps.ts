@@ -1,5 +1,5 @@
 import { Given, When, Then } from "@cucumber/cucumber";
-import { getPage } from "./shared-state";
+import { getPage, e2eUrl } from "./shared-state";
 import assert from "node:assert/strict";
 
 Given("I navigate to the reservations page", async function () {
@@ -14,7 +14,7 @@ Given("I navigate to the admin reservations page", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  await page.goto("http://localhost:5000/admin-erreserbak");
+  await page.goto(e2eUrl("/admin-erreserbak"));
   await page.waitForLoadState("networkidle");
 });
 
