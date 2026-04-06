@@ -11,6 +11,7 @@ import {
   updateSuperadminBodySchema,
 } from "../../shared/schema";
 import { eq } from "drizzle-orm";
+import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 
 // Backoffice JWT Configuration
 const BACKOFFICE_JWT_SECRET =
@@ -38,7 +39,7 @@ const clearBackofficeCookie = (res: Response) => {
 
 const verifyBackofficeToken = (token: string): boolean => {
   try {
-    const decoded = jwt.verify(token, BACKOFFICE_JWT_SECRET) as any;
+    const decoded = jwt.verify(token, BACKOFFICE_JWT_SECRET) as { type?: string };
     return decoded.type === "backoffice";
   } catch {
     return false;
@@ -210,8 +211,13 @@ export function registerBackofficeRoutes(app: Express) {
           .returning();
 
         return res.status(201).json(newSociety[0]);
-      } catch (err: any) {
-        if (err.code === "23505") {
+      } catch (err: unknown) {
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "code" in err &&
+          (err as { code?: string }).code === "23505"
+        ) {
           return res.status(409).json({ message: "Society with this name already exists" });
         }
         next(err);
@@ -277,8 +283,13 @@ export function registerBackofficeRoutes(app: Express) {
           });
 
         return res.status(201).json(newSuperadmin[0]);
-      } catch (err: any) {
-        if (err.code === "23505") {
+      } catch (err: unknown) {
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "code" in err &&
+          (err as { code?: string }).code === "23505"
+        ) {
           return res.status(409).json({ message: "Email already exists" });
         }
         next(err);
@@ -303,17 +314,22 @@ export function registerBackofficeRoutes(app: Express) {
 
         const { email, password, name, isActive } = parsed.data;
 
-        const updateData: Record<string, unknown> = { updatedAt: new Date() };
-        if (email !== undefined) updateData.email = email.toLowerCase();
-        if (name !== undefined) updateData.name = name;
-        if (isActive !== undefined) updateData.isActive = isActive;
-        if (password !== undefined && password.length > 0) {
-          updateData.password = await bcrypt.hash(password, 10);
-        }
+        const hashedPassword =
+          password !== undefined && password.length > 0
+            ? await bcrypt.hash(password, 10)
+            : undefined;
+
+        const updateData = {
+          updatedAt: new Date(),
+          ...(email !== undefined ? { email: email.toLowerCase() } : {}),
+          ...(name !== undefined ? { name } : {}),
+          ...(isActive !== undefined ? { isActive } : {}),
+          ...(hashedPassword !== undefined ? { password: hashedPassword } : {}),
+        } satisfies PgUpdateSetSource<typeof superadmins>;
 
         const updated = await db
           .update(superadmins)
-          .set(updateData as any)
+          .set(updateData)
           .where(eq(superadmins.id, id))
           .returning({
             id: superadmins.id,
@@ -329,8 +345,13 @@ export function registerBackofficeRoutes(app: Express) {
         }
 
         return res.status(200).json(updated[0]);
-      } catch (err: any) {
-        if (err.code === "23505") {
+      } catch (err: unknown) {
+        if (
+          typeof err === "object" &&
+          err !== null &&
+          "code" in err &&
+          (err as { code?: string }).code === "23505"
+        ) {
           return res.status(409).json({ message: "Email already exists" });
         }
         next(err);

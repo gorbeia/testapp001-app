@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { batchCreditStatusBodySchema, credits, users, type User } from "@shared/schema";
 import { eq, and, sum, inArray, desc } from "drizzle-orm";
+import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
 // Helper function to check if user has treasurer access
@@ -204,17 +205,13 @@ export function registerDebtRoutes(app: Express) {
           }
         }
 
-        // Update all credits
-        const updateData: any = {
+        const updateData: PgUpdateSetSource<typeof credits> = {
           status,
           updatedAt: new Date(),
+          ...(status === "paid"
+            ? { markedAsPaidBy: req.user!.id, markedAsPaidAt: new Date() }
+            : {}),
         };
-
-        // Add payment tracking if marking as paid
-        if (status === "paid") {
-          updateData.markedAsPaidBy = req.user!.id;
-          updateData.markedAsPaidAt = new Date();
-        }
 
         const updatedCredits = await db
           .update(credits)
