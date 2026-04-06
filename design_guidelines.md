@@ -126,7 +126,7 @@
 - Admin functions (Erabiltzaileak management) only visible to Administratzailea
 - Diruzaina sees Zorrak with export options
 - Sotolaria sees Produktuak inventory management
-- All see Erreserbak, Kontsumoak, Oharrak, Txata
+- All see Erreserbak, Kontsumoak, and society notices (oharrak) where exposed by routing
 
 **Mobile-First Considerations**:
 

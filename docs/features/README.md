@@ -19,7 +19,7 @@ This directory contains user stories organized by feature area for the Elkartear
 
 ### Communication Features
 
-- **[Communication](communication.md)** — Oharrak (notes API + `/oharrak`), Jakinarazpenak (`/jakinarazpenak`); Txata (chat) not shipped
+- **[Communication](communication.md)** — Oharrak (notes API + `/oharrak`), Jakinarazpenak (`/jakinarazpenak`)
 
 ### Management Features
 
@@ -64,7 +64,6 @@ The product has progressed beyond this phased list; use **IMPLEMENTATION_STATUS.
 ### Phase 3 – Communication
 
 1. Notes (oharrak) and notifications  
-2. Chat (future)  
 
 ### Phase 4 – Advanced Features
 

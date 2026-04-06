@@ -7,7 +7,7 @@ Status legend:
 - 🟡 Partial (shipped with known gaps vs story text)
 - ❌ Not Implemented
 
-> **Scope note:** Authentication, users, reservations, consumptions, products, categories, credits/debts, notes (oharrak), notifications, society fields (including SEPA-related columns), tables, subscription types, and backoffice society management are backed by Express + Drizzle + PostgreSQL. **Taixa (chat)** has no backend/UI in the shipped app; SEPA XML generation still uses hardcoded creditor defaults in the client generator (see `credits.md`).
+> **Scope note:** Authentication, users, reservations, consumptions, products, categories, credits/debts, notes (oharrak), notifications, society fields (including SEPA-related columns), tables, subscription types, and backoffice society management are backed by Express + Drizzle + PostgreSQL. SEPA XML generation still uses hardcoded creditor defaults in the client generator (see `credits.md`).
 
 ---
 
@@ -112,9 +112,9 @@ Status legend:
 
 ---
 
-## 6. Communication – Oharrak & Txata (`communication.md`)
+## 6. Communication – Oharrak & Jakinarazpenak (`communication.md`)
 
-> **Shipped scope:** Oharrak are **DB-backed notes** (`notes` / `note_messages`, `/api/notes`, `/oharrak`). **Jakinarazpenak** (`/jakinarazpenak`, `/api/notifications`) are separate. **Txata** (chat) is not implemented.
+> **Shipped scope:** Oharrak are **DB-backed notes** (`notes` / `note_messages`, `/api/notes`, `/oharrak`). **Jakinarazpenak** (`/jakinarazpenak`, `/api/notifications`) are separate.
 
 ### Notes (Oharrak)
 
@@ -130,14 +130,10 @@ Status legend:
 4. **In-app notifications** – list/read DB notifications
    - **Status**: ✅ Implemented (`/jakinarazpenak`, `notifications` + `notification_messages`; can be fed from notes)
 
-### Chat (Txata)
+### Preferences, templates, analytics (backlog)
 
-5. **Send / receive / moderate chat**
-   - **Status**: ❌ Not Implemented (no chat tables or routes in repo)
-
-### Preferences & analytics (original epic 7–10)
-
-    - **Status**: ❌ Not Implemented
+5. **Notification settings, templates, communication analytics & history (legacy epic)**
+   - **Status**: ❌ Not Implemented
 
 ---
 

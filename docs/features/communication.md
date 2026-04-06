@@ -1,8 +1,8 @@
-# User Stories: Communication — Oharrak (notes), Jakinarazpenak & Txata
+# User Stories: Communication — Oharrak (notes) & Jakinarazpenak
 
-> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#6-communication--oharrak--txata-communicationmd)
+> Implementation status: see [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md#6-communication--oharrak--jakinarazpenak-communicationmd)
 
-This document reflects the **shipped** design: **notes** (multilingual DB content) and **notifications** are backed by PostgreSQL + Express. **Txata (chat)** is **not** implemented in the codebase.
+This document covers **society notes** (multilingual DB content) and **in-app notifications**, both backed by PostgreSQL + Express.
 
 ---
 
@@ -65,49 +65,17 @@ This document reflects the **shipped** design: **notes** (multilingual DB conten
 
 ---
 
-## Epic: Internal Chat (Txata) — **not shipped**
+## Epic: Communication Preferences (backlog)
 
-### Story 5: Send Messages
-
-**As a** Bazkidea or Laguna  
-**I want to** send messages to other users  
-**So that** I can communicate directly with society members
-
-**Status:** ❌ **Not implemented** — no chat tables, routes, or production UI in-repo (any legacy mock components are not routed in `App.tsx`).
-
----
-
-### Story 6: Receive Messages
-
-**As a** Bazkidea or Laguna  
-**I want to** receive messages from other users  
-**So that** I can stay connected with the community
-
-**Status:** ❌ **Not implemented**
-
----
-
-### Story 7: Chat Management
-
-**As an** Administratzailea  
-**I want to** monitor and manage chat  
-**So that** communication stays appropriate
-
-**Status:** ❌ **Not implemented**
-
----
-
-## Epic: Communication Preferences (original backlog)
-
-### Stories 8–9: Notification settings & templates
+### Stories 5–6: Notification settings & templates
 
 **Status:** ❌ **Not implemented** (no quiet hours, channel preferences, or template library as specified in the legacy epic).
 
 ---
 
-## Epic: Communication Analytics (original backlog)
+## Epic: Communication Analytics (backlog)
 
-### Stories 10–11: Analytics & legal archive
+### Stories 7–8: Analytics & legal archive
 
 **Status:** ❌ **Not implemented**
 
@@ -119,4 +87,3 @@ This document reflects the **shipped** design: **notes** (multilingual DB conten
 |---------|-------------|--------|
 | Notes admin | `/oharrak`, `/api/notes` | Shipped |
 | Notifications | `/jakinarazpenak`, `/api/notifications` | Shipped |
-| Chat (Txata) | — | Not shipped |
