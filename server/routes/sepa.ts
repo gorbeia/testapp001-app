@@ -1,11 +1,11 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { credits, users, type User } from "@shared/schema";
+import { credits, users, type JwtSessionUser } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
 // Helper function to check if user has treasurer access
-const requireTreasurerAccess = (user: User): boolean => {
+const requireTreasurerAccess = (user: JwtSessionUser): boolean => {
   return user.function === "diruzaina" || user.function === "administratzailea";
 };
 

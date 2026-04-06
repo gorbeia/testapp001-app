@@ -378,6 +378,27 @@ export type InsertSociety = z.infer<typeof insertSocietySchema>;
 export type Society = typeof societies.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+/** Access-token payload: same fields as `User` except `password`; dates may be ISO strings after JWT encode/decode. */
+export const jwtUserPayloadSchema = z.object({
+  id: z.string(),
+  username: z.string(),
+  name: z.string().nullable(),
+  role: z.string().nullable(),
+  function: z.string().nullable(),
+  phone: z.string().nullable(),
+  iban: z.string().nullable(),
+  linkedMemberId: z.string().nullable(),
+  linkedMemberName: z.string().nullable(),
+  subscriptionTypeId: z.string().nullable(),
+  societyId: z.string(),
+  isActive: z.boolean(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
+
+export type JwtSessionUser = z.infer<typeof jwtUserPayloadSchema>;
+
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
 export type InsertConsumption = z.infer<typeof insertConsumptionSchema>;

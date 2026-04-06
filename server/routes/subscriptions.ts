@@ -4,13 +4,13 @@ import {
   subscriptionTypes,
   subscriptionTypeCreateBodySchema,
   subscriptionTypeUpdateBodySchema,
-  type User,
+  type JwtSessionUser,
 } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "./middleware";
 
 // Helper function to get society ID from user
-const getUserSocietyId = (user: User): string => {
+const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found");
   }

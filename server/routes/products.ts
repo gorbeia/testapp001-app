@@ -1,11 +1,16 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { products, insertProductSchema, updateProductSchema, type User } from "@shared/schema";
+import {
+  products,
+  insertProductSchema,
+  updateProductSchema,
+  type JwtSessionUser,
+} from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
 // Helper function to get society ID from JWT (no DB query needed)
-const getUserSocietyId = (user: User): string => {
+const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found in JWT");
   }
@@ -13,7 +18,7 @@ const getUserSocietyId = (user: User): string => {
 };
 
 // Helper function to check if user is admin
-const requireAdminAccess = (user: User): boolean => {
+const requireAdminAccess = (user: JwtSessionUser): boolean => {
   return user.role === "bazkidea" && user.function === "administratzailea";
 };
 

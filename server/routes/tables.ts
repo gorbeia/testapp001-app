@@ -5,12 +5,12 @@ import {
   reservations,
   insertTableSchema,
   updateTableSchema,
-  type User,
+  type JwtSessionUser,
 } from "@shared/schema";
 import { eq, and, gte, ne, count } from "drizzle-orm";
 import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
 
-const getUserSocietyId = (user: User): string => {
+const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found in JWT");
   }

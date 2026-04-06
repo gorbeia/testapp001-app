@@ -12,6 +12,8 @@ import {
 } from "../../shared/schema";
 import { eq } from "drizzle-orm";
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
+import { z } from "zod";
+import { isPostgresUniqueViolation } from "../lib/pg-errors";
 
 // Backoffice JWT Configuration
 const BACKOFFICE_JWT_SECRET =
@@ -37,10 +39,13 @@ const clearBackofficeCookie = (res: Response) => {
   res.clearCookie("backoffice-token");
 };
 
+const backofficeJwtPayloadSchema = z.object({ type: z.literal("backoffice") });
+
 const verifyBackofficeToken = (token: string): boolean => {
   try {
-    const decoded = jwt.verify(token, BACKOFFICE_JWT_SECRET) as { type?: string };
-    return decoded.type === "backoffice";
+    const raw = jwt.verify(token, BACKOFFICE_JWT_SECRET);
+    if (typeof raw === "string") return false;
+    return backofficeJwtPayloadSchema.safeParse(raw).success;
   } catch {
     return false;
   }
@@ -212,12 +217,7 @@ export function registerBackofficeRoutes(app: Express) {
 
         return res.status(201).json(newSociety[0]);
       } catch (err: unknown) {
-        if (
-          typeof err === "object" &&
-          err !== null &&
-          "code" in err &&
-          (err as { code?: string }).code === "23505"
-        ) {
+        if (isPostgresUniqueViolation(err)) {
           return res.status(409).json({ message: "Society with this name already exists" });
         }
         next(err);
@@ -284,12 +284,7 @@ export function registerBackofficeRoutes(app: Express) {
 
         return res.status(201).json(newSuperadmin[0]);
       } catch (err: unknown) {
-        if (
-          typeof err === "object" &&
-          err !== null &&
-          "code" in err &&
-          (err as { code?: string }).code === "23505"
-        ) {
+        if (isPostgresUniqueViolation(err)) {
           return res.status(409).json({ message: "Email already exists" });
         }
         next(err);
@@ -346,12 +341,7 @@ export function registerBackofficeRoutes(app: Express) {
 
         return res.status(200).json(updated[0]);
       } catch (err: unknown) {
-        if (
-          typeof err === "object" &&
-          err !== null &&
-          "code" in err &&
-          (err as { code?: string }).code === "23505"
-        ) {
+        if (isPostgresUniqueViolation(err)) {
           return res.status(409).json({ message: "Email already exists" });
         }
         next(err);

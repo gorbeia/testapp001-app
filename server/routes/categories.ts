@@ -7,13 +7,13 @@ import {
   createCategoryBodySchema,
   updateCategoryBodySchema,
   reorderCategoriesBodySchema,
-  type User,
+  type JwtSessionUser,
 } from "@shared/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
 // Helper function to get society ID from JWT (no DB query needed)
-const getUserSocietyId = (user: User): string => {
+const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found in JWT");
   }

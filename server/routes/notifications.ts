@@ -4,14 +4,14 @@ import {
   notifications,
   notificationMessages,
   createNotificationBodySchema,
-  type User,
+  type JwtSessionUser,
   type Notification,
 } from "@shared/schema";
 import { eq, and, desc, count, isNotNull } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
 // Helper function to get society ID from JWT (no DB query needed)
-const getUserSocietyId = (user: User): string => {
+const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found in JWT");
   }

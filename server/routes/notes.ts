@@ -9,7 +9,9 @@ import {
   createNoteBodySchema,
   noteNotifyBodySchema,
   updateNoteBodySchema,
-  type User,
+  type JwtSessionUser,
+  type Note,
+  type NoteMessage,
 } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
 import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
@@ -34,11 +36,11 @@ async function convertNoteToNotifications(noteId: string, societyId: string) {
       throw new Error("Note not found");
     }
 
-    // Extract the note and messages
-    const messages = noteWithMessages.filter(row => row.messages).map(row => row.messages);
+    const messageRows: NoteMessage[] = noteWithMessages
+      .map(row => row.messages)
+      .filter((m): m is NoteMessage => m != null);
 
-    // Group messages by language
-    const messagesByLanguage = messages.reduce((acc: Record<string, any>, msg: any) => {
+    const messagesByLanguage = messageRows.reduce<Record<string, NoteMessage>>((acc, msg) => {
       acc[msg.language] = msg;
       return acc;
     }, {});
@@ -97,7 +99,7 @@ async function removeNoteNotifications(noteId: string, societyId: string) {
     throw error;
   }
 }
-const getUserSocietyId = (user: User): string => {
+const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found in JWT");
   }
@@ -120,7 +122,7 @@ export function registerNoteRoutes(app: Express) {
 
         // Get messages for each note
         const notesWithMessages = await Promise.all(
-          notesData.map(async (note: any) => {
+          notesData.map(async (note: Note) => {
             const messages = await db
               .select()
               .from(noteMessages)
@@ -302,7 +304,7 @@ export function registerNoteRoutes(app: Express) {
 
         const { notifyUsers } = parsed.data;
 
-        const user = req.user as User;
+        const user = req.user!;
 
         // Get the note to verify it belongs to the user's society
         const [existingNote] = await db

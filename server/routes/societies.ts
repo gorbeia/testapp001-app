@@ -1,11 +1,16 @@
 import type { Express } from "express";
 import { db } from "../db";
-import { insertSocietySchema, societies, updateSocietySettingsBodySchema, type User } from "@shared/schema";
+import {
+  insertSocietySchema,
+  societies,
+  updateSocietySettingsBodySchema,
+  type JwtSessionUser,
+} from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
 
 // Helper function to get society ID from JWT (no DB query needed)
-const getUserSocietyId = (user: User): string => {
+const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found in JWT");
   }

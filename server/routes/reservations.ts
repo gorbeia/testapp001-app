@@ -7,7 +7,8 @@ import {
   notificationMessages,
   cancelReservationBodySchema,
   createReservationBodySchema,
-  type User,
+  type JwtSessionUser,
+  type Reservation,
 } from "@shared/schema";
 import { eq, and, or, like, gte, between, ne, count, desc, asc, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
@@ -15,7 +16,7 @@ import { translateWithParams, formatDate, translations } from "../lib/i18n";
 import { debtCalculationService } from "../cron-jobs";
 
 // Helper function to get society ID from JWT (no DB query needed)
-const getUserSocietyId = (user: User): string => {
+const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found in JWT");
   }
@@ -35,8 +36,13 @@ const getEmailSubjectKey = (
 };
 
 // Helper function to create reservation notifications
+type ReservationNotificationSource = Pick<
+  Reservation,
+  "id" | "userId" | "societyId" | "startDate"
+>;
+
 const createReservationNotifications = async (
-  reservationData: any,
+  reservationData: ReservationNotificationSource,
   reservationName: string,
   type: "created" | "cancelled" | "confirmed"
 ) => {

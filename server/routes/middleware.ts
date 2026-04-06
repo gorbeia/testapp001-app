@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { type User } from "@shared/schema";
+import { jwtUserPayloadSchema, type JwtSessionUser } from "@shared/schema";
 import jwt from "jsonwebtoken";
 
 // JWT Configuration
@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key-change-i
 declare global {
   namespace Express {
     interface Request {
-      user?: User;
+      user?: JwtSessionUser;
     }
   }
 }
@@ -35,9 +35,12 @@ export const sessionMiddleware = (req: Request, res: Response, next: NextFunctio
   next();
 };
 
-const verifyToken = (token: string): User | null => {
+const verifyToken = (token: string): JwtSessionUser | null => {
   try {
-    return jwt.verify(token, JWT_SECRET) as User;
+    const raw = jwt.verify(token, JWT_SECRET);
+    if (typeof raw === "string") return null;
+    const parsed = jwtUserPayloadSchema.safeParse(raw);
+    return parsed.success ? parsed.data : null;
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     return null;
@@ -77,6 +80,6 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
   next();
 };
 
-const hasTreasurerAccess = (user: User): boolean => {
+const hasTreasurerAccess = (user: JwtSessionUser): boolean => {
   return user.function === "diruzaina" || user.function === "administratzailea";
 };

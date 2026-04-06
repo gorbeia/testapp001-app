@@ -11,6 +11,7 @@ import {
   changePasswordBodySchema,
   updateUserAdminBodySchema,
   updateUserProfileBodySchema,
+  type JwtSessionUser,
   type User,
 } from "@shared/schema";
 import { eq, and, count } from "drizzle-orm";
@@ -19,7 +20,7 @@ import { sessionMiddleware, requireAuth, requireAdmin, requireTreasurer } from "
 import { generateToken, setAuthCookie } from "./index";
 
 // Helper function to get society ID from JWT (no DB query needed)
-const getUserSocietyId = (user: User): string => {
+const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found in JWT");
   }
@@ -205,8 +206,10 @@ export function registerUserRoutes(app: Express) {
         setAuthCookie(res, token);
 
         // Transform username to email for frontend compatibility
+        const userWithoutPassword = { ...updatedUser };
+        delete (userWithoutPassword as { password?: string }).password;
         const responseUser = {
-          ...updatedUser,
+          ...userWithoutPassword,
           email: updatedUser.username,
         };
 
@@ -233,19 +236,30 @@ export function registerUserRoutes(app: Express) {
         }
 
         const { currentPassword, newPassword } = parsed.data;
-        const user = req.user!;
+        const session = req.user!;
 
-        // Verify current password (in a real app, you'd hash and compare)
-        if (user.password !== currentPassword) {
+        const [dbUser] = await db.select().from(users).where(eq(users.id, session.id)).limit(1);
+        if (!dbUser) {
+          return res.status(401).json({ message: "User not found" });
+        }
+
+        let passwordValid = false;
+        if (dbUser.password.startsWith("$2b$")) {
+          passwordValid = await bcrypt.compare(currentPassword, dbUser.password);
+        } else {
+          passwordValid = dbUser.password === currentPassword;
+        }
+        if (!passwordValid) {
           return res.status(401).json({ message: "Current password is incorrect" });
         }
 
-        // Update password
-        await db.update(users).set({ password: newPassword }).where(eq(users.id, user.id));
+        const newPasswordStored = dbUser.password.startsWith("$2b$")
+          ? await bcrypt.hash(newPassword, 10)
+          : newPassword;
 
-        // Update JWT with new password (remove password from token for security)
-        const userWithoutPassword = { ...user, password: newPassword };
-        const token = generateToken(userWithoutPassword);
+        await db.update(users).set({ password: newPasswordStored }).where(eq(users.id, session.id));
+
+        const token = generateToken({ ...dbUser, password: newPasswordStored });
         setAuthCookie(res, token);
 
         return res.status(200).json({ message: "Password updated successfully" });
@@ -396,10 +410,8 @@ export function registerUserRoutes(app: Express) {
           .where(eq(users.id, id))
           .returning();
 
-        // Remove password from response
         const userWithoutPassword = { ...updatedUser };
-        delete (userWithoutPassword as any).password;
-
+        delete (userWithoutPassword as { password?: string }).password;
         return res.status(200).json(userWithoutPassword);
       } catch (err) {
         next(err);

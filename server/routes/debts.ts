@@ -1,16 +1,21 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { batchCreditStatusBodySchema, credits, users, type User } from "@shared/schema";
+import {
+  batchCreditStatusBodySchema,
+  credits,
+  users,
+  type JwtSessionUser,
+} from "@shared/schema";
 import { eq, and, sum, inArray, desc } from "drizzle-orm";
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
 // Helper function to check if user has treasurer access
-const requireTreasurerAccess = (user: User): boolean => {
+const requireTreasurerAccess = (user: JwtSessionUser): boolean => {
   return user.function === "diruzaina" || user.function === "administratzailea";
 };
 
-const getUserSocietyId = (user: User): string => {
+const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found in JWT");
   }

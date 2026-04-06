@@ -3,7 +3,12 @@ import { type Server } from "http";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "../db";
-import { loginBodySchema, type User } from "../../shared/schema";
+import {
+  jwtUserPayloadSchema,
+  loginBodySchema,
+  type JwtSessionUser,
+  type User,
+} from "../../shared/schema";
 import { i18nMiddleware } from "../lib/i18n";
 
 // JWT Configuration
@@ -14,13 +19,13 @@ const REFRESH_TOKEN_EXPIRES_IN = "7d"; // Refresh token lasts longer
 // JWT Functions
 export const generateToken = (user: User) => {
   const userWithoutPassword = { ...user };
-  delete (userWithoutPassword as any).password;
+  delete (userWithoutPassword as { password?: string }).password;
   return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
 const generateRefreshToken = (user: User) => {
   const userWithoutPassword = { ...user };
-  delete (userWithoutPassword as any).password;
+  delete (userWithoutPassword as { password?: string }).password;
   return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
 };
 
@@ -47,9 +52,12 @@ const clearAuthCookie = (res: Response) => {
   res.clearCookie("refresh-token");
 };
 
-const verifyToken = (token: string): User | null => {
+const verifyToken = (token: string): JwtSessionUser | null => {
   try {
-    return jwt.verify(token, JWT_SECRET) as User;
+    const raw = jwt.verify(token, JWT_SECRET);
+    if (typeof raw === "string") return null;
+    const parsed = jwtUserPayloadSchema.safeParse(raw);
+    return parsed.success ? parsed.data : null;
   } catch {
     return null;
   }
@@ -89,14 +97,14 @@ const sessionMiddleware = (req: Request, res: Response, next: NextFunction) => {
 declare global {
   namespace Express {
     interface Request {
-      user?: User;
+      user?: JwtSessionUser;
       isBackoffice?: boolean;
     }
   }
 }
 
 // Helper function to get society ID from JWT (no DB query needed)
-export const getUserSocietyId = (user: User): string => {
+export const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found in JWT");
   }
@@ -221,9 +229,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       setAuthCookie(res, token);
       setRefreshCookie(res, refreshToken);
 
-      // Return user data and token (for backward compatibility)
       const userWithoutPassword = { ...dbUser };
-      delete (userWithoutPassword as any).password;
+      delete (userWithoutPassword as { password?: string }).password;
       return res.status(200).json({
         user: userWithoutPassword,
         token,
@@ -267,9 +274,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const newToken = generateToken(dbUser);
       setAuthCookie(res, newToken);
 
-      // Return new token info
       const userWithoutPassword = { ...dbUser };
-      delete (userWithoutPassword as any).password;
+      delete (userWithoutPassword as { password?: string }).password;
       return res.status(200).json({
         user: userWithoutPassword,
         token: newToken,
