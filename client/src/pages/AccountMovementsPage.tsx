@@ -141,6 +141,9 @@ export function AccountMovementsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <p className="text-sm text-muted-foreground mb-3" data-testid="admin-movements-sign-legend">
+            {t("movementsSignLegend")}
+          </p>
           <Table>
             <TableHeader>
               <TableRow>

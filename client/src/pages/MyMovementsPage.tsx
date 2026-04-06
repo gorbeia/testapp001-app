@@ -106,6 +106,9 @@ export function MyMovementsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <p className="text-sm text-muted-foreground mb-3" data-testid="movements-sign-legend">
+            {t("movementsSignLegend")}
+          </p>
           <Table>
             <TableHeader>
               <TableRow>

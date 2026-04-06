@@ -14,9 +14,10 @@ import { sessionMiddleware, requireAuth } from "./middleware";
 import { pool } from "../db";
 import {
   assertBalanceAllowsMovement,
-  getMemberLedgerBalance,
+  getMemberAccountBalance,
   insertAccountMovementRow,
   movementExistsForReference,
+  prepaidBlockedUserMessage,
 } from "../lib/account-movements";
 import { notifyFinancialEvent } from "../lib/financial-notifications";
 
@@ -212,7 +213,7 @@ export function registerAccountMovementRoutes(app: Express) {
           .where(and(...conditions))
           .orderBy(asc(accountMovements.createdAt), asc(accountMovements.id));
 
-        const balance = await getMemberLedgerBalance(societyId, user.id);
+        const balance = await getMemberAccountBalance(societyId, user.id);
         const withRunning = attachRunningBalances(rows).sort(
           (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
         );
@@ -253,13 +254,13 @@ export function registerAccountMovementRoutes(app: Express) {
           .where(and(eq(users.id, userId), eq(users.societyId, societyId)));
         if (!member) return res.status(404).json({ message: "User not found" });
 
-        const movementAmountStr = (-amountNum).toFixed(2);
-        const bal = await getMemberLedgerBalance(societyId, userId);
+        const movementAmountStr = amountNum.toFixed(2);
+        const bal = await getMemberAccountBalance(societyId, userId);
         try {
           await assertBalanceAllowsMovement(societyId, userId, movementAmountStr, bal);
         } catch (err) {
           if (err instanceof Error && err.message === "PREPAID_NOT_ALLOWED") {
-            return res.status(400).json({ message: "Ezin da saldo negatiboa utzi elkartean." });
+            return res.status(400).json({ message: prepaidBlockedUserMessage(req.headers) });
           }
           throw err;
         }
@@ -323,7 +324,7 @@ export function registerAccountMovementRoutes(app: Express) {
           societyId,
           userId: credit.memberId,
           type: "sepa_bounce",
-          amount: amountNum.toFixed(2),
+          amount: (-amountNum).toFixed(2),
           description: `SEPA bounce — ${credit.month}`,
           referenceId: refKey,
           referenceType: "credit",

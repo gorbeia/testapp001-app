@@ -229,7 +229,7 @@ export function registerDebtRoutes(app: Express) {
           for (const credit of updatedCredits) {
             const exists = await movementExistsForReference(
               societyId,
-              "sepa_collection",
+              "credit",
               credit.id
             );
             if (exists) continue;
@@ -239,7 +239,7 @@ export function registerDebtRoutes(app: Express) {
               societyId,
               userId: credit.memberId,
               type: "sepa_collection",
-              amount: (-amt).toFixed(2),
+              amount: amt.toFixed(2),
               description: `SEPA collection — ${credit.month}`,
               referenceId: credit.id,
               referenceType: "credit",

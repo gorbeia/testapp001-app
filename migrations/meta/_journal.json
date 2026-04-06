@@ -8,6 +8,13 @@
       "when": 1775500800000,
       "tag": "0000_add_society_sepa_mode",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1775600000000,
+      "tag": "0001_flip_account_movement_amounts",
+      "breakpoints": true
     }
   ]
 }

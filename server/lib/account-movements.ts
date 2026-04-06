@@ -1,3 +1,4 @@
+import type { IncomingHttpHeaders } from "node:http";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
@@ -6,7 +7,11 @@ import {
   type AccountMovementType,
 } from "@shared/schema";
 
-export async function getMemberLedgerBalance(
+/**
+ * Member **account balance** from ledger movements (sum of `amount`).
+ * Negative means the member owes; positive means prepaid/credit (when the society allows it).
+ */
+export async function getMemberAccountBalance(
   societyId: string,
   userId: string
 ): Promise<number> {
@@ -23,7 +28,13 @@ export async function getMemberLedgerBalance(
   return row?.bal ?? 0;
 }
 
-/** Throws if society disallows prepaid credit (balance < 0). */
+/** @deprecated Use {@link getMemberAccountBalance}. */
+export const getMemberLedgerBalance = getMemberAccountBalance;
+
+/**
+ * When `allowPositiveBalance` is false, rejects movements that would leave the member with a
+ * **positive** balance (prepaid); balance must stay at or below zero.
+ */
 export async function assertBalanceAllowsMovement(
   societyId: string,
   userId: string,
@@ -39,10 +50,10 @@ export async function assertBalanceAllowsMovement(
     const bal =
       currentBalance !== undefined
         ? currentBalance
-        : await getMemberLedgerBalance(societyId, userId);
+        : await getMemberAccountBalance(societyId, userId);
     const delta = typeof movementAmount === "string" ? parseFloat(movementAmount) : movementAmount;
     const next = bal + delta;
-    if (next < -1e-6) {
+    if (next > 1e-6) {
       const err = new Error("PREPAID_NOT_ALLOWED");
       (err as Error & { status?: number }).status = 400;
       throw err;
@@ -98,4 +109,17 @@ export async function movementExistsForReference(
     )
     .limit(1);
   return Boolean(row);
+}
+
+/** User-facing 400 copy when prepaid / positive balance is disallowed (`allowPositiveBalance` false). */
+export function prepaidBlockedUserMessage(headers: IncomingHttpHeaders): string {
+  const first =
+    String(headers["accept-language"] ?? "")
+      .split(",")[0]
+      ?.trim()
+      .toLowerCase() ?? "";
+  if (first.startsWith("es")) {
+    return "No está permitido dejar saldo a favor (prepago): la sociedad no lo permite.";
+  }
+  return "Ezin da saldo positiboa utzi (aurrez ordaindutako kreditua): elkarteak ez du baimentzen.";
 }

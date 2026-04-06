@@ -517,7 +517,7 @@ export function registerConsumptionRoutes(app: Express) {
             societyId,
             userId: consumption[0].userId,
             type: "consumption",
-            amount: totalPrice.toFixed(2),
+            amount: (-totalPrice).toFixed(2),
             description: product[0].name
               ? `Consumption: ${product[0].name} x${item.quantity}`
               : "Consumption line",

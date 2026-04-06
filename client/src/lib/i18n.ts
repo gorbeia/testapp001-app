@@ -244,7 +244,9 @@ export const translations = {
     runningBalance: "Saldo metatua",
     movementType: "Mota",
     movementTypesAll: "Mota guztiak",
-    allowPrepaidBalance: "Baimendu aurrez ordaindutako kreditua (saldo negatiboa)",
+    allowPrepaidBalance: "Baimendu saldo positiboa (aurrez ordaindutako kreditua)",
+    movementsSignLegend:
+      "Zenbateko negatiboek zorra edo kargua adierazten dute; positiboek ordainketa edo abonua.",
     sepaBounce: "SEPA itzulera",
     sepaBounceConfirm: "SEPA huts egin duela erregistratu?",
     createTransfer: "Transferentzia berria",
@@ -840,6 +842,8 @@ export const translations = {
     movementType: "Tipo",
     movementTypesAll: "Todos los tipos",
     allowPrepaidBalance: "Permitir saldo a favor (prepago)",
+    movementsSignLegend:
+      "Importes negativos: deuda o cargo; positivos: pago o abono en la cuenta del socio.",
     sepaBounce: "Reversión SEPA",
     sepaBounceConfirm: "¿Registrar fallo de adeudo SEPA?",
     createTransfer: "Nueva transferencia",

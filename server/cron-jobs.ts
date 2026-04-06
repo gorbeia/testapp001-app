@@ -229,7 +229,7 @@ class DebtCalculationService {
               societyId: activeSociety.id,
               userId: member.id,
               type: "subscription",
-              amount: subscriptionCharge.toFixed(2),
+              amount: (-subscriptionCharge).toFixed(2),
               description: `Subscription — ${monthLabel}`,
               referenceId: subRef,
               referenceType: "subscription",

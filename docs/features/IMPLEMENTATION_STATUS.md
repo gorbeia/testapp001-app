@@ -124,15 +124,15 @@ Status legend:
    - **Status**: ✅ Implemented (+ E2E: `bank-transfers.feature`)
 4. **Refunds** – `/itzulketak`, `POST /api/account-movements/refund`
    - **Status**: ✅ Implemented (+ E2E: `refunds.feature`)
-5. **SEPA collection on ledger** – `sepa_collection` movement when marking credits paid (`PUT /api/credits/batch-status`)
+5. **SEPA collection on ledger** – `sepa_collection` movement (**positive** `amount` in member-balance convention) when marking credits paid (`PUT /api/credits/batch-status`)
    - **Status**: ✅ Implemented
-6. **SEPA bounce** – `POST /api/account-movements/sepa-bounce`, `/zorrak` action column (+ E2E: `sepa-bounce.feature`)
+6. **SEPA bounce** – `POST /api/account-movements/sepa-bounce`, `/zorrak` action column (+ E2E: `sepa-bounce.feature`); bounce posts **negative** `amount` to reverse collection
    - **Status**: ✅ Implemented
 7. **Consumption / reservation lines on ledger** – movements on item add, reservation create; cancellation/deletion adjustment
    - **Status**: ✅ Implemented
 8. **Subscription fees on ledger** – `DebtCalculationService` posts `subscription` movement + `credits.subscription_amount` (skipped when society **`sepaMode` = `disabled`**)
    - **Status**: ✅ Implemented (multi-tenant cron + per-society real-time triggers; see `server/cron-jobs.ts`)
-9. **Society `allow_positive_balance`** – `/elkartea` toggle; guards refunds/transfers
+9. **Society `allow_positive_balance`** – `/elkartea` toggle; when false, guards block refunds/transfers that would leave **member balance** (`SUM(account_movements.amount)`) **above** zero
    - **Status**: ✅ Implemented (`PUT /api/societies/:id` allows **administratzailea** + **diruzaina** for own society)
 10. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
 
