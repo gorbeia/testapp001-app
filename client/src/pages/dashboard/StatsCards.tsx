@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, ShoppingCart, CreditCard, Users, AlertCircle } from "lucide-react";
+import { Calendar, ShoppingCart, CreditCard, Users, AlertCircle, Wallet } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { useAuth, hasCellarmanAccess, hasAdminAccess } from "@/lib/auth";
 import { DashboardStats } from "./api";
@@ -8,6 +8,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 interface StatsCardsProps {
   stats: DashboardStats | null;
   loading: boolean;
+}
+
+function balanceAmountClass(b: number) {
+  if (b < 0) return "text-destructive";
+  if (b > 0) return "text-green-600";
+  return "text-muted-foreground";
 }
 
 export function StatsCards({ stats, loading }: StatsCardsProps) {
@@ -42,6 +48,16 @@ export function StatsCards({ stats, loading }: StatsCardsProps) {
     );
   }
 
+  const useMovementsBalance = stats.sepaModeDisabled;
+  const balanceValue = stats.memberAccountBalance ?? 0;
+  const balanceStatusKey = !useMovementsBalance
+    ? null
+    : balanceValue < 0
+      ? "balanceStatusOwed"
+      : balanceValue > 0
+        ? "balanceStatusCredit"
+        : "balanceStatusZero";
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <Card>
@@ -72,12 +88,28 @@ export function StatsCards({ stats, loading }: StatsCardsProps) {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-          <CardTitle className="text-sm font-medium">{t("myDebts")}</CardTitle>
-          <CreditCard className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium">
+            {useMovementsBalance ? t("currentBalance") : t("myDebts")}
+          </CardTitle>
+          {useMovementsBalance ? (
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+          ) : (
+            <CreditCard className="h-4 w-4 text-muted-foreground" />
+          )}
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{(stats.pendingCredits || 0).toFixed(2)}€</div>
-          <p className="text-xs text-muted-foreground">{t("pending")}</p>
+          <div
+            className={`text-2xl font-bold ${
+              useMovementsBalance ? balanceAmountClass(balanceValue) : ""
+            }`}
+          >
+            {useMovementsBalance
+              ? `${balanceValue.toFixed(2)}€`
+              : `${(stats.pendingCredits || 0).toFixed(2)}€`}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {useMovementsBalance ? (balanceStatusKey ? t(balanceStatusKey) : "") : t("pending")}
+          </p>
         </CardContent>
       </Card>
 

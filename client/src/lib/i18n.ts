@@ -370,7 +370,7 @@ export const translations = {
     sepaModeOnDemand: "Eskuz (tarte librea)",
     sepaModeDisabled: "SEPA desgaituta",
     sepaModeDisabledHint:
-      "SEPA desgaituta badago, aplikazioko SEPA orria eta bankurako XML esportazioa ez daude erabilgarri. Harpidetzaren zenbatekoa zorrak eta kidearen mugimenduetan islatzen da (saldoan), jakinarazpenekin batera.",
+      "SEPA desgaituta badago, SEPA orria, XML esportazioa eta hilabeteko zorrak orriak (kidea eta kudeaketa) ez daude erabilgarri; saldoa kidearen eta mugimenduen ikuspegietan ikusten da.",
     sepaBillingPeriod: "Kobrantza aldia",
     sepaDisabledMessage:
       "SEPA ez dago aktibatuta elkarte honetan. Elkartearen ezarpenetan alda dezakezu.",
@@ -965,7 +965,7 @@ export const translations = {
     sepaModeOnDemand: "Manual (rango libre)",
     sepaModeDisabled: "SEPA desactivado",
     sepaModeDisabledHint:
-      "Con SEPA desactivado, la página SEPA y la exportación XML al banco no están disponibles. El importe de suscripción sigue en créditos y en los movimientos del socio (saldo), con notificaciones.",
+      "Con SEPA desactivado, no están disponibles la página SEPA, la exportación XML ni las pantallas de deudas mensuales (socio y gestión); el saldo se ve en «Mis movimientos» y en el listado de movimientos de tesorería.",
     sepaBillingPeriod: "Período de cobro",
     sepaDisabledMessage:
       "SEPA no está activado para esta sociedad. Puedes cambiarlo en los datos de la sociedad.",

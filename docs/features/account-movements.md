@@ -36,6 +36,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 ### Acceptance criteria
 
 - Filters: user, month (YYYY-MM from `createdAt`), type; pagination; running balance column; tenant-scoped.
+- When **`sepaMode` is `disabled`**, this page is also the destination for direct navigation to **`/zorrak`** (admin monthly credits UI is not shown).
 
 ## F4 – Member movements (`/nire-mugimenduak`)
 
@@ -44,6 +45,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 ### Acceptance criteria
 
 - List own movements; month/type filters; current balance summary (member balance).
+- When society **`sepaMode` is `disabled`**, this page is the primary member money view: **`/nire-zorrak`** redirects here and the dashboard card shows this same balance (see `credits.md` Story 1 / Story 6).
 
 ## F5 – SEPA collection in ledger
 
@@ -67,7 +69,7 @@ Server notifications (eu/es/en) for: transfer validated/rejected, refund issued,
 
 ## Society setting
 
-- `sepaMode`: when `disabled`, SEPA export and related UI/API are off; **`subscription` ledger movements and subscription charge notifications still run** when debt calculation posts a subscription fee (see `credits.md`).
+- `sepaMode`: when `disabled`, SEPA export and related UI/API are off; **`subscription` ledger movements and subscription charge notifications still run** when debt calculation posts a subscription fee (see `credits.md`). Monthly **credits** list UIs (**`/nire-zorrak`**, **`/zorrak`**) are not shown; use member **`/nire-mugimenduak`** and treasurer **`/mugimenduak`** for balances and audit.
 
 ## Data migration
 

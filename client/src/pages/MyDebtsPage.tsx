@@ -1,4 +1,5 @@
 import { CreditCard, TrendingUp, CheckCircle } from "lucide-react";
+import { Redirect } from "wouter";
 import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,7 @@ import { useAuth } from "@/lib/auth";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useUrlFilter } from "@/hooks/useUrlFilter";
+import { authFetch } from "@/lib/api";
 import type { Credit } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
@@ -72,6 +74,21 @@ export function MyDebtsPage() {
     initialValue: "all",
   });
 
+  const {
+    data: societyUser,
+    isPending: societyPending,
+    isError: societyError,
+  } = useQuery({
+    queryKey: ["society-user"],
+    queryFn: async () => {
+      const res = await authFetch("/api/societies/user");
+      if (!res.ok) throw new Error("Failed to load society");
+      return res.json() as { sepaMode?: string };
+    },
+    enabled: !!user,
+    throwOnError: false,
+  });
+
   // Fetch current user's credits
   const {
     data: credits = [],
@@ -84,7 +101,10 @@ export function MyDebtsPage() {
         month: monthFilter.value,
         status: statusFilter.value !== "all" ? statusFilter.value : undefined,
       }),
-    enabled: !!user,
+    enabled:
+      !!user &&
+      !societyPending &&
+      (societyError || societyUser?.sepaMode !== "disabled"),
     throwOnError: false, // Handle errors inline instead of throwing
   });
 
@@ -120,6 +140,14 @@ export function MyDebtsPage() {
         </div>
       </div>
     );
+  }
+
+  if (!societyPending && !societyError && societyUser?.sepaMode === "disabled") {
+    return <Redirect to="/nire-mugimenduak" />;
+  }
+
+  if (societyPending) {
+    return <div className="p-6 text-muted-foreground">{t("loading")}</div>;
   }
 
   if (error) {

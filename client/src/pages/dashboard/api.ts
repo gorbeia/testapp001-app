@@ -31,6 +31,10 @@ export interface DashboardStats {
   memberMonthlyConsumptionsAmount: number;
   pendingCredits: number;
   activeMembers: number;
+  /** When true, subscription billing uses movements balance instead of monthly credit debts UI. */
+  sepaModeDisabled: boolean;
+  /** Current ledger balance (same as My movements) when `sepaModeDisabled`. */
+  memberAccountBalance?: number;
 }
 
 export interface UpcomingReservation {
@@ -103,6 +107,8 @@ export const fetchNotes = async (language?: string): Promise<Note[]> => {
 
 export const fetchDashboardStats = async (): Promise<DashboardStats> => {
   try {
+    const societyResPromise = authFetch("/api/societies/user");
+
     // Fetch basic stats that all users can see
     const [
       reservationsCount,
@@ -122,13 +128,38 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
       fetchActiveUsersCount(),
     ]);
 
-    // Fetch credits - always show total pending debt for all users
-    let creditsSum = 0;
+    let sepaModeDisabled = false;
     try {
-      creditsSum = await fetchUserTotalPendingDebt();
+      const societyRes = await societyResPromise;
+      if (societyRes.ok) {
+        const s = (await societyRes.json()) as { sepaMode?: string };
+        sepaModeDisabled = s?.sepaMode === "disabled";
+      }
     } catch (error) {
-      console.log("Failed to fetch user total pending debt:", error);
-      creditsSum = 0;
+      console.log("Failed to fetch society for dashboard stats:", error);
+    }
+
+    let creditsSum = 0;
+    let memberAccountBalance: number | undefined;
+
+    if (sepaModeDisabled) {
+      try {
+        const mRes = await authFetch("/api/account-movements/me");
+        if (mRes.ok) {
+          const m = (await mRes.json()) as { balance?: number };
+          memberAccountBalance = Number(m.balance ?? 0);
+        }
+      } catch (error) {
+        console.log("Failed to fetch member account balance:", error);
+        memberAccountBalance = 0;
+      }
+    } else {
+      try {
+        creditsSum = await fetchUserTotalPendingDebt();
+      } catch (error) {
+        console.log("Failed to fetch user total pending debt:", error);
+        creditsSum = 0;
+      }
     }
 
     return {
@@ -140,6 +171,8 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
       memberMonthlyConsumptionsAmount: memberConsumptionsAmount,
       pendingCredits: creditsSum,
       activeMembers: usersCount,
+      sepaModeDisabled,
+      memberAccountBalance: sepaModeDisabled ? memberAccountBalance ?? 0 : undefined,
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);

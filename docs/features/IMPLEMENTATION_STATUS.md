@@ -92,11 +92,11 @@ Status legend:
 ## 5. Credits / Zorrak & SEPA (`credits.md`)
 
 1. **View pending credits (member)** – personal debt view
-   - **Status**: ✅ Implemented (`/nire-zorrak`, `GET /api/credits/member/current`)
+   - **Status**: ✅ Implemented (`/nire-zorrak`, `GET /api/credits/member/current`; sidebar entry **omitted** and route **redirects to `/nire-mugimenduak`** when `sepaMode === disabled`)
 2. **Monthly credit summary (treasurer/admin)** – per-month overview
-   - **Status**: ✅ Implemented (`/zorrak`, `GET /api/credits` — tighten `societyId` filters in API for multi-tenant hardening)
+   - **Status**: ✅ Implemented (`/zorrak`, `GET /api/credits`; sidebar **omitted** and route **redirects to `/mugimenduak`** when `sepaMode === disabled`; tighten `societyId` filters in API for multi-tenant hardening)
 3. **Credit reset / mark paid after payment**
-   - **Status**: 🟡 Partial (`PUT /api/credits/batch-status`; no rich audit UI)
+   - **Status**: 🟡 Partial (`PUT /api/credits/batch-status`; admin grid + batch actions on **`/zorrak`** only when `sepaMode !== disabled`; no rich audit UI)
 4. **Generate SEPA export** – debtor list + pain.008-style XML in browser
    - **Status**: ✅ Implemented (`/sepa`, `GET /api/credits/sepa-export` with `month` / `months` / `from`+`to`, validated vs **`sepaMode`**; multi-tenant filter; + E2E `sepa-billing-frequency.feature`)
 5. **SEPA data validation** – IBAN/creditor checks
@@ -108,7 +108,7 @@ Status legend:
 8. **Credit notifications**
    - **Status**: ❌ Not Implemented (dedicated credit alerts)
 9. **Financial dashboard widgets** – debt highlights on home
-   - **Status**: 🟡 Partial (real sums from credits APIs on dashboard cards)
+   - **Status**: 🟡 Partial (pending total from credits when SEPA is active; **ledger balance** from `GET /api/account-movements/me` when `sepaMode === disabled`)
 10. **Export financial reports** – statements, YTD bundles
     - **Status**: ❌ Not Implemented
 
@@ -126,7 +126,7 @@ Status legend:
    - **Status**: ✅ Implemented (+ E2E: `refunds.feature`)
 5. **SEPA collection on ledger** – `sepa_collection` movement (**positive** `amount` in member-balance convention) when marking credits paid (`PUT /api/credits/batch-status`)
    - **Status**: ✅ Implemented
-6. **SEPA bounce** – `POST /api/account-movements/sepa-bounce`, `/zorrak` action column (+ E2E: `sepa-bounce.feature`); bounce posts **negative** `amount` to reverse collection
+6. **SEPA bounce** – `POST /api/account-movements/sepa-bounce`, **`/zorrak` action column when `sepaMode` is not `disabled`** (+ E2E: `sepa-bounce.feature`); bounce posts **negative** `amount` to reverse collection
    - **Status**: ✅ Implemented
 7. **Consumption / reservation lines on ledger** – movements on item add, reservation create; cancellation/deletion adjustment
    - **Status**: ✅ Implemented

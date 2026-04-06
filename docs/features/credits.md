@@ -4,7 +4,7 @@
 
 ## Data model & automation (cross-cutting)
 
-Monthly **`credits`** rows are stored per member and society (`consumptionAmount`, `reservationAmount`, `totalAmount`, `status`, `paidAmount`, etc.). **`DebtCalculationService`** (cron in `server/cron-jobs.ts` and triggers after relevant consumption/reservation flows) aggregates consumptions and reservations into those rows **per society** (`societyId` from JWT on real-time triggers; scheduled job processes **all** `isActive` societies). Society **`sepaMode`** (`monthly` | `bimonthly` | `quarterly` | `on_demand` | `disabled`) controls **SEPA export** period validation and UI (and disables export when **`disabled`**). **Subscription fees** are still written to **`credits`** and posted as **`subscription`** rows on **`account_movements`** (member balance) for every mode, so societies without SEPA can charge periodic fees from the ledger.
+Monthly **`credits`** rows are stored per member and society (`consumptionAmount`, `reservationAmount`, `totalAmount`, `status`, `paidAmount`, etc.). **`DebtCalculationService`** (cron in `server/cron-jobs.ts` and triggers after relevant consumption/reservation flows) aggregates consumptions and reservations into those rows **per society** (`societyId` from JWT on real-time triggers; scheduled job processes **all** `isActive` societies). Society **`sepaMode`** (`monthly` | `bimonthly` | `quarterly` | `on_demand` | `disabled`) controls **SEPA export** period validation and UI (and disables export when **`disabled`**). **Subscription fees** are still written to **`credits`** and posted as **`subscription`** rows on **`account_movements`** (member balance) for every mode, so societies without SEPA can charge periodic fees from the ledger. When **`sepaMode` is `disabled`**, both **Nire zorrak** and admin **Zorrak /zorrak** (monthly credit grid) are turned off in the SPA (nav + redirect); members go to **Nire mugimenduak**, admins to **Mugimenduak /mugimenduak**, and the dashboard balance card uses the ledger (see [account-movements.md](./account-movements.md)).
 
 ---
 
@@ -22,6 +22,7 @@ Monthly **`credits`** rows are stored per member and society (`consumptionAmount
 - ✅ Breakdown by month where data exists (consumption vs reservation components when present)
 - Historical / paid rows depend on API filters and UI presentation
 - Export of a formal statement: not implemented as a dedicated feature
+- When **`sepaMode === disabled`**: sidebar entry for **`/nire-zorrak`** is hidden; visiting the URL **redirects** to **`/nire-mugimenduak`**; `GET /api/credits/member/current` remains available for integrations
 - **Shipped**: `MyDebtsPage` at `/nire-zorrak`, `GET /api/credits/member/current`
 
 ---
@@ -39,6 +40,7 @@ Monthly **`credits`** rows are stored per member and society (`consumptionAmount
 - Totals for the period are derivable from listed rows
 - ❌ Export credit list to Google Sheets — **not implemented** (no Sheets export)
 - 🟡 Mark credits as paid / batch update — **partial** (`PUT /api/credits/batch-status`)
+- When **`sepaMode === disabled`**: admin sidebar entry for **`/zorrak`** is hidden; visiting the URL **redirects** to **`/mugimenduak`**; `GET /api/credits` and batch/bounce APIs remain for tooling/consistency
 - **Shipped UI**: `CreditsPage` at `/zorrak` (route currently **administratzailea** in the SPA; API also allows treasurer — align product/access if needed)
 
 ---
@@ -51,7 +53,7 @@ Monthly **`credits`** rows are stored per member and society (`consumptionAmount
 
 **Acceptance Criteria:**
 
-- 🟡 Batch status updates (e.g. mark as paid) — **implemented at API level**
+- 🟡 Batch status updates (e.g. mark as paid) — **implemented at API level**; **admin grid UI** on **`/zorrak`** only when **`sepaMode` is not `disabled`**
 - ❌ Granular per-line reset UI, rich audit trail, and member notifications — **not implemented**
 
 ---
@@ -96,7 +98,7 @@ Monthly **`credits`** rows are stored per member and society (`consumptionAmount
 
 - ✅ Society **`iban`**, **`creditorId`**, and **`sepaMode`** (and related contact fields) exist in DB and are editable via **`/elkartea`** (`GET /api/societies/user`, `PUT /api/societies/:id`)
 - ✅ `SepaExportPage` builds creditor block from society row when possible; warns if IBAN/creditor id missing
-- **`sepaMode = disabled`**: SEPA sidebar link hidden; export API returns **403**; `/sepa` shows empty state with link to **`/elkartea`**
+- **`sepaMode = disabled`**: SEPA sidebar link hidden; export API returns **403**; `/sepa` shows empty state with link to **`/elkartea`**; member **`/nire-zorrak`** and admin **`/zorrak`** nav hidden with redirects to **`/nire-mugimenduak`** and **`/mugimenduak`** respectively; dashboard “debt” card shows **ledger balance** (`GET /api/account-movements/me`) instead of pending credits sum
 
 ---
 
@@ -151,7 +153,7 @@ Monthly **`credits`** rows are stored per member and society (`consumptionAmount
 
 **Acceptance Criteria:**
 
-- 🟡 Dashboard cards use **real** credit/debt endpoints for the logged-in user (and role-dependent stats)
+- 🟡 Dashboard cards use **real** data for the logged-in user (and role-dependent stats): pending credits when SEPA is active; **member ledger balance** when **`sepaMode === disabled`**
 - ❌ Full KPI suite and historical charts as originally specified — **not implemented**
 
 ---

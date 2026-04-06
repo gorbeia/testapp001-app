@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Redirect } from "wouter";
 import { useUrlFilter } from "@/hooks/useUrlFilter";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -108,7 +109,22 @@ export function CreditsPage() {
 
   const queryClient = useQueryClient();
 
-  // Fetch all credits (admin only)
+  const {
+    data: societyUser,
+    isPending: societyPending,
+    isError: societyError,
+  } = useQuery({
+    queryKey: ["society-user"],
+    queryFn: async () => {
+      const res = await authFetch("/api/societies/user");
+      if (!res.ok) throw new Error("Failed to load society");
+      return res.json() as { sepaMode?: string };
+    },
+    enabled: !!user && isAdmin,
+    throwOnError: false,
+  });
+
+  // Fetch all credits (admin only; monthly-credit UI unused when SEPA is disabled)
   const {
     data: credits = [],
     isLoading,
@@ -120,8 +136,20 @@ export function CreditsPage() {
         month: monthFilter.value,
         status: statusFilter.value !== "all" ? statusFilter.value : undefined,
       }),
-    enabled: !!user && isAdmin,
+    enabled:
+      !!user &&
+      isAdmin &&
+      !societyPending &&
+      (societyError || societyUser?.sepaMode !== "disabled"),
   });
+
+  if (societyPending) {
+    return <div className="p-6 text-muted-foreground">{t("loading")}</div>;
+  }
+
+  if (!societyError && societyUser?.sepaMode === "disabled") {
+    return <Redirect to="/mugimenduak" />;
+  }
 
   // Show error state if API call fails
   if (error) {

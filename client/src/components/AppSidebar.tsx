@@ -114,7 +114,9 @@ export function AppSidebar() {
     { title: t("reservations"), url: "/erreserbak", icon: Calendar },
     { title: t("myReservations"), url: "/nire-erreserbak", icon: Calendar },
     { title: t("myConsumptions"), url: "/nire-konsumoak", icon: Receipt },
-    { title: t("credits"), url: "/nire-zorrak", icon: CreditCard },
+    ...(societySepaMode !== "disabled"
+      ? [{ title: t("credits"), url: "/nire-zorrak", icon: CreditCard } as NavItem]
+      : []),
     { title: t("myMovements"), url: "/nire-mugimenduak", icon: List },
     { title: t("announcements"), url: "/oharrak", icon: Megaphone },
   ];
@@ -127,7 +129,7 @@ export function AppSidebar() {
     ...(hasAdminAccess(user)
       ? [{ title: t("consumptionList"), url: "/kontsumoak-zerrenda", icon: Receipt }]
       : []),
-    ...(hasAdminAccess(user)
+    ...(hasAdminAccess(user) && societySepaMode !== "disabled"
       ? [{ title: t("adminCredits"), url: "/zorrak", icon: CreditCard }]
       : []),
     ...(hasCellarmanAccess(user)

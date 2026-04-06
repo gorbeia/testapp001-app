@@ -15,7 +15,7 @@ This directory contains user stories organized by feature area for the Elkartear
 - **[User Profile](user-profile.md)** — Self-service profile (`/profila`)
 - **[Reservations](reservations.md)** — Erreserbak (`/erreserbak`, `/nire-erreserbak`, `/admin-erreserbak`)
 - **[Consumptions](consumptions.md)** — Kontsumoak POS and history
-- **[Credits](credits.md)** — Zorrak, monthly debts, SEPA export (`/zorrak`, `/nire-zorrak`, `/sepa`)
+- **[Credits](credits.md)** — Zorrak, monthly debts, SEPA export (`/zorrak`, `/nire-zorrak`, `/sepa`; monthly-debt UIs off when SEPA disabled — see `credits.md`)
 - **[Account movements](account-movements.md)** — Ledger, transfers, refunds (on transfers page), SEPA bounce (`/nire-mugimenduak`, `/mugimenduak`, `/transferentziak`)
 
 ### Communication Features
