@@ -9,6 +9,13 @@ const requireTreasurerAccess = (user: User): boolean => {
   return user.function === "diruzaina" || user.function === "administratzailea";
 };
 
+const getUserSocietyId = (user: User): string => {
+  if (!user.societyId) {
+    throw new Error("User societyId not found in JWT");
+  }
+  return user.societyId;
+};
+
 // Treasurer middleware
 const requireTreasurer = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
@@ -27,9 +34,14 @@ export function registerDebtRoutes(app: Express) {
   app.get("/api/credits/member/current", sessionMiddleware, requireAuth, async (req, res, next) => {
     try {
       const { month, status } = req.query;
-      const userId = req.user!.id;
+      const user = req.user!;
+      const userId = user.id;
+      const societyId = getUserSocietyId(user);
 
-      const conditions = [eq(credits.memberId, userId)];
+      const conditions = [
+        eq(credits.memberId, userId),
+        eq(credits.societyId, societyId),
+      ];
 
       if (month) {
         conditions.push(eq(credits.month, month as string));
@@ -56,8 +68,9 @@ export function registerDebtRoutes(app: Express) {
   app.get("/api/credits", sessionMiddleware, requireTreasurer, async (req, res, next) => {
     try {
       const { month, status } = req.query;
+      const societyId = getUserSocietyId(req.user!);
 
-      const conditions = [];
+      const conditions = [eq(credits.societyId, societyId)];
 
       if (month) {
         conditions.push(eq(credits.month, month as string));
@@ -67,22 +80,26 @@ export function registerDebtRoutes(app: Express) {
         conditions.push(eq(credits.status, status as string));
       }
 
-      const baseQuery = db.select().from(credits);
-      const query = conditions.length > 0 ? baseQuery.where(and(...conditions)) : baseQuery;
-
-      const allCredits = await query.orderBy(credits.year, credits.monthNumber, credits.memberId);
+      const allCredits = await db
+        .select()
+        .from(credits)
+        .where(and(...conditions))
+        .orderBy(credits.year, credits.monthNumber, credits.memberId);
 
       // Get member names and payment tracking info
       const creditsWithNames = await Promise.all(
         allCredits.map(async credit => {
-          const [member] = await db.select().from(users).where(eq(users.id, credit.memberId));
+          const [member] = await db
+            .select()
+            .from(users)
+            .where(and(eq(users.id, credit.memberId), eq(users.societyId, societyId)));
           let markedByUser = null;
 
           if (credit.markedAsPaidBy) {
             const [markedBy] = await db
               .select()
               .from(users)
-              .where(eq(users.id, credit.markedAsPaidBy));
+              .where(and(eq(users.id, credit.markedAsPaidBy), eq(users.societyId, societyId)));
             markedByUser = markedBy?.name || null;
             if (!markedBy) {
               console.log(
@@ -113,8 +130,9 @@ export function registerDebtRoutes(app: Express) {
   app.get("/api/credits/sum", sessionMiddleware, requireTreasurer, async (req, res, next) => {
     try {
       const { status } = req.query;
+      const societyId = getUserSocietyId(req.user!);
 
-      const conditions = [];
+      const conditions = [eq(credits.societyId, societyId)];
 
       if (status && ["pending", "paid", "partial"].includes(status as string)) {
         conditions.push(eq(credits.status, status as string));
@@ -125,7 +143,7 @@ export function registerDebtRoutes(app: Express) {
           sum: sum(credits.totalAmount),
         })
         .from(credits)
-        .where(conditions.length > 0 ? and(...conditions) : undefined);
+        .where(and(...conditions));
 
       const totalSum = result[0]?.sum || 0;
 
@@ -143,6 +161,7 @@ export function registerDebtRoutes(app: Express) {
     async (req, res, next) => {
       try {
         const { creditIds, status } = req.body;
+        const societyId = getUserSocietyId(req.user!);
 
         if (!["pending", "paid", "partial"].includes(status)) {
           return res.status(400).json({ message: "Invalid status" });
@@ -152,14 +171,22 @@ export function registerDebtRoutes(app: Express) {
           return res.status(400).json({ message: "Invalid credit IDs" });
         }
 
+        const uniqueCreditIds = Array.from(new Set(creditIds as string[]));
+
         // Get all credits to validate and check current month restriction
         const creditsToUpdate = await db
           .select()
           .from(credits)
-          .where(inArray(credits.id, creditIds));
+          .where(and(inArray(credits.id, uniqueCreditIds), eq(credits.societyId, societyId)));
 
         if (creditsToUpdate.length === 0) {
           return res.status(404).json({ message: "No credits found" });
+        }
+
+        if (creditsToUpdate.length !== uniqueCreditIds.length) {
+          return res.status(400).json({
+            message: "Some credit IDs are missing or do not belong to your society",
+          });
         }
 
         // Check if any are for current month (only when marking as paid)
@@ -192,7 +219,7 @@ export function registerDebtRoutes(app: Express) {
         const updatedCredits = await db
           .update(credits)
           .set(updateData)
-          .where(inArray(credits.id, creditIds))
+          .where(and(inArray(credits.id, uniqueCreditIds), eq(credits.societyId, societyId)))
           .returning();
 
         res.json({
