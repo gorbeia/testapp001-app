@@ -4,17 +4,17 @@ A modern web application built with React, TypeScript, and Express.js for managi
 
 ## Prerequisites
 
-- Node.js 18+
-- pnpm
-- Docker & Docker Compose (for database)
+- **Node.js** — version in `package.json` → `engines` (currently **Node >= 24**).
+- **pnpm** — install: https://pnpm.io/installation
+- **Docker** and **Docker Compose** — for local PostgreSQL (`pnpm docker:db:up`)
 
 ## Getting Started
 
 1. **Clone the repository**
 
    ```bash
-   git clone [repository-url]
-   cd elkartearen-app
+   git clone <repository-url>
+   cd <repo-directory>
    ```
 
 2. **Install dependencies**
@@ -23,134 +23,180 @@ A modern web application built with React, TypeScript, and Express.js for managi
    pnpm install
    ```
 
-3. **Set up environment variables**
+3. **Environment variables**
+
    ```bash
    cp .env.example .env
    ```
-   Update the `.env` file with your configuration.
+
+   Adjust at least:
+
+   - **`DATABASE_URL`** — must match your Postgres (default in `.env.example` matches `docker-compose.yml`: user/password `postgres`, database `elkartearen`, port `5432`).
+   - **`SESSION_SECRET`** — set a long random string for sessions.
+   - **`JWT_SECRET`** — signs and verifies **society app** access and refresh tokens (cookies / `Authorization: Bearer`). See `.env.example` for a **local-only** placeholder; in production use a strong random secret (never the example value).
+   - **`BACKOFFICE_JWT_SECRET`** — same idea for **`/elkarteapp/kudeaketa`** superadmin JWTs (`server/routes/backoffice.ts`).
+   - **`PORT`** — dev server port (default **5000**).
+   - **`VITE_API_URL`** — API base URL the browser uses (for local dev, `http://localhost:5000` is typical).
 
 ## Database Setup
 
-1. **Start the PostgreSQL database (Docker)**
+1. **Start PostgreSQL (Docker)**
 
    ```bash
    pnpm docker:db:up
    ```
 
-2. **Run database migrations**
+   Wait until the container is healthy (Compose defines a healthcheck).
+
+2. **Apply schema (Drizzle push)**
+
    ```bash
    pnpm db:push
    ```
 
+   This syncs `shared/schema.ts` to the database (no separate migration files required for a fresh local DB).
+
+3. **Seed demo data (recommended for local use and E2E)**
+
+   ```bash
+   pnpm db:seed
+   ```
+
+   Creates societies, users, products, reservations, etc. Demo login used in E2E: society **`GT001`**, password **`demo`** (e.g. admin: **`admin@txokoa.eus`**).
+
+**Full reset (wipe + push + optional seed):**
+
+```bash
+pnpm db:reset:seed
+```
+
+(`pnpm db:reset` drops app tables and runs `db:push`; it does **not** run `drizzle-kit migrate` in the classical sense.)
+
 ## Running the Application
 
-### Development Mode
+### Development
 
 ```bash
 pnpm dev
 ```
 
-The application will be available at `http://localhost:5000`.
+Open **http://localhost:5000** (or your `PORT`).
 
-### Production Build
+If **`pnpm dev`** fails with **`listen ENOTSUP`** (common on macOS with `reusePort`), the dev server no longer enables `reusePort` by default. If binding to **`0.0.0.0`** still fails (e.g. some sandboxes), set **`HOST=127.0.0.1`** in `.env` and open the same URL.
+
+If you see **`EADDRINUSE`** on port 5000: **on macOS**, Apple **AirPlay Receiver** often binds port 5000 (process name **ControlCenter** in `lsof`). Turn it off under **System Settings → General → AirDrop & Handoff → AirPlay Receiver**, **or** set **`PORT=5001`** and **`VITE_API_URL=http://localhost:5001`** in `.env` — E2E tests then use that origin automatically (or set **`E2E_BASE_URL`** explicitly to override). Open `http://localhost:5001`. Otherwise, stop any other **`pnpm dev`** or run **`lsof -i :5000`** / **`kill <pid>`**.
+
+### Production build
 
 ```bash
 pnpm build
 pnpm start
 ```
 
+Serves the built client and the bundled API from `dist/`.
+
 ---
 
-## E2E Tests (Playwright + Cucumber)
+## E2E tests (Playwright + Cucumber)
 
-End-to-end tests are implemented using **Playwright** and **Cucumber/Gherkin** with TypeScript. The suite includes 12 comprehensive features covering authentication, user management, reservations, and real-time features.
+Tests live under `e2e/features/` (Gherkin) and `e2e/steps/` (Playwright + Cucumber).
 
 ### One-time setup
 
-1. **Install Playwright browsers**
+1. **Playwright browser binaries**
+
    ```bash
    pnpm exec playwright install
    ```
 
-2. **Set up test database**
+2. **Database** — Postgres running, schema applied, **seeded** (same as “Seed demo data” above):
+
    ```bash
    pnpm docker:db:up
+   pnpm db:push
    pnpm db:seed
    ```
 
-This downloads Chromium/Firefox/WebKit binaries and seeds the database with test users.
+### Running E2E
 
-### Running E2E tests
+1. **Terminal A — app running**
 
-1. **Start the application** (in one terminal):
    ```bash
    pnpm dev
    ```
 
-2. **Run the E2E test suite** (in another terminal):
+2. **Terminal B — tests**
+
    ```bash
    pnpm test:e2e
    ```
 
-3. **Run only tagged tests** (for development):
-   ```bash
-   pnpm test:e2e:only
-   ```
+   Playwright’s base URL comes from **`e2e/steps/base-url.ts`**, which loads **`.env`** and **`.env.local`**. Resolution order: **`E2E_BASE_URL`** if set, else **`VITE_API_URL`**, else **`http://localhost:${PORT}`** (PORT defaults to 5000). Keep **`PORT`** / **`VITE_API_URL`** aligned with **`pnpm dev`**.
 
-4. **Run a specific feature file**:
-   ```bash
-   pnpm test:e2e:feature e2e/features/login.feature
-   ```
+**Focused runs:**
 
-This runs Cucumber with:
+```bash
+# Only scenarios tagged @only in the feature files
+pnpm test:e2e:only
 
-- Features in `e2e/features/**/*.feature` (12 feature files)
-- TypeScript step definitions in `e2e/steps/**/*.ts`
-- Test environment: `NODE_ENV=test`
-- Default timeout: 10 seconds
+# Single feature file (note the `--` so pnpm forwards the path)
+pnpm test:e2e:feature -- e2e/features/login.feature
+```
 
-### Environment Variables
+### E2E environment variables
 
-- `E2E_HEADED=false` - Run tests in headless mode (default)
-- `E2E_HEADED=true` - Run tests with visible browser
+- **`E2E_BASE_URL`** — optional override for the SPA origin used in all `page.goto` calls.
+- If omitted, **`VITE_API_URL`** is used (typical dev setup), then **`http://localhost:${PORT}`**.
 
-### Test Coverage
+Playwright launch options in `login.steps.ts` treat **`E2E_HEADED`** as follows:
 
-The E2E suite covers:
-- Authentication and authorization (multiple user roles)
-- User management and profiles
-- Product and consumption management
-- Reservation management and cancellation
-- Society management
-- Real-time debt calculation
-- Notifications system
+- Set **`E2E_HEADED=false`** for **headless** Chromium.
+- If **`E2E_HEADED` is unset** or not `"false"`, the browser runs **headed** (visible) with the current step defaults.
 
-### Structure
+Adjust if your local runs need a different default.
 
-- `e2e/features/` - Gherkin feature files (12 features)
-  - `login.feature` - Authentication scenarios
-  - `reservation-management.feature` - Reservation CRUD operations
-  - `user-profile.feature` - User profile management
-  - And 9 more comprehensive features
-- `e2e/steps/` - TypeScript step definitions
-  - `login.steps.ts` - Authentication step definitions
-  - `shared-state.ts` - Browser/page state management
-  - Additional step files for each feature area
+### Coverage overview
+
+There are **12** feature files under `e2e/features/` (login, users, profile, reservations, products, consumptions, debts, society, menus, notifications/real-time, etc.). For gaps vs API surface, see `docs/KNOWN_ISSUES.md`.
 
 ---
 
-## Available Scripts
+## Available scripts
 
-- `pnpm dev` – Start development server
-- `pnpm build` – Create production build
-- `pnpm start` – Start production server
-- `pnpm check` – TypeScript type checking
-- `pnpm db:push` – Apply database schema via Drizzle
-- `pnpm db:seed` – Seed database with test data
-- `pnpm db:reset` – Reset and migrate database
-- `pnpm docker:db:up` – Start PostgreSQL via Docker Compose
-- `pnpm docker:db:down` – Stop PostgreSQL
-- `pnpm docker:db:reset` – Reset PostgreSQL volume
-- `pnpm test:e2e` – Run E2E tests (Playwright + Cucumber)
-- `pnpm test:e2e:only` – Run only tagged E2E tests
-- `pnpm test:e2e:feature <feature-file>` – Run a specific feature file
+| Script | Purpose |
+|--------|---------|
+| `pnpm dev` | Development server (Express + Vite middleware) |
+| `pnpm build` | Production build (client + server bundle) |
+| `pnpm start` | Run production bundle |
+| `pnpm check` | TypeScript (`tsc`) |
+| `pnpm lint` / `pnpm lint:fix` | ESLint |
+| `pnpm format` / `pnpm format:check` | Prettier |
+| `pnpm db:push` | Push Drizzle schema to DB |
+| `pnpm db:generate` / `pnpm db:migrate` | Migrations workflow (when you use migration files) |
+| `pnpm db:studio` | Drizzle Studio |
+| `pnpm db:seed` | Seed demo data |
+| `pnpm db:reset` | Drop app tables + `db:push` |
+| `pnpm db:reset:seed` | `db:reset` then `db:seed` |
+| `pnpm docker:db:up` / `down` / `reset` | Postgres via Docker Compose |
+| `pnpm test:e2e` | Full Cucumber suite |
+| `pnpm test:e2e:only` | `@only` scenarios |
+| `pnpm test:e2e:feature -- <path>` | One `.feature` file |
+| `pnpm audit:security` | Dependency security audit (see below) |
+| `pnpm audit:security:prod` | Same audit, **production** dependencies only (`pnpm audit -P`) |
+
+### Dependency security audit
+
+Runs two open-source checks via [`script/security-audit.mjs`](script/security-audit.mjs):
+
+1. **`pnpm audit`** — npm security advisory database; **moderate** and above fail the script. Uses the **public** registry (`https://registry.npmjs.org/`) for the audit request so private mirrors that do not implement the audit API still work. Override with **`PNPM_AUDIT_REGISTRY`** if needed.
+2. **[Retire.js](https://github.com/RetireJS/retire.js)** — scans `node_modules` for JS libraries with known vulnerabilities (`pnpm exec retire`, **medium+** severity fails).
+
+Apply fixes with **`pnpm audit --fix`** (review lockfile changes) or targeted dependency upgrades. **Retire** may flag **transitive** copies of libraries (e.g. nested `lodash`); resolve with overrides/upstream upgrades or a [`.retireignore.json`](https://github.com/RetireJS/retire.js) only when accepted as false positives.
+
+---
+
+## More documentation
+
+- Feature specs and implementation status: `docs/features/`
+- Technical overview: `TECHNICAL_DOCUMENTATION.md`
+- Known issues / debt: `docs/KNOWN_ISSUES.md`
