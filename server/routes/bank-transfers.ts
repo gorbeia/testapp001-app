@@ -9,12 +9,7 @@ import {
 } from "@shared/schema";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { sessionMiddleware } from "./middleware";
-import {
-  assertBalanceAllowsMovement,
-  getMemberAccountBalance,
-  insertAccountMovementRow,
-  prepaidBlockedUserMessage,
-} from "../lib/account-movements";
+import { insertAccountMovementRow } from "../lib/account-movements";
 import { notifyFinancialEvent } from "../lib/financial-notifications";
 
 const requireTreasurerAccess = (user: JwtSessionUser): boolean =>
@@ -146,15 +141,6 @@ export function registerBankTransferRoutes(app: Express) {
 
         const amountNum = parseFloat(String(bt.amount));
         const ledgerAmount = amountNum.toFixed(2);
-        const bal = await getMemberAccountBalance(societyId, bt.userId);
-        try {
-          await assertBalanceAllowsMovement(societyId, bt.userId, ledgerAmount, bal);
-        } catch (err) {
-          if (err instanceof Error && err.message === "PREPAID_NOT_ALLOWED") {
-            return res.status(400).json({ message: prepaidBlockedUserMessage(req.headers) });
-          }
-          throw err;
-        }
 
         const movement = await insertAccountMovementRow({
           societyId,

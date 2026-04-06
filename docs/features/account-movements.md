@@ -6,7 +6,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 
 - **Negative `amount`**: balance goes down — consumption, reservation charge, subscription charge, SEPA bounce (re-charge after failed collection).
 - **Positive `amount`**: balance goes up — validated bank transfer, SEPA collection when marking a credit paid, refund, reservation cancel/delete adjustment (reversal of prior charge).
-- **`SUM(amount)`** = **member balance**: negative ⇒ owes the society; positive ⇒ prepaid/credit **when** `allowPositiveBalance` is true. When `allowPositiveBalance` is false, guards prevent ending above zero.
+- **`SUM(amount)`** = **member balance**: negative ⇒ owes the society; positive ⇒ prepaid/credit (saldo a favor). There is **no** society flag that blocks positive balance; treasurer/admin discretion applies when validating transfers or issuing refunds.
 
 `bank_transfers.amount`, `credits.*`, etc. keep their own “absolute money” semantics; only **`account_movements.amount`** uses this signed balance convention.
 
@@ -19,7 +19,6 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 - Treasurer/admin can create a pending bank transfer (user, amount > 0, transfer date, optional reference/notes).
 - On validate: insert `account_movement` type `bank_transfer` with **positive** amount equal to the transfer; link to `bank_transfers.movementId`; notify member (eu/es).
 - On reject: status `rejected` + reason; notify member.
-- If society `allowPositiveBalance` is false, validation/refund that would make **`SUM(amount) > 0`** is rejected with 400.
 
 ## F2 – Refunds
 
@@ -27,7 +26,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 
 ### Acceptance criteria
 
-- POST refund with user, amount, description; inserts type `refund` with **positive** amount; notifies member; same prepaid guard (cannot exceed zero balance when prepaid disallowed).
+- POST refund with user, amount, description; inserts type `refund` with **positive** amount; notifies member.
 
 ## F3 – Admin movements (`/mugimenduak`)
 
@@ -67,7 +66,6 @@ Server notifications (eu/es/en) for: transfer validated/rejected, refund issued,
 
 ## Society setting
 
-- `allowPositiveBalance` (default true): when false, **member balance must not go above zero** (no prepaid credit); refunds and validated bank transfers are rejected if they would leave `SUM(amount) > 0`.
 - `sepaMode`: when `disabled`, no `subscription` ledger movements or subscription charge notifications (see `credits.md`).
 
 ## Data migration

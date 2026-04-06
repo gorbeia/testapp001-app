@@ -13,11 +13,9 @@ import { and, eq, sql, asc } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { pool } from "../db";
 import {
-  assertBalanceAllowsMovement,
   getMemberAccountBalance,
   insertAccountMovementRow,
   movementExistsForReference,
-  prepaidBlockedUserMessage,
 } from "../lib/account-movements";
 import { notifyFinancialEvent } from "../lib/financial-notifications";
 
@@ -255,15 +253,6 @@ export function registerAccountMovementRoutes(app: Express) {
         if (!member) return res.status(404).json({ message: "User not found" });
 
         const movementAmountStr = amountNum.toFixed(2);
-        const bal = await getMemberAccountBalance(societyId, userId);
-        try {
-          await assertBalanceAllowsMovement(societyId, userId, movementAmountStr, bal);
-        } catch (err) {
-          if (err instanceof Error && err.message === "PREPAID_NOT_ALLOWED") {
-            return res.status(400).json({ message: prepaidBlockedUserMessage(req.headers) });
-          }
-          throw err;
-        }
 
         const movement = await insertAccountMovementRow({
           societyId,

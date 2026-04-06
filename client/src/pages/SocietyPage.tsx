@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
-import { Building2, Save, DollarSign, Wallet } from "lucide-react";
+import { Building2, Save, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -28,7 +27,6 @@ interface Society {
   email: string;
   reservationPricePerMember: string;
   kitchenPricePerMember: string;
-  allowPositiveBalance?: boolean;
   sepaMode?: SepaMode | string;
   isActive: boolean;
   createdAt: string;
@@ -80,7 +78,17 @@ export function SocietyPage() {
 
     try {
       const token = localStorage.getItem("auth:token");
-      const { ...updateData } = society; // Remove timestamps
+      const updateBody = {
+        name: society.name,
+        iban: society.iban,
+        creditorId: society.creditorId,
+        address: society.address,
+        phone: society.phone,
+        email: society.email,
+        reservationPricePerMember: society.reservationPricePerMember,
+        kitchenPricePerMember: society.kitchenPricePerMember,
+        sepaMode: society.sepaMode ?? "monthly",
+      };
 
       const response = await fetch(`/api/societies/${society.id}`, {
         method: "PUT",
@@ -88,7 +96,7 @@ export function SocietyPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(updateData),
+        body: JSON.stringify(updateBody),
       });
 
       if (response.ok) {
@@ -265,28 +273,6 @@ export function SocietyPage() {
                     data-testid="input-kitchen-price-per-member"
                   />
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wallet className="h-5 w-5" />
-                {t("payment")}
-              </CardTitle>
-              <CardDescription>{t("allowPrepaidBalance")}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                <Switch
-                  checked={society.allowPositiveBalance !== false}
-                  onCheckedChange={checked =>
-                    setSociety({ ...society, allowPositiveBalance: checked })
-                  }
-                  data-testid="switch-allow-prepaid"
-                />
-                <span className="text-sm text-muted-foreground">{t("allowPrepaidBalance")}</span>
               </div>
             </CardContent>
           </Card>

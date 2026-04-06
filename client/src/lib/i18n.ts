@@ -244,7 +244,6 @@ export const translations = {
     runningBalance: "Saldo metatua",
     movementType: "Mota",
     movementTypesAll: "Mota guztiak",
-    allowPrepaidBalance: "Baimendu saldo positiboa (aurrez ordaindutako kreditua)",
     movementsSignLegend:
       "Zenbateko negatiboek zorra edo kargua adierazten dute; positiboek ordainketa edo abonua.",
     sepaBounce: "SEPA itzulera",
@@ -841,7 +840,6 @@ export const translations = {
     runningBalance: "Saldo acumulado",
     movementType: "Tipo",
     movementTypesAll: "Todos los tipos",
-    allowPrepaidBalance: "Permitir saldo a favor (prepago)",
     movementsSignLegend:
       "Importes negativos: deuda o cargo; positivos: pago o abono en la cuenta del socio.",
     sepaBounce: "Reversión SEPA",

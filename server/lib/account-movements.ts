@@ -1,15 +1,10 @@
-import type { IncomingHttpHeaders } from "node:http";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../db";
-import {
-  accountMovements,
-  societies,
-  type AccountMovementType,
-} from "@shared/schema";
+import { accountMovements, type AccountMovementType } from "@shared/schema";
 
 /**
  * Member **account balance** from ledger movements (sum of `amount`).
- * Negative means the member owes; positive means prepaid/credit (when the society allows it).
+ * Negative means the member owes; positive means prepaid/credit.
  */
 export async function getMemberAccountBalance(
   societyId: string,
@@ -30,36 +25,6 @@ export async function getMemberAccountBalance(
 
 /** @deprecated Use {@link getMemberAccountBalance}. */
 export const getMemberLedgerBalance = getMemberAccountBalance;
-
-/**
- * When `allowPositiveBalance` is false, rejects movements that would leave the member with a
- * **positive** balance (prepaid); balance must stay at or below zero.
- */
-export async function assertBalanceAllowsMovement(
-  societyId: string,
-  userId: string,
-  movementAmount: string | number,
-  currentBalance?: number
-): Promise<void> {
-  const [soc] = await db
-    .select({ allowPositiveBalance: societies.allowPositiveBalance })
-    .from(societies)
-    .where(eq(societies.id, societyId))
-    .limit(1);
-  if (!soc?.allowPositiveBalance) {
-    const bal =
-      currentBalance !== undefined
-        ? currentBalance
-        : await getMemberAccountBalance(societyId, userId);
-    const delta = typeof movementAmount === "string" ? parseFloat(movementAmount) : movementAmount;
-    const next = bal + delta;
-    if (next > 1e-6) {
-      const err = new Error("PREPAID_NOT_ALLOWED");
-      (err as Error & { status?: number }).status = 400;
-      throw err;
-    }
-  }
-}
 
 export type InsertMovementInput = {
   societyId: string;
@@ -109,17 +74,4 @@ export async function movementExistsForReference(
     )
     .limit(1);
   return Boolean(row);
-}
-
-/** User-facing 400 copy when prepaid / positive balance is disallowed (`allowPositiveBalance` false). */
-export function prepaidBlockedUserMessage(headers: IncomingHttpHeaders): string {
-  const first =
-    String(headers["accept-language"] ?? "")
-      .split(",")[0]
-      ?.trim()
-      .toLowerCase() ?? "";
-  if (first.startsWith("es")) {
-    return "No está permitido dejar saldo a favor (prepago): la sociedad no lo permite.";
-  }
-  return "Ezin da saldo positiboa utzi (aurrez ordaindutako kreditua): elkarteak ez du baimentzen.";
 }

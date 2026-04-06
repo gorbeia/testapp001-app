@@ -42,8 +42,6 @@ export const societies = pgTable("societies", {
   kitchenPricePerMember: decimal("kitchen_price_per_member", { precision: 10, scale: 2 }).default(
     "10.00"
   ),
-  /** When false, member ledger balance may not go below zero (no prepaid credit). */
-  allowPositiveBalance: boolean("allow_positive_balance").notNull().default(true),
   /** SEPA export cadence and whether the society uses automated SEPA billing. */
   sepaMode: text("sepa_mode").notNull().default("monthly"),
   isActive: boolean("is_active").notNull().default(true),
@@ -84,7 +82,6 @@ export const insertSocietySchema = createInsertSchema(societies)
     email: true,
     reservationPricePerMember: true,
     kitchenPricePerMember: true,
-    allowPositiveBalance: true,
     sepaMode: true,
     isActive: true,
   })
@@ -936,7 +933,6 @@ export const updateSocietySettingsBodySchema = insertSocietySchema
     email: true,
     reservationPricePerMember: true,
     kitchenPricePerMember: true,
-    allowPositiveBalance: true,
     sepaMode: true,
   })
   .partial()

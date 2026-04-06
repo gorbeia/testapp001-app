@@ -132,9 +132,7 @@ Status legend:
    - **Status**: ✅ Implemented
 8. **Subscription fees on ledger** – `DebtCalculationService` posts `subscription` movement + `credits.subscription_amount` (skipped when society **`sepaMode` = `disabled`**)
    - **Status**: ✅ Implemented (multi-tenant cron + per-society real-time triggers; see `server/cron-jobs.ts`)
-9. **Society `allow_positive_balance`** – `/elkartea` toggle; when false, guards block refunds/transfers that would leave **member balance** (`SUM(account_movements.amount)`) **above** zero
-   - **Status**: ✅ Implemented (`PUT /api/societies/:id` allows **administratzailea** + **diruzaina** for own society)
-10. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
+9. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
 
 ---
 
