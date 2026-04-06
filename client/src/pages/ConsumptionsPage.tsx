@@ -66,6 +66,21 @@ type Category = {
   isActive: boolean;
 };
 
+async function errorMessageFromResponse(res: Response, fallback: string): Promise<string> {
+  try {
+    const data = await res.json();
+    if (data && typeof data.message === "string" && data.message.trim()) {
+      return data.message.trim();
+    }
+    if (data?.issues) {
+      return `${fallback}: ${JSON.stringify(data.issues)}`;
+    }
+  } catch {
+    /* ignore */
+  }
+  return fallback;
+}
+
 // API helper function
 const authFetch = async (url: string, options: RequestInit = {}) => {
   const token = localStorage.getItem("auth:token");
@@ -203,7 +218,7 @@ export function ConsumptionsPage() {
       });
 
       if (!consumptionResponse.ok) {
-        throw new Error("Failed to create consumption");
+        throw new Error(await errorMessageFromResponse(consumptionResponse, "Failed to create consumption"));
       }
 
       const consumption = await consumptionResponse.json();
@@ -221,7 +236,7 @@ export function ConsumptionsPage() {
       });
 
       if (!itemsResponse.ok) {
-        throw new Error("Failed to add consumption items");
+        throw new Error(await errorMessageFromResponse(itemsResponse, "Failed to add consumption items"));
       }
 
       // Close the consumption
@@ -230,7 +245,7 @@ export function ConsumptionsPage() {
       });
 
       if (!closeResponse.ok) {
-        throw new Error("Failed to close consumption");
+        throw new Error(await errorMessageFromResponse(closeResponse, "Failed to close consumption"));
       }
 
       toast({

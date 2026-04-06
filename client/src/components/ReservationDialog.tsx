@@ -131,11 +131,14 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
     }
   };
 
-  // Update total amount when guests or kitchen changes
+  // Keep totalAmount in sync with society pricing when society loads (guests/kitchen update inline to avoid one-frame stale footer totals)
   useEffect(() => {
-    const total = calculateTotal(formData.guests, formData.useKitchen);
-    setFormData(prev => ({ ...prev, totalAmount: total }));
-  }, [formData.guests, formData.useKitchen, society]);
+    if (!society) return;
+    setFormData(prev => ({
+      ...prev,
+      totalAmount: calculateTotal(prev.guests, prev.useKitchen),
+    }));
+  }, [society]);
 
   // Load data when dialog opens
   useEffect(() => {
@@ -150,6 +153,15 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
       toast({
         title: t("error"),
         description: t("nameRequired"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!formData.table) {
+      toast({
+        title: t("error"),
+        description: t("selectTable"),
         variant: "destructive",
       });
       return;
@@ -180,6 +192,7 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
 
       const reservationData = {
         ...formData,
+        totalAmount: calculateTotal(formData.guests, formData.useKitchen),
         startDate: startDate.toISOString(),
       };
 
@@ -270,7 +283,14 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
                 min="1"
                 max="100"
                 value={formData.guests}
-                onChange={e => setFormData({ ...formData, guests: parseInt(e.target.value) || 1 })}
+                onChange={e => {
+                  const g = parseInt(e.target.value) || 1;
+                  setFormData(prev => ({
+                    ...prev,
+                    guests: g,
+                    totalAmount: calculateTotal(g, prev.useKitchen),
+                  }));
+                }}
                 data-testid="input-guests"
               />
             </div>
@@ -295,7 +315,7 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
                 <Calendar
                   mode="single"
                   selected={formData.startDate}
-                  onSelect={date => date && setFormData({ ...formData, startDate: date })}
+                  onSelect={date => date && setFormData(prev => ({ ...prev, startDate: date }))}
                   initialFocus
                 />
               </PopoverContent>
@@ -306,7 +326,7 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
             <Label>{t("table")}</Label>
             <Select
               value={formData.table}
-              onValueChange={value => setFormData({ ...formData, table: value })}
+              onValueChange={value => setFormData(prev => ({ ...prev, table: value }))}
             >
               <SelectTrigger data-testid="select-table">
                 <SelectValue placeholder={t("selectTable")} />
@@ -353,9 +373,14 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
             <Checkbox
               id="kitchen"
               checked={formData.useKitchen}
-              onCheckedChange={checked =>
-                setFormData({ ...formData, useKitchen: checked as boolean })
-              }
+              onCheckedChange={checked => {
+                const useKitchen = checked === true;
+                setFormData(prev => ({
+                  ...prev,
+                  useKitchen,
+                  totalAmount: calculateTotal(prev.guests, useKitchen),
+                }));
+              }}
               data-testid="checkbox-kitchen"
             />
             <Label htmlFor="kitchen" className="flex items-center gap-2">
@@ -417,7 +442,7 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
             <Button
               onClick={handleCreateReservation}
               data-testid="button-save-reservation"
-              disabled={!formData.name || loading}
+              disabled={!formData.name || !formData.table || loading}
             >
               {loading ? t("loading") : t("reserve")}
             </Button>

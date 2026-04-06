@@ -3,6 +3,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { users, societies } from "../shared/schema";
 import { eq } from "drizzle-orm";
+import { DEMO_SOCIETY_ALPHABETIC_ID, DEMO_SOCIETY_ID } from "./seed-demo-society";
 
 // Predefined UUIDs for consistent user IDs across database resets
 const USER_UUIDS = {
@@ -23,21 +24,36 @@ async function main() {
   await client.connect();
   const db = drizzle(client);
 
-  // Get the active society or the first one
   let societyId = "";
-  const activeSociety = await db
+  const byDemoId = await db
     .select()
     .from(societies)
-    .where(eq(societies.isActive, true))
+    .where(eq(societies.id, DEMO_SOCIETY_ID))
     .limit(1);
-  if (activeSociety.length === 0) {
-    const firstSociety = await db.select().from(societies).limit(1);
-    if (firstSociety.length === 0) {
-      throw new Error("No societies found in database");
-    }
-    societyId = firstSociety[0].id;
+  const byAlphabetic = await db
+    .select()
+    .from(societies)
+    .where(eq(societies.alphabeticId, DEMO_SOCIETY_ALPHABETIC_ID))
+    .limit(1);
+  if (byDemoId.length > 0) {
+    societyId = byDemoId[0].id;
+  } else if (byAlphabetic.length > 0) {
+    societyId = byAlphabetic[0].id;
   } else {
-    societyId = activeSociety[0].id;
+    const activeSociety = await db
+      .select()
+      .from(societies)
+      .where(eq(societies.isActive, true))
+      .limit(1);
+    if (activeSociety.length > 0) {
+      societyId = activeSociety[0].id;
+    } else {
+      const firstSociety = await db.select().from(societies).limit(1);
+      if (firstSociety.length === 0) {
+        throw new Error("No societies found in database");
+      }
+      societyId = firstSociety[0].id;
+    }
   }
 
   console.log("Using society ID:", societyId);

@@ -2,9 +2,9 @@ import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { societies } from "../shared/schema";
+import { DEMO_SOCIETY_ALPHABETIC_ID, DEMO_SOCIETY_ID } from "./seed-demo-society";
 
-// Predefined UUID for consistent society ID across database resets
-const SOCIETY_UUID = "550e8400-e29b-41d4-a716-446655440000";
+const SOCIETY_UUID = DEMO_SOCIETY_ID;
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
@@ -29,7 +29,7 @@ async function main() {
   const demoSocieties = [
     {
       id: SOCIETY_UUID,
-      alphabeticId: "GT001",
+      alphabeticId: DEMO_SOCIETY_ALPHABETIC_ID,
       name: "Gure Txokoa",
       iban: "ES91 2100 0418 4502 0005 1330",
       creditorId: "ES45000B12345678",

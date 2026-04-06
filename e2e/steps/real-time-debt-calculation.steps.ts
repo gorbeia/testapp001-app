@@ -123,16 +123,23 @@ Then(
 
     const memberRow = creditRowForMemberInCurrentMonth(page, memberName);
 
-    if (await memberRow.isVisible()) {
-      const amountElement = memberRow.locator('[data-testid^="credit-amount-"]');
-      const amountText = await amountElement.textContent();
+    assert.ok(await memberRow.isVisible(), `Expected a credit row for ${memberName} in the current month`);
 
-      if (amountText) {
-        const amountMatch = amountText.match(/([\d.]+)€/);
-        if (amountMatch) {
-          testState.finalDebt = parseFloat(amountMatch[1]);
-        }
+    const amountElement = memberRow.locator('[data-testid^="credit-amount-"]');
+    const amountText = await amountElement.textContent();
+
+    if (amountText) {
+      const amountMatch = amountText.match(/([\d.]+)€/);
+      if (amountMatch) {
+        testState.finalDebt = parseFloat(amountMatch[1]);
       }
+    }
+
+    if (testState.consumptionAmount > 0.01) {
+      assert.ok(
+        testState.finalDebt > testState.initialDebt + 0.005,
+        `Expected ${memberName}'s debt to increase after consumption (before ${testState.initialDebt}€, after ${testState.finalDebt}€; confirmation dialog total was ${testState.consumptionAmount}€)`
+      );
     }
   }
 );

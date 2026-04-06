@@ -726,7 +726,7 @@ export const addConsumptionItemsBodySchema = z.object({
       z.object({
         productId: z.string().min(1),
         quantity: z.coerce.number().int().positive(),
-        notes: z.string().optional(),
+        notes: z.string().nullish(),
       })
     )
     .min(1),

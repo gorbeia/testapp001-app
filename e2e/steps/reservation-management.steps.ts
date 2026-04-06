@@ -131,42 +131,47 @@ When("I set the number of guests to {int}", async function (guests: number) {
   if (!page) throw new Error("Page not available");
 
   await page.fill('[data-testid="input-guests"]', guests.toString());
+  // Wait for React to re-render table capacity options (SelectItem disabled state depends on guests)
+  const costCard = reservationCostCard(page);
+  const expected = (guests * 2).toFixed(2);
+  await costCard.getByText(new RegExp(`${expected}€`)).waitFor({ state: "visible", timeout: 5000 });
 });
 
-When("I select a table", async function () {
-  const page = getPage();
-  if (!page) throw new Error("Page not available");
+When(
+  "I select a table",
+  { timeout: 60 * 1000 },
+  async function () {
+    const page = getPage();
+    if (!page) throw new Error("Page not available");
 
-  // Wait for dialog to be fully rendered
-  await page.waitForTimeout(500);
+    await page.waitForTimeout(300);
+    await page.click('[data-testid="select-table"]');
 
-  // Click on table select dropdown
-  await page.click('[data-testid="select-table"]');
-  await page.waitForTimeout(1000); // Wait for dropdown to open
-
-  try {
-    // Look for a suitable table (not disabled)
-    const enabledOptions = await page.locator('[role="option"]:not([data-disabled])').all();
-
-    if (enabledOptions.length > 0) {
-      // Select the first enabled table without getting text content
-      await enabledOptions[0].click();
-    } else {
-      // If no enabled tables, try to find any table and select it anyway
-      const allOptions = await page.locator('[role="option"]').all();
-      if (allOptions.length > 0) {
-        await allOptions[0].click();
-      } else {
-        // Fallback: close dropdown and continue
-        await page.click("body");
-      }
+    const enabled = page.locator('[role="option"]:not([data-disabled])');
+    try {
+      await enabled.first().waitFor({ state: "visible", timeout: 20000 });
+    } catch {
+      const emptyState = await page
+        .locator("text=/Ez dago mahairik|No hay mesas|no tables/i")
+        .first()
+        .isVisible()
+        .catch(() => false);
+      throw new Error(
+        emptyState
+          ? "No reservation tables for this society. Run pnpm db:seed (includes script/seed-tables.ts) or pnpm db:reset:seed."
+          : "Table dropdown has no selectable options."
+      );
     }
-  } catch (error) {
-    console.error("Error selecting table:", error);
-    // Continue the test even if table selection fails
-    await page.click("body"); // Click outside to close dropdown
+
+    const choice = enabled.last();
+    await choice.scrollIntoViewIfNeeded();
+    await choice.click();
+
+    const saveBtn = page.locator('[data-testid="button-save-reservation"]');
+    await saveBtn.waitFor({ state: "visible", timeout: 5000 });
+    assert.ok(await saveBtn.isEnabled(), "A table must be selected so reservation save is enabled");
   }
-});
+);
 
 When("I select the {string} table", async function (tableName: string) {
   const page = getPage();
@@ -391,24 +396,24 @@ Then("I should see a reservation success message", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  // Wait for success toast to appear
-  await page.waitForTimeout(2000);
+  const errorToast = page.locator('[data-testid="toast-destructive"]');
+  const successToast = page.locator('[data-testid="toast-default"]');
 
-  // Look for success message text in page
-  const successTexts = ["Erreserba sortua", "sortua", "created", "success", "Reservation created"];
-
-  let found = false;
-  for (const text of successTexts) {
-    try {
-      await page.waitForSelector(`text=${text}`, { timeout: 3000 });
-      found = true;
-      break;
-    } catch {
-      continue;
+  try {
+    await successToast.waitFor({ state: "visible", timeout: 15000 });
+  } catch {
+    if (await errorToast.isVisible().catch(() => false)) {
+      const msg = await errorToast.textContent();
+      throw new Error(`Reservation failed (error toast): ${msg ?? "(empty)"}`);
     }
+    throw new Error("Success toast did not appear within 15s");
   }
 
-  assert.ok(found, "Success message should be visible");
+  const text = await successToast.textContent();
+  assert.ok(
+    text && /Erreserba sortua|Reserva creada|sortua|creada/i.test(text),
+    `Success toast should mention reservation created; got: ${text}`
+  );
 });
 
 Then("the reservation should appear in the list", async function () {
