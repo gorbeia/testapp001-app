@@ -8,13 +8,15 @@ import {
   societies,
   credits,
   subscriptionTypes,
+  type Society,
 } from "@shared/schema";
 import { insertAccountMovementRow, movementExistsForReference } from "./lib/account-movements";
 import { notifyFinancialEvent } from "./lib/financial-notifications";
 
 class DebtCalculationService {
   private static instance: DebtCalculationService;
-  private isRunning = false;
+  /** Per-society lock so parallel runs for different tenants are allowed. */
+  private runningSocietyIds = new Set<string>();
 
   private constructor() {}
 
@@ -25,190 +27,240 @@ class DebtCalculationService {
     return DebtCalculationService.instance;
   }
 
-  async calculateMonthlyDebts(year: number, month: number): Promise<void> {
-    if (this.isRunning) {
+  private acquireLock(societyId: string): boolean {
+    if (this.runningSocietyIds.has(societyId)) {
+      return false;
+    }
+    this.runningSocietyIds.add(societyId);
+    return true;
+  }
+
+  private releaseLock(societyId: string): void {
+    this.runningSocietyIds.delete(societyId);
+  }
+
+  /**
+   * Run debt aggregation for one tenant (monthly credits + optional subscription ledger).
+   */
+  async calculateMonthlyDebtsForSociety(societyId: string, year: number, month: number): Promise<void> {
+    if (!this.acquireLock(societyId)) {
       console.log(
-        `[${new Date().toISOString()}] Debt calculation already in progress, skipping...`
+        `[${new Date().toISOString()}] Debt calculation already in progress for society ${societyId}, skipping...`
       );
       return;
     }
 
-    this.isRunning = true;
     const monthString = month.toString().padStart(2, "0");
     const monthLabel = `${year}-${monthString}`;
 
-    console.log(`[${new Date().toISOString()}] Starting debt calculation for ${monthLabel}...`);
+    console.log(
+      `[${new Date().toISOString()}] Starting debt calculation for society ${societyId}, ${monthLabel}...`
+    );
 
     try {
-      // Get active society
-      const [activeSociety] = await db.select().from(societies).where(eq(societies.isActive, true));
-      if (!activeSociety) {
-        throw new Error("No active society found");
+      const [society] = await db.select().from(societies).where(eq(societies.id, societyId)).limit(1);
+
+      if (!society?.isActive) {
+        console.log(`[${new Date().toISOString()}] Society ${societyId} not active, skipping`);
+        return;
       }
 
-      // Get all active members
-      const members = await db
-        .select()
-        .from(users)
-        .where(and(eq(users.societyId, activeSociety.id), eq(users.isActive, true)));
-      console.log(`Found ${members.length} members to process`);
+      const skipSubscriptionMovements = society.sepaMode === "disabled";
 
-      // Calculate start and end dates for the month
-      const startDate = new Date(year, month - 1, 1);
-      const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+      await this.runMemberDebtLoop(
+        society,
+        year,
+        month,
+        monthLabel,
+        skipSubscriptionMovements
+      );
 
-      let totalDebts = 0;
-      let processedCount = 0;
-
-      for (const member of members) {
-        try {
-          // Calculate consumption amounts for the month
-          const consumptionResults = await db
-            .select({
-              total: sql`SUM(CAST(${consumptions.totalAmount} AS DECIMAL))`.mapWith(Number),
-            })
-            .from(consumptions)
-            .where(
-              and(
-                eq(consumptions.userId, member.id),
-                eq(consumptions.societyId, activeSociety.id),
-                gte(consumptions.createdAt, startDate),
-                lte(consumptions.createdAt, endDate)
-              )
-            );
-
-          const consumptionAmount = consumptionResults[0]?.total || 0;
-
-          // Calculate reservation amounts for the month
-          const reservationResults = await db
-            .select({
-              total: sql`SUM(CAST(${reservations.totalAmount} AS DECIMAL))`.mapWith(Number),
-            })
-            .from(reservations)
-            .where(
-              and(
-                eq(reservations.userId, member.id),
-                eq(reservations.societyId, activeSociety.id),
-                gte(reservations.startDate, startDate),
-                lte(reservations.startDate, endDate),
-                ne(reservations.status, "cancelled")
-              )
-            );
-
-          const reservationAmount = reservationResults[0]?.total || 0;
-
-          const subscriptionCharge = await this.calculateSubscriptionCharge(
-            member.id,
-            activeSociety.id,
-            year,
-            month
-          );
-
-          // Calculate total amount (kitchen costs are already included in reservation.totalAmount)
-          const totalAmount = consumptionAmount + reservationAmount + subscriptionCharge;
-
-          // Only process credits if member has actual debts (including subscription-only months)
-          if (totalAmount > 0) {
-            // Check if credit already exists for this member and month
-            const [existingCredit] = await db
-              .select()
-              .from(credits)
-              .where(
-                and(
-                  eq(credits.memberId, member.id),
-                  eq(credits.societyId, activeSociety.id),
-                  eq(credits.month, monthLabel)
-                )
-              );
-
-            if (existingCredit) {
-              // Update existing credit
-              await db
-                .update(credits)
-                .set({
-                  consumptionAmount: consumptionAmount.toString(),
-                  reservationAmount: reservationAmount.toString(),
-                  subscriptionAmount: subscriptionCharge.toString(),
-                  totalAmount: totalAmount.toString(),
-                  updatedAt: new Date(),
-                })
-                .where(eq(credits.id, existingCredit.id));
-            } else {
-              // Create new credit
-              await db.insert(credits).values({
-                memberId: member.id,
-                societyId: activeSociety.id,
-                month: monthLabel,
-                year,
-                monthNumber: month,
-                consumptionAmount: consumptionAmount.toString(),
-                reservationAmount: reservationAmount.toString(),
-                subscriptionAmount: subscriptionCharge.toString(),
-                totalAmount: totalAmount.toString(),
-                status: "pending",
-              });
-            }
-
-            console.log(
-              `Updated ${member.name}: ${totalAmount.toFixed(2)}€ (consumption: ${consumptionAmount.toFixed(2)}€, reservation: ${reservationAmount.toFixed(2)}€, subscription: ${subscriptionCharge.toFixed(2)}€)`
-            );
-          }
-
-          if (subscriptionCharge > 0) {
-            const subRef = `${member.id}:${monthLabel}`;
-            const exists = await movementExistsForReference(
-              activeSociety.id,
-              "subscription",
-              subRef
-            );
-            if (!exists) {
-              const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
-              await insertAccountMovementRow({
-                societyId: activeSociety.id,
-                userId: member.id,
-                type: "subscription",
-                amount: subscriptionCharge.toFixed(2),
-                description: `Subscription — ${monthLabel}`,
-                referenceId: subRef,
-                referenceType: "subscription",
-                createdBy: null,
-                createdAt: endOfMonth,
-              });
-              try {
-                await notifyFinancialEvent({
-                  userId: member.id,
-                  societyId: activeSociety.id,
-                  referenceId: subRef,
-                  titleKey: "financialSubscriptionChargeTitle",
-                  messageKey: "financialSubscriptionChargeMessage",
-                  params: { month: monthLabel, amount: subscriptionCharge.toFixed(2) },
-                });
-              } catch (notifyErr) {
-                console.error("Subscription charge notification failed:", notifyErr);
-              }
-            }
-          }
-
-          totalDebts += totalAmount;
-          processedCount++;
-        } catch (memberError) {
-          console.error(`Error processing member ${member.name}:`, memberError);
-        }
-      }
-
-      console.log(`[${new Date().toISOString()}] Debt calculation completed for ${monthLabel}:`);
-      console.log(`- Total debts: ${totalDebts.toFixed(2)}€`);
-      console.log(`- Members processed: ${processedCount}/${members.length}`);
-      console.log(`- Calculation successful!`);
+      console.log(
+        `[${new Date().toISOString()}] Debt calculation completed for society ${societyId}, ${monthLabel}`
+      );
     } catch (error) {
       console.error(
-        `[${new Date().toISOString()}] Error calculating debts for ${monthLabel}:`,
+        `[${new Date().toISOString()}] Error calculating debts for society ${societyId}, ${monthLabel}:`,
         error
       );
       throw error;
     } finally {
-      this.isRunning = false;
+      this.releaseLock(societyId);
     }
+  }
+
+  /** Scheduled / catch-up: all active societies. */
+  async calculateMonthlyDebtsAllSocieties(year: number, month: number): Promise<void> {
+    const active = await db.select({ id: societies.id }).from(societies).where(eq(societies.isActive, true));
+
+    if (active.length === 0) {
+      console.log(`[${new Date().toISOString()}] No active societies for debt calculation`);
+      return;
+    }
+
+    for (const row of active) {
+      try {
+        await this.calculateMonthlyDebtsForSociety(row.id, year, month);
+      } catch (err) {
+        console.error(
+          `[${new Date().toISOString()}] Debt calculation failed for society ${row.id}:`,
+          err
+        );
+      }
+    }
+  }
+
+  private async runMemberDebtLoop(
+    activeSociety: Society,
+    year: number,
+    month: number,
+    monthLabel: string,
+    skipSubscriptionMovements: boolean
+  ): Promise<void> {
+    const members = await db
+      .select()
+      .from(users)
+      .where(and(eq(users.societyId, activeSociety.id), eq(users.isActive, true)));
+    console.log(`Society ${activeSociety.id}: ${members.length} members to process`);
+
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    let totalDebts = 0;
+    let processedCount = 0;
+
+    for (const member of members) {
+      try {
+        const consumptionResults = await db
+          .select({
+            total: sql`SUM(CAST(${consumptions.totalAmount} AS DECIMAL))`.mapWith(Number),
+          })
+          .from(consumptions)
+          .where(
+            and(
+              eq(consumptions.userId, member.id),
+              eq(consumptions.societyId, activeSociety.id),
+              gte(consumptions.createdAt, startDate),
+              lte(consumptions.createdAt, endDate)
+            )
+          );
+
+        const consumptionAmount = consumptionResults[0]?.total || 0;
+
+        const reservationResults = await db
+          .select({
+            total: sql`SUM(CAST(${reservations.totalAmount} AS DECIMAL))`.mapWith(Number),
+          })
+          .from(reservations)
+          .where(
+            and(
+              eq(reservations.userId, member.id),
+              eq(reservations.societyId, activeSociety.id),
+              gte(reservations.startDate, startDate),
+              lte(reservations.startDate, endDate),
+              ne(reservations.status, "cancelled")
+            )
+          );
+
+        const reservationAmount = reservationResults[0]?.total || 0;
+
+        const subscriptionCharge = await this.calculateSubscriptionCharge(
+          member.id,
+          activeSociety.id,
+          year,
+          month
+        );
+
+        const totalAmount = consumptionAmount + reservationAmount + subscriptionCharge;
+
+        if (totalAmount > 0) {
+          const [existingCredit] = await db
+            .select()
+            .from(credits)
+            .where(
+              and(
+                eq(credits.memberId, member.id),
+                eq(credits.societyId, activeSociety.id),
+                eq(credits.month, monthLabel)
+              )
+            );
+
+          if (existingCredit) {
+            await db
+              .update(credits)
+              .set({
+                consumptionAmount: consumptionAmount.toString(),
+                reservationAmount: reservationAmount.toString(),
+                subscriptionAmount: subscriptionCharge.toString(),
+                totalAmount: totalAmount.toString(),
+                updatedAt: new Date(),
+              })
+              .where(eq(credits.id, existingCredit.id));
+          } else {
+            await db.insert(credits).values({
+              memberId: member.id,
+              societyId: activeSociety.id,
+              month: monthLabel,
+              year,
+              monthNumber: month,
+              consumptionAmount: consumptionAmount.toString(),
+              reservationAmount: reservationAmount.toString(),
+              subscriptionAmount: subscriptionCharge.toString(),
+              totalAmount: totalAmount.toString(),
+              status: "pending",
+            });
+          }
+
+          console.log(
+            `[${activeSociety.id}] ${member.name}: ${totalAmount.toFixed(2)}€ (consumption: ${consumptionAmount.toFixed(2)}€, reservation: ${reservationAmount.toFixed(2)}€, subscription: ${subscriptionCharge.toFixed(2)}€)`
+          );
+        }
+
+        if (!skipSubscriptionMovements && subscriptionCharge > 0) {
+          const subRef = `${member.id}:${monthLabel}`;
+          const exists = await movementExistsForReference(
+            activeSociety.id,
+            "subscription",
+            subRef
+          );
+          if (!exists) {
+            const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+            await insertAccountMovementRow({
+              societyId: activeSociety.id,
+              userId: member.id,
+              type: "subscription",
+              amount: subscriptionCharge.toFixed(2),
+              description: `Subscription — ${monthLabel}`,
+              referenceId: subRef,
+              referenceType: "subscription",
+              createdBy: null,
+              createdAt: endOfMonth,
+            });
+            try {
+              await notifyFinancialEvent({
+                userId: member.id,
+                societyId: activeSociety.id,
+                referenceId: subRef,
+                titleKey: "financialSubscriptionChargeTitle",
+                messageKey: "financialSubscriptionChargeMessage",
+                params: { month: monthLabel, amount: subscriptionCharge.toFixed(2) },
+              });
+            } catch (notifyErr) {
+              console.error("Subscription charge notification failed:", notifyErr);
+            }
+          }
+        }
+
+        totalDebts += totalAmount;
+        processedCount++;
+      } catch (memberError) {
+        console.error(`Error processing member ${member.name}:`, memberError);
+      }
+    }
+
+    console.log(
+      `Society ${activeSociety.id} totals for ${monthLabel}: ${totalDebts.toFixed(2)}€, members ${processedCount}/${members.length}`
+    );
   }
 
   async calculateSubscriptionCharge(
@@ -218,7 +270,6 @@ class DebtCalculationService {
     month: number
   ): Promise<number> {
     try {
-      // Get user's subscription
       const [userWithSubscription] = await db
         .select({
           subscriptionTypeId: users.subscriptionTypeId,
@@ -235,37 +286,30 @@ class DebtCalculationService {
         .where(and(eq(users.id, userId), eq(users.societyId, societyId), eq(users.isActive, true)));
 
       if (!userWithSubscription?.subscriptionTypeId || !userWithSubscription?.subscriptionType) {
-        return 0; // No subscription
+        return 0;
       }
 
       const subscription = userWithSubscription.subscriptionType;
 
-      // Check if subscription is active
       if (!subscription.isActive) {
         return 0;
       }
 
-      // Calculate if this is the start of a subscription period
       const subscriptionAmount = Number(subscription.amount);
-      const periodMonths = subscription.periodMonths || 12; // Default to 12 months
+      const periodMonths = subscription.periodMonths || 12;
 
-      // For yearly subscriptions, check if this is January (month 1)
       if (subscription.period === "yearly" && month === 1) {
         console.log(`Adding yearly subscription charge for user ${userId}: €${subscriptionAmount}`);
         return subscriptionAmount;
       }
 
-      // For monthly subscriptions, charge every month
       if (subscription.period === "monthly") {
-        console.log(
-          `Adding monthly subscription charge for user ${userId}: €${subscriptionAmount}`
-        );
+        console.log(`Adding monthly subscription charge for user ${userId}: €${subscriptionAmount}`);
         return subscriptionAmount;
       }
 
-      // For quarterly subscriptions, check if this is the start of a quarter
       if (subscription.period === "quarterly") {
-        const quarterStartMonths = [1, 4, 7, 10]; // Jan, Apr, Jul, Oct
+        const quarterStartMonths = [1, 4, 7, 10];
         if (quarterStartMonths.includes(month)) {
           console.log(
             `Adding quarterly subscription charge for user ${userId}: €${subscriptionAmount}`
@@ -274,9 +318,7 @@ class DebtCalculationService {
         }
       }
 
-      // For custom periods, calculate based on periodMonths
       if (subscription.period === "custom") {
-        // Assume subscription starts in January and recurs every periodMonths
         if ((month - 1) % periodMonths === 0) {
           console.log(
             `Adding custom subscription charge for user ${userId}: €${subscriptionAmount}`
@@ -285,34 +327,39 @@ class DebtCalculationService {
         }
       }
 
-      return 0; // Not the start of a subscription period
+      return 0;
     } catch (error) {
       console.error(`Error calculating subscription charge for user ${userId}:`, error);
       return 0;
     }
   }
 
-  async calculateCurrentMonthDebts(): Promise<void> {
+  /** After consumptions / reservations: recalculate current month for the member's society only. */
+  async calculateCurrentMonthDebtsForSociety(societyId: string): Promise<void> {
     const now = new Date();
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
     console.log(
-      `[${now.toISOString()}] Triggering real-time debt calculation for current month: ${currentYear}-${currentMonth.toString().padStart(2, "0")}`
+      `[${now.toISOString()}] Real-time debt calculation for society ${societyId}: ${currentYear}-${String(currentMonth).padStart(2, "0")}`
     );
 
     try {
-      await this.calculateMonthlyDebts(currentYear, currentMonth);
-      console.log(
-        `[${new Date().toISOString()}] Real-time debt calculation completed successfully`
-      );
+      await this.calculateMonthlyDebtsForSociety(societyId, currentYear, currentMonth);
     } catch (error) {
       console.error(`[${new Date().toISOString()}] Real-time debt calculation failed:`, error);
     }
   }
 
+  /**
+   * @deprecated Use calculateCurrentMonthDebtsForSociety(societyId) from HTTP handlers.
+   */
+  async calculateCurrentMonthDebts(): Promise<void> {
+    const now = new Date();
+    await this.calculateMonthlyDebtsAllSocieties(now.getFullYear(), now.getMonth() + 1);
+  }
+
   startMonthlyCalculationCron(): void {
-    // Run on the 1st of every month at 2:00 AM
     const cronExpression = "0 2 1 * *";
 
     console.log(
@@ -325,30 +372,26 @@ class DebtCalculationService {
       const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
 
       console.log(
-        `[${now.toISOString()}] Running scheduled debt calculation for previous month: ${previousYear}-${previousMonth.toString().padStart(2, "0")}`
+        `[${now.toISOString()}] Scheduled debt calculation for previous month: ${previousYear}-${String(previousMonth).padStart(2, "0")}`
       );
 
       try {
-        await this.calculateMonthlyDebts(previousYear, previousMonth);
-        console.log(
-          `[${new Date().toISOString()}] Scheduled debt calculation completed successfully`
-        );
+        await this.calculateMonthlyDebtsAllSocieties(previousYear, previousMonth);
       } catch (error) {
         console.error(`[${new Date().toISOString()}] Scheduled debt calculation failed:`, error);
       }
     });
 
-    // Also run a test calculation 1 minute after server starts (for development)
     if (process.env.NODE_ENV === "development") {
       setTimeout(async () => {
         const now = new Date();
-        console.log(`[${now.toISOString()}] Running test debt calculation for current month...`);
+        console.log(`[${now.toISOString()}] Dev: debt calculation for all societies, current month...`);
         try {
-          await this.calculateMonthlyDebts(now.getFullYear(), now.getMonth() + 1);
+          await this.calculateMonthlyDebtsAllSocieties(now.getFullYear(), now.getMonth() + 1);
         } catch (error) {
           console.error(`[${new Date().toISOString()}] Test debt calculation failed:`, error);
         }
-      }, 60000); // 1 minute after start
+      }, 60000);
     }
   }
 
@@ -357,36 +400,44 @@ class DebtCalculationService {
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
-    // Check previous month (since current month is still open)
     const previousMonth = currentMonth === 1 ? 12 : currentMonth - 1;
     const previousYear = currentMonth === 1 ? currentYear - 1 : currentYear;
 
-    const previousMonthString = `${previousYear}-${previousMonth.toString().padStart(2, "0")}`;
+    const previousMonthString = `${previousYear}-${String(previousMonth).padStart(2, "0")}`;
 
     console.log(
-      `[${now.toISOString()}] Checking for catch-up debt calculation for month: ${previousMonthString}`
+      `[${now.toISOString()}] Catch-up check for month ${previousMonthString} (all active societies)`
     );
 
     try {
-      // Check if previous month's calculation exists
-      const existingCalculation = await db
-        .select()
-        .from(credits)
-        .where(and(eq(credits.month, previousMonthString), eq(credits.year, previousYear)))
-        .limit(1);
+      const active = await db
+        .select({ id: societies.id })
+        .from(societies)
+        .where(eq(societies.isActive, true));
 
-      if (existingCalculation.length === 0) {
-        console.log(
-          `[${now.toISOString()}] No debt calculation found for ${previousMonthString}, running catch-up calculation`
-        );
-        await this.calculateMonthlyDebts(previousYear, previousMonth);
-        console.log(
-          `[${now.toISOString()}] Catch-up debt calculation completed for ${previousMonthString}`
-        );
-      } else {
-        console.log(
-          `[${now.toISOString()}] Debt calculation already exists for ${previousMonthString}, skipping catch-up`
-        );
+      for (const { id: societyId } of active) {
+        const existingCalculation = await db
+          .select({ id: credits.id })
+          .from(credits)
+          .where(
+            and(
+              eq(credits.societyId, societyId),
+              eq(credits.month, previousMonthString),
+              eq(credits.year, previousYear)
+            )
+          )
+          .limit(1);
+
+        if (existingCalculation.length === 0) {
+          console.log(
+            `[${now.toISOString()}] Catch-up: society ${societyId} missing ${previousMonthString}, calculating`
+          );
+          try {
+            await this.calculateMonthlyDebtsForSociety(societyId, previousYear, previousMonth);
+          } catch (err) {
+            console.error(`Catch-up failed for society ${societyId}:`, err);
+          }
+        }
       }
     } catch (error) {
       console.error(`[${new Date().toISOString()}] Catch-up debt calculation failed:`, error);

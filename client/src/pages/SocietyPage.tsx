@@ -5,6 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { SepaMode } from "@shared/schema";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorBoundary } from "react-error-boundary";
@@ -21,6 +29,7 @@ interface Society {
   reservationPricePerMember: string;
   kitchenPricePerMember: string;
   allowPositiveBalance?: boolean;
+  sepaMode?: SepaMode | string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -194,6 +203,30 @@ export function SocietyPage() {
                   data-testid="input-creditor-id"
                 />
                 <p className="text-xs text-muted-foreground">{t("sepaCreditorIdentifier")}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("sepaMode")}</Label>
+                <Select
+                  value={society.sepaMode ?? "monthly"}
+                  onValueChange={(value: SepaMode) =>
+                    setSociety({ ...society, sepaMode: value })
+                  }
+                >
+                  <SelectTrigger data-testid="select-sepa-mode">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="monthly">{t("sepaModeMonthly")}</SelectItem>
+                    <SelectItem value="bimonthly">{t("sepaModeBimonthly")}</SelectItem>
+                    <SelectItem value="quarterly">{t("sepaModeQuarterly")}</SelectItem>
+                    <SelectItem value="on_demand">{t("sepaModeOnDemand")}</SelectItem>
+                    <SelectItem value="disabled">{t("sepaModeDisabled")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{t("sepaModeDescription")}</p>
+                {(society.sepaMode ?? "monthly") === "disabled" && (
+                  <p className="text-xs text-amber-700 dark:text-amber-500">{t("sepaModeDisabledHint")}</p>
+                )}
               </div>
             </CardContent>
           </Card>

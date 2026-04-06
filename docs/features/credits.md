@@ -4,7 +4,7 @@
 
 ## Data model & automation (cross-cutting)
 
-Monthly **`credits`** rows are stored per member and society (`consumptionAmount`, `reservationAmount`, `totalAmount`, `status`, `paidAmount`, etc.). **`DebtCalculationService`** (cron in `server/cron-jobs.ts` and triggers after relevant consumption/reservation flows) aggregates consumptions and reservations into those rows.
+Monthly **`credits`** rows are stored per member and society (`consumptionAmount`, `reservationAmount`, `totalAmount`, `status`, `paidAmount`, etc.). **`DebtCalculationService`** (cron in `server/cron-jobs.ts` and triggers after relevant consumption/reservation flows) aggregates consumptions and reservations into those rows **per society** (`societyId` from JWT on real-time triggers; scheduled job processes **all** `isActive` societies). Society **`sepaMode`** (`monthly` | `bimonthly` | `quarterly` | `on_demand` | `disabled`) controls SEPA export period validation and UI; when **`disabled`**, subscription ledger movements/notifications are skipped (credits rows still update for consumptions/reservations).
 
 ---
 
@@ -66,11 +66,11 @@ Monthly **`credits`** rows are stored per member and society (`consumptionAmount
 
 **Acceptance Criteria:**
 
-- ✅ Select billing month (`YYYY-MM`)
-- ✅ Include members with pending credits and required debtor fields (API joins `users` for IBAN, etc.)
-- ✅ Build SEPA XML (pain.008-style) in the browser from export rows
+- ✅ Select billing period: one month, bimonthly pair, calendar quarter, or arbitrary range (`on_demand`), aligned with society **`sepaMode`**
+- ✅ Include members with pending credits and required debtor fields (API joins `users` for IBAN, etc.); multi-month periods aggregate amounts per member
+- ✅ Build SEPA XML (pain.008-style) in the browser from export rows; creditor fields from **`societies`** with fallback to demo defaults
 - ❌ Export to Google Sheets — **not implemented** (XML download path instead)
-- **Shipped**: `SepaExportPage` at `/sepa`, `GET /api/credits/sepa-export?month=YYYY-MM`
+- **Shipped**: `SepaExportPage` at `/sepa`, `GET /api/credits/sepa-export` with `month=`, `months=`, or `from=` / `to=`; tenant-scoped via JWT **`societyId`**
 
 ---
 
@@ -94,8 +94,23 @@ Monthly **`credits`** rows are stored per member and society (`consumptionAmount
 
 **Acceptance Criteria:**
 
-- 🟡 Society **`iban`** and **`creditorId`** (and related contact fields) exist in DB and are editable via **`/elkartea`** (`GET /api/societies/user`, `PUT /api/societies/:id`)
-- 🟡 **Gap**: the client SEPA XML generator still uses **hardcoded default creditor** values; production should read from `societies` (or env) and match the PRD
+- ✅ Society **`iban`**, **`creditorId`**, and **`sepaMode`** (and related contact fields) exist in DB and are editable via **`/elkartea`** (`GET /api/societies/user`, `PUT /api/societies/:id`)
+- ✅ `SepaExportPage` builds creditor block from society row when possible; warns if IBAN/creditor id missing
+- **`sepaMode = disabled`**: SEPA sidebar link hidden; export API returns **403**; `/sepa` shows empty state with link to **`/elkartea`**
+
+---
+
+### Story 11: Per-society SEPA billing cadence
+
+**As an** Administratzailea or Diruzaina  
+**I want to** configure how often we run SEPA collections for our society  
+**So that** billing matches our bank and internal process (monthly, bimonthly, quarterly, on-demand, or no SEPA)
+
+**Acceptance Criteria:**
+
+- ✅ **`societies.sepaMode`** stored and editable on **`/elkartea`** and optional on backoffice society create
+- ✅ Export UI and API enforce period shape for the active mode (`on_demand` allows any contiguous range)
+- ✅ E2E: `sepa-billing-frequency.feature`
 
 ---
 
@@ -155,5 +170,5 @@ Monthly **`credits`** rows are stored per member and society (`consumptionAmount
 
 ## Technical notes (engineering)
 
-- Harden multi-tenant queries on credit list/sum/export routes with explicit `societyId` filters where not already enforced.
-- Wire `SepaDirectDebitGenerator` defaults to `societies` (and validate IBAN) to close the gap between Story 6 and Story 4.
+- Harden multi-tenant queries on credit list/sum/export routes with explicit `societyId` filters where not already enforced (`sepa-export` is tenant-scoped).
+- `SepaDirectDebitGenerator` uses **`/api/societies/user`** creditor fields with fallback defaults; full IBAN validation remains future work (Story 5).

@@ -12,7 +12,7 @@
 
 **Acceptance Criteria:**
 
-- **Shipped (partial):** `SocietyPage` at **`/elkartea`** loads **`GET /api/societies/user`** and saves **`PUT /api/societies/:id`** with name, address, phone, email, **IBAN**, **creditorId**, and **reservation pricing** fields (`reservationPricePerMember`, `kitchenPricePerMember`)
+- **Shipped (partial):** `SocietyPage` at **`/elkartea`** loads **`GET /api/societies/user`** and saves **`PUT /api/societies/:id`** with name, address, phone, email, **IBAN**, **creditorId**, **`sepaMode`** (SEPA billing cadence / off), and **reservation pricing** fields (`reservationPricePerMember`, `kitchenPricePerMember`)
 - **Route note:** SPA uses **`ProtectedRoute` “treasurer”**; `PUT` middleware may require **`administratzailea`** only — verify alignment for diruzaina-only treasurers
 - ❌ Logo upload, long description, establishment date fields — **not implemented**
 
@@ -24,8 +24,8 @@
 
 **Acceptance Criteria:**
 
-- **Partial:** IBAN + creditor id stored on **`societies`** and editable via Story 1 UI
-- **Gap:** SEPA XML builder may still use **hardcoded creditor defaults** — see [credits.md](./credits.md) Story 6
+- **Shipped:** IBAN, creditor id, and **`sepaMode`** on **`societies`**, editable via **`/elkartea`**; backoffice create can set **`sepaMode`**
+- **Shipped:** SEPA XML uses society creditor data when present (see [credits.md](./credits.md) Story 6)
 - ❌ Dedicated SEPA wizard, bank API preferences, pain.008 versioning UI — **not implemented**
 
 ### Story 3: Society Rules and Policies

@@ -685,7 +685,7 @@ export function registerReservationRoutes(app: Express) {
           .orderBy(desc(reservations.createdAt));
 
         // Trigger real-time debt calculation for current month
-        await debtCalculationService.calculateCurrentMonthDebts();
+        await debtCalculationService.calculateCurrentMonthDebtsForSociety(societyId);
 
         res.status(201).json({
           reservation: newReservation[0],
@@ -783,7 +783,7 @@ export function registerReservationRoutes(app: Express) {
         );
 
         // Trigger real-time debt calculation for current month
-        await debtCalculationService.calculateCurrentMonthDebts();
+        await debtCalculationService.calculateCurrentMonthDebtsForSociety(societyId);
 
         res.json(updatedReservation[0]);
       } catch (error) {

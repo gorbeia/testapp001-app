@@ -28,6 +28,7 @@ export async function seedSocieties(dbConn: SeedDb) {
       email: "info@guretxokoa.eus",
       reservationPricePerMember: "2.00",
       kitchenPricePerMember: "3.00",
+      sepaMode: "monthly",
       isActive: true,
     },
   ];

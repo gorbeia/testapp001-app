@@ -98,11 +98,11 @@ Status legend:
 3. **Credit reset / mark paid after payment**
    - **Status**: 🟡 Partial (`PUT /api/credits/batch-status`; no rich audit UI)
 4. **Generate SEPA export** – debtor list + pain.008-style XML in browser
-   - **Status**: ✅ Implemented (`/sepa`, `GET /api/credits/sepa-export?month=YYYY-MM` + client XML builder)
+   - **Status**: ✅ Implemented (`/sepa`, `GET /api/credits/sepa-export` with `month` / `months` / `from`+`to`, validated vs **`sepaMode`**; multi-tenant filter; + E2E `sepa-billing-frequency.feature`)
 5. **SEPA data validation** – IBAN/creditor checks
    - **Status**: ❌ Not Implemented
-6. **Society information for SEPA** – creditor config in generated file
-   - **Status**: 🟡 Partial (`societies.iban` / `creditorId` + `/elkartea`; generator defaults still hardcoded)
+6. **Society information for SEPA + billing cadence** – creditor config in generated file; **`sepaMode`** (monthly / bimonthly / quarterly / on-demand / disabled) on **`societies`** and **`/elkartea`**
+   - **Status**: ✅ Implemented (XML creditor from society with fallback; UI warning if missing; see `credits.md` Story 11)
 7. **Payment status tracking** – sent/paid/return/reject workflows
    - **Status**: ❌ Not Implemented (beyond basic `status` / `paidAmount` on `credits`)
 8. **Credit notifications**
@@ -130,8 +130,8 @@ Status legend:
    - **Status**: ✅ Implemented
 7. **Consumption / reservation lines on ledger** – movements on item add, reservation create; cancellation/deletion adjustment
    - **Status**: ✅ Implemented
-8. **Subscription fees on ledger** – `DebtCalculationService` posts `subscription` movement + `credits.subscription_amount`
-   - **Status**: ✅ Implemented
+8. **Subscription fees on ledger** – `DebtCalculationService` posts `subscription` movement + `credits.subscription_amount` (skipped when society **`sepaMode` = `disabled`**)
+   - **Status**: ✅ Implemented (multi-tenant cron + per-society real-time triggers; see `server/cron-jobs.ts`)
 9. **Society `allow_positive_balance`** – `/elkartea` toggle; guards refunds/transfers
    - **Status**: ✅ Implemented (`PUT /api/societies/:id` allows **administratzailea** + **diruzaina** for own society)
 10. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`

@@ -47,6 +47,7 @@ export function AppSidebar() {
   const [location] = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
   const [societyName, setSocietyName] = useState<string | null>(null);
+  const [societySepaMode, setSocietySepaMode] = useState<string | null>(null);
 
   useEffect(() => {
     const loadSociety = async () => {
@@ -56,6 +57,11 @@ export function AppSidebar() {
           const data = await response.json();
           if (data && typeof data.name === "string") {
             setSocietyName(data.name);
+          }
+          if (data && typeof data.sepaMode === "string") {
+            setSocietySepaMode(data.sepaMode);
+          } else {
+            setSocietySepaMode("monthly");
           }
         }
       } catch (error) {
@@ -128,7 +134,7 @@ export function AppSidebar() {
     ...(hasCellarmanAccess(user)
       ? [{ title: t("products"), url: "/produktuak", icon: Package }]
       : []),
-    ...(hasTreasurerAccess(user)
+    ...(hasTreasurerAccess(user) && societySepaMode !== "disabled"
       ? [{ title: t("sepaExport"), url: "/sepa", icon: FileSpreadsheet }]
       : []),
     ...(hasTreasurerAccess(user)

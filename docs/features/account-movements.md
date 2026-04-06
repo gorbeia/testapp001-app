@@ -51,7 +51,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Positive `amount` in
 
 ## F7 – Subscription fees
 
-**When** monthly debt calculation runs **then** subscription charge is added to `credits.totalAmount` / `subscriptionAmount` and a `subscription` movement is posted once per member per month (idempotent key).
+**When** monthly debt calculation runs **then** subscription charge is added to `credits.totalAmount` / `subscriptionAmount`. A `subscription` movement is posted once per member per month (idempotent key) **unless** society **`sepaMode`** is **`disabled`** (society handles fees outside this app; credits still reflect subscription amounts for reporting).
 
 ## F8 – Notifications
 
@@ -60,6 +60,7 @@ Server notifications (eu/es/en) for: transfer validated/rejected, refund issued,
 ## Society setting
 
 - `allowPositiveBalance` (default true): when false, balance may not go below zero (no prepaid credit).
+- `sepaMode`: when `disabled`, no `subscription` ledger movements or subscription charge notifications (see `credits.md`).
 
 ## Future improvements (out of scope)
 

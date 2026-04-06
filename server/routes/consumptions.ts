@@ -52,7 +52,7 @@ export function registerConsumptionRoutes(app: Express) {
 
         // Trigger real-time debt calculation for current month
         console.log(`[CONSUMPTION-CREATED] Triggering debt calculation for user ${user.id}`);
-        await debtCalculationService.calculateCurrentMonthDebts();
+        await debtCalculationService.calculateCurrentMonthDebtsForSociety(societyId);
 
         return res.status(201).json(newConsumption);
       } catch (err) {
@@ -560,7 +560,7 @@ export function registerConsumptionRoutes(app: Express) {
         console.log(
           `[CONSUMPTION-ITEMS-ADDED] Triggering debt calculation for user ${user.id}, total: ${totalAmount}`
         );
-        await debtCalculationService.calculateCurrentMonthDebts();
+        await debtCalculationService.calculateCurrentMonthDebtsForSociety(societyId);
 
         return res.status(201).json({ items: addedItems, totalAmount: totalAmount.toString() });
       } catch (err) {

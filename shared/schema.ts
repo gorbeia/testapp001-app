@@ -13,6 +13,16 @@ import {
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+/** How this society bills via SEPA / monthly credit rows (see docs/features/credits.md). */
+export const sepaModeSchema = z.enum([
+  "monthly",
+  "bimonthly",
+  "quarterly",
+  "on_demand",
+  "disabled",
+]);
+export type SepaMode = z.infer<typeof sepaModeSchema>;
+
 export const societies = pgTable("societies", {
   id: varchar("id")
     .primaryKey()
@@ -34,6 +44,8 @@ export const societies = pgTable("societies", {
   ),
   /** When false, member ledger balance may not go below zero (no prepaid credit). */
   allowPositiveBalance: boolean("allow_positive_balance").notNull().default(true),
+  /** SEPA export cadence and whether the society uses automated SEPA billing. */
+  sepaMode: text("sepa_mode").notNull().default("monthly"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -61,19 +73,24 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertSocietySchema = createInsertSchema(societies).pick({
-  alphabeticId: true,
-  name: true,
-  iban: true,
-  creditorId: true,
-  address: true,
-  phone: true,
-  email: true,
-  reservationPricePerMember: true,
-  kitchenPricePerMember: true,
-  allowPositiveBalance: true,
-  isActive: true,
-});
+export const insertSocietySchema = createInsertSchema(societies)
+  .pick({
+    alphabeticId: true,
+    name: true,
+    iban: true,
+    creditorId: true,
+    address: true,
+    phone: true,
+    email: true,
+    reservationPricePerMember: true,
+    kitchenPricePerMember: true,
+    allowPositiveBalance: true,
+    sepaMode: true,
+    isActive: true,
+  })
+  .extend({
+    sepaMode: sepaModeSchema.optional(),
+  });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -920,8 +937,12 @@ export const updateSocietySettingsBodySchema = insertSocietySchema
     reservationPricePerMember: true,
     kitchenPricePerMember: true,
     allowPositiveBalance: true,
+    sepaMode: true,
   })
   .partial()
+  .extend({
+    sepaMode: sepaModeSchema.optional(),
+  })
   .refine(data => Object.values(data).some(v => v !== undefined), {
     message: "At least one field is required",
   });
@@ -935,6 +956,7 @@ export const backofficeCreateSocietyBodySchema = z.object({
   email: z.string().nullish(),
   reservationPricePerMember: z.union([z.string(), z.number()]).nullish(),
   kitchenPricePerMember: z.union([z.string(), z.number()]).nullish(),
+  sepaMode: sepaModeSchema.nullish(),
 });
 
 export const createSuperadminBodySchema = insertSuperadminSchema;

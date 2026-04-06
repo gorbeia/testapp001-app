@@ -162,6 +162,7 @@ export function registerBackofficeRoutes(app: Express) {
           email,
           reservationPricePerMember,
           kitchenPricePerMember,
+          sepaMode,
         } = parsed.data;
 
         // Generate alphabetic ID (similar to existing society creation logic)
@@ -211,6 +212,7 @@ export function registerBackofficeRoutes(app: Express) {
             email: email ?? null,
             reservationPricePerMember: resPrice,
             kitchenPricePerMember: kitPrice,
+            sepaMode: sepaMode ?? "monthly",
             isActive,
           })
           .returning();

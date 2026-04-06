@@ -95,7 +95,10 @@ export function registerSocietyRoutes(app: Express) {
         });
       }
 
-      const societyData = { ...parsed.data };
+      const societyData = {
+        ...parsed.data,
+        sepaMode: parsed.data.sepaMode ?? "monthly",
+      };
 
       // If this is the first society, make it active
       const existingSocieties = await db.select().from(societies);

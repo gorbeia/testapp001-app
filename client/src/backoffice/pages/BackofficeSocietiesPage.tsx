@@ -16,6 +16,14 @@ import {
 } from "@/components/ui/dialog";
 import { authFetch } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import type { SepaMode } from "@shared/schema";
 
 interface Society {
   id: string;
@@ -43,6 +51,7 @@ export function BackofficeSocietiesPage() {
     email: "",
     reservationPricePerMember: "25.00",
     kitchenPricePerMember: "10.00",
+    sepaMode: "monthly" as SepaMode,
   });
 
   useEffect(() => {
@@ -104,6 +113,7 @@ export function BackofficeSocietiesPage() {
         email: "",
         reservationPricePerMember: "25.00",
         kitchenPricePerMember: "10.00",
+        sepaMode: "monthly",
       });
       setIsCreateDialogOpen(false);
     } catch {
@@ -218,6 +228,24 @@ export function BackofficeSocietiesPage() {
                     }
                     placeholder="10.00"
                   />
+                </div>
+                <div>
+                  <Label>{t("sepaMode")}</Label>
+                  <Select
+                    value={formData.sepaMode}
+                    onValueChange={(v: SepaMode) => setFormData({ ...formData, sepaMode: v })}
+                  >
+                    <SelectTrigger data-testid="backoffice-select-sepa-mode">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="monthly">{t("sepaModeMonthly")}</SelectItem>
+                      <SelectItem value="bimonthly">{t("sepaModeBimonthly")}</SelectItem>
+                      <SelectItem value="quarterly">{t("sepaModeQuarterly")}</SelectItem>
+                      <SelectItem value="on_demand">{t("sepaModeOnDemand")}</SelectItem>
+                      <SelectItem value="disabled">{t("sepaModeDisabled")}</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <DialogFooter>
