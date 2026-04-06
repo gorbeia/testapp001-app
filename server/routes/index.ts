@@ -10,6 +10,7 @@ import {
   type User,
 } from "../../shared/schema";
 import { i18nMiddleware } from "../lib/i18n";
+import { toPublicUser } from "../lib/public-user";
 
 // JWT Configuration
 const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key-change-in-production";
@@ -18,15 +19,11 @@ const REFRESH_TOKEN_EXPIRES_IN = "7d"; // Refresh token lasts longer
 
 // JWT Functions
 export const generateToken = (user: User) => {
-  const userWithoutPassword = { ...user };
-  delete (userWithoutPassword as { password?: string }).password;
-  return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+  return jwt.sign(toPublicUser(user), JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 };
 
 const generateRefreshToken = (user: User) => {
-  const userWithoutPassword = { ...user };
-  delete (userWithoutPassword as { password?: string }).password;
-  return jwt.sign(userWithoutPassword, JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
+  return jwt.sign(toPublicUser(user), JWT_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRES_IN });
 };
 
 export const setAuthCookie = (res: Response, token: string) => {
@@ -229,10 +226,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       setAuthCookie(res, token);
       setRefreshCookie(res, refreshToken);
 
-      const userWithoutPassword = { ...dbUser };
-      delete (userWithoutPassword as { password?: string }).password;
       return res.status(200).json({
-        user: userWithoutPassword,
+        user: toPublicUser(dbUser),
         token,
         expiresIn: JWT_EXPIRES_IN,
       });
@@ -274,10 +269,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const newToken = generateToken(dbUser);
       setAuthCookie(res, newToken);
 
-      const userWithoutPassword = { ...dbUser };
-      delete (userWithoutPassword as { password?: string }).password;
       return res.status(200).json({
-        user: userWithoutPassword,
+        user: toPublicUser(dbUser),
         token: newToken,
         expiresIn: JWT_EXPIRES_IN,
       });

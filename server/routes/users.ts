@@ -18,6 +18,7 @@ import { eq, and, count } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { sessionMiddleware, requireAuth, requireAdmin, requireTreasurer } from "./middleware";
 import { generateToken, setAuthCookie } from "./index";
+import { toPublicUser } from "../lib/public-user";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -206,10 +207,8 @@ export function registerUserRoutes(app: Express) {
         setAuthCookie(res, token);
 
         // Transform username to email for frontend compatibility
-        const userWithoutPassword = { ...updatedUser };
-        delete (userWithoutPassword as { password?: string }).password;
         const responseUser = {
-          ...userWithoutPassword,
+          ...toPublicUser(updatedUser),
           email: updatedUser.username,
         };
 
@@ -410,9 +409,7 @@ export function registerUserRoutes(app: Express) {
           .where(eq(users.id, id))
           .returning();
 
-        const userWithoutPassword = { ...updatedUser };
-        delete (userWithoutPassword as { password?: string }).password;
-        return res.status(200).json(userWithoutPassword);
+        return res.status(200).json(toPublicUser(updatedUser));
       } catch (err) {
         next(err);
       }
