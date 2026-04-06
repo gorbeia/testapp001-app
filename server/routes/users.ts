@@ -39,16 +39,14 @@ export function registerUserRoutes(app: Express) {
     requireTreasurer,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
+        const societyId = getUserSocietyId(req.user!);
         const { status } = req.query;
 
-        let whereCondition;
+        let whereCondition = eq(users.societyId, societyId);
         if (status === "active") {
-          whereCondition = eq(users.isActive, true);
+          whereCondition = and(whereCondition, eq(users.isActive, true))!;
         } else if (status === "inactive") {
-          whereCondition = eq(users.isActive, false);
-        } else {
-          // 'all' or undefined - return all users
-          whereCondition = undefined;
+          whereCondition = and(whereCondition, eq(users.isActive, false))!;
         }
 
         const allUsers = await db

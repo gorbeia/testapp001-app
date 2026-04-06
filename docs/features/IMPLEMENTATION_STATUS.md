@@ -26,7 +26,7 @@ Status legend:
 ## 2. User Management (`user-management.md`)
 
 1. **List users** – table with search/filter
-   - **Status**: ✅ Implemented (UsersPage table + filters backed by /api/users GET + seeded demo users)
+   - **Status**: ✅ Implemented (UsersPage table + filters backed by `GET /api/users`, society-scoped to the treasurer’s `societyId`, + seeded demo users)
 2. **Create a new member** – add bazkide with contact/bank details
    - **Status**: ✅ Implemented (UsersPage + real /api/users POST + DB; create dialog wired and E2E tested)
 3. **Create a companion linked to a member** – add laguna linked to bazkide
