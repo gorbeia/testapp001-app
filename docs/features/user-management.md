@@ -20,7 +20,7 @@ User management covers creating, viewing, updating and deleting members (bazkide
 
 **Acceptance criteria**
 
-- The list shows name, email, role, function, phone, IBAN (truncated), linked member (if any), **subscription type**, **active/inactive** state.
+- The list shows name, email, role, function, phone, **ledger balance** (`accountBalance` from `GET /api/users`), IBAN (truncated) **unless `sepaMode === disabled`**, linked member (if any), **subscription type**, **active/inactive** state.
 - Both bazkideak and lagunak are visible in the same table.
 - I can filter by role (bazkidea / laguna / all) and **status** (active / inactive / all).
 - I can search by name or email (client-side on fetched rows).

@@ -29,7 +29,7 @@ Status legend:
 ## 2. User Management (`user-management.md`)
 
 1. **List users** – table with search/filter
-   - **Status**: ✅ Implemented (UsersPage + `GET /api/users`, society-scoped list; **requires** diruzaina or administratzailea; UI page is administratzailea-only)
+   - **Status**: ✅ Implemented (UsersPage + `GET /api/users`, society-scoped list; **`accountBalance`** from ledger sums per row; **IBAN column hidden** when `sepaMode === disabled`; **requires** diruzaina or administratzailea; UI page is administratzailea-only)
 2. **Create a new member** – add bazkide with contact/bank details
    - **Status**: 🟡 Partial (real `POST /api/users`; create dialog currently persists email/username + default password; several displayed fields not yet wired to POST — see PRD)
 3. **Create a companion linked to a member** – add laguna linked to bazkide

@@ -11,9 +11,10 @@ import {
   changePasswordBodySchema,
   updateUserAdminBodySchema,
   updateUserProfileBodySchema,
+  accountMovements,
   type JwtSessionUser,
 } from "@shared/schema";
-import { eq, and, count } from "drizzle-orm";
+import { eq, and, count, sql } from "drizzle-orm";
 import bcrypt from "bcrypt";
 import { sessionMiddleware, requireAuth, requireAdmin, requireTreasurer } from "./middleware";
 import { generateToken, setAuthCookie } from "./index";
@@ -81,8 +82,28 @@ export function registerUserRoutes(app: Express) {
           .leftJoin(subscriptionTypes, eq(users.subscriptionTypeId, subscriptionTypes.id))
           .where(whereCondition);
 
-        // Remove passwords from response (they're not selected anyway)
-        return res.status(200).json(allUsers);
+        const balanceRows = await db
+          .select({
+            userId: accountMovements.userId,
+            accountBalance:
+              sql<string>`coalesce(sum(cast(${accountMovements.amount} as decimal)), 0)`.mapWith(
+                Number
+              ),
+          })
+          .from(accountMovements)
+          .where(eq(accountMovements.societyId, societyId))
+          .groupBy(accountMovements.userId);
+
+        const balanceByUser = new Map(
+          balanceRows.map(row => [row.userId, row.accountBalance] as const)
+        );
+
+        const withBalance = allUsers.map(u => ({
+          ...u,
+          accountBalance: balanceByUser.get(u.id) ?? 0,
+        }));
+
+        return res.status(200).json(withBalance);
       } catch (err) {
         next(err);
       }

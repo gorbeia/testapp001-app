@@ -43,6 +43,12 @@ import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import type { SubscriptionType as SubscriptionTypeEntity } from "@shared/schema";
 
+function balanceAmountClass(b: number) {
+  if (b < 0) return "text-destructive";
+  if (b > 0) return "text-green-600";
+  return "text-muted-foreground";
+}
+
 /** Shape of `/api/users` list rows (passwords never returned). */
 type UsersApiRow = {
   id: string;
@@ -59,6 +65,7 @@ type UsersApiRow = {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  accountBalance?: number;
   subscriptionType: {
     id: string;
     name: string;
@@ -84,6 +91,7 @@ type UsersPageUser = {
   function: string;
   phone: string;
   iban: string | null;
+  accountBalance: number;
   linkedMember: string | null;
   subscriptionTypeId: string | null;
   subscriptionType?: {
@@ -137,6 +145,24 @@ export function UsersPage() {
     },
   });
 
+  const {
+    data: societyUser,
+    isSuccess: societyFetchSuccess,
+    isError: societyError,
+  } = useQuery({
+    queryKey: ["society-user"],
+    queryFn: async () => {
+      const res = await authFetch("/api/societies/user");
+      if (!res.ok) throw new Error("Failed to load society");
+      return res.json() as { sepaMode?: string };
+    },
+    throwOnError: false,
+  });
+
+  /** Hide IBAN column only when we know SEPA is disabled; on error or while loading, show IBAN. */
+  const showIbanColumn =
+    !societyFetchSuccess || societyError || societyUser?.sepaMode !== "disabled";
+
   // Transform API data to component format
   const users: UsersPageUser[] = rawUsers.map((dbUser: UsersApiRow) => ({
     id: dbUser.id,
@@ -146,6 +172,7 @@ export function UsersPage() {
     function: dbUser.function ?? "arrunta",
     phone: dbUser.phone ?? "",
     iban: dbUser.iban ?? null,
+    accountBalance: typeof dbUser.accountBalance === "number" ? dbUser.accountBalance : 0,
     linkedMember: dbUser.linkedMemberName,
     subscriptionTypeId: dbUser.subscriptionTypeId ?? null,
     subscriptionType: dbUser.subscriptionType ?? null,
@@ -257,6 +284,7 @@ export function UsersPage() {
         function: updated.function ?? editingUser.function,
         phone: updated.phone ?? "",
         iban: updated.iban ?? null,
+        accountBalance: editingUser.accountBalance,
         linkedMember: updated.linkedMemberName ?? editingUser.linkedMember,
         subscriptionTypeId: editingUser.subscriptionTypeId,
         subscriptionType: editingUser.subscriptionType,
@@ -312,6 +340,7 @@ export function UsersPage() {
         function: updated.function ?? user.function,
         phone: updated.phone ?? "",
         iban: updated.iban ?? null,
+        accountBalance: user.accountBalance,
         linkedMember: updated.linkedMemberName ?? user.linkedMember,
         subscriptionTypeId: user.subscriptionTypeId,
         subscriptionType: user.subscriptionType,
@@ -436,6 +465,8 @@ export function UsersPage() {
       });
     }
   };
+
+  const tableColSpan = 9 + (showIbanColumn ? 1 : 0);
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
@@ -716,7 +747,8 @@ export function UsersPage() {
                   <TableHead>{t("subscription")}</TableHead>
                   <TableHead>{t("status")}</TableHead>
                   <TableHead>{t("phone")}</TableHead>
-                  <TableHead>{t("iban")}</TableHead>
+                  {showIbanColumn && <TableHead>{t("iban")}</TableHead>}
+                  <TableHead>{t("currentBalance")}</TableHead>
                   <TableHead>{t("linkedMember")}</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
@@ -724,13 +756,13 @@ export function UsersPage() {
               <TableBody>
                 {isLoading && !isInitialLoad ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={tableColSpan} className="text-center py-8 text-muted-foreground">
                       {t("loading")}
                     </TableCell>
                   </TableRow>
                 ) : filteredUsers.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={tableColSpan} className="text-center py-8 text-muted-foreground">
                       {t("noResults")}
                     </TableCell>
                   </TableRow>
@@ -792,19 +824,27 @@ export function UsersPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm">{user.phone}</TableCell>
-                      <TableCell>
-                        {user.iban ? (
-                          <div className="flex items-center gap-1 text-sm">
-                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                            {user.iban.substring(0, 4)}...
-                            {user.iban.substring(user.iban.length - 4)}
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <div className="w-2 h-2 rounded-full bg-gray-300"></div>
-                            {t("noIBAN")}
-                          </div>
-                        )}
+                      {showIbanColumn && (
+                        <TableCell>
+                          {user.iban ? (
+                            <div className="flex items-center gap-1 text-sm">
+                              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                              {user.iban.substring(0, 4)}...
+                              {user.iban.substring(user.iban.length - 4)}
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                              <div className="w-2 h-2 rounded-full bg-gray-300"></div>
+                              {t("noIBAN")}
+                            </div>
+                          )}
+                        </TableCell>
+                      )}
+                      <TableCell
+                        className={`text-sm font-medium tabular-nums ${balanceAmountClass(user.accountBalance)}`}
+                        data-testid={`user-balance-${user.id}`}
+                      >
+                        {user.accountBalance.toFixed(2)}€
                       </TableCell>
                       <TableCell>
                         {user.linkedMember ? (
