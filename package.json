@@ -24,6 +24,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint:ci": "eslint . --ext ts,tsx --report-unused-disable-directives --quiet",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "audit:security": "node script/security-audit.mjs",
     "audit:security:prod": "node script/security-audit.mjs --prod"

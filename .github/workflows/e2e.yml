@@ -1,0 +1,96 @@
+# Playwright + Cucumber against a real Postgres; mirrors local `pnpm dev` + `pnpm test:e2e`.
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: elkartearen
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d elkartearen"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      CI: "true"
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/elkartearen
+      NODE_ENV: development
+      SESSION_SECRET: github-actions-ci-session-not-for-production
+      JWT_SECRET: github-actions-ci-jwt-not-for-production
+      BACKOFFICE_JWT_SECRET: github-actions-ci-backoffice-not-for-production
+      PORT: "5000"
+      HOST: 127.0.0.1
+      VITE_API_URL: http://127.0.0.1:5000
+      E2E_BASE_URL: http://127.0.0.1:5000
+      E2E_HEADED: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium --with-deps
+
+      - name: Apply database schema
+        run: pnpm exec drizzle-kit push --force
+
+      - name: Seed database
+        run: pnpm db:seed
+        timeout-minutes: 12
+
+      - name: Start application
+        run: |
+          pnpm dev > /tmp/e2e-app.log 2>&1 &
+          echo $! > /tmp/e2e-app.pid
+          for i in $(seq 1 90); do
+            if curl -sf http://127.0.0.1:5000/ >/dev/null 2>&1; then
+              echo "App responded on :5000"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "--- app log ---"
+          cat /tmp/e2e-app.log || true
+          exit 1
+
+      - name: Run E2E tests
+        run: pnpm test:e2e
+
+      - name: Print app log on failure
+        if: failure()
+        run: cat /tmp/e2e-app.log || true

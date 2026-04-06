@@ -30,7 +30,6 @@ A modern web application built with React, TypeScript, and Express.js for managi
    ```
 
    Adjust at least:
-
    - **`DATABASE_URL`** — must match your Postgres (default in `.env.example` matches `docker-compose.yml`: user/password `postgres`, database `elkartearen`, port `5432`).
    - **`SESSION_SECRET`** — set a long random string for sessions.
    - **`JWT_SECRET`** — signs and verifies **society app** access and refresh tokens (cookies / `Authorization: Bearer`). See `.env.example` for a **local-only** placeholder; in production use a strong random secret (never the example value).
@@ -163,26 +162,27 @@ There are **12** feature files under `e2e/features/` (login, users, profile, res
 
 ## Available scripts
 
-| Script | Purpose |
-|--------|---------|
-| `pnpm dev` | Development server (Express + Vite middleware) |
-| `pnpm build` | Production build (client + server bundle) |
-| `pnpm start` | Run production bundle |
-| `pnpm check` | TypeScript (`tsc`) |
-| `pnpm lint` / `pnpm lint:fix` | ESLint |
-| `pnpm format` / `pnpm format:check` | Prettier |
-| `pnpm db:push` | Push Drizzle schema to DB |
-| `pnpm db:generate` / `pnpm db:migrate` | Migrations workflow (when you use migration files) |
-| `pnpm db:studio` | Drizzle Studio |
-| `pnpm db:seed` | Seed demo data |
-| `pnpm db:reset` | Drop app tables + `db:push` |
-| `pnpm db:reset:seed` | `db:reset` then `db:seed` |
-| `pnpm docker:db:up` / `down` / `reset` | Postgres via Docker Compose |
-| `pnpm test:e2e` | Full Cucumber suite |
-| `pnpm test:e2e:only` | `@only` scenarios |
-| `pnpm test:e2e:feature -- <path>` | One `.feature` file |
-| `pnpm audit:security` | Dependency security audit (see below) |
-| `pnpm audit:security:prod` | Same audit, **production** dependencies only (`pnpm audit -P`) |
+| Script                                 | Purpose                                                        |
+| -------------------------------------- | -------------------------------------------------------------- |
+| `pnpm dev`                             | Development server (Express + Vite middleware)                 |
+| `pnpm build`                           | Production build (client + server bundle)                      |
+| `pnpm start`                           | Run production bundle                                          |
+| `pnpm check`                           | TypeScript (`tsc`)                                             |
+| `pnpm lint` / `pnpm lint:fix`          | ESLint (`lint` fails on any warning)                           |
+| `pnpm lint:ci`                         | ESLint **errors only** (used by CI; ignores warning noise)     |
+| `pnpm format` / `pnpm format:check`    | Prettier                                                       |
+| `pnpm db:push`                         | Push Drizzle schema to DB                                      |
+| `pnpm db:generate` / `pnpm db:migrate` | Migrations workflow (when you use migration files)             |
+| `pnpm db:studio`                       | Drizzle Studio                                                 |
+| `pnpm db:seed`                         | Seed demo data                                                 |
+| `pnpm db:reset`                        | Drop app tables + `db:push`                                    |
+| `pnpm db:reset:seed`                   | `db:reset` then `db:seed`                                      |
+| `pnpm docker:db:up` / `down` / `reset` | Postgres via Docker Compose                                    |
+| `pnpm test:e2e`                        | Full Cucumber suite                                            |
+| `pnpm test:e2e:only`                   | `@only` scenarios                                              |
+| `pnpm test:e2e:feature -- <path>`      | One `.feature` file                                            |
+| `pnpm audit:security`                  | Dependency security audit (see below)                          |
+| `pnpm audit:security:prod`             | Same audit, **production** dependencies only (`pnpm audit -P`) |
 
 ### Dependency security audit
 
@@ -192,6 +192,10 @@ Runs two open-source checks via [`script/security-audit.mjs`](script/security-au
 2. **[Retire.js](https://github.com/RetireJS/retire.js)** — scans `node_modules` for JS libraries with known vulnerabilities (`pnpm exec retire`, **medium+** severity fails).
 
 Apply fixes with **`pnpm audit --fix`** (review lockfile changes) or targeted dependency upgrades. **Retire** may flag **transitive** copies of libraries (e.g. nested `lodash`); resolve with overrides/upstream upgrades or a [`.retireignore.json`](https://github.com/RetireJS/retire.js) only when accepted as false positives.
+
+### GitHub Actions
+
+Workflows in [`.github/workflows/`](.github/workflows/): **CI** (Prettier, `pnpm check`, `pnpm lint:ci`, `pnpm build` on PRs and pushes to `main`), **E2E** (Postgres service, `drizzle-kit push`, `pnpm db:seed`, `pnpm dev`, `pnpm test:e2e`), and **Security audit** (weekly + manual, `pnpm audit:security`).
 
 ---
 
