@@ -24,7 +24,9 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint . --ext ts,tsx --fix"
+    "lint:fix": "eslint . --ext ts,tsx --fix",
+    "audit:security": "node script/security-audit.mjs",
+    "audit:security:prod": "node script/security-audit.mjs --prod"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -133,6 +135,7 @@
     "playwright": "^1.57.0",
     "postcss": "^8.4.47",
     "prettier": "^3.8.1",
+    "retire": "^5.2.0",
     "tailwindcss": "^3.4.17",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
