@@ -1,6 +1,12 @@
 import type { Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { notifications, notificationMessages, type User, type Notification } from "@shared/schema";
+import {
+  notifications,
+  notificationMessages,
+  createNotificationBodySchema,
+  type User,
+  type Notification,
+} from "@shared/schema";
 import { eq, and, desc, count, isNotNull } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
@@ -264,7 +270,20 @@ export const createNotification = async (req: Request, res: Response, next: Next
   try {
     const user = req.user!;
     const societyId = getUserSocietyId(user);
-    const { title, message, targetUserId, messages, defaultLanguage = "eu" } = req.body;
+
+    const parsed = createNotificationBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({
+        message: "Invalid notification payload",
+        issues: parsed.error.flatten(),
+      });
+    }
+
+    const { title, message, targetUserId, messages, defaultLanguage = "eu" } = {
+      ...parsed.data,
+      defaultLanguage: parsed.data.defaultLanguage ?? "eu",
+    };
+
 
     // Only admins can create notifications for other users
     if (targetUserId && targetUserId !== user.id && user.role !== "admin") {

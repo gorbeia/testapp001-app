@@ -12,12 +12,7 @@ _No open items from the last review._
 
 ## API input validation
 
-| Issue                                                                                      | Severity | Notes                                                                                                                                                                                        |
-| ------------------------------------------------------------------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **No Zod `safeParse` in route modules** (as of last check).                                | Medium   | Project rule [`.cursor/rules/api-routes.mdc`](../.cursor/rules/api-routes.mdc) expects validation via `@shared/schema` drizzle-zod schemas; many handlers still use raw `req.body` or casts. |
-| **Login and other auth bodies** use manual checks or `as` casts instead of shared schemas. | Medium   | e.g. [`server/routes/index.ts`](../server/routes/index.ts) login handler.                                                                                                                    |
-
-Use the **harden-api-validation** skill under [`.cursor/skills/harden-api-validation/`](../.cursor/skills/harden-api-validation/) for a consistent retrofit approach.
+_POST/PUT/PATCH handlers that accept JSON bodies in [`server/routes/`](../server/routes/) now validate with **`safeParse`** and schemas exported from [`shared/schema.ts`](../shared/schema.ts) (including `loginBodySchema` and backoffice login). When adding new endpoints, follow [`.cursor/rules/api-routes.mdc`](../.cursor/rules/api-routes.mdc) and the [harden-api-validation skill](../.cursor/skills/harden-api-validation/SKILL.md)._
 
 ---
 

@@ -2,7 +2,14 @@ import type { Express, Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "../db";
-import { superadmins, societies } from "../../shared/schema";
+import {
+  superadmins,
+  societies,
+  backofficeCreateSocietyBodySchema,
+  backofficeLoginBodySchema,
+  createSuperadminBodySchema,
+  updateSuperadminBodySchema,
+} from "../../shared/schema";
 import { eq } from "drizzle-orm";
 
 // Backoffice JWT Configuration
@@ -61,14 +68,16 @@ export function registerBackofficeRoutes(app: Express) {
   // It validates credentials against the superadmins table.
   app.post("/api/backoffice/login", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, password } = req.body as { email?: string; password?: string };
-
-      if (!email || !password) {
+      const parsed = backofficeLoginBodySchema.safeParse(req.body);
+      if (!parsed.success) {
         return res.status(400).json({
           message: "Email and password are required",
+          issues: parsed.error.flatten(),
           requires: ["email", "password"],
         });
       }
+
+      const { email, password } = parsed.data;
 
       const dbSuperadmin = await db.query.superadmins.findFirst({
         where: (sa, { eq }) => eq(sa.email, email.toLowerCase()),
@@ -130,6 +139,14 @@ export function registerBackofficeRoutes(app: Express) {
     requireBackoffice,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
+        const parsed = backofficeCreateSocietyBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid society payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
         const {
           name,
           iban,
@@ -139,11 +156,7 @@ export function registerBackofficeRoutes(app: Express) {
           email,
           reservationPricePerMember,
           kitchenPricePerMember,
-        } = req.body;
-
-        if (!name) {
-          return res.status(400).json({ message: "Name is required" });
-        }
+        } = parsed.data;
 
         // Generate alphabetic ID (similar to existing society creation logic)
         const alphabeticId = name
@@ -171,18 +184,27 @@ export function registerBackofficeRoutes(app: Express) {
         const existingSocieties = await db.query.societies.findMany();
         const isActive = existingSocieties.length === 0;
 
+        const resPrice =
+          reservationPricePerMember !== undefined && reservationPricePerMember !== null
+            ? String(reservationPricePerMember)
+            : "25.00";
+        const kitPrice =
+          kitchenPricePerMember !== undefined && kitchenPricePerMember !== null
+            ? String(kitchenPricePerMember)
+            : "10.00";
+
         const newSociety = await db
           .insert(societies)
           .values({
             name,
             alphabeticId: finalAlphabeticId,
-            iban: iban || null,
-            creditorId: creditorId || null,
-            address: address || null,
-            phone: phone || null,
-            email: email || null,
-            reservationPricePerMember: reservationPricePerMember || "25.00",
-            kitchenPricePerMember: kitchenPricePerMember || "10.00",
+            iban: iban ?? null,
+            creditorId: creditorId ?? null,
+            address: address ?? null,
+            phone: phone ?? null,
+            email: email ?? null,
+            reservationPricePerMember: resPrice,
+            kitchenPricePerMember: kitPrice,
             isActive,
           })
           .returning();
@@ -226,14 +248,15 @@ export function registerBackofficeRoutes(app: Express) {
     requireBackoffice,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const { email, password, name } = req.body as {
-          email?: string;
-          password?: string;
-          name?: string;
-        };
-        if (!email || !password || !name) {
-          return res.status(400).json({ message: "Email, password, and name are required" });
+        const parsed = createSuperadminBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Email, password, and name are required",
+            issues: parsed.error.flatten(),
+          });
         }
+
+        const { email, password, name } = parsed.data;
 
         const hashedPassword = await bcrypt.hash(password, 10);
         const newSuperadmin = await db
@@ -270,24 +293,27 @@ export function registerBackofficeRoutes(app: Express) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
-        const { email, password, name, isActive } = req.body as {
-          email?: string;
-          password?: string;
-          name?: string;
-          isActive?: boolean;
-        };
+        const parsed = updateSuperadminBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid payload",
+            issues: parsed.error.flatten(),
+          });
+        }
 
-        const updateData: any = { updatedAt: new Date() };
+        const { email, password, name, isActive } = parsed.data;
+
+        const updateData: Record<string, unknown> = { updatedAt: new Date() };
         if (email !== undefined) updateData.email = email.toLowerCase();
         if (name !== undefined) updateData.name = name;
         if (isActive !== undefined) updateData.isActive = isActive;
-        if (password !== undefined && password !== "") {
+        if (password !== undefined && password.length > 0) {
           updateData.password = await bcrypt.hash(password, 10);
         }
 
         const updated = await db
           .update(superadmins)
-          .set(updateData)
+          .set(updateData as any)
           .where(eq(superadmins.id, id))
           .returning({
             id: superadmins.id,

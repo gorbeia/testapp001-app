@@ -1,6 +1,13 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { productCategories, categoryMessages, products } from "@shared/schema";
+import {
+  productCategories,
+  categoryMessages,
+  products,
+  createCategoryBodySchema,
+  updateCategoryBodySchema,
+  reorderCategoriesBodySchema,
+} from "@shared/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
@@ -179,7 +186,15 @@ export function registerCategoryRoutes(app: Express) {
           return res.status(403).json({ message: "Access denied" });
         }
 
-        const { messages, ...categoryData } = req.body;
+        const parsed = createCategoryBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid category payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
+        const { messages, ...categoryData } = parsed.data;
 
         // Create the category
         const [newCategory] = await db
@@ -192,14 +207,12 @@ export function registerCategoryRoutes(app: Express) {
 
         // Create category messages for both languages
         if (messages) {
-          const messageData = Object.entries(messages).map(
-            ([language, messageData]: [string, any]) => ({
-              categoryId: newCategory.id,
-              language,
-              name: messageData.name,
-              description: messageData.description || null,
-            })
-          );
+          const messageData = Object.entries(messages).map(([language, msg]) => ({
+            categoryId: newCategory.id,
+            language,
+            name: msg.name,
+            description: msg.description ?? null,
+          }));
 
           await db.insert(categoryMessages).values(messageData);
         }
@@ -238,12 +251,28 @@ export function registerCategoryRoutes(app: Express) {
           return res.status(404).json({ message: "Category not found" });
         }
 
-        const { messages, ...categoryData } = req.body;
+        const parsed = updateCategoryBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid category payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
+        const { messages, ...categoryData } = parsed.data;
+
+        const categoryUpdate = Object.fromEntries(
+          Object.entries(categoryData).filter(([, v]) => v !== undefined)
+        );
 
         // Update the category
         const updatedCategory = await db
           .update(productCategories)
-          .set({ ...categoryData, updatedAt: new Date() })
+          .set(
+            Object.keys(categoryUpdate).length > 0
+              ? { ...categoryUpdate, updatedAt: new Date() }
+              : { updatedAt: new Date() }
+          )
           .where(eq(productCategories.id, id))
           .returning();
 
@@ -354,7 +383,15 @@ export function registerCategoryRoutes(app: Express) {
     requireAuth,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const { categoryIds } = req.body;
+        const parsed = reorderCategoriesBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
+        const { categoryIds } = parsed.data;
         const user = req.user!;
         const societyId = getUserSocietyId(user);
 

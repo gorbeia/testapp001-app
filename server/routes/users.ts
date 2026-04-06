@@ -7,6 +7,10 @@ import {
   credits,
   notes,
   subscriptionTypes,
+  apiCreateUserBodySchema,
+  changePasswordBodySchema,
+  updateUserAdminBodySchema,
+  updateUserProfileBodySchema,
   type User,
 } from "@shared/schema";
 import { eq, and, count } from "drizzle-orm";
@@ -115,6 +119,14 @@ export function registerUserRoutes(app: Express) {
   // Users: create a new user in the database (admin only)
   app.post("/api/users", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
     try {
+      const parsed = apiCreateUserBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid user payload",
+          issues: parsed.error.flatten(),
+        });
+      }
+
       const {
         username,
         password,
@@ -124,20 +136,7 @@ export function registerUserRoutes(app: Express) {
         role,
         function: userFunction,
         subscriptionTypeId,
-      } = req.body as {
-        username?: string;
-        password?: string;
-        name?: string;
-        phone?: string;
-        iban?: string;
-        role?: string;
-        function?: string;
-        subscriptionTypeId?: string;
-      };
-
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
-      }
+      } = parsed.data;
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const societyId = getUserSocietyId(req.user!);
@@ -177,20 +176,20 @@ export function registerUserRoutes(app: Express) {
             .json({ message: "Forbidden: You can only update your own profile" });
         }
 
-        const { name, phone, iban } = req.body as {
-          name?: string;
-          phone?: string | null;
-          iban?: string | null;
-        };
+        const parsed = updateUserProfileBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid profile payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
+        const { name, phone, iban } = parsed.data;
 
         const updateData: Partial<typeof users.$inferInsert> = {};
         if (typeof name !== "undefined") updateData.name = name;
         if (typeof phone !== "undefined") updateData.phone = phone;
         if (typeof iban !== "undefined") updateData.iban = iban;
-
-        if (Object.keys(updateData).length === 0) {
-          return res.status(400).json({ message: "No updatable fields provided" });
-        }
 
         await db.update(users).set(updateData).where(eq(users.id, id));
 
@@ -225,18 +224,16 @@ export function registerUserRoutes(app: Express) {
     requireAuth,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
-        const { currentPassword, newPassword } = req.body;
+        const parsed = changePasswordBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid password payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
+        const { currentPassword, newPassword } = parsed.data;
         const user = req.user!;
-
-        if (!currentPassword || !newPassword) {
-          return res
-            .status(400)
-            .json({ message: "Current password and new password are required" });
-        }
-
-        if (newPassword.length < 6) {
-          return res.status(400).json({ message: "Password must be at least 6 characters" });
-        }
 
         // Verify current password (in a real app, you'd hash and compare)
         if (user.password !== currentPassword) {
@@ -267,6 +264,14 @@ export function registerUserRoutes(app: Express) {
       try {
         const { id } = req.params;
 
+        const parsed = updateUserAdminBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid user payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
         const {
           name,
           role,
@@ -276,16 +281,7 @@ export function registerUserRoutes(app: Express) {
           linkedMemberId,
           linkedMemberName,
           subscriptionTypeId,
-        } = req.body as {
-          name?: string;
-          role?: string;
-          function?: string;
-          phone?: string;
-          iban?: string;
-          linkedMemberId?: string | null;
-          linkedMemberName?: string | null;
-          subscriptionTypeId?: string | null;
-        };
+        } = parsed.data;
 
         const updateData: Partial<typeof users.$inferInsert> = {};
         if (typeof name !== "undefined") updateData.name = name;
@@ -297,10 +293,6 @@ export function registerUserRoutes(app: Express) {
         if (typeof linkedMemberName !== "undefined") updateData.linkedMemberName = linkedMemberName;
         if (typeof subscriptionTypeId !== "undefined")
           updateData.subscriptionTypeId = subscriptionTypeId;
-
-        if (Object.keys(updateData).length === 0) {
-          return res.status(400).json({ message: "No updatable fields provided" });
-        }
 
         // Always update the updatedAt timestamp
         updateData.updatedAt = new Date();

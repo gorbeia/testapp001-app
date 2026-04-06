@@ -4,7 +4,7 @@ import {
   tables,
   reservations,
   insertTableSchema,
-  type Table,
+  updateTableSchema,
   type User,
 } from "@shared/schema";
 import { eq, and, gte, ne, count } from "drizzle-orm";
@@ -96,15 +96,15 @@ export function registerTableRoutes(app: Express) {
       try {
         const { id } = req.params;
         const societyId = getUserSocietyId(req.user!);
-        const updateData: Partial<Table> = req.body;
 
-        // Always update the updatedAt timestamp
-        updateData.updatedAt = new Date();
-        delete updateData.societyId;
+        const parsed = updateTableSchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({ message: "Invalid table payload", issues: parsed.error.flatten() });
+        }
 
         const [updatedTable] = await db
           .update(tables)
-          .set(updateData)
+          .set({ ...parsed.data, updatedAt: new Date() })
           .where(and(eq(tables.id, id), eq(tables.societyId, societyId)))
           .returning();
 

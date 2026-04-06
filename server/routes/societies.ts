@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { db } from "../db";
-import { societies, type User } from "@shared/schema";
+import { insertSocietySchema, societies, updateSocietySettingsBodySchema, type User } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
 
@@ -79,7 +79,15 @@ export function registerSocietyRoutes(app: Express) {
 
   app.post("/api/societies", requireAdmin, async (req, res, next) => {
     try {
-      const societyData = req.body;
+      const parsed = insertSocietySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid society payload",
+          issues: parsed.error.flatten(),
+        });
+      }
+
+      const societyData = { ...parsed.data };
 
       // If this is the first society, make it active
       const existingSocieties = await db.select().from(societies);
@@ -97,28 +105,18 @@ export function registerSocietyRoutes(app: Express) {
   app.put("/api/societies/:id", requireAdmin, async (req, res, next) => {
     try {
       const { id } = req.params;
-      const {
-        name,
-        iban,
-        creditorId,
-        address,
-        phone,
-        email,
-        reservationPricePerMember,
-        kitchenPricePerMember,
-      } = req.body;
+      const parsed = updateSocietySettingsBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Invalid society payload",
+          issues: parsed.error.flatten(),
+        });
+      }
 
       const [updatedSociety] = await db
         .update(societies)
         .set({
-          name,
-          iban,
-          creditorId,
-          address,
-          phone,
-          email,
-          reservationPricePerMember,
-          kitchenPricePerMember,
+          ...parsed.data,
           updatedAt: new Date(),
         })
         .where(eq(societies.id, id))

@@ -6,6 +6,9 @@ import {
   users,
   notifications,
   notificationMessages,
+  createNoteBodySchema,
+  noteNotifyBodySchema,
+  updateNoteBodySchema,
   type User,
 } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
@@ -145,7 +148,15 @@ export function registerNoteRoutes(app: Express) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const societyId = getUserSocietyId(req.user!);
-        const { messages } = req.body; // Expect messages array: [{ language: 'eu', title: '...', content: '...' }, { language: 'es', title: '...', content: '...' }]
+        const parsed = createNoteBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid note payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
+        const { messages } = parsed.data;
 
         const [newNote] = await db
           .insert(notes)
@@ -158,7 +169,7 @@ export function registerNoteRoutes(app: Express) {
 
         // Insert messages for each language
         const noteMessagesData = await Promise.all(
-          messages.map(async (msg: any) => {
+          messages.map(async msg => {
             return await db
               .insert(noteMessages)
               .values({
@@ -189,13 +200,21 @@ export function registerNoteRoutes(app: Express) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
-        const { messages, isActive } = req.body;
+        const parsed = updateNoteBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid note payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
+        const { messages, isActive } = parsed.data;
         const societyId = getUserSocietyId(req.user!);
 
         const [updatedNote] = await db
           .update(notes)
           .set({
-            isActive,
+            ...(typeof isActive === "boolean" ? { isActive } : {}),
             updatedAt: new Date(),
           })
           .where(and(eq(notes.id, id), eq(notes.societyId, societyId)))
@@ -212,7 +231,7 @@ export function registerNoteRoutes(app: Express) {
 
           // Insert new messages
           const noteMessagesData = await Promise.all(
-            messages.map(async (msg: any) => {
+            messages.map(async msg => {
               return await db
                 .insert(noteMessages)
                 .values({
@@ -273,11 +292,15 @@ export function registerNoteRoutes(app: Express) {
     async (req, res, next) => {
       try {
         const { id } = req.params;
-        const { notifyUsers } = req.body;
-
-        if (typeof notifyUsers !== "boolean") {
-          return res.status(400).json({ message: "notifyUsers must be a boolean" });
+        const parsed = noteNotifyBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid payload",
+            issues: parsed.error.flatten(),
+          });
         }
+
+        const { notifyUsers } = parsed.data;
 
         const user = req.user as User;
 

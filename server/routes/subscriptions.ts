@@ -1,6 +1,10 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { subscriptionTypes } from "@shared/schema";
+import {
+  subscriptionTypes,
+  subscriptionTypeCreateBodySchema,
+  subscriptionTypeUpdateBodySchema,
+} from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 import { requireAuth, requireAdmin } from "./middleware";
 
@@ -75,42 +79,26 @@ export function registerSubscriptionRoutes(app: Express) {
         const user = (req as any).user;
         const societyId = getUserSocietyId(user);
 
-        const { name, description, amount, period, periodMonths, isActive, autoRenew } = req.body;
-
-        // Validate required fields
-        if (!name || !amount || !period) {
-          return res.status(400).json({ message: "Missing required fields: name, amount, period" });
-        }
-
-        // Validate period
-        const validPeriods = ["monthly", "quarterly", "yearly", "custom"];
-        if (!validPeriods.includes(period)) {
+        const parsed = subscriptionTypeCreateBodySchema.safeParse(req.body);
+        if (!parsed.success) {
           return res.status(400).json({
-            message: "Invalid period. Must be one of: monthly, quarterly, yearly, custom",
+            message: "Invalid subscription type payload",
+            issues: parsed.error.flatten(),
           });
         }
 
-        // Validate periodMonths for custom periods
-        if (period === "custom" && (!periodMonths || periodMonths < 1)) {
-          return res.status(400).json({
-            message: "periodMonths is required and must be at least 1 for custom periods",
-          });
-        }
-
-        // Validate amount
-        const parsedAmount = parseFloat(amount);
-        if (isNaN(parsedAmount) || parsedAmount < 0) {
-          return res.status(400).json({ message: "Invalid amount. Must be a positive number" });
-        }
+        const { name, description, amount, period, periodMonths, isActive, autoRenew } = parsed.data;
+        const parsedAmount =
+          typeof amount === "number" ? amount : parseFloat(String(amount));
 
         const newSubscriptionType = await db
           .insert(subscriptionTypes)
           .values({
             name,
-            description: description || null,
+            description: description ?? null,
             amount: parsedAmount.toString(),
             period,
-            periodMonths: period === "custom" ? periodMonths : 1,
+            periodMonths: period === "custom" ? (periodMonths ?? 1) : 1,
             isActive: isActive !== undefined ? isActive : true,
             autoRenew: autoRenew !== undefined ? autoRenew : false,
             societyId,
@@ -134,11 +122,19 @@ export function registerSubscriptionRoutes(app: Express) {
         const user = (req as any).user;
         const societyId = getUserSocietyId(user);
 
-        const { name, description, amount, period, periodMonths, isActive, autoRenew } = req.body;
+        const parsed = subscriptionTypeUpdateBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid subscription type payload",
+            issues: parsed.error.flatten(),
+          });
+        }
 
         if (!id || typeof id !== "string") {
           return res.status(400).json({ message: "Invalid subscription type ID" });
         }
+
+        const { name, description, amount, period, periodMonths, isActive, autoRenew } = parsed.data;
 
         // Check if subscription type exists and belongs to user's society
         const existingSubscription = await db
@@ -151,40 +147,28 @@ export function registerSubscriptionRoutes(app: Express) {
           return res.status(404).json({ message: "Subscription type not found" });
         }
 
-        // Validate period if provided
-        if (period) {
-          const validPeriods = ["monthly", "quarterly", "yearly", "custom"];
-          if (!validPeriods.includes(period)) {
-            return res.status(400).json({
-              message: "Invalid period. Must be one of: monthly, quarterly, yearly, custom",
-            });
-          }
-        }
-
-        // Validate periodMonths for custom periods
-        if (period === "custom" && (!periodMonths || periodMonths < 1)) {
+        const row = existingSubscription[0];
+        const mergedPeriod = period !== undefined ? period : row.period;
+        const mergedMonths =
+          periodMonths !== undefined ? periodMonths : row.periodMonths;
+        if (mergedPeriod === "custom" && mergedMonths < 1) {
           return res.status(400).json({
             message: "periodMonths is required and must be at least 1 for custom periods",
           });
         }
 
-        // Validate amount if provided
-        if (amount !== undefined) {
-          const parsedAmount = parseFloat(amount);
-          if (isNaN(parsedAmount) || parsedAmount < 0) {
-            return res.status(400).json({ message: "Invalid amount. Must be a positive number" });
-          }
-        }
-
-        const updateData: any = {};
+        const updateData: Record<string, unknown> = { updatedAt: new Date() };
         if (name !== undefined) updateData.name = name;
         if (description !== undefined) updateData.description = description;
-        if (amount !== undefined) updateData.amount = parseFloat(amount).toString();
+        if (amount !== undefined) {
+          const parsedAmount =
+            typeof amount === "number" ? amount : parseFloat(String(amount));
+          updateData.amount = parsedAmount.toString();
+        }
         if (period !== undefined) updateData.period = period;
         if (periodMonths !== undefined) updateData.periodMonths = periodMonths;
         if (isActive !== undefined) updateData.isActive = isActive;
         if (autoRenew !== undefined) updateData.autoRenew = autoRenew;
-        updateData.updatedAt = new Date();
 
         const updatedSubscriptionType = await db
           .update(subscriptionTypes)

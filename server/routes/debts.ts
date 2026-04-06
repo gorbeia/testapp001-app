@@ -1,6 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
-import { credits, users, type User } from "@shared/schema";
+import { batchCreditStatusBodySchema, credits, users, type User } from "@shared/schema";
 import { eq, and, sum, inArray, desc } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 
@@ -160,18 +160,18 @@ export function registerDebtRoutes(app: Express) {
     requireTreasurer,
     async (req, res, next) => {
       try {
-        const { creditIds, status } = req.body;
+        const parsedBody = batchCreditStatusBodySchema.safeParse(req.body);
+        if (!parsedBody.success) {
+          return res.status(400).json({
+            message: "Invalid payload",
+            issues: parsedBody.error.flatten(),
+          });
+        }
+
+        const { creditIds, status } = parsedBody.data;
         const societyId = getUserSocietyId(req.user!);
 
-        if (!["pending", "paid", "partial"].includes(status)) {
-          return res.status(400).json({ message: "Invalid status" });
-        }
-
-        if (!Array.isArray(creditIds) || creditIds.length === 0) {
-          return res.status(400).json({ message: "Invalid credit IDs" });
-        }
-
-        const uniqueCreditIds = Array.from(new Set(creditIds as string[]));
+        const uniqueCreditIds = Array.from(new Set(creditIds));
 
         // Get all credits to validate and check current month restriction
         const creditsToUpdate = await db

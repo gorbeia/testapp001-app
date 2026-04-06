@@ -59,6 +59,7 @@ export const users = pgTable("users", {
 });
 
 export const insertSocietySchema = createInsertSchema(societies).pick({
+  alphabeticId: true,
   name: true,
   iban: true,
   creditorId: true,
@@ -278,6 +279,7 @@ export const insertReservationSchema = createInsertSchema(reservations).pick({
   startDate: true,
   guests: true,
   useKitchen: true,
+  table: true,
   totalAmount: true,
   notes: true,
 });
@@ -421,6 +423,12 @@ export const insertTableSchema = createInsertSchema(tables).pick({
   description: true,
   isActive: true,
 });
+
+export const updateTableSchema = insertTableSchema
+  .partial()
+  .refine(data => Object.values(data).some(v => v !== undefined), {
+    message: "At least one field is required",
+  });
 
 // Notifications for users
 export const notifications = pgTable("notifications", {
@@ -599,3 +607,243 @@ export const insertSubscriptionTypeSchema = createInsertSchema(subscriptionTypes
 
 export type SubscriptionType = typeof subscriptionTypes.$inferSelect;
 export type InsertSubscriptionType = typeof subscriptionTypes.$inferInsert;
+
+// --- HTTP API body validation (Zod) ---
+
+export const loginBodySchema = z.object({
+  email: z.string().min(1),
+  password: z.string().min(1),
+  societyId: z.string().min(1),
+});
+
+export const backofficeLoginBodySchema = z.object({
+  email: z.string().min(1),
+  password: z.string().min(1),
+});
+
+export const batchCreditStatusBodySchema = z.object({
+  creditIds: z.array(z.string().min(1)).min(1),
+  status: z.enum(["pending", "paid", "partial"]),
+});
+
+export const apiCreateUserBodySchema = insertUserSchema.omit({ societyId: true });
+
+export const updateUserProfileBodySchema = z
+  .object({
+    name: z.string().optional(),
+    phone: z.string().nullable().optional(),
+    iban: z.string().nullable().optional(),
+  })
+  .refine(
+    data => data.name !== undefined || data.phone !== undefined || data.iban !== undefined,
+    { message: "At least one of name, phone, iban is required" }
+  );
+
+export const changePasswordBodySchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(6),
+});
+
+export const updateUserAdminBodySchema = z
+  .object({
+    name: z.string().optional(),
+    role: z.string().nullable().optional(),
+    function: z.string().nullable().optional(),
+    phone: z.string().nullable().optional(),
+    iban: z.string().nullable().optional(),
+    linkedMemberId: z.string().nullable().optional(),
+    linkedMemberName: z.string().nullable().optional(),
+    subscriptionTypeId: z.string().nullable().optional(),
+  })
+  .refine(
+    data => Object.values(data).some(v => v !== undefined),
+    { message: "At least one field is required" }
+  );
+
+const subscriptionPeriodSchema = z.enum(["monthly", "quarterly", "yearly", "custom"]);
+
+const subscriptionTypeFieldsSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().nullable().optional(),
+  amount: z.union([z.coerce.number(), z.string()]),
+  period: subscriptionPeriodSchema,
+  periodMonths: z.coerce.number().int().min(1).optional(),
+  isActive: z.boolean().optional(),
+  autoRenew: z.boolean().optional(),
+});
+
+export const subscriptionTypeCreateBodySchema = subscriptionTypeFieldsSchema.superRefine((data, ctx) => {
+  const raw = typeof data.amount === "number" ? data.amount : parseFloat(String(data.amount));
+  if (Number.isNaN(raw) || raw < 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid amount" });
+  }
+  if (data.period === "custom" && (!data.periodMonths || data.periodMonths < 1)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "periodMonths is required and must be at least 1 for custom periods",
+    });
+  }
+});
+
+export const subscriptionTypeUpdateBodySchema = subscriptionTypeFieldsSchema
+  .partial()
+  .superRefine((data, ctx) => {
+    if (!Object.values(data).some(v => v !== undefined)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least one field is required" });
+    }
+    if (data.period === "custom" && data.periodMonths !== undefined && data.periodMonths < 1) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid periodMonths" });
+    }
+    if (data.amount !== undefined) {
+      const raw = typeof data.amount === "number" ? data.amount : parseFloat(String(data.amount));
+      if (Number.isNaN(raw) || raw < 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid amount" });
+      }
+    }
+  });
+
+export const createReservationBodySchema = insertReservationSchema
+  .omit({ userId: true, societyId: true })
+  .extend({
+    startDate: z.coerce.date(),
+    name: z.string().min(1),
+    type: z.string().min(1),
+    table: z.string().min(1),
+  });
+
+export const cancelReservationBodySchema = z.object({
+  cancellationReason: z.string().optional(),
+});
+
+export const apiConsumptionCreateBodySchema = insertConsumptionSchema.omit({
+  userId: true,
+  societyId: true,
+});
+
+export const addConsumptionItemsBodySchema = z.object({
+  items: z
+    .array(
+      z.object({
+        productId: z.string().min(1),
+        quantity: z.coerce.number().int().positive(),
+        notes: z.string().optional(),
+      })
+    )
+    .min(1),
+});
+
+export const noteMessageBodySchema = z.object({
+  language: z.string().min(1),
+  title: z.string().min(1),
+  content: z.string().min(1),
+});
+
+export const createNoteBodySchema = z.object({
+  messages: z.array(noteMessageBodySchema).min(1),
+});
+
+export const updateNoteBodySchema = z
+  .object({
+    messages: z.array(noteMessageBodySchema).optional(),
+    isActive: z.boolean().optional(),
+  })
+  .refine(
+    data => data.messages !== undefined || data.isActive !== undefined,
+    { message: "At least one of messages, isActive is required" }
+  );
+
+export const noteNotifyBodySchema = z.object({
+  notifyUsers: z.boolean(),
+});
+
+export const createNotificationBodySchema = z
+  .object({
+    title: z.string().optional(),
+    message: z.string().optional(),
+    targetUserId: z.string().optional(),
+    defaultLanguage: z.enum(["eu", "es", "en"]).optional(),
+    messages: z
+      .record(
+        z.string(),
+        z.object({
+          title: z.string().optional(),
+          message: z.string().optional(),
+        })
+      )
+      .optional(),
+  })
+  .refine(
+    data =>
+      Boolean((data.title != null && data.title !== "") || (data.message != null && data.message !== "")) ||
+      (data.messages != null && Object.keys(data.messages).length > 0),
+    { message: "title/message or messages is required" }
+  );
+
+export const updateSocietySettingsBodySchema = insertSocietySchema
+  .pick({
+    name: true,
+    iban: true,
+    creditorId: true,
+    address: true,
+    phone: true,
+    email: true,
+    reservationPricePerMember: true,
+    kitchenPricePerMember: true,
+  })
+  .partial()
+  .refine(data => Object.values(data).some(v => v !== undefined), {
+    message: "At least one field is required",
+  });
+
+export const backofficeCreateSocietyBodySchema = z.object({
+  name: z.string().min(1),
+  iban: z.string().nullish(),
+  creditorId: z.string().nullish(),
+  address: z.string().nullish(),
+  phone: z.string().nullish(),
+  email: z.string().nullish(),
+  reservationPricePerMember: z.union([z.string(), z.number()]).nullish(),
+  kitchenPricePerMember: z.union([z.string(), z.number()]).nullish(),
+});
+
+export const createSuperadminBodySchema = insertSuperadminSchema;
+
+export const updateSuperadminBodySchema = z
+  .object({
+    email: z.string().min(1).optional(),
+    name: z.string().min(1).optional(),
+    isActive: z.boolean().optional(),
+    password: z.string().optional(),
+  })
+  .refine(
+    data =>
+      data.email !== undefined ||
+      data.name !== undefined ||
+      data.isActive !== undefined ||
+      (data.password !== undefined && data.password.length > 0),
+    { message: "At least one field is required" }
+  );
+
+export const createCategoryBodySchema = insertProductCategorySchema
+  .omit({ societyId: true })
+  .extend({
+    messages: z
+      .record(
+        z.string(),
+        z.object({
+          name: z.string().min(1),
+          description: z.string().optional(),
+        })
+      )
+      .optional(),
+  });
+
+export const updateCategoryBodySchema = createCategoryBodySchema
+  .partial()
+  .refine(data => Object.values(data).some(v => v !== undefined), {
+    message: "At least one field is required",
+  });
+
+export const reorderCategoriesBodySchema = z.object({
+  categoryIds: z.array(z.string().min(1)).min(1),
+});

@@ -5,6 +5,8 @@ import {
   reservations,
   notifications,
   notificationMessages,
+  cancelReservationBodySchema,
+  createReservationBodySchema,
   type User,
 } from "@shared/schema";
 import { eq, and, or, like, gte, between, ne, count, desc, asc, sql } from "drizzle-orm";
@@ -568,15 +570,15 @@ export function registerReservationRoutes(app: Express) {
         const user = req.user!;
         const societyId = getUserSocietyId(user);
 
-        // Convert startDate to Date if it's a string
-        let startDate = req.body.startDate;
-        if (typeof startDate === "string") {
-          startDate = new Date(startDate);
-          // Validate the date
-          if (isNaN(startDate.getTime())) {
-            return res.status(400).json({ message: "Invalid date format" });
-          }
+        const parsed = createReservationBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid reservation payload",
+            issues: parsed.error.flatten(),
+          });
         }
+
+        const { startDate, ...rest } = parsed.data;
 
         // Check if reservation date is in the past (ignoring time)
         const now = new Date();
@@ -600,9 +602,10 @@ export function registerReservationRoutes(app: Express) {
           .from(reservations)
           .where(
             and(
-              eq(reservations.table, req.body.table),
+              eq(reservations.societyId, societyId),
+              eq(reservations.table, rest.table),
               eq(reservations.startDate, startDate),
-              eq(reservations.type, req.body.type),
+              eq(reservations.type, rest.type),
               ne(reservations.status, "cancelled")
             )
           )
@@ -610,15 +613,15 @@ export function registerReservationRoutes(app: Express) {
 
         if (existingReservation.length > 0) {
           return res.status(400).json({
-            message: `Table ${req.body.table} is already reserved for this date and event type`,
+            message: `Table ${rest.table} is already reserved for this date and event type`,
           });
         }
 
         const reservationData = {
-          ...req.body,
+          ...rest,
           startDate,
           userId: user.id,
-          societyId: societyId,
+          societyId,
           status: "confirmed",
         };
 
@@ -669,7 +672,14 @@ export function registerReservationRoutes(app: Express) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
-        const { cancellationReason } = req.body as { cancellationReason?: string };
+        const parsed = cancelReservationBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+        const { cancellationReason } = parsed.data;
         const user = req.user!;
 
         const societyId = getUserSocietyId(user);

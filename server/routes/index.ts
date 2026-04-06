@@ -3,7 +3,7 @@ import { type Server } from "http";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { db } from "../db";
-import type { User } from "../../shared/schema";
+import { loginBodySchema, type User } from "../../shared/schema";
 import { i18nMiddleware } from "../lib/i18n";
 
 // JWT Configuration
@@ -169,15 +169,15 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   // Authentication: login using database-backed users table
   app.post("/api/login", async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { email, password, societyId } = req.body as {
-        email?: string;
-        password?: string;
-        societyId?: string;
-      };
-
-      if (!email || !password || !societyId) {
-        return res.status(400).json({ message: "Email, password, and society ID are required" });
+      const parsed = loginBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          message: "Email, password, and society ID are required",
+          issues: parsed.error.flatten(),
+        });
       }
+
+      const { email, password, societyId } = parsed.data;
 
       // Verify society exists by alphabeticId
       const society = await db.query.societies.findFirst({

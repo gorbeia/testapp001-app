@@ -6,6 +6,8 @@ import {
   products,
   users,
   stockMovements,
+  addConsumptionItemsBodySchema,
+  apiConsumptionCreateBodySchema,
   type User,
 } from "@shared/schema";
 import { eq, and, gte, desc, count, sql, like, or, between } from "drizzle-orm";
@@ -30,8 +32,17 @@ export function registerConsumptionRoutes(app: Express) {
       try {
         const user = req.user!;
         const societyId = getUserSocietyId(user);
+
+        const parsed = apiConsumptionCreateBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid consumption payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
         const consumptionData = {
-          ...req.body,
+          ...parsed.data,
           userId: user.id,
           societyId,
         };
@@ -437,7 +448,16 @@ export function registerConsumptionRoutes(app: Express) {
       try {
         const { id } = req.params;
         const user = req.user!;
-        const { items } = req.body; // Array of { productId, quantity, notes }
+
+        const parsedItems = addConsumptionItemsBodySchema.safeParse(req.body);
+        if (!parsedItems.success) {
+          return res.status(400).json({
+            message: "Invalid items payload",
+            issues: parsedItems.error.flatten(),
+          });
+        }
+
+        const { items } = parsedItems.data;
 
         // Verify consumption exists and user has access
         const societyId = getUserSocietyId(user);
