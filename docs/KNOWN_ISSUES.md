@@ -61,9 +61,10 @@ _No open items from the last review._ (`next(err)` for unexpected errors; global
 
 ## Repository and tooling
 
+CI is documented in the root [README](../README.md) (workflows: [`.github/workflows/`](../.github/workflows/) — `ci.yml`, `e2e.yml`, `security-audit.yml`).
+
 | Issue                                                                                                                                                                                                                                                 | Severity | Notes                                                                                                 |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- |
-| **CI** — workflows under [`.github/workflows/`](../.github/workflows/) (`ci.yml`, `e2e.yml`, `security-audit.yml`).                                                                                                                                   | Low      | PR/push: Prettier, `tsc`, ESLint errors-only, build; E2E with Postgres + seed; weekly security audit. |
 | **No unit test runner** in use — E2E only (`pnpm test:e2e`).                                                                                                                                                                                          | Low      | `tsconfig` excludes `*.test.ts`; riskier refactors without fast tests.                                |
 | **Two DB reset scripts** — [`script/reset-database-push.ts`](../script/reset-database-push.ts) (used by `pnpm db:reset`) vs [`script/reset-database.ts`](../script/reset-database.ts) with a smaller table list; easy for the legacy script to drift. | Low      | Prefer one canonical path.                                                                            |
 
