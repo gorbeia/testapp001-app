@@ -117,9 +117,9 @@ Status legend:
 ## 5b. Account movements / ledger (`account-movements.md`)
 
 1. **Member movement list & balance** – `/nire-mugimenduak`, `GET /api/account-movements/me`
-   - **Status**: ✅ Implemented (+ E2E: `account-movements.feature`)
-2. **Treasurer movement audit** – `/mugimenduak`, `GET /api/account-movements` (filters, running balance via SQL window)
-   - **Status**: ✅ Implemented
+   - **Status**: ✅ Implemented (+ top stat cards: balance status, period count/net; E2E: `account-movements.feature`)
+2. **Treasurer movement audit** – `/mugimenduak`, `GET /api/account-movements` (filters, running balance via SQL window; response includes `sumAmount`, `selectedMemberBalance` when a member filter is set)
+   - **Status**: ✅ Implemented (+ top stat cards: filtered count, filtered sum, member saldo when filtered)
 3. **Bank transfer workflow** – `/transferentziak`, `POST/GET /api/bank-transfers`, validate/reject + ledger + notifications
    - **Status**: ✅ Implemented (+ E2E: `bank-transfers.feature`)
 4. **Refunds** – dialog on **`/transferentziak`** (treasurer); `POST /api/account-movements/refund`; **`/itzulketak`** redirects to transfers

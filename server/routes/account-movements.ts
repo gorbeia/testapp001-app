@@ -93,6 +93,8 @@ export function registerAccountMovementRoutes(app: Express) {
           }
         }
 
+        const filterParams = [...params];
+
         const countSql = `
           WITH base AS (
             SELECT m.*, SUM(m.amount::numeric) OVER (
@@ -103,8 +105,21 @@ export function registerAccountMovementRoutes(app: Express) {
           )
           SELECT COUNT(*)::int AS c FROM base WHERE 1=1 ${userClause} ${monthClause} ${typeClause}
         `;
-        const countRes = await pool.query(countSql, params);
+        const countRes = await pool.query(countSql, filterParams);
         const total = countRes.rows[0]?.c ?? 0;
+
+        const sumSql = `
+          SELECT coalesce(sum(m.amount::numeric), 0) AS s
+          FROM account_movements m
+          WHERE m.society_id = $1${userClause} ${monthClause} ${typeClause}
+        `;
+        const sumRes = await pool.query(sumSql, filterParams);
+        const sumAmount = parseFloat(String(sumRes.rows[0]?.s ?? 0));
+
+        let selectedMemberBalance: number | null = null;
+        if (userId) {
+          selectedMemberBalance = await getMemberAccountBalance(societyId, userId);
+        }
 
         const dataSql = `
           WITH base AS (
@@ -119,8 +134,8 @@ export function registerAccountMovementRoutes(app: Express) {
           ORDER BY created_at DESC, id DESC
           LIMIT $${p} OFFSET $${p + 1}
         `;
-        params.push(limit, offset);
-        const dataRes = await pool.query(dataSql, params);
+        const dataParams = [...filterParams, limit, offset];
+        const dataRes = await pool.query(dataSql, dataParams);
         type PgMov = {
           id: string;
           society_id: string;
@@ -171,6 +186,8 @@ export function registerAccountMovementRoutes(app: Express) {
         res.json({
           movements: withNames,
           total,
+          sumAmount,
+          selectedMemberBalance,
           page,
           limit,
         });

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useUrlFilter } from "@/hooks/useUrlFilter";
 import { useLanguage } from "@/lib/i18n";
@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { movementTypeLabelKey } from "@/lib/movement-type-label";
+import { List, Scale, Wallet } from "lucide-react";
 
 const MOVEMENT_TYPES = [
   "all",
@@ -33,6 +34,12 @@ const MOVEMENT_TYPES = [
   "refund",
   "adjustment",
 ] as const;
+
+function balanceAmountClass(b: number) {
+  if (b < 0) return "text-destructive";
+  if (b > 0) return "text-green-600";
+  return "text-muted-foreground";
+}
 
 export function MyMovementsPage() {
   const { t } = useLanguage();
@@ -66,11 +73,81 @@ export function MyMovementsPage() {
     },
   });
 
+  const periodStats = useMemo(() => {
+    const movements = query.data?.movements ?? [];
+    const count = movements.length;
+    const net = movements.reduce((s, m) => s + parseFloat(m.amount), 0);
+    return { count, net };
+  }, [query.data?.movements]);
+
+  const balance = query.data?.balance;
+  const balanceStatusKey =
+    balance === undefined
+      ? null
+      : balance < 0
+        ? "balanceStatusOwed"
+        : balance > 0
+          ? "balanceStatusCredit"
+          : "balanceStatusZero";
+
   return (
     <div className="p-4 sm:p-6 space-y-4" data-testid="my-movements-page">
       <h1 className="text-2xl font-bold" data-testid="my-movements-title">
         {t("myMovements")}
       </h1>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card data-testid="card-my-movements-balance">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+            <CardTitle className="text-sm font-medium" data-testid="my-balance-label">
+              {t("currentBalance")}
+            </CardTitle>
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${
+                balance !== undefined ? balanceAmountClass(balance) : ""
+              }`}
+              data-testid="my-balance-value"
+            >
+              {query.isLoading ? "…" : `${(balance ?? 0).toFixed(2)}€`}
+            </div>
+            {balanceStatusKey && (
+              <p className="text-xs text-muted-foreground mt-2">{t(balanceStatusKey)}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-my-movements-count">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+            <CardTitle className="text-sm font-medium">{t("movementsStatsInPeriod")}</CardTitle>
+            <List className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="my-movements-period-count">
+              {query.isLoading ? "…" : periodStats.count}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-my-movements-net">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+            <CardTitle className="text-sm font-medium">{t("movementsStatsNetInPeriod")}</CardTitle>
+            <Scale className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${
+                query.isLoading ? "" : balanceAmountClass(periodStats.net)
+              }`}
+              data-testid="my-movements-period-net"
+            >
+              {query.isLoading ? "…" : `${periodStats.net.toFixed(2)}€`}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="flex flex-wrap gap-4">
         <div className="w-full sm:w-48" data-testid="filter-month-movements">
@@ -98,12 +175,7 @@ export function MyMovementsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle data-testid="my-balance-label">
-            {t("currentBalance")}:{" "}
-            <span data-testid="my-balance-value">
-              {(query.data?.balance ?? 0).toFixed(2)}€
-            </span>
-          </CardTitle>
+          <CardTitle>{t("movementListSection")}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-3" data-testid="movements-sign-legend">

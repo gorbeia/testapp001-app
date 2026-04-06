@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 import { movementTypeLabelKey } from "@/lib/movement-type-label";
 import { Label } from "@/components/ui/label";
+import { List, Scale, Wallet } from "lucide-react";
 
 const MOVEMENT_TYPES = [
   "all",
@@ -36,6 +37,12 @@ const MOVEMENT_TYPES = [
 ] as const;
 
 type UserRow = { id: string; name: string | null; username: string };
+
+function balanceAmountClass(b: number) {
+  if (b < 0) return "text-destructive";
+  if (b > 0) return "text-green-600";
+  return "text-muted-foreground";
+}
 
 export function AccountMovementsPage() {
   const { t } = useLanguage();
@@ -78,15 +85,96 @@ export function AccountMovementsPage() {
           memberName: string | null;
         }>;
         total: number;
+        sumAmount: number;
+        selectedMemberBalance: number | null;
       }>;
     },
   });
+
+  const selBal = query.data?.selectedMemberBalance;
+  const memberBalanceStatusKey =
+    userId === "all" || selBal === undefined || selBal === null
+      ? null
+      : selBal < 0
+        ? "balanceStatusOwed"
+        : selBal > 0
+          ? "balanceStatusCredit"
+          : "balanceStatusZero";
 
   return (
     <div className="p-4 sm:p-6 space-y-4" data-testid="admin-movements-page">
       <h1 className="text-2xl font-bold" data-testid="admin-movements-title">
         {t("adminMovements")}
       </h1>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card data-testid="card-admin-movements-count">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {t("movementsStatsFilteredCount")}
+            </CardTitle>
+            <List className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold" data-testid="admin-movements-count">
+              {query.isLoading ? "…" : query.data?.total ?? 0}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-admin-movements-net">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {t("movementsStatsFilteredNet")}
+            </CardTitle>
+            <Scale className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div
+              className={`text-2xl font-bold ${
+                query.isLoading ? "" : balanceAmountClass(query.data?.sumAmount ?? 0)
+              }`}
+              data-testid="admin-movements-sum-amount"
+            >
+              {query.isLoading ? "…" : `${(query.data?.sumAmount ?? 0).toFixed(2)}€`}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card data-testid="card-admin-movements-member-balance">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+            <CardTitle className="text-sm font-medium">
+              {t("memberLedgerBalanceStat")}
+            </CardTitle>
+            <Wallet className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {userId === "all" ? (
+              <p className="text-sm text-muted-foreground" data-testid="admin-movements-member-balance-placeholder">
+                {t("selectMemberToSeeBalance")}
+              </p>
+            ) : (
+              <>
+                <div
+                  className={`text-2xl font-bold ${
+                    query.isLoading || selBal === undefined || selBal === null
+                      ? ""
+                      : balanceAmountClass(selBal)
+                  }`}
+                  data-testid="admin-movements-member-balance-value"
+                >
+                  {query.isLoading || selBal === undefined || selBal === null
+                    ? "…"
+                    : `${selBal.toFixed(2)}€`}
+                </div>
+                {memberBalanceStatusKey && (
+                  <p className="text-xs text-muted-foreground mt-2">{t(memberBalanceStatusKey)}</p>
+                )}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="flex flex-wrap gap-4 items-end">
         <div className="w-full sm:w-48">
@@ -136,9 +224,7 @@ export function AccountMovementsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle data-testid="admin-movements-count">
-            {query.data?.total ?? 0} {t("total")}
-          </CardTitle>
+          <CardTitle>{t("movementListSection")}</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-3" data-testid="admin-movements-sign-legend">
