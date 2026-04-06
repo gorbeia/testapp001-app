@@ -1,4 +1,6 @@
-# Design Guidelines: Gastronomic Society Management App
+# Design Guidelines: Elkartearen App
+
+_Product domain: gastronomic society management._
 
 ## Design Approach
 
@@ -54,7 +56,7 @@
 
 **2. Data Display Components**
 
-- **Tables**: Striped rows, sortable headers (Heroicons arrow icons), sticky header on scroll, row actions menu (3-dot dropdown), responsive stacking on mobile
+- **Tables**: Striped rows, sortable headers (Lucide arrow/chevron icons), sticky header on scroll, row actions menu (3-dot dropdown), responsive stacking on mobile
 - **Cards**: Elevated surface with `shadow-md`, `rounded-lg`, header with icon, content area with `p-6`, optional footer actions
 - **List Items**: Avatar/icon + title + subtitle + metadata + action button, divider between items
 - **Badges**: Role indicators (Bazkidea, Laguna, Diruzaina, etc.) with distinct visual treatment, rounded-full, px-3 py-1, 12px text
@@ -63,7 +65,7 @@
 **3. Forms & Input**
 
 - **Text Inputs**: Full-width with label above, `border rounded-md px-4 py-2`, focus ring, error states below field
-- **Select Dropdowns**: Native select styled consistently, chevron-down icon (Heroicons)
+- **Select Dropdowns**: Native select styled consistently, chevron-down icon (Lucide)
 - **Date/Time Pickers**: Calendar icon prefix, clear interaction pattern
 - **Radio/Checkbox Groups**: Vertical stack with `gap-2`, label clickable
 - **Number Inputs**: Stepper buttons for quantities (consumiciones), currency format for amounts (€)
@@ -71,7 +73,7 @@
 
 **4. Action Components**
 
-- **Primary Buttons**: `px-6 py-3 rounded-lg`, 600 weight text, with icon support (Heroicons)
+- **Primary Buttons**: `px-6 py-3 rounded-lg`, 600 weight text, with icon support (Lucide)
 - **Secondary Buttons**: Outlined variant, same size/padding
 - **Icon Buttons**: Square/circular, `p-2`, for table actions and compact spaces
 - **FAB (Floating Action Button)**: Bottom-right on mobile for primary actions (Nueva Reserva, Registrar Consumo)
@@ -95,11 +97,11 @@
 - **Chat Interface**: Message bubbles (sender/receiver alignment), timestamp, typing indicator, message input with send button
 
 **7. Icons**
-**Library**: Heroicons (via CDN) for all interface icons
+**Library**: **Lucide React** (`lucide-react`), same stack as [TECHNICAL_DOCUMENTATION.md](../TECHNICAL_DOCUMENTATION.md) and shadcn-style components (import icons as components, not a separate CDN).
 
-- Navigation: home, calendar, shopping-cart, currency-euro, users, chat-bubble, bell, document
-- Actions: plus, pencil, trash, check, x-mark, arrow-down-tray (download)
-- Status: check-circle, exclamation-circle, information-circle
+- Navigation: e.g. `Home`, `Calendar`, `ShoppingCart`, `Euro`, `Users`, `MessageCircle`, `Bell`, `FileText`
+- Actions: e.g. `Plus`, `Pencil`, `Trash2`, `Check`, `X`, `Download`
+- Status: e.g. `CheckCircle`, `AlertCircle`, `Info`
 
 ### D. Animations
 
@@ -149,4 +151,4 @@
 - Society logo in top bar (100x40px max)
 - User avatars (40x40px circular)
 - Empty state illustrations (simple, line-art style, 200x200px)
-- Icons from Heroicons only
+- Icons from Lucide only (consistent with the codebase)

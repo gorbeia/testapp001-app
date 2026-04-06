@@ -2,6 +2,8 @@
 
 A modern web application built with React, TypeScript, and Express.js for managing a gastronomic society.
 
+**Naming:** Docs and this repo use **Elkartearen App**. The running UI is branded **Gure Txokoa** in `client/index.html` and baseline translations (`client/src/lib/i18n.ts`).
+
 ## Prerequisites
 
 - **Node.js** — version in `package.json` → `engines` (currently **Node >= 24**).

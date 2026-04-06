@@ -24,8 +24,7 @@
 
 - **Runtime**: Node.js with TypeScript (tsx)
 - **Web Framework**: Express.js
-- **Authentication**: Passport.js with local strategy
-- **Session Management**: express-session with PostgreSQL session store
+- **Authentication**: JWT (cookies + Bearer) via `jsonwebtoken`; society-scoped users
 - **Database**: PostgreSQL with Drizzle ORM
 - **API Validation**: Zod
 - **WebSockets**: ws
@@ -40,7 +39,7 @@
 ## 3. Project Structure
 
 ```
-elkarearen-app/
+./
 ├── client/                 # Frontend code
 │   ├── public/            # Static assets
 │   └── src/               # Source code
@@ -63,8 +62,8 @@ elkarearen-app/
 
 ### Authentication System
 
-- Email/password authentication using Passport.js
-- Session management with secure cookies
+- Email/password authentication with bcrypt (or legacy check) over `POST /api/login`
+- JWT access token in httpOnly cookie plus optional Bearer header; refresh cookie for `POST /api/refresh`
 - Protected routes and API endpoints
 
 ### Database Layer
@@ -90,9 +89,9 @@ elkarearen-app/
 
 ### Prerequisites
 
-- Node.js (v18+ recommended)
-- PostgreSQL (v14+)
-- pnpm (or npm/yarn)
+- **Node.js** >= 24 (see `package.json` → `engines`; same as [README](README.md))
+- **PostgreSQL** (v14+)
+- **pnpm** (required for this repo; see README)
 
 ### Installation
 
@@ -158,19 +157,13 @@ NODE_ENV=production
 
 ## 9. Testing
 
-### Unit Tests
+Automated tests are **E2E** (Cucumber + Playwright) only; there is no `test:unit` script in this repo.
 
 ```bash
-# Run unit tests
-pnpm test:unit
+pnpm test:e2e
 ```
 
-### Integration Tests
-
-```bash
-# Run integration tests
-pnpm test:integration
-```
+See [README](README.md) for full E2E prerequisites (database seed, Playwright browsers).
 
 ## 10. Error Handling
 

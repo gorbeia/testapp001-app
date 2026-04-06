@@ -1,6 +1,6 @@
 # Ubuntu 24.04 Installation Guide
 
-This guide provides step-by-step instructions for installing and setting up the Gure Txokoa application on Ubuntu 24.04 LTS.
+This guide provides step-by-step instructions for installing and setting up **Elkartearen App** on Ubuntu 24.04 LTS (the app UI is branded *Gure Txokoa* in the client).
 
 ## Prerequisites
 
@@ -320,7 +320,7 @@ Add the following content:
 
 ```ini
 [Unit]
-Description=Gure Txokoa Application
+Description=Elkartearen App
 After=network.target postgresql.service
 
 [Service]

@@ -43,11 +43,9 @@ _No open items from the last review._ (`next(err)` for unexpected errors; global
 
 ## Documentation drift
 
-| Issue                                                                                                                                                                                                                                                                                                                                          | Severity | Notes                                                                               |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------- |
-| **[`docs/features/IMPLEMENTATION_STATUS.md`](features/IMPLEMENTATION_STATUS.md)** vs **story files** under `docs/features/*.md` — some stories marked not implemented while status says done (e.g. authentication/profile stories).                                                                                                            | Low      | Workflow rule: treat status doc as shipped truth until specs are reconciled.        |
-| **Credits / Zorrak** — status may understate backend work (real `/api/credits` routes exist while some rows were marked mock/UI-only in past reviews).                                                                                                                                                                                         | Low      | Reconcile status with [`server/routes/debts.ts`](../server/routes/debts.ts) and UI. |
-| **Root docs inconsistency** — e.g. [`README.md`](../README.md) vs [`package.json`](../package.json) `engines` (Node version), product naming in [`INSTALLATION_UBUNTU_24.md`](../INSTALLATION_UBUNTU_24.md), icon stack in [`TECHNICAL_DOCUMENTATION.md`](../TECHNICAL_DOCUMENTATION.md) vs [`design_guidelines.md`](../design_guidelines.md). | Low      | Onboarding confusion only.                                                          |
+Keeping feature stories and [`IMPLEMENTATION_STATUS.md`](features/IMPLEMENTATION_STATUS.md) aligned is covered by [`.cursor/rules/feature-workflow.mdc`](../.cursor/rules/feature-workflow.mdc), not an open product defect.
+
+Root onboarding docs ([`README.md`](../README.md), [`INSTALLATION_UBUNTU_24.md`](../INSTALLATION_UBUNTU_24.md), [`TECHNICAL_DOCUMENTATION.md`](../TECHNICAL_DOCUMENTATION.md), [`docs/design_guidelines.md`](design_guidelines.md)) were reconciled for Node **`engines`**, **Elkartearen App** vs **Gure Txokoa** naming, **Lucide** icons, JWT auth description, and **E2E-only** testing.
 
 ---
 
