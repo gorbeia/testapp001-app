@@ -1,5 +1,5 @@
 import { When, Then } from "@cucumber/cucumber";
-import { getPage, e2eUrl } from "./shared-state";
+import { getPage, e2eUrl, e2eDebug } from "./shared-state";
 import assert from "node:assert/strict";
 
 Then("I should see the reservation in my reservations list", async function () {
@@ -123,7 +123,7 @@ When("I cancel the user's reservation", async function () {
 
       await confirmButton.click();
 
-      console.log("Cancellation clicked, waiting for completion...");
+      e2eDebug("Cancellation clicked, waiting for completion...");
 
       // Wait for either success toast OR error dialog to stay open (indicating failure)
       try {
@@ -148,14 +148,14 @@ When("I cancel the user's reservation", async function () {
           .catch(() => false);
 
         if (successToast) {
-          console.log("Success toast detected");
+          e2eDebug("Success toast detected");
         } else if (errorToast) {
-          console.log("Error toast detected - cancellation failed");
+          e2eDebug("Error toast detected - cancellation failed");
         } else if (dialogStillOpen) {
-          console.log("Dialog still open - cancellation may have failed");
+          e2eDebug("Dialog still open - cancellation may have failed");
         }
       } catch {
-        console.log("No response detected - checking if dialog closed anyway...");
+        e2eDebug("No response detected - checking if dialog closed anyway...");
       }
 
       // Check if dialog is still open
@@ -164,7 +164,7 @@ When("I cancel the user's reservation", async function () {
         .isVisible()
         .catch(() => false);
       if (dialogOpen) {
-        console.log("Dialog is still open - cancellation likely failed");
+        e2eDebug("Dialog is still open - cancellation likely failed");
         // Close it to continue
         await page.keyboard.press("Escape");
       }
@@ -208,13 +208,13 @@ Then("the reservation should be marked as cancelled", async function () {
         .count()) > 0;
 
     // Debug logging
-    console.log("Reservation cancellation debug:");
-    console.log("Reservation name:", uniqueReservationName);
-    console.log("Is visible:", await reservationRow.isVisible());
-    console.log("Badge visible:", isCancelled);
-    console.log("Cancelled text visible:", cancelledText);
-    console.log("Is cancelled:", finalIsCancelled);
-    console.log("Has cancel button:", hasCancelButton);
+    e2eDebug("Reservation cancellation debug:");
+    e2eDebug("Reservation name:", uniqueReservationName);
+    e2eDebug("Is visible:", await reservationRow.isVisible());
+    e2eDebug("Badge visible:", isCancelled);
+    e2eDebug("Cancelled text visible:", cancelledText);
+    e2eDebug("Is cancelled:", finalIsCancelled);
+    e2eDebug("Has cancel button:", hasCancelButton);
 
     // Success if either marked as cancelled or cancel button is gone
     const success = finalIsCancelled || !hasCancelButton;
@@ -224,7 +224,7 @@ Then("the reservation should be marked as cancelled", async function () {
     );
   } else {
     // Reservation removed from list after cancellation - this is also success
-    console.log("Reservation is no longer visible (cancelled)");
+    e2eDebug("Reservation is no longer visible (cancelled)");
     assert.ok(true, "Reservation is no longer visible (cancelled)");
   }
 });
@@ -264,7 +264,7 @@ Then("I should see a cancellation notification", async function () {
             elementText.includes("bertan behera"))
         ) {
           this.cancellationNotificationText = elementText;
-          console.log("Found cancellation notification:", elementText);
+          e2eDebug("Found cancellation notification:", elementText);
           return;
         }
       }

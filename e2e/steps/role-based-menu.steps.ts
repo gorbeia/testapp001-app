@@ -1,6 +1,6 @@
 import { When, Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
-import { getPage, e2eUrl } from "./shared-state";
+import { getPage, e2eUrl, e2eDebug } from "./shared-state";
 
 // Main menu entries that all users should see
 const MAIN_MENU_ENTRIES = [
@@ -88,7 +88,7 @@ Then("I should not be able to access admin pages directly", { timeout: 15000 }, 
         waitUntil: "domcontentloaded",
         timeout: 3000,
       });
-      console.log(`Navigated to ${pagePath}`);
+      e2eDebug(`Navigated to ${pagePath}`);
 
       // Check for the unified access denied message
       const accessDeniedMessage = await page.$("text=Ez duzu baimenik orri hau ikusteko");
@@ -98,12 +98,12 @@ Then("I should not be able to access admin pages directly", { timeout: 15000 }, 
         `Access to admin page ${pagePath} should show access denied message for bazkide user`
       );
     } catch (error) {
-      console.log(`  Error accessing ${pagePath}: ${(error as Error).message}`);
+      e2eDebug(`  Error accessing ${pagePath}: ${(error as Error).message}`);
       throw error;
     }
   }
 
-  console.log("Successfully validated access denied for all admin pages");
+  e2eDebug("Successfully validated access denied for all admin pages");
 });
 
 Then("I should be able to access all admin pages", async function () {

@@ -142,11 +142,19 @@ pnpm test:e2e:only
 
 # Single feature file (note the `--` so pnpm forwards the path)
 pnpm test:e2e:feature -- e2e/features/login.feature
+
+# Verbose step-by-step output (pretty formatter)
+pnpm test:e2e:verbose
+pnpm test:e2e:feature:verbose -- e2e/features/login.feature
+
+# Optional: print step debug logs from e2eDebug()
+E2E_DEBUG=1 pnpm test:e2e
 ```
 
 ### E2E environment variables
 
 - **`E2E_BASE_URL`** — optional override for the SPA origin used in all `page.goto` calls.
+- **`E2E_DEBUG`** — set to `1` or `true` to print optional step diagnostics (`e2eDebug` in step files).
 - If omitted, **`VITE_API_URL`** is used (typical dev setup), then **`http://localhost:${PORT}`**.
 
 Playwright launch options in `login.steps.ts` treat **`E2E_HEADED`** as follows:
@@ -180,9 +188,11 @@ There are **12** feature files under `e2e/features/` (login, users, profile, res
 | `pnpm db:reset`                        | Drop app tables + `db:push`                                    |
 | `pnpm db:reset:seed`                   | `db:reset` then `db:seed`                                      |
 | `pnpm docker:db:up` / `down` / `reset` | Postgres via Docker Compose                                    |
-| `pnpm test:e2e`                        | Full Cucumber suite                                            |
+| `pnpm test:e2e`                        | Full Cucumber suite (compact **`progress-bar`** output)         |
+| `pnpm test:e2e:verbose`              | Same suite, **pretty** (verbose) formatter                       |
 | `pnpm test:e2e:only`                   | `@only` scenarios                                              |
 | `pnpm test:e2e:feature -- <path>`      | One `.feature` file                                            |
+| `pnpm test:e2e:feature:verbose -- <path>` | One feature file, **pretty** formatter                       |
 | `pnpm audit:security`                  | Dependency security audit (see below)                          |
 | `pnpm audit:security:prod`             | Same audit, **production** dependencies only (`pnpm audit -P`) |
 

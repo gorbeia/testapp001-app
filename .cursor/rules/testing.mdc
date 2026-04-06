@@ -16,7 +16,9 @@ alwaysApply: false
 
 ## Commands (from repo root)
 
-- Full suite: `pnpm test:e2e` (`NODE_ENV=test`)
+- Full suite: `pnpm test:e2e` (`NODE_ENV=test`) — uses **`progress-bar`** (compact; failures still print at the end).
+- Step **`console` noise:** off by default; enable with **`E2E_DEBUG=1`** (or `true`).
+- Verbose (step-by-step) output: **`pnpm test:e2e:verbose`** or **`pnpm test:e2e:feature:verbose -- e2e/features/...`**
 - Only scenarios tagged **`@only`:** `pnpm test:e2e:only`
 - Single feature file: `pnpm test:e2e:feature -- e2e/features/<name>.feature`
 

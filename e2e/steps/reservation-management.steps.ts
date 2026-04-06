@@ -1,6 +1,6 @@
 import { Given, When, Then } from "@cucumber/cucumber";
 import type { Page } from "playwright";
-import { getPage, e2eUrl } from "./shared-state";
+import { getPage, e2eUrl, e2eDebug } from "./shared-state";
 import assert from "node:assert/strict";
 
 /** Cost breakdown inside the new-reservation dialog (not other .bg-muted/50 on the page). */
@@ -85,7 +85,7 @@ When("I select the reservation date", async function () {
   const targetYear = randomDate.getFullYear();
   const targetDay = randomDate.getDate();
 
-  console.log(`Target date: ${targetDay}/${targetMonth + 1}/${targetYear}`);
+  e2eDebug(`Target date: ${targetDay}/${targetMonth + 1}/${targetYear}`);
 
   // Navigate to the target month
   const currentMonth = new Date();
