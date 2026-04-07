@@ -33,8 +33,7 @@ export const translations = {
     financialSubscriptionChargeTitle: "Harpidetza kargua",
     financialSubscriptionChargeMessage: "{month} hilabeteko harpidetza: {amount} €.",
     stockLowAlertTitle: "Stock baxua",
-    stockLowAlertMessage:
-      "{productName}: {newStock} {unit} geratzen dira (minimoa: {minStock}).",
+    stockLowAlertMessage: "{productName}: {newStock} {unit} geratzen dira (minimoa: {minStock}).",
   },
 
   es: {
@@ -69,8 +68,7 @@ export const translations = {
     financialSubscriptionChargeTitle: "Cuota de suscripción",
     financialSubscriptionChargeMessage: "Cuota de suscripción {month}: {amount} €.",
     stockLowAlertTitle: "Stock bajo",
-    stockLowAlertMessage:
-      "{productName}: quedan {newStock} {unit} (mínimo: {minStock}).",
+    stockLowAlertMessage: "{productName}: quedan {newStock} {unit} (mínimo: {minStock}).",
   },
 
   en: {
@@ -104,8 +102,7 @@ export const translations = {
     financialSubscriptionChargeTitle: "Subscription charge",
     financialSubscriptionChargeMessage: "Subscription charge for {month}: {amount} €.",
     stockLowAlertTitle: "Low stock",
-    stockLowAlertMessage:
-      "{productName}: {newStock} {unit} remaining (minimum: {minStock}).",
+    stockLowAlertMessage: "{productName}: {newStock} {unit} remaining (minimum: {minStock}).",
   },
 };
 

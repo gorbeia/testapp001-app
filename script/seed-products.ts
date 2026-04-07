@@ -268,9 +268,7 @@ export async function seedProducts(dbConn: SeedDb) {
           stockMode: product.stockMode,
           description: product.description,
         })
-        .where(
-          and(eq(products.name, product.name), eq(products.societyId, societyId))
-        );
+        .where(and(eq(products.name, product.name), eq(products.societyId, societyId)));
       console.log(`Product already exists (updated stockMode/description): ${product.name}`);
     }
   }

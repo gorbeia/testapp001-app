@@ -106,12 +106,10 @@ export const translations = {
     stockModeAuto: "Automatikoa",
     stockModeManual: "Eskuz kudeatua",
     stockModeNone: "Inbentariorik gabe",
-    stockModeAutoHint:
-      "Kontsumoak stock-a automatikoki gutxitzen du (ale arruntak).",
+    stockModeAutoHint: "Kontsumoak stock-a automatikoki gutxitzen du (ale arruntak).",
     stockModeManualHint:
       "Stock-a hornidurak, inbentarioa eta doikuntzek aldatzen dute; kutxak ez du stock-a ukitzen (adib. botila kopetan; saltzen den unitate ezberdina).",
-    stockModeNoneHint:
-      "Ez da stock, hornidura edo alertarik kudeatzen; kutxak soilik fakturatu.",
+    stockModeNoneHint: "Ez da stock, hornidura edo alertarik kudeatzen; kutxak soilik fakturatu.",
     stockNotTracked: "Ez dago stock-ik kudeatzen",
     stockModeBadgeManual: "Eskuz",
     stockModeBadgeNone: "Ez stock",
@@ -133,8 +131,7 @@ export const translations = {
     stockChangesTotal: "Guztira: {count} erregistro",
     noStockMovements: "Ez dago stock aldaketarik erakusteko.",
     adjustStock: "Stock doitu",
-    stockQuantityDelta:
-      "Kopurua (positiboa = gehitu, negatifoa = kendu; doikuntza soilik)",
+    stockQuantityDelta: "Kopurua (positiboa = gehitu, negatifoa = kendu; doikuntza soilik)",
     stockDamagePositiveHint: "Kaltean: sartu hondatutako unitate kopurua (positiboa).",
     applyAdjustStock: "Gorde aldaketa",
     stockAdjustSuccess: "Stock eguneratua",
@@ -143,7 +140,8 @@ export const translations = {
     stockAdjustFormInvalid: "Sartu kopuru baliozkoa eta arrazoia.",
     reason: "Arrazoia",
     supplies: "Hornidurak",
-    suppliesDescription: "Jasotako horniduren erregistroa; stock-a handitzen du erosketa-mugimenduekin.",
+    suppliesDescription:
+      "Jasotako horniduren erregistroa; stock-a handitzen du erosketa-mugimenduekin.",
     newSupply: "Hornidura berria",
     newSupplyDescription: "Gehitu produktuak eta kopuruak jasotako horniduraren arabera.",
     invoiceReference: "Faktura erreferentzia",
@@ -860,12 +858,10 @@ export const translations = {
     stockModeAuto: "Automático",
     stockModeManual: "Gestión manual",
     stockModeNone: "Sin inventario",
-    stockModeAutoHint:
-      "Los consumos descuentan stock automáticamente (artículos habituales).",
+    stockModeAutoHint: "Los consumos descuentan stock automáticamente (artículos habituales).",
     stockModeManualHint:
       "El stock solo cambia con albaranes, inventario y ajustes; la caja no lo toca (p. ej., botellas; se vende en otra unidad).",
-    stockModeNoneHint:
-      "No se gestiona stock ni albaranes ni alertas; solo facturación en caja.",
+    stockModeNoneHint: "No se gestiona stock ni albaranes ni alertas; solo facturación en caja.",
     stockNotTracked: "Sin gestión de stock",
     stockModeBadgeManual: "Manual",
     stockModeBadgeNone: "Sin stock",
@@ -887,8 +883,7 @@ export const translations = {
     stockChangesTotal: "Total: {count} registros",
     noStockMovements: "No hay cambios de stock que mostrar.",
     adjustStock: "Ajustar stock",
-    stockQuantityDelta:
-      "Cantidad (positivo = sumar, negativo = restar; solo en ajuste)",
+    stockQuantityDelta: "Cantidad (positivo = sumar, negativo = restar; solo en ajuste)",
     stockDamagePositiveHint: "En merma: indica unidades dañadas (número positivo).",
     applyAdjustStock: "Guardar cambio",
     stockAdjustSuccess: "Stock actualizado",
@@ -897,8 +892,7 @@ export const translations = {
     stockAdjustFormInvalid: "Introduce una cantidad válida y un motivo.",
     reason: "Motivo",
     supplies: "Suministros",
-    suppliesDescription:
-      "Registro de recepciones; aumenta el stock con movimientos tipo compra.",
+    suppliesDescription: "Registro de recepciones; aumenta el stock con movimientos tipo compra.",
     newSupply: "Nuevo suministro",
     newSupplyDescription: "Añade productos y cantidades recibidas en el reparto.",
     invoiceReference: "Referencia factura",

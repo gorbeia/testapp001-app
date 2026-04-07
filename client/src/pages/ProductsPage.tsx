@@ -437,130 +437,162 @@ export function ProductsPage() {
               </Link>
             </Button>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button data-testid="button-new-product" aria-label="Produktu berria sortu">
-                <Plus className="mr-2 h-4 w-4" />
-                {t("newProduct")}
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>{t("newProduct")}</DialogTitle>
-                <DialogDescription>Sortu produktu berri bat sistema honentzat.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <Label>{t("name")}</Label>
-                  <Input
-                    placeholder="Produktuaren izena..."
-                    aria-label="Produktuaren izena"
-                    value={newProduct.name}
-                    onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
-                    data-testid="input-product-name"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>{t("productDescription")}</Label>
-                  <Input
-                    placeholder="Produktuaren deskribapena..."
-                    aria-label="Produktuaren deskribapena"
-                    value={newProduct.description}
-                    onChange={e => setNewProduct({ ...newProduct, description: e.target.value })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <DialogTrigger asChild>
+                <Button data-testid="button-new-product" aria-label="Produktu berria sortu">
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t("newProduct")}
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>{t("newProduct")}</DialogTitle>
+                  <DialogDescription>Sortu produktu berri bat sistema honentzat.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
                   <div className="space-y-2">
-                    <Label>{t("productCategory")}</Label>
-                    <Select
-                      value={newProduct.categoryId}
-                      onValueChange={value => setNewProduct({ ...newProduct, categoryId: value })}
-                    >
-                      <SelectTrigger
-                        data-testid="select-product-category"
-                        aria-label="Hautatu produktuaren kategoria"
-                      >
-                        <SelectValue placeholder="Hautatu kategoria" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.length === 0 ? (
-                          <SelectItem value="loading" disabled>
-                            Kategoriak kargatzen...
-                          </SelectItem>
-                        ) : (
-                          categories.map(category => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Prezioa (€)</Label>
+                    <Label>{t("name")}</Label>
                     <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      aria-label="Produktuaren prezioa eurotan"
-                      value={newProduct.price}
-                      onChange={e => setNewProduct({ ...newProduct, price: e.target.value })}
-                      data-testid="input-product-price"
+                      placeholder="Produktuaren izena..."
+                      aria-label="Produktuaren izena"
+                      value={newProduct.name}
+                      onChange={e => setNewProduct({ ...newProduct, name: e.target.value })}
+                      data-testid="input-product-name"
                     />
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <Label>{t("stockMode")}</Label>
-                  <Select
-                    value={newProduct.stockMode}
-                    onValueChange={value =>
-                      setNewProduct({
-                        ...newProduct,
-                        stockMode: value as StockModeUi,
-                      })
-                    }
-                  >
-                    <SelectTrigger data-testid="select-new-product-stock-mode">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="auto">{t("stockModeAuto")}</SelectItem>
-                      <SelectItem value="manual">{t("stockModeManual")}</SelectItem>
-                      <SelectItem value="none">{t("stockModeNone")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    {newProduct.stockMode === "auto" && t("stockModeAutoHint")}
-                    {newProduct.stockMode === "manual" && t("stockModeManualHint")}
-                    {newProduct.stockMode === "none" && t("stockModeNoneHint")}
-                  </p>
-                </div>
+                  <div className="space-y-2">
+                    <Label>{t("productDescription")}</Label>
+                    <Input
+                      placeholder="Produktuaren deskribapena..."
+                      aria-label="Produktuaren deskribapena"
+                      value={newProduct.description}
+                      onChange={e => setNewProduct({ ...newProduct, description: e.target.value })}
+                    />
+                  </div>
 
-                {newProduct.stockMode !== "none" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>{t("productStock")}</Label>
+                      <Label>{t("productCategory")}</Label>
+                      <Select
+                        value={newProduct.categoryId}
+                        onValueChange={value => setNewProduct({ ...newProduct, categoryId: value })}
+                      >
+                        <SelectTrigger
+                          data-testid="select-product-category"
+                          aria-label="Hautatu produktuaren kategoria"
+                        >
+                          <SelectValue placeholder="Hautatu kategoria" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.length === 0 ? (
+                            <SelectItem value="loading" disabled>
+                              Kategoriak kargatzen...
+                            </SelectItem>
+                          ) : (
+                            categories.map(category => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Prezioa (€)</Label>
                       <Input
                         type="number"
+                        step="0.01"
                         min="0"
-                        placeholder="0"
-                        aria-label="Produktuaren stock kopurua"
-                        value={newProduct.stock}
-                        onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })}
-                        data-testid="input-product-stock"
+                        placeholder="0.00"
+                        aria-label="Produktuaren prezioa eurotan"
+                        value={newProduct.price}
+                        onChange={e => setNewProduct({ ...newProduct, price: e.target.value })}
+                        data-testid="input-product-price"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>{t("stockMode")}</Label>
+                    <Select
+                      value={newProduct.stockMode}
+                      onValueChange={value =>
+                        setNewProduct({
+                          ...newProduct,
+                          stockMode: value as StockModeUi,
+                        })
+                      }
+                    >
+                      <SelectTrigger data-testid="select-new-product-stock-mode">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">{t("stockModeAuto")}</SelectItem>
+                        <SelectItem value="manual">{t("stockModeManual")}</SelectItem>
+                        <SelectItem value="none">{t("stockModeNone")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      {newProduct.stockMode === "auto" && t("stockModeAutoHint")}
+                      {newProduct.stockMode === "manual" && t("stockModeManualHint")}
+                      {newProduct.stockMode === "none" && t("stockModeNoneHint")}
+                    </p>
+                  </div>
+
+                  {newProduct.stockMode !== "none" && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>{t("productStock")}</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          aria-label="Produktuaren stock kopurua"
+                          value={newProduct.stock}
+                          onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })}
+                          data-testid="input-product-stock"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{t("productUnit")}</Label>
+                        <Select
+                          value={newProduct.unit}
+                          onValueChange={value => setNewProduct({ ...newProduct, unit: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="unit">Unitatea</SelectItem>
+                            <SelectItem value="kg">Kg</SelectItem>
+                            <SelectItem value="l">L</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{t("minStock")}</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          placeholder="0"
+                          aria-label="Stock minimoaren alerta mugaria"
+                          value={newProduct.minStock}
+                          onChange={e => setNewProduct({ ...newProduct, minStock: e.target.value })}
+                          data-testid="input-product-min-stock"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {newProduct.stockMode === "none" && (
                     <div className="space-y-2">
                       <Label>{t("productUnit")}</Label>
                       <Select
                         value={newProduct.unit}
                         onValueChange={value => setNewProduct({ ...newProduct, unit: value })}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger data-testid="select-new-product-unit-none">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -570,71 +602,39 @@ export function ProductsPage() {
                         </SelectContent>
                       </Select>
                     </div>
+                  )}
+
+                  {newProduct.stockMode !== "none" && (
                     <div className="space-y-2">
-                      <Label>{t("minStock")}</Label>
+                      <Label>{t("supplier")}</Label>
                       <Input
-                        type="number"
-                        min="0"
-                        placeholder="0"
-                        aria-label="Stock minimoaren alerta mugaria"
-                        value={newProduct.minStock}
-                        onChange={e => setNewProduct({ ...newProduct, minStock: e.target.value })}
-                        data-testid="input-product-min-stock"
+                        placeholder="Hornitzailearen izena..."
+                        aria-label="Hornitzailearen izena"
+                        value={newProduct.supplier}
+                        onChange={e => setNewProduct({ ...newProduct, supplier: e.target.value })}
                       />
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {newProduct.stockMode === "none" && (
-                  <div className="space-y-2">
-                    <Label>{t("productUnit")}</Label>
-                    <Select
-                      value={newProduct.unit}
-                      onValueChange={value => setNewProduct({ ...newProduct, unit: value })}
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsDialogOpen(false)}
+                      aria-label="Ezeztatu produktu berria"
                     >
-                      <SelectTrigger data-testid="select-new-product-unit-none">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="unit">Unitatea</SelectItem>
-                        <SelectItem value="kg">Kg</SelectItem>
-                        <SelectItem value="l">L</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      {t("cancel")}
+                    </Button>
+                    <Button
+                      onClick={handleCreateProduct}
+                      data-testid="button-save-product"
+                      aria-label="Gorde produktu berria"
+                    >
+                      {t("save")}
+                    </Button>
                   </div>
-                )}
-
-                {newProduct.stockMode !== "none" && (
-                  <div className="space-y-2">
-                    <Label>{t("supplier")}</Label>
-                    <Input
-                      placeholder="Hornitzailearen izena..."
-                      aria-label="Hornitzailearen izena"
-                      value={newProduct.supplier}
-                      onChange={e => setNewProduct({ ...newProduct, supplier: e.target.value })}
-                    />
-                  </div>
-                )}
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsDialogOpen(false)}
-                    aria-label="Ezeztatu produktu berria"
-                  >
-                    {t("cancel")}
-                  </Button>
-                  <Button
-                    onClick={handleCreateProduct}
-                    data-testid="button-save-product"
-                    aria-label="Gorde produktu berria"
-                  >
-                    {t("save")}
-                  </Button>
                 </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 
@@ -692,8 +692,12 @@ export function ProductsPage() {
                 <TableRow>
                   <TableHead scope="col">{t("name")}</TableHead>
                   <TableHead scope="col">{t("category")}</TableHead>
-                  <TableHead scope="col" className="text-right">{t("stock")}</TableHead>
-                  <TableHead scope="col" className="text-right">{t("price")}</TableHead>
+                  <TableHead scope="col" className="text-right">
+                    {t("stock")}
+                  </TableHead>
+                  <TableHead scope="col" className="text-right">
+                    {t("price")}
+                  </TableHead>
                   <TableHead scope="col" className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -1041,9 +1045,7 @@ export function ProductsPage() {
                   type="number"
                   data-testid="input-adjust-quantity"
                   value={adjustForm.quantityInput}
-                  onChange={e =>
-                    setAdjustForm({ ...adjustForm, quantityInput: e.target.value })
-                  }
+                  onChange={e => setAdjustForm({ ...adjustForm, quantityInput: e.target.value })}
                   aria-label={t("quantity")}
                 />
                 <p className="text-xs text-muted-foreground">

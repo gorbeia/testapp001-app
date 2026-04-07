@@ -13,10 +13,7 @@ import {
 import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
-import {
-  applyStockDelta,
-  refreshLowStockNotifications,
-} from "../lib/inventory/inventory-service";
+import { applyStockDelta, refreshLowStockNotifications } from "../lib/inventory/inventory-service";
 
 const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {

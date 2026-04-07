@@ -47,5 +47,8 @@ Then("I should see {string} in the supplies table", async function (text: string
   if (!page) throw new Error("Page not available");
   const table = page.locator('[data-testid="table-stock-receipts"]');
   const cell = table.getByText(text, { exact: false }).first();
-  assert.ok(await cell.isVisible({ timeout: 10000 }), `Expected to see "${text}" in supplies table`);
+  assert.ok(
+    await cell.isVisible({ timeout: 10000 }),
+    `Expected to see "${text}" in supplies table`
+  );
 });

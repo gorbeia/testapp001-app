@@ -47,7 +47,10 @@ Then("I should see a stock log row containing {string}", async function (text: s
   const page = getPage();
   if (!page) throw new Error("Page not available");
   await page.waitForTimeout(500);
-  const row = page.locator('[data-testid^="row-stock-movement-"]').filter({ hasText: text }).first();
+  const row = page
+    .locator('[data-testid^="row-stock-movement-"]')
+    .filter({ hasText: text })
+    .first();
   assert.ok(await row.isVisible(), `Expected a stock log row containing "${text}"`);
 });
 

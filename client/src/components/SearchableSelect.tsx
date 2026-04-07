@@ -58,10 +58,7 @@ export function SearchableSelect({
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const [contentWidth, setContentWidth] = React.useState<number | undefined>();
 
-  const selected = React.useMemo(
-    () => options.find(o => o.value === value),
-    [options, value]
-  );
+  const selected = React.useMemo(() => options.find(o => o.value === value), [options, value]);
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
@@ -111,10 +108,7 @@ export function SearchableSelect({
       </PopoverTrigger>
       <PopoverContent
         id={`${id ?? "searchable-select"}-listbox`}
-        className={cn(
-          "overflow-hidden border-border/80 p-0 shadow-md",
-          contentClassName
-        )}
+        className={cn("overflow-hidden border-border/80 p-0 shadow-md", contentClassName)}
         style={contentWidth ? { width: contentWidth } : undefined}
         align="start"
         sideOffset={6}

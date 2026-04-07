@@ -102,27 +102,30 @@ export function StockTakePage() {
     }
   }, []);
 
-  const loadDetail = useCallback(async (id: string) => {
-    setLoadingDetail(true);
-    try {
-      const res = await authFetch(`/api/stock-takes/${id}`);
-      if (!res.ok) {
-        throw new Error("Failed to load stock take");
+  const loadDetail = useCallback(
+    async (id: string) => {
+      setLoadingDetail(true);
+      try {
+        const res = await authFetch(`/api/stock-takes/${id}`);
+        if (!res.ok) {
+          throw new Error("Failed to load stock take");
+        }
+        const body = (await res.json()) as TakeSummary & { lines: TakeLine[] };
+        const { lines, ...take } = body;
+        setTakeDetail({ take, lines });
+      } catch (e) {
+        toast({
+          title: t("error"),
+          description: getErrorMessage(e),
+          variant: "destructive",
+        });
+        setSelectedId(null);
+      } finally {
+        setLoadingDetail(false);
       }
-      const body = (await res.json()) as TakeSummary & { lines: TakeLine[] };
-      const { lines, ...take } = body;
-      setTakeDetail({ take, lines });
-    } catch (e) {
-      toast({
-        title: t("error"),
-        description: getErrorMessage(e),
-        variant: "destructive",
-      });
-      setSelectedId(null);
-    } finally {
-      setLoadingDetail(false);
-    }
-  }, [toast, t]);
+    },
+    [toast, t]
+  );
 
   useEffect(() => {
     void loadTakes();
@@ -318,7 +321,10 @@ export function StockTakePage() {
                     <Button variant="outline" onClick={() => setCreateOpen(false)}>
                       {t("cancel")}
                     </Button>
-                    <Button data-testid="button-confirm-new-stock-take" onClick={() => void startTake()}>
+                    <Button
+                      data-testid="button-confirm-new-stock-take"
+                      onClick={() => void startTake()}
+                    >
                       {t("confirm")}
                     </Button>
                   </div>
@@ -354,44 +360,46 @@ export function StockTakePage() {
           ) : takeDetail ? (
             <Card>
               <CardContent className="p-4 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    {statusBadge(takeDetail.take.status)}
-                    <span className="text-sm text-muted-foreground">
-                      {new Date(takeDetail.take.date).toLocaleString()}
-                    </span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      {statusBadge(takeDetail.take.status)}
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(takeDetail.take.date).toLocaleString()}
+                      </span>
+                    </div>
+                    {takeDetail.take.notes ? (
+                      <p className="text-sm mt-1">{takeDetail.take.notes}</p>
+                    ) : null}
                   </div>
-                  {takeDetail.take.notes ? (
-                    <p className="text-sm mt-1">{takeDetail.take.notes}</p>
-                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={() => setSelectedId(null)}>
+                      {t("backToList")}
+                    </Button>
+                    {takeDetail.take.status === "draft" ? (
+                      <>
+                        <Button
+                          variant="destructive"
+                          data-testid="button-cancel-stock-take"
+                          onClick={() => void cancelTake()}
+                        >
+                          {t("cancelStockTake")}
+                        </Button>
+                        <Button
+                          disabled={!hasCountableLine}
+                          title={
+                            !hasCountableLine ? t("finalizeStockTakeNeedCountHint") : undefined
+                          }
+                          onClick={() => setFinalizeOpen(true)}
+                        >
+                          {t("finalize")}
+                        </Button>
+                      </>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" onClick={() => setSelectedId(null)}>
-                    {t("backToList")}
-                  </Button>
-                  {takeDetail.take.status === "draft" ? (
-                    <>
-                      <Button
-                        variant="destructive"
-                        data-testid="button-cancel-stock-take"
-                        onClick={() => void cancelTake()}
-                      >
-                        {t("cancelStockTake")}
-                      </Button>
-                      <Button
-                        disabled={!hasCountableLine}
-                        title={!hasCountableLine ? t("finalizeStockTakeNeedCountHint") : undefined}
-                        onClick={() => setFinalizeOpen(true)}
-                      >
-                        {t("finalize")}
-                      </Button>
-                    </>
-                  ) : null}
-                </div>
-              </div>
 
-              <div className="overflow-x-auto">
+                <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -428,7 +436,7 @@ export function StockTakePage() {
                                   }}
                                 />
                               ) : (
-                                line.countedStock ?? "—"
+                                (line.countedStock ?? "—")
                               )}
                             </TableCell>
                             <TableCell
@@ -447,8 +455,8 @@ export function StockTakePage() {
                     </TableBody>
                   </Table>
                 </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
           ) : null
         ) : (
           <Card>

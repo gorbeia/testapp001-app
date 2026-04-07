@@ -11,10 +11,7 @@ export type StockMovementType = "consumption" | "purchase" | "adjustment" | "dam
 /** Roles that manage inventory in this app and should receive low-stock alerts. */
 const STOCK_ALERT_ROLES = ["admin", "cellarman"] as const;
 
-export type InventoryServiceErrorCode =
-  | "PRODUCT_NOT_FOUND"
-  | "STOCK_MODE_NONE"
-  | "INVALID_STOCK";
+export type InventoryServiceErrorCode = "PRODUCT_NOT_FOUND" | "STOCK_MODE_NONE" | "INVALID_STOCK";
 
 export class InventoryServiceError extends Error {
   constructor(
@@ -26,7 +23,9 @@ export class InventoryServiceError extends Error {
   }
 }
 
-export function normalizeStockMode(stockMode: string | null | undefined): "auto" | "manual" | "none" {
+export function normalizeStockMode(
+  stockMode: string | null | undefined
+): "auto" | "manual" | "none" {
   const m = stockMode ?? "auto";
   if (m === "manual" || m === "none") return m;
   return "auto";
@@ -66,16 +65,8 @@ export async function applyStockDelta(
   dbOrTx: AppDatabase,
   params: ApplyStockDeltaParams
 ): Promise<StockMovementRow> {
-  const {
-    productId,
-    societyId,
-    delta,
-    type,
-    reason,
-    referenceId,
-    createdBy,
-    newStockOverride,
-  } = params;
+  const { productId, societyId, delta, type, reason, referenceId, createdBy, newStockOverride } =
+    params;
 
   const [productRow] = await dbOrTx
     .select()

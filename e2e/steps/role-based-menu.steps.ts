@@ -123,7 +123,11 @@ Then("I should see admin management links", async function () {
   const adminSection = page.locator("text=Kudeaketa").first();
   await adminSection.waitFor({ state: "visible", timeout: 15_000 });
   assert.ok(await adminSection.isVisible(), 'Admin section "Kudeaketa" should be visible');
-  await assertTestIdsVisible(page, [...ADMIN_MANAGEMENT_LINKS, ANNOUNCEMENTS_LINK], "Admin management");
+  await assertTestIdsVisible(
+    page,
+    [...ADMIN_MANAGEMENT_LINKS, ANNOUNCEMENTS_LINK],
+    "Admin management"
+  );
 });
 
 Then("I should see config links", async function () {

@@ -139,8 +139,7 @@ export function StockReceiptsPage() {
   );
 
   const receiptFiltersActive = useMemo(
-    () =>
-      Boolean(monthFilter || supplierListFilter.trim() || referenceListFilter.trim()),
+    () => Boolean(monthFilter || supplierListFilter.trim() || referenceListFilter.trim()),
     [monthFilter, supplierListFilter, referenceListFilter]
   );
 
@@ -338,7 +337,11 @@ export function StockReceiptsPage() {
                         </TableHeader>
                         <TableBody>
                           {lines.map((line, idx) => (
-                            <TableRow key={idx} className="hover:bg-transparent" data-testid={`receipt-line-${idx}`}>
+                            <TableRow
+                              key={idx}
+                              className="hover:bg-transparent"
+                              data-testid={`receipt-line-${idx}`}
+                            >
                               <TableCell className="min-w-0 p-2 align-middle">
                                 <SearchableSelect
                                   id={`receipt-product-${idx}`}
@@ -575,10 +578,15 @@ export function StockReceiptsPage() {
                         </TableRow>
                       ) : (
                         detail.lines.map(line => (
-                          <TableRow key={line.id} data-testid={`stock-receipt-detail-line-${line.id}`}>
+                          <TableRow
+                            key={line.id}
+                            data-testid={`stock-receipt-detail-line-${line.id}`}
+                          >
                             <TableCell>{line.productName}</TableCell>
                             <TableCell>{line.productUnit}</TableCell>
-                            <TableCell className="text-right tabular-nums">{line.quantity}</TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {line.quantity}
+                            </TableCell>
                             <TableCell className="text-right tabular-nums">
                               {line.unitCost?.trim() ? line.unitCost : "—"}
                             </TableCell>

@@ -310,7 +310,11 @@ export const stockReceiptListQuerySchema = paginatedQuerySchema
   }))
   .superRefine((val, ctx) => {
     if (val.month && !/^\d{4}-\d{2}$/.test(val.month)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid month (expected YYYY-MM)", path: ["month"] });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Invalid month (expected YYYY-MM)",
+        path: ["month"],
+      });
     }
   });
 
@@ -409,11 +413,7 @@ export const stockReceiptLines = pgTable("stock_receipt_lines", {
   unitCost: text("unit_cost"),
 });
 
-export const stockTakeStatusEnum = pgEnum("stock_take_status", [
-  "draft",
-  "completed",
-  "cancelled",
-]);
+export const stockTakeStatusEnum = pgEnum("stock_take_status", ["draft", "completed", "cancelled"]);
 
 export const stockTakes = pgTable("stock_takes", {
   id: varchar("id")

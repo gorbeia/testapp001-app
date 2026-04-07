@@ -1,5 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calendar, ShoppingCart, CreditCard, Users, AlertCircle, Wallet, Package } from "lucide-react";
+import {
+  Calendar,
+  ShoppingCart,
+  CreditCard,
+  Users,
+  AlertCircle,
+  Wallet,
+  Package,
+} from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { useAuth, userCan } from "@/lib/auth";
 import { Permission } from "@shared/permissions";

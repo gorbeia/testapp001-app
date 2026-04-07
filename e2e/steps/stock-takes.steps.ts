@@ -43,7 +43,10 @@ Given("I clear any stock take draft if present", async function () {
     await page.waitForSelector('[data-testid="button-new-stock-take"]', { state: "visible" });
   }
 
-  assert.ok(!(await newBtn.isDisabled()), "Could not clear stock take draft; new stock take still disabled");
+  assert.ok(
+    !(await newBtn.isDisabled()),
+    "Could not clear stock take draft; new stock take still disabled"
+  );
 });
 
 When("I open the new stock take dialog", async function () {

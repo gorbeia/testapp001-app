@@ -56,9 +56,7 @@ export type StockMovementListRow = {
   createdByName: string | null;
 };
 
-function typeBadgeVariant(
-  type: string
-): "default" | "secondary" | "destructive" | "outline" {
+function typeBadgeVariant(type: string): "default" | "secondary" | "destructive" | "outline" {
   switch (type) {
     case "consumption":
       return "default";
@@ -266,9 +264,7 @@ export function StockChangesPage() {
           </p>
         </Card>
 
-        {error && (
-          <p className="text-sm text-destructive">{getErrorMessage(error)}</p>
-        )}
+        {error && <p className="text-sm text-destructive">{getErrorMessage(error)}</p>}
 
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
@@ -326,7 +322,9 @@ export function StockChangesPage() {
                       <TableCell className="max-w-[200px] truncate text-sm">
                         {row.reason ?? "—"}
                       </TableCell>
-                      <TableCell className="text-sm">{row.createdByName ?? row.createdBy}</TableCell>
+                      <TableCell className="text-sm">
+                        {row.createdByName ?? row.createdBy}
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -336,10 +334,7 @@ export function StockChangesPage() {
         </Card>
 
         {total > 0 && (
-          <PaginationControls
-            pagination={pagination}
-            itemType="stockMovementsForPagination"
-          />
+          <PaginationControls pagination={pagination} itemType="stockMovementsForPagination" />
         )}
       </div>
     </ErrorBoundary>
