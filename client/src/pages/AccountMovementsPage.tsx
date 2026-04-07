@@ -3,6 +3,18 @@ import { useQuery } from "@tanstack/react-query";
 import { useUrlFilter } from "@/hooks/useUrlFilter";
 import { useLanguage } from "@/lib/i18n";
 import { authFetch } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { downloadCsv } from "@/lib/csv-export";
+import {
+  buildAccountStatementCsv,
+  buildMemberBalancesCsv,
+  buildSocietyStatementCsv,
+  type AccountStatementApi,
+  type MemberBalancesApi,
+  type SocietyStatementApi,
+} from "@/lib/ledger-report-csv";
+
+const STATEMENT_ALL_MEMBERS = "__all__";
 import MonthGrid from "@/components/MonthGrid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -22,7 +34,26 @@ import {
 } from "@/components/ui/select";
 import { movementTypeLabelKey } from "@/lib/movement-type-label";
 import { Label } from "@/components/ui/label";
-import { List, Scale, Wallet } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { List, Scale, Wallet, Download } from "lucide-react";
+
+function currentYearMonth(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function oneYearAgoMonth(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
 
 const MOVEMENT_TYPES = [
   "all",
@@ -46,7 +77,14 @@ function balanceAmountClass(b: number) {
 }
 
 export function AccountMovementsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { toast } = useToast();
+  const [statementOpen, setStatementOpen] = React.useState(false);
+  const [statementMemberId, setStatementMemberId] = React.useState("");
+  const [statementFrom, setStatementFrom] = React.useState("");
+  const [statementTo, setStatementTo] = React.useState("");
+  const [statementBusy, setStatementBusy] = React.useState(false);
+  const [balancesBusy, setBalancesBusy] = React.useState(false);
   const monthFilter = useUrlFilter({
     baseUrl: "/mugimenduak",
     paramName: "month",
@@ -102,11 +140,185 @@ export function AccountMovementsPage() {
           ? "balanceStatusCredit"
           : "balanceStatusZero";
 
+  const downloadMemberBalancesCsv = async () => {
+    setBalancesBusy(true);
+    try {
+      const params = new URLSearchParams();
+      if (month) params.set("month", month);
+      const res = await authFetch(`/api/account-movements/balances?${params}`);
+      if (!res.ok) throw new Error(await res.text());
+      const data = (await res.json()) as MemberBalancesApi;
+      const csv = buildMemberBalancesCsv(t, data);
+      const slug = month || "all-months";
+      downloadCsv(csv, `member-balances-${slug}.csv`);
+      toast({ title: t("success"), description: t("ledgerBalancesExportSuccess") });
+    } catch {
+      toast({
+        title: t("error"),
+        description: t("ledgerBalancesExportFailed"),
+        variant: "destructive",
+      });
+    } finally {
+      setBalancesBusy(false);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4" data-testid="admin-movements-page">
-      <h1 className="text-2xl font-bold" data-testid="admin-movements-title">
-        {t("adminMovements")}
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold" data-testid="admin-movements-title">
+          {t("adminMovements")}
+        </h1>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={balancesBusy}
+            data-testid="button-download-member-balances-csv"
+            onClick={() => void downloadMemberBalancesCsv()}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("ledgerBalancesExport")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            data-testid="button-download-admin-statement-csv"
+            onClick={() => {
+              setStatementFrom(oneYearAgoMonth());
+              setStatementTo(month || currentYearMonth());
+              setStatementMemberId(userId !== "all" ? userId : STATEMENT_ALL_MEMBERS);
+              setStatementOpen(true);
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("ledgerStatementDownload")}
+          </Button>
+        </div>
+      </div>
+
+      <Dialog open={statementOpen} onOpenChange={setStatementOpen}>
+        <DialogContent data-testid="dialog-admin-ledger-statement-csv">
+          <DialogHeader>
+            <DialogTitle>{t("ledgerStatementDialogTitle")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs">{t("ledgerStatementSelectMember")}</Label>
+              <Select value={statementMemberId} onValueChange={setStatementMemberId}>
+                <SelectTrigger className="w-full" data-testid="select-statement-export-member">
+                  <SelectValue placeholder={t("selectPlaceholder")} />
+                </SelectTrigger>
+                <SelectContent className="z-[120]" position="popper">
+                  <SelectItem value={STATEMENT_ALL_MEMBERS}>
+                    {t("ledgerSocietyStatementAll")}
+                  </SelectItem>
+                  {(usersQuery.data ?? []).map(u => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name || u.username}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <p className="text-sm font-medium">{t("ledgerStatementFromMonth")}</p>
+                <MonthGrid
+                  selectedMonth={statementFrom}
+                  onMonthChange={setStatementFrom}
+                  className="w-full"
+                  mode="past"
+                  yearRange={{ past: 3, future: 0 }}
+                  nestedInDialog
+                  allowClear={false}
+                  triggerTestId="admin-statement-dialog-from-month"
+                />
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">{t("ledgerStatementToMonth")}</p>
+                <MonthGrid
+                  selectedMonth={statementTo}
+                  onMonthChange={setStatementTo}
+                  className="w-full"
+                  mode="past"
+                  yearRange={{ past: 3, future: 0 }}
+                  nestedInDialog
+                  allowClear={false}
+                  triggerTestId="admin-statement-dialog-to-month"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setStatementOpen(false)}>
+              {t("cancel")}
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                statementBusy ||
+                !statementMemberId ||
+                !statementFrom ||
+                !statementTo ||
+                statementFrom > statementTo
+              }
+              data-testid="button-confirm-admin-statement-csv"
+              onClick={async () => {
+                if (
+                  !statementMemberId ||
+                  !statementFrom ||
+                  !statementTo ||
+                  statementFrom > statementTo
+                )
+                  return;
+                setStatementBusy(true);
+                try {
+                  if (statementMemberId === STATEMENT_ALL_MEMBERS) {
+                    const params = new URLSearchParams({
+                      from: statementFrom,
+                      to: statementTo,
+                    });
+                    const res = await authFetch(
+                      `/api/account-movements/society-statement?${params}`
+                    );
+                    if (!res.ok) throw new Error(await res.text());
+                    const data = (await res.json()) as SocietyStatementApi;
+                    const csv = buildSocietyStatementCsv(t, data, language);
+                    downloadCsv(csv, `society-statement-${statementFrom}-${statementTo}.csv`);
+                  } else {
+                    const params = new URLSearchParams({
+                      userId: statementMemberId,
+                      from: statementFrom,
+                      to: statementTo,
+                    });
+                    const res = await authFetch(`/api/account-movements/statement?${params}`);
+                    if (!res.ok) throw new Error(await res.text());
+                    const data = (await res.json()) as AccountStatementApi;
+                    const csv = buildAccountStatementCsv(t, data, language);
+                    const memberSlug = data.member.username.replace(/[^a-zA-Z0-9._-]/g, "_");
+                    downloadCsv(csv, `statement-${memberSlug}-${statementFrom}-${statementTo}.csv`);
+                  }
+                  toast({ title: t("success"), description: t("ledgerStatementExportSuccess") });
+                  setStatementOpen(false);
+                } catch {
+                  toast({
+                    title: t("error"),
+                    description: t("ledgerStatementExportFailed"),
+                    variant: "destructive",
+                  });
+                } finally {
+                  setStatementBusy(false);
+                }
+              }}
+            >
+              {statementBusy ? t("loading") : t("ledgerStatementDownload")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card data-testid="card-admin-movements-count">

@@ -15,6 +15,12 @@ interface MonthGridProps {
     past?: number; // Number of past years to include
     future?: number; // Number of future years to include
   };
+  /** Inside Radix Dialog: avoid portal/focus conflicts and stack above dialog (z-50). */
+  nestedInDialog?: boolean;
+  /** When false, hide clear controls (e.g. required month in export dialog). Default true. */
+  allowClear?: boolean;
+  /** Override trigger `data-testid` (default month-selector-trigger). */
+  triggerTestId?: string;
 }
 
 const MonthGrid = ({
@@ -23,6 +29,9 @@ const MonthGrid = ({
   className,
   mode = "future",
   yearRange = { past: 2, future: 2 },
+  nestedInDialog = false,
+  allowClear = true,
+  triggerTestId,
 }: MonthGridProps) => {
   const { t, language } = useLanguage();
   const [open, setOpen] = useState(false);
@@ -187,22 +196,26 @@ const MonthGrid = ({
   const currentYear = getCurrentYear();
   const currentMonth = getCurrentMonth();
 
+  const popoverZ = nestedInDialog ? "z-[100]" : "z-50";
+  const selectZ = nestedInDialog ? "z-[110]" : "z-50";
+
   return (
-    <Popover.Root open={open} onOpenChange={setOpen}>
+    <Popover.Root open={open} onOpenChange={setOpen} modal={!nestedInDialog}>
       <Popover.Trigger asChild>
         <button
+          type="button"
           className={cn(
             "w-full flex items-center justify-between gap-2 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent",
             className
           )}
-          data-testid="month-selector-trigger"
+          data-testid={triggerTestId ?? "month-selector-trigger"}
         >
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-gray-500" />
             <span className="font-medium whitespace-nowrap">{getSelectedDisplay()}</span>
           </div>
           <div className="flex items-center gap-1">
-            {selectedMonth && (
+            {allowClear && selectedMonth && (
               <span
                 onClick={e => {
                   e.stopPropagation();
@@ -231,7 +244,10 @@ const MonthGrid = ({
 
       <Popover.Portal>
         <Popover.Content
-          className="z-50 w-screen max-w-sm bg-white border border-gray-200 rounded-lg shadow-lg p-4"
+          className={cn(
+            popoverZ,
+            "w-screen max-w-sm bg-white border border-gray-200 rounded-lg shadow-lg p-4"
+          )}
           align="start"
           sideOffset={4}
         >
@@ -260,7 +276,12 @@ const MonthGrid = ({
                   </Select.Icon>
                 </Select.Trigger>
                 <Select.Portal>
-                  <Select.Content className="z-50 bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                  <Select.Content
+                    className={cn(
+                      selectZ,
+                      "bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto"
+                    )}
+                  >
                     <Select.Viewport className="p-1">
                       {yearOptions.map(option => (
                         <Select.Item
@@ -283,6 +304,7 @@ const MonthGrid = ({
               <div className="grid grid-cols-3 gap-2">
                 {monthOptions.map(option => (
                   <button
+                    type="button"
                     key={option.value}
                     onClick={() => {
                       const finalYear = tempSelectedYear || getCurrentYear();
@@ -304,17 +326,20 @@ const MonthGrid = ({
             </div>
 
             {/* Clear Selection Button */}
-            <div className="pt-2 border-t border-gray-200">
-              <button
-                onClick={() => {
-                  onMonthChange("");
-                  setOpen(false);
-                }}
-                className="w-full px-3 py-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded hover:bg-gray-100 hover:text-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
-              >
-                {t("clearSelection")}
-              </button>
-            </div>
+            {allowClear ? (
+              <div className="pt-2 border-t border-gray-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onMonthChange("");
+                    setOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded hover:bg-gray-100 hover:text-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+                >
+                  {t("clearSelection")}
+                </button>
+              </div>
+            ) : null}
           </div>
         </Popover.Content>
       </Popover.Portal>

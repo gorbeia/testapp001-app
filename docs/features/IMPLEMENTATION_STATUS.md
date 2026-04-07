@@ -112,7 +112,7 @@ Status legend:
 9. **Financial dashboard widgets** – debt highlights on home
    - **Status**: 🟡 Partial (pending total from credits when SEPA is active; **ledger balance** from `GET /api/account-movements/me` when `sepaMode === disabled`)
 10. **Export financial reports** – statements, YTD bundles
-    - **Status**: ❌ Not Implemented
+    - **Status**: 🟡 Partial (**CSV** member account statement + treasurer member-balance snapshot via ledger APIs / movements pages; **no** PDF, **no** YTD bundle export)
 
 ---
 
@@ -136,10 +136,11 @@ Status legend:
    - **Status**: ✅ Implemented
 8. **Subscription fees on ledger** – `DebtCalculationService` posts `subscription` movement + `credits.subscription_amount` for all societies (including **`sepaMode` = `disabled`**); `disabled` affects SEPA export only
    - **Status**: ✅ Implemented (multi-tenant cron + per-society real-time triggers; see `server/cron-jobs.ts`)
-9. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
-10. **Prepayment minimum ledger balance** – optional `prepaymentMinLedgerBalance` on `societies` when `bank_transfer_prepayment` is enabled; `GET /api/me/prepayment-ledger-status`; server enforcement on reservation create + consumption create/items; `notifyFinancialEvent` when a debit crosses from at/above floor to below; member `PrepaymentLedgerBanner` + treasurer field on **`/elkartea`**
-
-- **Status**: ✅ Implemented (see `prepayment-ledger-floor.md`; E2E: `prepayment-ledger-floor.feature`, scripts `db:seed:prepayment-floor-e2e` / `db:undo:prepayment-floor-e2e`)
+9. **Prepayment minimum ledger balance** – optional `prepaymentMinLedgerBalance` on `societies` when `bank_transfer_prepayment` is enabled; `GET /api/me/prepayment-ledger-status`; server enforcement on reservation create + consumption create/items; `notifyFinancialEvent` when a debit crosses from at/above floor to below; member `PrepaymentLedgerBanner` + treasurer field on **`/elkartea`**
+   - **Status**: ✅ Implemented (see `prepayment-ledger-floor.md`; E2E: `prepayment-ledger-floor.feature`, scripts `db:seed:prepayment-floor-e2e` / `db:undo:prepayment-floor-e2e`)
+10. **Period account statement & balances (CSV)** — `GET /api/account-movements/me/statement`, `GET /api/account-movements/statement`, `GET /api/account-movements/society-statement` (treasurer, all members in range), `GET /api/account-movements/balances`; opening/closing balance + period movements + per-type summary; society-wide flat extract without running balance; **`/nire-mugimenduak`** and **`/mugimenduak`** download buttons (treasurer dialog: whole-society or single-member statement); helpers in `server/lib/account-movements.ts` (`getMemberBalanceBeforeMonth`, `getMemberBalanceThroughMonth`, `getAllMemberBalances`); `computeRunningBalancesWithInitial` in `ledger-rules.ts`
+    - **Status**: ✅ Implemented (see `account-movements.md` F10; PDF not in scope)
+11. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
 
 ---
 

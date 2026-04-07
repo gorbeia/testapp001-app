@@ -93,6 +93,26 @@ export function computeRunningBalances<T extends MovementForRunningBalance>(
   return out;
 }
 
+/**
+ * Running balance for a single chronological sequence (e.g. one member’s statement lines),
+ * starting from `initialBalance` before the first row.
+ */
+export function computeRunningBalancesWithInitial<T extends MovementForRunningBalance>(
+  rows: T[],
+  initialBalance: number
+): (T & { runningBalance: number })[] {
+  const sorted = [...rows].sort((a, b) => {
+    const t = a.createdAt.getTime() - b.createdAt.getTime();
+    if (t !== 0) return t;
+    return a.id.localeCompare(b.id);
+  });
+  let acc = initialBalance;
+  return sorted.map(r => {
+    acc += parseFloat(String(r.amount));
+    return { ...r, runningBalance: acc };
+  });
+}
+
 export function projectedBalance(balanceBefore: number, debitTotal: number): number {
   return balanceBefore - debitTotal;
 }

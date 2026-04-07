@@ -5,6 +5,7 @@ import {
   PREPAYMENT_FLOOR_EPS,
   balanceMultiplierForMovementType,
   computeRunningBalances,
+  computeRunningBalancesWithInitial,
   formatLedgerAmount,
   isFloorBreachedAfterDebit,
   isFloorBreachedWithZeroDebit,
@@ -97,6 +98,24 @@ describe("computeRunningBalances", () => {
     const byId = new Map(out.map(r => [r.id, r.runningBalance]));
     expect(byId.get("a")).toBe(1);
     expect(byId.get("z")).toBe(2);
+  });
+});
+
+describe("computeRunningBalancesWithInitial", () => {
+  it("starts from initial balance and sorts by time", () => {
+    const d1 = new Date("2024-03-01T10:00:00Z");
+    const d2 = new Date("2024-03-02T10:00:00Z");
+    const out = computeRunningBalancesWithInitial(
+      [
+        { id: "b", userId: "u1", amount: "-5.00", createdAt: d2 },
+        { id: "a", userId: "u1", amount: "12.00", createdAt: d1 },
+      ],
+      100
+    );
+    expect(out.map(r => ({ id: r.id, rb: r.runningBalance }))).toEqual([
+      { id: "a", rb: 112 },
+      { id: "b", rb: 107 },
+    ]);
   });
 });
 

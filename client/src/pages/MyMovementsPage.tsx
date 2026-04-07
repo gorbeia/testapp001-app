@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { movementTypeLabelKey } from "@/lib/movement-type-label";
-import { List, Scale, Wallet, Landmark } from "lucide-react";
+import { List, Scale, Wallet, Landmark, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -45,6 +45,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { societyAllowsBankTransferPrepayment } from "@shared/schema";
+import { downloadCsv } from "@/lib/csv-export";
+import { buildAccountStatementCsv, type AccountStatementApi } from "@/lib/ledger-report-csv";
 
 const MOVEMENT_TYPES = [
   "all",
@@ -76,6 +78,17 @@ function balanceAmountClass(b: number) {
   return "text-muted-foreground";
 }
 
+function currentYearMonth(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function oneYearAgoMonth(): string {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() - 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 const BANK_TRANSFER_STATUS_I18N: Record<string, TranslationKey> = {
   pending: "bankTransferStatusPending",
   validated: "bankTransferStatusValidated",
@@ -83,10 +96,14 @@ const BANK_TRANSFER_STATUS_I18N: Record<string, TranslationKey> = {
 };
 
 export function MyMovementsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [proposalOpen, setProposalOpen] = useState(false);
+  const [statementOpen, setStatementOpen] = useState(false);
+  const [statementFrom, setStatementFrom] = useState<string>("");
+  const [statementTo, setStatementTo] = useState<string>("");
+  const [statementBusy, setStatementBusy] = useState(false);
 
   const proposalFormSchema = useMemo(
     () =>
@@ -235,9 +252,102 @@ export function MyMovementsPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4" data-testid="my-movements-page">
-      <h1 className="text-2xl font-bold" data-testid="my-movements-title">
-        {t("myMovements")}
-      </h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold" data-testid="my-movements-title">
+          {t("myMovements")}
+        </h1>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          data-testid="button-download-my-statement-csv"
+          onClick={() => {
+            setStatementFrom(oneYearAgoMonth());
+            setStatementTo(month || currentYearMonth());
+            setStatementOpen(true);
+          }}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          {t("ledgerStatementDownload")}
+        </Button>
+      </div>
+
+      <Dialog open={statementOpen} onOpenChange={setStatementOpen}>
+        <DialogContent data-testid="dialog-ledger-statement-csv">
+          <DialogHeader>
+            <DialogTitle>{t("ledgerStatementDialogTitle")}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">{t("ledgerStatementFromMonth")}</p>
+              <MonthGrid
+                selectedMonth={statementFrom}
+                onMonthChange={setStatementFrom}
+                className="w-full"
+                mode="past"
+                yearRange={{ past: 3, future: 0 }}
+                nestedInDialog
+                allowClear={false}
+                triggerTestId="statement-dialog-from-month"
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm font-medium">{t("ledgerStatementToMonth")}</p>
+              <MonthGrid
+                selectedMonth={statementTo}
+                onMonthChange={setStatementTo}
+                className="w-full"
+                mode="past"
+                yearRange={{ past: 3, future: 0 }}
+                nestedInDialog
+                allowClear={false}
+                triggerTestId="statement-dialog-to-month"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setStatementOpen(false)}>
+              {t("cancel")}
+            </Button>
+            <Button
+              type="button"
+              disabled={
+                statementBusy || !statementFrom || !statementTo || statementFrom > statementTo
+              }
+              data-testid="button-confirm-statement-csv"
+              onClick={async () => {
+                if (!statementFrom || !statementTo || statementFrom > statementTo) return;
+                setStatementBusy(true);
+                try {
+                  const params = new URLSearchParams({
+                    from: statementFrom,
+                    to: statementTo,
+                  });
+                  const res = await authFetch(`/api/account-movements/me/statement?${params}`);
+                  if (!res.ok) {
+                    throw new Error(await res.text());
+                  }
+                  const data = (await res.json()) as AccountStatementApi;
+                  const csv = buildAccountStatementCsv(t, data, language);
+                  downloadCsv(csv, `statement-${statementFrom}-${statementTo}.csv`);
+                  toast({ title: t("success"), description: t("ledgerStatementExportSuccess") });
+                  setStatementOpen(false);
+                } catch {
+                  toast({
+                    title: t("error"),
+                    description: t("ledgerStatementExportFailed"),
+                    variant: "destructive",
+                  });
+                } finally {
+                  setStatementBusy(false);
+                }
+              }}
+            >
+              {statementBusy ? t("loading") : t("ledgerStatementDownload")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card data-testid="card-my-movements-balance">

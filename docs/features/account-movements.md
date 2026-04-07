@@ -5,8 +5,8 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 ## Server implementation boundary
 
 - **Ledger orchestration:** [`server/lib/ledger/ledger-service.ts`](../../server/lib/ledger/ledger-service.ts) — transactional posting (prepayment validate + movement, cash double-leg, SEPA collections with credit update, subscription/reservation idempotent charges, cancellation reversals, etc.).
-- **Pure rules:** [`server/lib/ledger/ledger-rules.ts`](../../server/lib/ledger/ledger-rules.ts) — amount formatting, running balance for member lists, prepayment floor math (also reused from `prepayment-ledger-floor.ts`).
-- **DB helpers:** [`server/lib/account-movements.ts`](../../server/lib/account-movements.ts) — balance query, insert, idempotency `movementExistsForReference` (accepts a transaction client for read-your-writes inside `db.transaction`).
+- **Pure rules:** [`server/lib/ledger/ledger-rules.ts`](../../server/lib/ledger/ledger-rules.ts) — amount formatting, running balance for member lists, `computeRunningBalancesWithInitial` (period statements), prepayment floor math (also reused from `prepayment-ledger-floor.ts`).
+- **DB helpers:** [`server/lib/account-movements.ts`](../../server/lib/account-movements.ts) — balance query, `getMemberBalanceBeforeMonth` / `getMemberBalanceThroughMonth` (statement & snapshots), `getAllMemberBalances`, insert, idempotency `movementExistsForReference` (accepts a transaction client for read-your-writes inside `db.transaction`).
 - **Tests:** `pnpm test:unit` (Vitest).
 
 **SEPA bounce idempotency:** Bounce movements store **`reference_type` = `sepa_bounce`** and **`reference_id` = credit id** (distinct from `sepa_collection`, which uses `reference_type` = `credit` on the same id).
@@ -92,6 +92,29 @@ Server notifications (eu/es/en) for: prepayment validated/rejected, refund issue
 
 When the society enables **`bank_transfer_prepayment`** and sets **`prepaymentMinLedgerBalance`**, **reservation** create and **consumption** debits are checked **at request time** against the projected balance (the reservation check uses the booked amount even though the ledger charge is deferred until after `startDate`). Requests that would leave the member balance **below** the floor are rejected (`403`, code `prepayment_ledger_floor`). Members see status via **`GET /api/me/prepayment-ledger-status`** and an in-app banner when below the floor. See [prepayment-ledger-floor.md](./prepayment-ledger-floor.md).
 
+## F10 – Period account statement & member balances (CSV)
+
+**As a** member **I want** an extract of my movements for a month range with opening and closing balance **so that** I can reconcile or share my account.
+
+**As a** treasurer **I want** the same for any member, and a CSV of all active members’ balances **so that** I can audit the ledger at a point in time.
+
+**As a** treasurer **I want** a society-wide movement extract for a month range (all members, all types) **so that** I can produce annual accounts, tax filings, or audit trail exports without exporting member-by-member.
+
+### Acceptance criteria
+
+- **Opening balance** for a period `[from, to]` (`from` / `to`: `YYYY-MM`) = sum of `account_movements.amount` for that member with `to_char(created_at, 'YYYY-MM') < from` (same month bucketing as list filters).
+- **Movements in period**: rows with month `>= from` and `<= to`, ordered chronologically; each row has **running balance** = opening + cumulative amounts through that row.
+- **Closing balance** = opening + net of period movements (= balance through end of `to` month for that slice).
+- **Summary**: net total per `type` over the period (JSON + reflected in CSV).
+- **API**
+  - `GET /api/account-movements/me/statement?from=&to=` — authenticated member, own account.
+  - `GET /api/account-movements/statement?userId=&from=&to=` — treasurer (`diruzaina` / `administratzailea`), tenant-scoped user.
+  - `GET /api/account-movements/society-statement?from=&to=` — treasurer; all society movements in `[from, to]` with `memberName` / `memberUsername` per row, aggregate `totalDebits`, `totalCredits`, `periodNet`, per-type `summary`; **no** running balance (flat export).
+  - `GET /api/account-movements/balances?month=` — treasurer; optional `month` (`YYYY-MM`). Omitted = current balance (full history); set = balance including only movements with `to_char(created_at, 'YYYY-MM') <= month`.
+- **UI**: **`/nire-mugimenduak`** — download CSV (dialog: `MonthGrid` from/to with `nestedInDialog`; default range = last 12 months; Radix `Dialog` is controlled + always mounted). **`/mugimenduak`** — statement dialog always available; includes **member** `Select` with **“whole society”** option (`__all__`, default when the page member filter is “all”) + same month range pickers; single-member export uses `statement`; whole-society export uses `society-statement` + dedicated CSV layout (member + username columns); member balances CSV still uses page month filter only.
+- **Statement JSON** (in addition to opening/closing, `summary`, `movements`): `totalDebits` / `totalCredits` (period magnitudes), `movementCount`, `generatedAt` (ISO).
+- **CSV**: client-generated UTF-8 with BOM for Excel; headers translated (eu/es); rows include username, formatted generation time, movement count, debit/credit totals after per-type summary, locale-friendly movement datetimes, and `referenceType:referenceId` when present. Society-wide CSV adds **member** and **username** columns on each movement line and includes **period net** in the header block.
+
 ## Society setting
 
 - `sepaMode`: when `disabled`, SEPA export and related UI/API are off; **`subscription` ledger movements and subscription charge notifications still run** when debt calculation posts a subscription fee (see `credits.md`). Monthly **credits** list UIs (**`/nire-zorrak`**, **`/zorrak`**) are not shown; use member **`/nire-mugimenduak`** and treasurer **`/mugimenduak`** for balances and audit.
@@ -108,7 +131,7 @@ Flipping from a legacy debt-oriented convention to member balance is done with:
 
 - Period closing / locked months
 - Proof-of-payment file uploads
-- PDF/CSV account statements
+- PDF account statements (formal layout; CSV shipped in F10)
 - Two-step refund approval for large amounts
 
 ## Month filtering

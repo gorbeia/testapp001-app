@@ -6,14 +6,22 @@ import {
   accountMovementSepaBounceBodySchema,
   accountMovementTypeSchema,
   credits,
+  societies,
   users,
   type JwtSessionUser,
 } from "@shared/schema";
-import { and, eq, sql, asc } from "drizzle-orm";
+import { and, eq, sql, asc, inArray } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { pool } from "../db";
-import { getMemberAccountBalance } from "../lib/account-movements";
-import { computeRunningBalances } from "../lib/ledger/ledger-rules";
+import {
+  getAllMemberBalances,
+  getMemberAccountBalance,
+  getMemberBalanceBeforeMonth,
+} from "../lib/account-movements";
+import {
+  computeRunningBalances,
+  computeRunningBalancesWithInitial,
+} from "../lib/ledger/ledger-rules";
 import {
   bounceAlreadyRecorded,
   postLedgerRefund,
@@ -35,6 +43,166 @@ const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) throw new Error("User societyId not found in JWT");
   return user.societyId;
 };
+
+const MONTH_YM = /^\d{4}-\d{2}$/;
+
+function parseStatementFromTo(req: Request): { from: string; to: string } | null {
+  const from = String(req.query.from ?? "");
+  const to = String(req.query.to ?? "");
+  if (!MONTH_YM.test(from) || !MONTH_YM.test(to)) return null;
+  if (from > to) return null;
+  return { from, to };
+}
+
+async function buildAccountStatementJson(
+  societyId: string,
+  userId: string,
+  from: string,
+  to: string
+) {
+  const [member] = await db
+    .select({ id: users.id, name: users.name, username: users.username })
+    .from(users)
+    .where(and(eq(users.id, userId), eq(users.societyId, societyId)));
+  if (!member) return null;
+
+  const [soc] = await db
+    .select({ name: societies.name })
+    .from(societies)
+    .where(eq(societies.id, societyId));
+
+  const openingBalance = await getMemberBalanceBeforeMonth(societyId, userId, from);
+  const rows = await db
+    .select()
+    .from(accountMovements)
+    .where(
+      and(
+        eq(accountMovements.societyId, societyId),
+        eq(accountMovements.userId, userId),
+        sql`to_char(${accountMovements.createdAt}, 'YYYY-MM') >= ${from}`,
+        sql`to_char(${accountMovements.createdAt}, 'YYYY-MM') <= ${to}`
+      )
+    )
+    .orderBy(asc(accountMovements.createdAt), asc(accountMovements.id));
+
+  const withRunning = computeRunningBalancesWithInitial(rows, openingBalance);
+  const periodNet = rows.reduce((s, r) => s + parseFloat(String(r.amount)), 0);
+  const closingBalance = openingBalance + periodNet;
+
+  const summaryMap = new Map<string, number>();
+  for (const r of rows) {
+    summaryMap.set(r.type, (summaryMap.get(r.type) ?? 0) + parseFloat(String(r.amount)));
+  }
+  const summary = Array.from(summaryMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([type, total]) => ({ type, total: Number(total.toFixed(2)) }));
+
+  let totalDebitsMag = 0;
+  let totalCreditsSum = 0;
+  for (const r of rows) {
+    const a = parseFloat(String(r.amount));
+    if (a < 0) totalDebitsMag += -a;
+    else if (a > 0) totalCreditsSum += a;
+  }
+
+  return {
+    period: { from, to },
+    societyName: soc?.name ?? null,
+    member: { id: member.id, name: member.name, username: member.username },
+    openingBalance,
+    closingBalance,
+    totalDebits: Number(totalDebitsMag.toFixed(2)),
+    totalCredits: Number(totalCreditsSum.toFixed(2)),
+    movementCount: rows.length,
+    generatedAt: new Date().toISOString(),
+    summary,
+    movements: withRunning.map(m => ({
+      id: m.id,
+      type: m.type,
+      amount: m.amount,
+      description: m.description,
+      referenceId: m.referenceId,
+      referenceType: m.referenceType,
+      createdBy: m.createdBy,
+      createdAt: m.createdAt.toISOString(),
+      runningBalance: m.runningBalance,
+    })),
+  };
+}
+
+async function buildSocietyStatementJson(societyId: string, from: string, to: string) {
+  const [soc] = await db
+    .select({ name: societies.name })
+    .from(societies)
+    .where(eq(societies.id, societyId));
+
+  const rows = await db
+    .select()
+    .from(accountMovements)
+    .where(
+      and(
+        eq(accountMovements.societyId, societyId),
+        sql`to_char(${accountMovements.createdAt}, 'YYYY-MM') >= ${from}`,
+        sql`to_char(${accountMovements.createdAt}, 'YYYY-MM') <= ${to}`
+      )
+    )
+    .orderBy(asc(accountMovements.createdAt), asc(accountMovements.id));
+
+  const userIds = Array.from(new Set(rows.map(r => r.userId)));
+  const memberMap = new Map<string, { name: string | null; username: string }>();
+  if (userIds.length > 0) {
+    const memberRows = await db
+      .select({ id: users.id, name: users.name, username: users.username })
+      .from(users)
+      .where(and(eq(users.societyId, societyId), inArray(users.id, userIds)));
+    for (const u of memberRows) {
+      memberMap.set(u.id, { name: u.name, username: u.username });
+    }
+  }
+
+  const summaryMap = new Map<string, number>();
+  let totalDebitsMag = 0;
+  let totalCreditsSum = 0;
+  let periodNet = 0;
+  for (const r of rows) {
+    const a = parseFloat(String(r.amount));
+    periodNet += a;
+    if (a < 0) totalDebitsMag += -a;
+    else if (a > 0) totalCreditsSum += a;
+    summaryMap.set(r.type, (summaryMap.get(r.type) ?? 0) + a);
+  }
+  const summary = Array.from(summaryMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([type, total]) => ({ type, total: Number(total.toFixed(2)) }));
+
+  const movements = rows.map(r => {
+    const m = memberMap.get(r.userId);
+    const n = parseFloat(String(r.amount));
+    return {
+      id: r.id,
+      memberName: m?.name ?? null,
+      memberUsername: m?.username ?? "",
+      type: r.type,
+      amount: Number.isFinite(n) ? n.toFixed(2) : String(r.amount),
+      description: r.description,
+      referenceId: r.referenceId,
+      referenceType: r.referenceType,
+      createdAt: r.createdAt.toISOString(),
+    };
+  });
+
+  return {
+    period: { from, to },
+    societyName: soc?.name ?? null,
+    movementCount: rows.length,
+    totalDebits: Number(totalDebitsMag.toFixed(2)),
+    totalCredits: Number(totalCreditsSum.toFixed(2)),
+    periodNet: Number(periodNet.toFixed(2)),
+    generatedAt: new Date().toISOString(),
+    summary,
+    movements,
+  };
+}
 
 export function registerAccountMovementRoutes(app: Express) {
   app.get("/api/account-movements", sessionMiddleware, requireTreasurer, async (req, res, next) => {
@@ -214,6 +382,103 @@ export function registerAccountMovementRoutes(app: Express) {
       next(e);
     }
   });
+
+  app.get(
+    "/api/account-movements/me/statement",
+    sessionMiddleware,
+    requireAuth,
+    async (req, res, next) => {
+      try {
+        const parsed = parseStatementFromTo(req);
+        if (!parsed) {
+          return res.status(400).json({ message: "from and to must be YYYY-MM with from <= to" });
+        }
+        const societyId = getUserSocietyId(req.user!);
+        const body = await buildAccountStatementJson(
+          societyId,
+          req.user!.id,
+          parsed.from,
+          parsed.to
+        );
+        if (!body) {
+          return res.status(404).json({ message: "Member not found" });
+        }
+        res.json(body);
+      } catch (e) {
+        next(e);
+      }
+    }
+  );
+
+  app.get(
+    "/api/account-movements/statement",
+    sessionMiddleware,
+    requireTreasurer,
+    async (req, res, next) => {
+      try {
+        const parsed = parseStatementFromTo(req);
+        if (!parsed) {
+          return res.status(400).json({ message: "from and to must be YYYY-MM with from <= to" });
+        }
+        const userId = String(req.query.userId ?? "");
+        if (!userId) {
+          return res.status(400).json({ message: "userId is required" });
+        }
+        const societyId = getUserSocietyId(req.user!);
+        const body = await buildAccountStatementJson(societyId, userId, parsed.from, parsed.to);
+        if (!body) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        res.json(body);
+      } catch (e) {
+        next(e);
+      }
+    }
+  );
+
+  app.get(
+    "/api/account-movements/society-statement",
+    sessionMiddleware,
+    requireTreasurer,
+    async (req, res, next) => {
+      try {
+        const parsed = parseStatementFromTo(req);
+        if (!parsed) {
+          return res.status(400).json({ message: "from and to must be YYYY-MM with from <= to" });
+        }
+        const societyId = getUserSocietyId(req.user!);
+        const body = await buildSocietyStatementJson(societyId, parsed.from, parsed.to);
+        res.json(body);
+      } catch (e) {
+        next(e);
+      }
+    }
+  );
+
+  app.get(
+    "/api/account-movements/balances",
+    sessionMiddleware,
+    requireTreasurer,
+    async (req, res, next) => {
+      try {
+        const societyId = getUserSocietyId(req.user!);
+        const monthRaw = req.query.month as string | undefined;
+        const asOfMonth =
+          monthRaw && monthRaw.length > 0 ? (MONTH_YM.test(monthRaw) ? monthRaw : null) : null;
+        if (monthRaw && monthRaw.length > 0 && asOfMonth === null) {
+          return res.status(400).json({ message: "month must be YYYY-MM when provided" });
+        }
+        const { members, totalBalance } = await getAllMemberBalances(societyId, asOfMonth);
+        res.json({
+          asOfMonth,
+          members,
+          totalBalance,
+        });
+      } catch (e) {
+        next(e);
+      }
+    }
+  );
 
   app.post(
     "/api/account-movements/refund",

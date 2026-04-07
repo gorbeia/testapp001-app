@@ -18,3 +18,11 @@ export function movementTypeLabelKey(type: string): TranslationKey {
   }
   return "movementTypeConsumption";
 }
+
+/** Translated label for exports / CSV; falls back to raw `type` when unknown. */
+export function translateMovementType(t: (key: TranslationKey) => string, type: string): string {
+  if (type in TYPE_TO_I18N) {
+    return t(TYPE_TO_I18N[type as keyof typeof TYPE_TO_I18N]);
+  }
+  return type;
+}
