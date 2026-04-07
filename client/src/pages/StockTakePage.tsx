@@ -138,6 +138,12 @@ export function StockTakePage() {
 
   const draftTake = takes.find(x => x.status === "draft");
 
+  const hasCountableLine =
+    takeDetail?.take.status === "draft" &&
+    takeDetail.lines.some(
+      l => l.countedStock != null && l.countedStock !== "" && /^\d+$/.test(l.countedStock)
+    );
+
   const startTake = async () => {
     try {
       const res = await authFetch("/api/stock-takes", {
@@ -373,7 +379,13 @@ export function StockTakePage() {
                       >
                         {t("cancelStockTake")}
                       </Button>
-                      <Button onClick={() => setFinalizeOpen(true)}>{t("finalize")}</Button>
+                      <Button
+                        disabled={!hasCountableLine}
+                        title={!hasCountableLine ? t("finalizeStockTakeNeedCountHint") : undefined}
+                        onClick={() => setFinalizeOpen(true)}
+                      >
+                        {t("finalize")}
+                      </Button>
                     </>
                   ) : null}
                 </div>

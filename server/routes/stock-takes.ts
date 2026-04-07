@@ -334,16 +334,22 @@ export function registerStockTakeRoutes(app: Express) {
           .from(stockTakeLines)
           .where(eq(stockTakeLines.stockTakeId, id));
 
-        const incomplete = lines.filter(l => l.countedStock == null || l.countedStock === "");
-        if (incomplete.length > 0) {
+        const countedLines = lines.filter(l => {
+          if (l.countedStock == null || l.countedStock === "") return false;
+          return !Number.isNaN(parseInt(l.countedStock, 10));
+        });
+
+        if (countedLines.length === 0) {
           return res.status(400).json({
-            message: "All lines must have a counted stock before finalizing",
-            incompleteLineIds: incomplete.map(l => l.id),
+            message:
+              "Enter a count on at least one product to finalize (not every line is required).",
           });
         }
 
+        const adjustedProductIds: string[] = [];
+
         await db.transaction(async tx => {
-          for (const line of lines) {
+          for (const line of countedLines) {
             const countedStock = line.countedStock!;
             const newQty = parseInt(countedStock, 10);
 
@@ -378,6 +384,7 @@ export function registerStockTakeRoutes(app: Express) {
               createdBy: user.id,
               newStockOverride: countedStock,
             });
+            adjustedProductIds.push(line.productId);
           }
 
           await tx
@@ -390,8 +397,7 @@ export function registerStockTakeRoutes(app: Express) {
             .where(eq(stockTakes.id, id));
         });
 
-        const refreshedProducts = Array.from(new Set(lines.map(l => l.productId)));
-        await refreshLowStockNotifications(refreshedProducts, societyId);
+        await refreshLowStockNotifications(adjustedProductIds, societyId);
 
         const [finalTake] = await db
           .select()

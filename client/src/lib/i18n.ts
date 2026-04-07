@@ -173,7 +173,7 @@ export const translations = {
     cancelStockTake: "Utzi",
     stockTakeCreated: "Inbentarioa sortua",
     stockTakeCancelled: "Inbentarioa utzita",
-    stockTakeFinalized: "Inbentarioa osatua; stock eguneratu da.",
+    stockTakeFinalized: "Inbentarioa osatua; kontatutako produktuen stock-a eguneratu da.",
     stockTakeDraftExists: "Dagoeneko badago zirriborro babesle bat.",
     stockTakeDraftBanner: "Zirriborro bat dago martxan:",
     stockTakeStatusDraft: "Zirriborroa",
@@ -184,7 +184,9 @@ export const translations = {
     openDetail: "Ikusi",
     finalizeStockTakeTitle: "Bukatu inbentarioa?",
     finalizeStockTakeDescription:
-      "Lerro guztiek kopurua izan behar dute. Aldaketek stock aldaketa (doikuntza) sortuko dute.",
+      "Gutxienez produktu batean kopurua sartu behar duzu; ez da derrigorrezkoa lerro guztiak kontatzea. Kopurua duten lerroek soilik eguneratuko dute stock-a.",
+    finalizeStockTakeNeedCountHint:
+      "Gutxienez produktu baten kopurua gorde edo sartu, eta bukatzeko.",
     manageReservations: "Kudeatu erreserbak",
     manageConsumptions: "Erregistratu kontsumoak",
     manageUsers: "Kudeatu bazkideak eta lagunak",
@@ -920,7 +922,7 @@ export const translations = {
     cancelStockTake: "Cancelar",
     stockTakeCreated: "Inventario creado",
     stockTakeCancelled: "Inventario cancelado",
-    stockTakeFinalized: "Inventario finalizado; stock actualizado.",
+    stockTakeFinalized: "Inventario finalizado; se actualizó el stock de los productos contados.",
     stockTakeDraftExists: "Ya existe un borrador.",
     stockTakeDraftBanner: "Hay un borrador en curso:",
     stockTakeStatusDraft: "Borrador",
@@ -931,7 +933,9 @@ export const translations = {
     openDetail: "Ver",
     finalizeStockTakeTitle: "¿Finalizar inventario?",
     finalizeStockTakeDescription:
-      "Todas las líneas deben tener cantidad. Los cambios generarán ajustes de stock.",
+      "Debes introducir cantidad en al menos un producto; no hace falta contar todas las líneas. Solo las líneas con cantidad actualizarán el stock.",
+    finalizeStockTakeNeedCountHint:
+      "Introduce o guarda la cantidad de al menos un producto para poder finalizar.",
     manageReservations: "Gestionar reservas",
     manageConsumptions: "Registrar consumiciones",
     noProductsFound: "No se encontraron productos",

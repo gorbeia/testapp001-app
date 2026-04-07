@@ -129,7 +129,7 @@
 
 **Acceptance criteria:**
 
-- **Shipped:** **`stock_takes`** + **`stock_take_lines`**; one **draft** per society (DB unique partial index); **`POST /api/stock-takes`** (all active products or optional `productIds`); **`PATCH /api/stock-takes/:takeId/lines/:lineId`**; **`POST /api/stock-takes/:id/finalize`** (writes **`adjustment`** movements when counted ≠ current stock); **`POST /api/stock-takes/:id/cancel`**; UI **`/inbentarioa`**
+- **Shipped:** **`stock_takes`** + **`stock_take_lines`**; one **draft** per society (DB unique partial index); **`POST /api/stock-takes`** (all active products or optional `productIds`); **`PATCH /api/stock-takes/:takeId/lines/:lineId`**; **`POST /api/stock-takes/:id/finalize`** (writes **`adjustment`** movements for **counted** lines only when counted ≠ current stock — **partial** counts allowed: at least one line must have a count); **`POST /api/stock-takes/:id/cancel`**; UI **`/inbentarioa`**
 
 ---
 

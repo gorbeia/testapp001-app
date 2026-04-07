@@ -182,7 +182,7 @@ Status legend:
 5. **Supply receipts (hornidurak)**
    - **Status**: 🟡 Partial (`POST` / `GET /api/stock-receipts` + **`GET /api/stock-receipts/:id`**, UI **`/hornidurak`** with per-receipt detail modal (all lines); **no** supplier entity / POs — see `inventory.md`)
 6. **Physical stock take (inbentarioa)**
-   - **Status**: ✅ Implemented (`stock_takes` / `stock_take_lines`, **`/inbentarioa`**, finalize → `stock_movements` **adjustment**)
+   - **Status**: ✅ Implemented (`stock_takes` / `stock_take_lines`, **`/inbentarioa`**, finalize → `stock_movements` **adjustment** for counted lines only; partial inventory / no need to count every SKU — see `inventory.md` stock-take story)
 7. **Inventory analytics & optimization**
    - **Status**: ❌ Not Implemented
 
