@@ -78,7 +78,7 @@ When("I re-login as a {word} user", async function (role: string) {
   const page = getPage();
   assert.ok(page, "Page was not initialized");
 
-  await page.goto(e2eUrl("/"), { waitUntil: "networkidle" });
+  await page.goto(e2eUrl("/"), { waitUntil: "domcontentloaded" });
 
   const loginVisible = await page
     .locator('[data-testid="input-email"]')
@@ -163,7 +163,7 @@ Then("I should see a login error message and still see the login form", async fu
 When("I open the users management page", async function () {
   const page = getPage();
   assert.ok(page, "Page was not initialized");
-  await page.goto(e2eUrl("/erabiltzaileak"), { waitUntil: "networkidle" });
+  await page.goto(e2eUrl("/erabiltzaileak"), { waitUntil: "domcontentloaded" });
 
   // Ensure the page has rendered the users toolbar before proceeding
   await page.waitForSelector('[data-testid="button-new-user"]', { timeout: 5000 });

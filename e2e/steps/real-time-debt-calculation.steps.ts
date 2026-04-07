@@ -35,11 +35,10 @@ Given("I navigate to the credits page", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not initialized");
 
-  await page.goto(e2eUrl("/zorrak"));
-  await page.waitForLoadState("networkidle");
+  await page.goto(e2eUrl("/zorrak"), { waitUntil: "domcontentloaded" });
 
   // Wait for credits page to load
-  await page.waitForSelector('[data-testid="credits-page"]', { timeout: 5000 });
+  await page.waitForSelector('[data-testid="credits-page"]', { timeout: 10000 });
 });
 
 Given("I select the current month", async function () {
@@ -55,8 +54,7 @@ Given("I select the current month", async function () {
   await page.waitForSelector('[role="option"]', { timeout: 5000 });
   await page.locator(`[role="option"]:has-text("${currentMonthString}")`).click();
 
-  // Wait for data to load using waitForLoadState instead of timeout
-  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(1000);
 });
 
 Then("I should see the debts for all members", async function () {

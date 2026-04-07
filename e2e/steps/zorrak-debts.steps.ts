@@ -6,8 +6,7 @@ When("I navigate to the Zorrak debts page", async function () {
   const page = getPage();
   assert(page, "Page should be initialized");
 
-  await page.goto(e2eUrl("/zorrak"));
-  await page.waitForLoadState("networkidle");
+  await page.goto(e2eUrl("/zorrak"), { waitUntil: "domcontentloaded" });
 });
 
 Then("I should see the debts management interface", async function () {

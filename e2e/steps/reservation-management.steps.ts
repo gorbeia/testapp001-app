@@ -13,15 +13,14 @@ Given("I navigate to the reservations page", async function () {
   if (!page) throw new Error("Page not available");
 
   await page.click('[data-testid="link-erreserbak"]');
-  await page.waitForLoadState("networkidle");
+  await page.waitForSelector('[data-testid="button-new-reservation"]', { timeout: 15000 });
 });
 
 Given("I navigate to the admin reservations page", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  await page.goto(e2eUrl("/admin-erreserbak"));
-  await page.waitForLoadState("networkidle");
+  await page.goto(e2eUrl("/admin-erreserbak"), { waitUntil: "domcontentloaded" });
 });
 
 When("I click the new reservation button", async function () {

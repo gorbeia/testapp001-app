@@ -5,7 +5,7 @@ import { getPage, e2eUrl } from "./shared-state";
 When("I navigate to the prepayments page", async function () {
   const page = getPage();
   assert.ok(page);
-  await page.goto(e2eUrl("/transferentziak"), { waitUntil: "networkidle" });
+  await page.goto(e2eUrl("/transferentziak"), { waitUntil: "domcontentloaded" });
   await page.waitForSelector('[data-testid="bank-transfers-page"]', { timeout: 10000 });
 });
 
@@ -73,5 +73,5 @@ When("I validate the first pending prepayment", { timeout: 30 * 1000 }, async fu
   await validateBtn.scrollIntoViewIfNeeded();
   await validateBtn.waitFor({ state: "visible", timeout: 25000 });
   await validateBtn.click();
-  await page.waitForLoadState("networkidle");
+  await page.waitForTimeout(1000);
 });

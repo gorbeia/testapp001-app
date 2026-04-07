@@ -40,7 +40,7 @@ When("I navigate to the SEPA export page", async function () {
 When("I navigate to the SEPA export page by URL", async function () {
   const page = getPage();
   assert.ok(page);
-  await page.goto(e2eUrl("/sepa"), { waitUntil: "networkidle" });
+  await page.goto(e2eUrl("/sepa"), { waitUntil: "domcontentloaded" });
 });
 
 Then("I should see quarterly hints on the SEPA export step", async function () {

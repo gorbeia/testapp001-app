@@ -17,7 +17,7 @@ When("I log out from the sidebar", async function () {
 When("I navigate to my account movements page", async function () {
   const page = getPage();
   assert.ok(page);
-  await page.goto(e2eUrl("/nire-mugimenduak"), { waitUntil: "networkidle" });
+  await page.goto(e2eUrl("/nire-mugimenduak"), { waitUntil: "domcontentloaded" });
 });
 
 Then("I should see the my movements page", async function () {
@@ -29,7 +29,7 @@ Then("I should see the my movements page", async function () {
 When("I navigate to admin account movements page", async function () {
   const page = getPage();
   assert.ok(page);
-  await page.goto(e2eUrl("/mugimenduak"), { waitUntil: "networkidle" });
+  await page.goto(e2eUrl("/mugimenduak"), { waitUntil: "domcontentloaded" });
 });
 
 Then("I should see the admin movements page", async function () {

@@ -8,7 +8,6 @@ When("I navigate to the society page", async function () {
 
   // Navigate to society page
   await page.click('[data-testid="link-elkartea"]');
-  await page.waitForLoadState("networkidle");
 });
 
 Then("I should see the current society information", async function () {

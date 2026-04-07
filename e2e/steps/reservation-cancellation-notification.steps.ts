@@ -8,7 +8,6 @@ Then("I should see the reservation in my reservations list", async function () {
 
   // Navigate to my reservations
   await page.click('[data-testid="link-nire-erreserbak"]');
-  await page.waitForLoadState("networkidle");
 
   // Look for the reservation by text content
   const uniqueReservationName = this.testReservationName || "Test Erreserba Notifikazioa";
@@ -173,8 +172,7 @@ Then("the reservation should be marked as cancelled", async function () {
 
   const uniqueReservationName = this.testReservationName || "Test Erreserba Notifikazioa";
 
-  await page.reload();
-  await page.waitForLoadState("networkidle");
+  await page.reload({ waitUntil: "domcontentloaded" });
 
   // Try to find the reservation again
   const reservationRow = page
@@ -227,10 +225,8 @@ When("I navigate to the notifications page", async function () {
   const notificationsLink = page.locator('[data-testid="link-jakinarazpenak"]');
   if (await notificationsLink.isVisible()) {
     await notificationsLink.click();
-    await page.waitForLoadState("networkidle");
   } else {
-    await page.goto(e2eUrl("/jakinarazpenak"));
-    await page.waitForLoadState("networkidle");
+    await page.goto(e2eUrl("/jakinarazpenak"), { waitUntil: "domcontentloaded" });
   }
 });
 

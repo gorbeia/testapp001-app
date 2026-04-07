@@ -7,7 +7,6 @@ Given("I navigate to the profile page", async function () {
   if (!page) throw new Error("Page not available");
 
   await page.click('[data-testid="link-profile"]');
-  await page.waitForLoadState("networkidle");
 });
 
 Then("I should see the profile page", async function () {

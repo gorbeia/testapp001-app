@@ -19,7 +19,7 @@ When("I enable bank transfer prepayment on the society page", async function () 
 When("I navigate to the prepayments page by URL", async function () {
   const page = getPage();
   assert.ok(page, "Page not initialized");
-  await page.goto(e2eUrl("/transferentziak"), { waitUntil: "networkidle" });
+  await page.goto(e2eUrl("/transferentziak"), { waitUntil: "domcontentloaded" });
 });
 
 Then("I should not see the prepayments sidebar link", async function () {

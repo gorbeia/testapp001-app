@@ -14,7 +14,6 @@ Given("I navigate to the products page", async function () {
   if (!page) throw new Error("Page not available");
 
   await page.click("text=Produktuak");
-  await page.waitForLoadState("networkidle");
 });
 
 When("I click the new product button", async function () {
@@ -188,8 +187,7 @@ Then(
     await page.waitForTimeout(2000);
 
     // Reload the page to get fresh data
-    await page.reload();
-    await page.waitForLoadState("networkidle");
+    await page.reload({ waitUntil: "domcontentloaded" });
 
     // Check if product exists in table
     const productInTable = await page.locator(`tr:has-text("${actualProductName}")`).first();

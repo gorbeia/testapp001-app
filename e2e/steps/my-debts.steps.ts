@@ -16,8 +16,7 @@ When("I navigate to the {string} page", async function (pageName: string) {
     throw new Error(`No route found for page: ${pageName}`);
   }
 
-  await page.goto(e2eUrl(route));
-  await page.waitForLoadState("networkidle");
+  await page.goto(e2eUrl(route), { waitUntil: "domcontentloaded" });
 });
 
 Then("I should see my personal debts interface", async function () {
@@ -143,8 +142,7 @@ Then("I should see my debt has increased", async function () {
   const page = getPage();
   assert(page, "Page not initialized");
 
-  await page.goto(e2eUrl("/nire-zorrak"));
-  await page.waitForLoadState("networkidle");
+  await page.goto(e2eUrl("/nire-zorrak"), { waitUntil: "domcontentloaded" });
 
   const pendingElement = page.locator('[data-testid="total-pending"]');
   await pendingElement.waitFor();

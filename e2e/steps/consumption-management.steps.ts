@@ -8,7 +8,6 @@ Given("I navigate to the consumptions page", async function () {
   if (!page) throw new Error("Page not available");
 
   await page.click('[data-testid="link-kontsumoak"]');
-  await page.waitForLoadState("networkidle");
   await page.waitForSelector('[data-testid="product-card"]', { timeout: 15000 }).catch(() => {});
 });
 
@@ -238,18 +237,17 @@ Then("the consumption should appear in the consumption list", async function () 
 
   // Logout and login as admin to access consumption list
   await page.click("text=Logout");
-  await page.waitForLoadState("networkidle");
+  await page.waitForSelector('[data-testid="input-email"]', { state: "visible", timeout: 10000 });
 
   // Login as admin
   await page.fill('[data-testid="input-society-id"]', "GT001");
   await page.fill('[data-testid="input-email"]', "admin@txokoa.eus");
   await page.fill('[data-testid="input-password"]', "demo");
   await page.click('[data-testid="button-login"]');
-  await page.waitForLoadState("networkidle");
+  await page.waitForSelector('[data-testid="input-email"]', { state: "detached", timeout: 20000 });
 
   // Navigate to consumption list
   await page.click("text=Kontsumo Zerrenda");
-  await page.waitForLoadState("networkidle");
 
   // Wait for consumptions to load
   await page.waitForSelector('[data-testid="consumption-row"]', { timeout: 10000 });
