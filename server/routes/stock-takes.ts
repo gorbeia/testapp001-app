@@ -11,7 +11,7 @@ import {
   type JwtSessionUser,
   type Product,
 } from "@shared/schema";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
 import { refreshLowStockNotificationForProduct } from "../lib/stock-notifications";
@@ -69,18 +69,28 @@ export function registerStockTakeRoutes(app: Express) {
               and(
                 eq(products.societyId, societyId),
                 eq(products.isActive, true),
+                ne(products.stockMode, "none"),
                 inArray(products.id, productIds)
               )
             );
 
           if (productRows.length !== productIds.length) {
-            return res.status(400).json({ message: "One or more products not found or inactive" });
+            return res.status(400).json({
+              message:
+                "One or more products not found, inactive, or excluded from inventory (stock mode: none)",
+            });
           }
         } else {
           productRows = await db
             .select()
             .from(products)
-            .where(and(eq(products.societyId, societyId), eq(products.isActive, true)));
+            .where(
+              and(
+                eq(products.societyId, societyId),
+                eq(products.isActive, true),
+                ne(products.stockMode, "none")
+              )
+            );
         }
 
         if (productRows.length === 0) {

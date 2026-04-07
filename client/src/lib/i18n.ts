@@ -102,6 +102,20 @@ export const translations = {
     confirmDeleteProduct:
       'Ziur zaude "{name}" produktua ezabatu nahi duzula? Ekintza hau ezin da desegin.',
     manageProductsAndStock: "Kudeatu produktuak eta stock-a",
+    stockMode: "Stock modua",
+    stockModeAuto: "Automatikoa",
+    stockModeManual: "Eskuz kudeatua",
+    stockModeNone: "Inbentariorik gabe",
+    stockModeAutoHint:
+      "Kontsumoak stock-a automatikoki gutxitzen du (ale arruntak).",
+    stockModeManualHint:
+      "Stock-a hornidurak, inbentarioa eta doikuntzek aldatzen dute; kutxak ez du stock-a ukitzen (adib. botila kopetan; saltzen den unitate ezberdina).",
+    stockModeNoneHint:
+      "Ez da stock, hornidura edo alertarik kudeatzen; kutxak soilik fakturatu.",
+    stockNotTracked: "Ez dago stock-ik kudeatzen",
+    stockModeBadgeManual: "Eskuz",
+    stockModeBadgeNone: "Ez stock",
+    stockAdjustNotForNone: "Produktu hau ez dago inbentarioan; ez dago stock-a doitzeko aukerarik.",
     stockChanges: "Stock aldaketak",
     stockChangesDescription:
       "Kontsumo, doikuntza eta kalteen erregistroa (diru-mugimenduetatik bereizia).",
@@ -832,6 +846,20 @@ export const translations = {
     confirmDeleteProduct:
       '¿Estás seguro de que quieres eliminar el producto "{name}"? Esta acción no se puede deshacer.',
     manageProductsAndStock: "Gestionar productos y stock",
+    stockMode: "Modo de stock",
+    stockModeAuto: "Automático",
+    stockModeManual: "Gestión manual",
+    stockModeNone: "Sin inventario",
+    stockModeAutoHint:
+      "Los consumos descuentan stock automáticamente (artículos habituales).",
+    stockModeManualHint:
+      "El stock solo cambia con albaranes, inventario y ajustes; la caja no lo toca (p. ej., botellas; se vende en otra unidad).",
+    stockModeNoneHint:
+      "No se gestiona stock ni albaranes ni alertas; solo facturación en caja.",
+    stockNotTracked: "Sin gestión de stock",
+    stockModeBadgeManual: "Manual",
+    stockModeBadgeNone: "Sin stock",
+    stockAdjustNotForNone: "Este producto no tiene inventario; no se puede ajustar el stock.",
     stockChanges: "Cambios de stock",
     stockChangesDescription:
       "Registro de consumos, ajustes y mermas (distinto de los movimientos de cuenta).",

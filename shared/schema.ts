@@ -156,6 +156,10 @@ export const insertUserSchema = createInsertSchema(users).pick({
   isActive: true,
 });
 
+/** How POS and inventory interact for this product (see docs/features/inventory.md). */
+export const stockModeSchema = z.enum(["auto", "manual", "none"]);
+export type StockMode = z.infer<typeof stockModeSchema>;
+
 export const products = pgTable("products", {
   id: varchar("id")
     .primaryKey()
@@ -168,6 +172,8 @@ export const products = pgTable("products", {
   price: text("price").notNull(), // Using text for decimal precision
   stock: text("stock").notNull().default("0"), // Using text for large numbers
   unit: text("unit").notNull().default("unit"), // e.g., "unit", "kg", "liter"
+  /** auto: POS decrements stock; manual: tracked via receipts/takes/adjust only; none: not inventory-tracked. */
+  stockMode: text("stock_mode").notNull().default("auto"),
   minStock: text("min_stock").notNull().default("0"), // Alert threshold
   /** When true, staff were notified for low stock; reset when stock rises above minStock. */
   lowStockNotified: boolean("low_stock_notified").notNull().default(false),
@@ -210,17 +216,21 @@ export const categoryMessages = pgTable("category_messages", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertProductSchema = createInsertSchema(products).pick({
-  name: true,
-  description: true,
-  categoryId: true,
-  price: true,
-  stock: true,
-  unit: true,
-  minStock: true,
-  supplier: true,
-  isActive: true,
-});
+export const insertProductSchema = createInsertSchema(products)
+  .pick({
+    name: true,
+    description: true,
+    categoryId: true,
+    price: true,
+    stock: true,
+    unit: true,
+    minStock: true,
+    supplier: true,
+    isActive: true,
+  })
+  .extend({
+    stockMode: stockModeSchema.optional(),
+  });
 
 /** PATCH-style product updates; tenant is never taken from the client. */
 export const updateProductSchema = insertProductSchema.partial();

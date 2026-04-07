@@ -54,6 +54,14 @@ export function registerStockReceiptRoutes(app: Express) {
           return res.status(400).json({ message: "One or more products not found in society" });
         }
 
+        const nonTracked = productRows.filter(p => (p.stockMode ?? "auto") === "none");
+        if (nonTracked.length > 0) {
+          return res.status(400).json({
+            message: "Products without stock tracking cannot appear in receipts",
+            productIds: nonTracked.map(p => p.id),
+          });
+        }
+
         const receiptId = await db.transaction(async tx => {
           const [receipt] = await tx
             .insert(stockReceipts)

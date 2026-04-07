@@ -71,8 +71,9 @@
 
 **Acceptance Criteria:**
 
-- **Shipped:** manual stock changes via **`Stock doitu` / adjust dialog** on **`/produktuak`** and audited **`POST /api/products/:id/adjust`**
-- **Shipped:** automatic decrement when consumption items are posted (with **`stock_movements`** row, type **`consumption`**)
+- **Shipped:** per-product **`stock_mode`**: **`auto`** (consumption decrements stock + **`stock_movements`** type **`consumption`**), **`manual`** (stock updates only via **`/hornidurak`**, stock take finalize, **`POST /api/products/:id/adjust`** — POS does not decrement), **`none`** (no inventory: no receipt lines, excluded from stock takes and low-stock; adjust rejected)
+- **Shipped:** manual stock changes via **`Stock doitu` / adjust dialog** on **`/produktuak`** and audited **`POST /api/products/:id/adjust`** (not available when **`stock_mode`** is **`none`**)
+- **Shipped:** automatic decrement when consumption items are posted — **only** when **`stock_mode`** is **`auto`**
 - ❌ Batch adjustment wizard — **not implemented**
 
 ---

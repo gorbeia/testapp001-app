@@ -6,7 +6,7 @@ import {
   updateProductCatalogSchema,
   type JwtSessionUser,
 } from "@shared/schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
 import { refreshLowStockNotificationForProduct } from "../lib/stock-notifications";
@@ -41,7 +41,7 @@ export function registerProductRoutes(app: Express) {
             unit: products.unit,
           })
           .from(products)
-          .where(eq(products.societyId, societyId));
+          .where(and(eq(products.societyId, societyId), ne(products.stockMode, "none")));
 
         const low = rows.filter(p => {
           const s = parseInt(p.stock, 10);

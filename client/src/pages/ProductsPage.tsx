@@ -50,6 +50,14 @@ import { useLanguage } from "@/lib/i18n";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
+
+type StockModeUi = "auto" | "manual" | "none";
+
+function normalizeStockMode(product: Pick<Product, "stockMode">): StockModeUi {
+  const m = product.stockMode ?? "auto";
+  if (m === "manual" || m === "none") return m;
+  return "auto";
+}
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorBoundary";
 
@@ -137,6 +145,7 @@ export function ProductsPage() {
   });
 
   const lowStockProducts = products.filter(p => {
+    if (normalizeStockMode(p) === "none") return false;
     const stock = parseInt(p.stock);
     const minStock = parseInt(p.minStock);
     return stock <= minStock;
@@ -149,6 +158,7 @@ export function ProductsPage() {
     price: "",
     stock: "",
     unit: "unit",
+    stockMode: "auto" as StockModeUi,
     minStock: "",
     supplier: "",
     isActive: true,
@@ -160,6 +170,7 @@ export function ProductsPage() {
     categoryId: "",
     price: "",
     unit: "unit",
+    stockMode: "auto" as StockModeUi,
     minStock: "",
     supplier: "",
     isActive: true,
@@ -176,10 +187,27 @@ export function ProductsPage() {
   });
 
   const handleCreateProduct = async () => {
+    const mode = newProduct.stockMode;
+    const payload = {
+      name: newProduct.name,
+      description: newProduct.description || undefined,
+      categoryId: newProduct.categoryId,
+      price: newProduct.price,
+      unit: newProduct.unit,
+      stockMode: mode,
+      isActive: newProduct.isActive,
+      ...(mode === "none"
+        ? { stock: "0", minStock: "0" }
+        : {
+            stock: newProduct.stock || "0",
+            minStock: newProduct.minStock || "0",
+            supplier: newProduct.supplier.trim() ? newProduct.supplier.trim() : undefined,
+          }),
+    };
     try {
       const response = await authFetch("/api/products", {
         method: "POST",
-        body: JSON.stringify(newProduct),
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
@@ -198,6 +226,7 @@ export function ProductsPage() {
           price: "",
           stock: "",
           unit: "unit",
+          stockMode: "auto",
           minStock: "",
           supplier: "",
           isActive: true,
@@ -261,6 +290,7 @@ export function ProductsPage() {
       categoryId: product.categoryId || "",
       price: product.price,
       unit: product.unit,
+      stockMode: normalizeStockMode(product),
       minStock: product.minStock,
       supplier: product.supplier || "",
       isActive: product.isActive,
@@ -269,6 +299,14 @@ export function ProductsPage() {
   };
 
   const openAdjustStock = (product: Product) => {
+    if (normalizeStockMode(product) === "none") {
+      toast({
+        title: t("error"),
+        description: t("stockAdjustNotForNone"),
+        variant: "destructive",
+      });
+      return;
+    }
     setAdjustForm({ type: "adjustment", quantityInput: "", reason: "" });
     setAdjustDialog({ open: true, product });
   };
@@ -333,8 +371,12 @@ export function ProductsPage() {
           categoryId: editProduct.categoryId,
           price: editProduct.price,
           unit: editProduct.unit,
-          minStock: editProduct.minStock,
-          supplier: editProduct.supplier || undefined,
+          stockMode: editProduct.stockMode,
+          minStock: editProduct.stockMode === "none" ? "0" : editProduct.minStock,
+          supplier:
+            editProduct.stockMode === "none"
+              ? undefined
+              : editProduct.supplier?.trim() || undefined,
           isActive: editProduct.isActive,
         }),
       });
@@ -471,26 +513,86 @@ export function ProductsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="space-y-2">
-                    <Label>{t("productStock")}</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      placeholder="0"
-                      aria-label="Produktuaren stock kopurua"
-                      value={newProduct.stock}
-                      onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })}
-                      data-testid="input-product-stock"
-                    />
+                <div className="space-y-2">
+                  <Label>{t("stockMode")}</Label>
+                  <Select
+                    value={newProduct.stockMode}
+                    onValueChange={value =>
+                      setNewProduct({
+                        ...newProduct,
+                        stockMode: value as StockModeUi,
+                      })
+                    }
+                  >
+                    <SelectTrigger data-testid="select-new-product-stock-mode">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="auto">{t("stockModeAuto")}</SelectItem>
+                      <SelectItem value="manual">{t("stockModeManual")}</SelectItem>
+                      <SelectItem value="none">{t("stockModeNone")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {newProduct.stockMode === "auto" && t("stockModeAutoHint")}
+                    {newProduct.stockMode === "manual" && t("stockModeManualHint")}
+                    {newProduct.stockMode === "none" && t("stockModeNoneHint")}
+                  </p>
+                </div>
+
+                {newProduct.stockMode !== "none" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label>{t("productStock")}</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        aria-label="Produktuaren stock kopurua"
+                        value={newProduct.stock}
+                        onChange={e => setNewProduct({ ...newProduct, stock: e.target.value })}
+                        data-testid="input-product-stock"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("productUnit")}</Label>
+                      <Select
+                        value={newProduct.unit}
+                        onValueChange={value => setNewProduct({ ...newProduct, unit: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unit">Unitatea</SelectItem>
+                          <SelectItem value="kg">Kg</SelectItem>
+                          <SelectItem value="l">L</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>{t("minStock")}</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        aria-label="Stock minimoaren alerta mugaria"
+                        value={newProduct.minStock}
+                        onChange={e => setNewProduct({ ...newProduct, minStock: e.target.value })}
+                        data-testid="input-product-min-stock"
+                      />
+                    </div>
                   </div>
+                )}
+
+                {newProduct.stockMode === "none" && (
                   <div className="space-y-2">
                     <Label>{t("productUnit")}</Label>
                     <Select
                       value={newProduct.unit}
                       onValueChange={value => setNewProduct({ ...newProduct, unit: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger data-testid="select-new-product-unit-none">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -500,29 +602,19 @@ export function ProductsPage() {
                       </SelectContent>
                     </Select>
                   </div>
+                )}
+
+                {newProduct.stockMode !== "none" && (
                   <div className="space-y-2">
-                    <Label>{t("minStock")}</Label>
+                    <Label>{t("supplier")}</Label>
                     <Input
-                      type="number"
-                      min="0"
-                      placeholder="0"
-                      aria-label="Stock minimoaren alerta mugaria"
-                      value={newProduct.minStock}
-                      onChange={e => setNewProduct({ ...newProduct, minStock: e.target.value })}
-                      data-testid="input-product-min-stock"
+                      placeholder="Hornitzailearen izena..."
+                      aria-label="Hornitzailearen izena"
+                      value={newProduct.supplier}
+                      onChange={e => setNewProduct({ ...newProduct, supplier: e.target.value })}
                     />
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>{t("supplier")}</Label>
-                  <Input
-                    placeholder="Hornitzailearen izena..."
-                    aria-label="Hornitzailearen izena"
-                    value={newProduct.supplier}
-                    onChange={e => setNewProduct({ ...newProduct, supplier: e.target.value })}
-                  />
-                </div>
+                )}
 
                 <div className="flex justify-end gap-2 pt-2">
                   <Button
@@ -620,9 +712,10 @@ export function ProductsPage() {
                   </TableRow>
                 ) : (
                   filteredProducts.map(product => {
+                    const mode = normalizeStockMode(product);
                     const stock = parseInt(product.stock);
                     const minStock = parseInt(product.minStock);
-                    const isLowStock = stock <= minStock;
+                    const isLowStock = mode !== "none" && stock <= minStock;
 
                     return (
                       <TableRow key={product.id} data-testid={`row-product-${product.id}`}>
@@ -632,7 +725,19 @@ export function ProductsPage() {
                               <Package className="h-4 w-4 text-muted-foreground" />
                             </div>
                             <div>
-                              <span className="font-medium">{product.name}</span>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-medium">{product.name}</span>
+                                {mode === "manual" && (
+                                  <Badge variant="secondary" className="text-xs font-normal">
+                                    {t("stockModeBadgeManual")}
+                                  </Badge>
+                                )}
+                                {mode === "none" && (
+                                  <Badge variant="outline" className="text-xs font-normal">
+                                    {t("stockModeBadgeNone")}
+                                  </Badge>
+                                )}
+                              </div>
                               {product.description && (
                                 <p className="text-sm text-muted-foreground">
                                   {product.description}
@@ -649,10 +754,18 @@ export function ProductsPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
-                            {isLowStock && <AlertTriangle className="h-4 w-4 text-destructive" />}
-                            <span className={isLowStock ? "text-destructive font-medium" : ""}>
-                              {stock} {product.unit}
-                            </span>
+                            {mode === "none" ? (
+                              <span className="text-muted-foreground">{t("stockNotTracked")}</span>
+                            ) : (
+                              <>
+                                {isLowStock && (
+                                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                                )}
+                                <span className={isLowStock ? "text-destructive font-medium" : ""}>
+                                  {stock} {product.unit}
+                                </span>
+                              </>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell className="text-right font-medium">
@@ -680,13 +793,15 @@ export function ProductsPage() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 {t("edit")}
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => openAdjustStock(product)}
-                                data-testid={`menu-adjust-stock-${product.id}`}
-                              >
-                                <ClipboardList className="mr-2 h-4 w-4" />
-                                {t("adjustStock")}
-                              </DropdownMenuItem>
+                              {mode !== "none" && (
+                                <DropdownMenuItem
+                                  onClick={() => openAdjustStock(product)}
+                                  data-testid={`menu-adjust-stock-${product.id}`}
+                                >
+                                  <ClipboardList className="mr-2 h-4 w-4" />
+                                  {t("adjustStock")}
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => handleDeleteProduct(product)}
@@ -778,13 +893,48 @@ export function ProductsPage() {
                 </div>
               </div>
 
-              {editDialog.product && (
-                <p className="text-sm text-muted-foreground rounded-md border bg-muted/40 p-3">
-                  <span className="font-medium text-foreground">{t("productStock")}: </span>
-                  {editDialog.product.stock} {editDialog.product.unit}
-                  <span className="block mt-2">{t("stockUseAdjustNotPut")}</span>
+              <div className="space-y-2">
+                <Label>{t("stockMode")}</Label>
+                <Select
+                  value={editProduct.stockMode}
+                  onValueChange={value =>
+                    setEditProduct({
+                      ...editProduct,
+                      stockMode: value as StockModeUi,
+                    })
+                  }
+                >
+                  <SelectTrigger data-testid="select-edit-product-stock-mode">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">{t("stockModeAuto")}</SelectItem>
+                    <SelectItem value="manual">{t("stockModeManual")}</SelectItem>
+                    <SelectItem value="none">{t("stockModeNone")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {editProduct.stockMode === "auto" && t("stockModeAutoHint")}
+                  {editProduct.stockMode === "manual" && t("stockModeManualHint")}
+                  {editProduct.stockMode === "none" && t("stockModeNoneHint")}
                 </p>
-              )}
+              </div>
+
+              {editDialog.product &&
+                (editProduct.stockMode === "none" ? (
+                  <p className="text-sm text-muted-foreground rounded-md border bg-muted/40 p-3">
+                    {t("stockNotTracked")}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground rounded-md border bg-muted/40 p-3">
+                    <span className="font-medium text-foreground">{t("productStock")}: </span>
+                    {editDialog.product.stock} {editDialog.product.unit}
+                    <span className="block mt-2">{t("stockUseAdjustNotPut")}</span>
+                    {editProduct.stockMode === "manual" && (
+                      <span className="block mt-2 text-xs">{t("stockModeManualHint")}</span>
+                    )}
+                  </p>
+                ))}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -803,29 +953,33 @@ export function ProductsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label>{t("minStock")}</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    aria-label="Editatu stock minimoaren alerta mugaria"
-                    value={editProduct.minStock}
-                    onChange={e => setEditProduct({ ...editProduct, minStock: e.target.value })}
-                    data-testid="input-edit-product-min-stock"
-                  />
-                </div>
+                {editProduct.stockMode !== "none" && (
+                  <div className="space-y-2">
+                    <Label>{t("minStock")}</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="0"
+                      aria-label="Editatu stock minimoaren alerta mugaria"
+                      value={editProduct.minStock}
+                      onChange={e => setEditProduct({ ...editProduct, minStock: e.target.value })}
+                      data-testid="input-edit-product-min-stock"
+                    />
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <Label>{t("supplier")}</Label>
-                <Input
-                  placeholder="Hornitzailearen izena..."
-                  aria-label="Editatu hornitzailearen izena"
-                  value={editProduct.supplier}
-                  onChange={e => setEditProduct({ ...editProduct, supplier: e.target.value })}
-                />
-              </div>
+              {editProduct.stockMode !== "none" && (
+                <div className="space-y-2">
+                  <Label>{t("supplier")}</Label>
+                  <Input
+                    placeholder="Hornitzailearen izena..."
+                    aria-label="Editatu hornitzailearen izena"
+                    value={editProduct.supplier}
+                    onChange={e => setEditProduct({ ...editProduct, supplier: e.target.value })}
+                  />
+                </div>
+              )}
 
               <div className="flex justify-end gap-2 pt-2">
                 <Button

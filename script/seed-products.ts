@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { products, societies, productCategories } from "../shared/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
+import type { StockMode } from "../shared/schema";
 import type { SeedDb } from "./seed-db-type";
 import { db, pool } from "../server/db";
 import { fileURLToPath } from "node:url";
@@ -44,7 +45,20 @@ export async function seedProducts(dbConn: SeedDb) {
     return category.id;
   }
 
-  const demoProducts = [
+  type DemoProductSeed = {
+    name: string;
+    description: string;
+    categoryId: string;
+    price: string;
+    stock: string;
+    unit: string;
+    minStock: string;
+    supplier: string | null;
+    isActive: boolean;
+    stockMode: StockMode;
+  };
+
+  const demoProducts: DemoProductSeed[] = [
     {
       name: "Kalea Garagardoa",
       description: "Garagardo lokal ekoizpena, 330ml botila",
@@ -55,10 +69,11 @@ export async function seedProducts(dbConn: SeedDb) {
       minStock: "6",
       supplier: "Kalea Brewery",
       isActive: true,
+      stockMode: "auto",
     },
     {
       name: "Txakoli Getariako",
-      description: "Txakoli zuria, 750ml botila",
+      description: "Txakoli zuria, 750ml botila (kopetan saltzen da; stock botiletan, ez kopetan)",
       categoryId: "",
       price: "12.00",
       stock: "12",
@@ -66,6 +81,7 @@ export async function seedProducts(dbConn: SeedDb) {
       minStock: "3",
       supplier: "Local Winery",
       isActive: true,
+      stockMode: "manual",
     },
     {
       name: "Ura Mineral",
@@ -77,28 +93,31 @@ export async function seedProducts(dbConn: SeedDb) {
       minStock: "10",
       supplier: "Water Supplier",
       isActive: true,
+      stockMode: "auto",
     },
     {
       name: "Pintxo Tortilla",
-      description: "Tortilla pintxoa",
+      description: "Tortilla pintxoa (hornidura eguneko; ez dago clubeko inbentarioan)",
       categoryId: "",
       price: "2.50",
-      stock: "20",
+      stock: "0",
       unit: "unit",
-      minStock: "5",
-      supplier: "Kitchen",
+      minStock: "0",
+      supplier: "Sukalde kanpokoa",
       isActive: true,
+      stockMode: "none",
     },
     {
       name: "Gilda Pintxo",
-      description: "Gilda klasikoa: oliba, antxoa eta piperra",
+      description: "Gilda klasikoa (eguneko hornidura)",
       categoryId: "",
       price: "3.00",
-      stock: "15",
+      stock: "0",
       unit: "unit",
-      minStock: "4",
-      supplier: "Kitchen",
+      minStock: "0",
+      supplier: "Sukalde kanpokoa",
       isActive: true,
+      stockMode: "none",
     },
     {
       name: "Txistorra Sandwich",
@@ -110,6 +129,7 @@ export async function seedProducts(dbConn: SeedDb) {
       minStock: "3",
       supplier: "Kitchen",
       isActive: true,
+      stockMode: "auto",
     },
     {
       name: "Patata Frita",
@@ -121,6 +141,7 @@ export async function seedProducts(dbConn: SeedDb) {
       minStock: "8",
       supplier: "Snack Co",
       isActive: true,
+      stockMode: "auto",
     },
     {
       name: "Oliba Berdea",
@@ -132,6 +153,7 @@ export async function seedProducts(dbConn: SeedDb) {
       minStock: "4",
       supplier: "Local Producer",
       isActive: true,
+      stockMode: "auto",
     },
     {
       name: "Kafea",
@@ -143,6 +165,7 @@ export async function seedProducts(dbConn: SeedDb) {
       minStock: "20",
       supplier: "Coffee Roaster",
       isActive: true,
+      stockMode: "auto",
     },
     {
       name: "Tila Belar",
@@ -154,6 +177,7 @@ export async function seedProducts(dbConn: SeedDb) {
       minStock: "10",
       supplier: "Tea Supplier",
       isActive: true,
+      stockMode: "auto",
     },
     {
       name: "Sukaldeko Gatzak",
@@ -165,6 +189,7 @@ export async function seedProducts(dbConn: SeedDb) {
       minStock: "1",
       supplier: "Food Supplier",
       isActive: true,
+      stockMode: "auto",
     },
     {
       name: "Azukrea",
@@ -176,6 +201,19 @@ export async function seedProducts(dbConn: SeedDb) {
       minStock: "2",
       supplier: "Food Supplier",
       isActive: true,
+      stockMode: "auto",
+    },
+    {
+      name: "Menu eguneko (kanpotik)",
+      description: "Menua kanpoko hornitzailearekin; ordainketa zuzena, inbentariorik gabe",
+      categoryId: "",
+      price: "8.00",
+      stock: "0",
+      unit: "unit",
+      minStock: "0",
+      supplier: null,
+      isActive: true,
+      stockMode: "none",
     },
   ];
 
@@ -192,6 +230,7 @@ export async function seedProducts(dbConn: SeedDb) {
     "kafea",
     "bestelakoak",
     "bestelakoak",
+    "janariak",
   ];
   demoProducts.forEach((product, index) => {
     const icon = categoryMap[oldCategoryNames[index]];
@@ -209,12 +248,30 @@ export async function seedProducts(dbConn: SeedDb) {
 
     if (existingProduct.length === 0) {
       await dbConn.insert(products).values({
-        ...product,
+        name: product.name,
+        description: product.description,
+        categoryId: product.categoryId,
+        price: product.price,
+        stock: product.stock,
+        unit: product.unit,
+        minStock: product.minStock,
+        supplier: product.supplier,
+        isActive: product.isActive,
+        stockMode: product.stockMode,
         societyId,
       });
-      console.log(`Added product: ${product.name}`);
+      console.log(`Added product: ${product.name} (${product.stockMode})`);
     } else {
-      console.log(`Product already exists: ${product.name}`);
+      await dbConn
+        .update(products)
+        .set({
+          stockMode: product.stockMode,
+          description: product.description,
+        })
+        .where(
+          and(eq(products.name, product.name), eq(products.societyId, societyId))
+        );
+      console.log(`Product already exists (updated stockMode/description): ${product.name}`);
     }
   }
 

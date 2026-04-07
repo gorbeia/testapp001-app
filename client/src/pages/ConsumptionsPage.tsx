@@ -671,14 +671,19 @@ export function ConsumptionsPage() {
               </div>
             ) : (
               filteredProducts.map(product => {
-                const stock = parseInt(product.stock);
-                const minStock = parseInt(product.minStock);
-                const isLowStock = stock <= minStock;
+                const stockUntracked = (product.stockMode ?? "auto") === "none";
+                const stock = parseInt(product.stock, 10);
+                const minStock = parseInt(product.minStock, 10);
+                const isLowStock = !stockUntracked && stock <= minStock;
 
                 return (
-                  <Card key={product.id} className="hover-elevate" data-testid="product-card">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col gap-2">
+                  <Card
+                    key={product.id}
+                    className="hover-elevate flex h-full flex-col"
+                    data-testid="product-card"
+                  >
+                    <CardContent className="flex flex-1 flex-col p-4">
+                      <div className="flex min-h-0 flex-1 flex-col gap-2">
                         <span className="font-medium text-sm">{product.name}</span>
                         <div className="flex items-center justify-between gap-2">
                           <Badge variant="secondary" className="text-xs">
@@ -687,16 +692,18 @@ export function ConsumptionsPage() {
                           </Badge>
                           <span className="font-bold">{parseFloat(product.price).toFixed(2)}€</span>
                         </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs text-muted-foreground">
-                            {t("stock")}: {stock} {product.unit}
-                          </span>
-                          {isLowStock && (
-                            <Badge variant="destructive" className="text-xs">
-                              {t("lowStock")}
-                            </Badge>
-                          )}
-                        </div>
+                        {!stockUntracked && (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs text-muted-foreground">
+                              {t("stock")}: {stock} {product.unit}
+                            </span>
+                            {isLowStock && (
+                              <Badge variant="destructive" className="text-xs">
+                                {t("lowStock")}
+                              </Badge>
+                            )}
+                          </div>
+                        )}
                         <Button
                           size="sm"
                           disabled={prepaymentBlocks}
@@ -704,7 +711,7 @@ export function ConsumptionsPage() {
                             e.stopPropagation();
                             addToCartProduct(product);
                           }}
-                          className="w-full mt-2"
+                          className="mt-auto w-full"
                           data-testid="button-add-to-cart"
                         >
                           <Plus className="h-4 w-4 mr-1" />

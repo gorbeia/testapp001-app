@@ -24,6 +24,16 @@ export async function refreshLowStockNotificationForProduct(
 
     if (!row) return;
 
+    if ((row.stockMode ?? "auto") === "none") {
+      if (row.lowStockNotified) {
+        await db
+          .update(products)
+          .set({ lowStockNotified: false, updatedAt: new Date() })
+          .where(and(eq(products.id, productId), eq(products.societyId, societyId)));
+      }
+      return;
+    }
+
     const stock = parseInt(row.stock, 10);
     const minStock = parseInt(row.minStock, 10);
     const isLow =

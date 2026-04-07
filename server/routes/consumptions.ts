@@ -551,30 +551,32 @@ export function registerConsumptionRoutes(app: Express) {
             createdBy: user.id,
           });
 
-          // Update product stock
-          const currentStock = parseInt(product[0].stock);
-          const newStock = currentStock - item.quantity;
+          const mode = product[0].stockMode ?? "auto";
+          if (mode === "auto") {
+            // Update product stock (manual/none: billed only; stock via receipts/takes/adjust)
+            const currentStock = parseInt(product[0].stock);
+            const newStock = currentStock - item.quantity;
 
-          // Allow negative stocks since consumption represents actual usage
-          await db
-            .update(products)
-            .set({ stock: newStock.toString(), updatedAt: new Date() })
-            .where(and(eq(products.id, item.productId), eq(products.societyId, societyId)));
+            // Allow negative stocks since consumption represents actual usage
+            await db
+              .update(products)
+              .set({ stock: newStock.toString(), updatedAt: new Date() })
+              .where(and(eq(products.id, item.productId), eq(products.societyId, societyId)));
 
-          // Create stock movement
-          await db.insert(stockMovements).values({
-            productId: item.productId,
-            societyId,
-            type: "consumption",
-            quantity: -item.quantity,
-            reason: "Bar consumption",
-            referenceId: id,
-            previousStock: currentStock.toString(),
-            newStock: newStock.toString(),
-            createdBy: user.id,
-          });
+            await db.insert(stockMovements).values({
+              productId: item.productId,
+              societyId,
+              type: "consumption",
+              quantity: -item.quantity,
+              reason: "Bar consumption",
+              referenceId: id,
+              previousStock: currentStock.toString(),
+              newStock: newStock.toString(),
+              createdBy: user.id,
+            });
 
-          await refreshLowStockNotificationForProduct(item.productId, societyId);
+            await refreshLowStockNotificationForProduct(item.productId, societyId);
+          }
         }
 
         // Update consumption total

@@ -57,6 +57,13 @@
       "when": 1776100000000,
       "tag": "0007_product_low_stock_notified",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776200000000,
+      "tag": "0008_product_stock_mode",
+      "breakpoints": true
     }
   ]
 }

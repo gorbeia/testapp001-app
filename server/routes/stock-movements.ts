@@ -256,6 +256,21 @@ export function registerStockMovementRoutes(app: Express) {
 
         const { type, quantity, reason } = parsed.data;
 
+        const [preCheck] = await db
+          .select({ id: products.id, stockMode: products.stockMode })
+          .from(products)
+          .where(and(eq(products.id, productId), eq(products.societyId, societyId)))
+          .limit(1);
+
+        if (!preCheck) {
+          return res.status(404).json({ message: "Product not found" });
+        }
+        if ((preCheck.stockMode ?? "auto") === "none") {
+          return res.status(400).json({
+            message: "Stock adjustments are not available for products without inventory tracking",
+          });
+        }
+
         const result = await db.transaction(async tx => {
           const [productRow] = await tx
             .select()
