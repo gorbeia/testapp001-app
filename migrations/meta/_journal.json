@@ -43,6 +43,13 @@
       "when": 1775900000000,
       "tag": "0005_user_rbac",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776000000000,
+      "tag": "0006_stock_receipts_and_stock_takes",
+      "breakpoints": true
     }
   ]
 }

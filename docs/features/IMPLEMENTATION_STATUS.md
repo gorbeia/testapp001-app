@@ -176,12 +176,14 @@ Status legend:
 2. **Product categories**
    - **Status**: ✅ Implemented (see Consumptions §5; `/kategoriak`)
 3. **Stock management & movements**
-   - **Status**: 🟡 Partial (`GET /api/stock-movements`, `GET /api/products/:id/stock-movements`, `POST /api/products/:id/adjust`; UI **`/stock-aldaketak`**; `PUT /api/products/:id` rejects **`stock`**; consumption + adjustment/damage write `stock_movements`; **no** purchase-type movements yet — see `inventory.md`)
+   - **Status**: 🟡 Partial (`GET /api/stock-movements`, `POST /api/products/:id/adjust`, UI **`/stock-aldaketak`**; consumption, adjust/damage, **purchase** (receipts), and stock-take finalize **adjustment** rows — see `inventory.md`)
 4. **Low stock awareness**
    - **Status**: 🟡 Partial (`minStock` + banner on ProductsPage; no push notifications)
-5. **Purchases & suppliers**
-   - **Status**: ❌ Not Implemented (supplier string on product only)
-6. **Inventory analytics & optimization**
+5. **Supply receipts (hornidurak)**
+   - **Status**: 🟡 Partial (`POST` / `GET /api/stock-receipts`, UI **`/hornidurak`**; **no** supplier entity / POs — see `inventory.md`)
+6. **Physical stock take (inbentarioa)**
+   - **Status**: ✅ Implemented (`stock_takes` / `stock_take_lines`, **`/inbentarioa`**, finalize → `stock_movements` **adjustment**)
+7. **Inventory analytics & optimization**
    - **Status**: ❌ Not Implemented
 
 ---

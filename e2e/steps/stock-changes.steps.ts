@@ -50,3 +50,9 @@ Then("I should see a stock log row containing {string}", async function (text: s
   const row = page.locator('[data-testid^="row-stock-movement-"]').filter({ hasText: text }).first();
   assert.ok(await row.isVisible(), `Expected a stock log row containing "${text}"`);
 });
+
+Then("the stock changes page should be visible", async function () {
+  const page = getPage();
+  if (!page) throw new Error("Page not available");
+  await page.waitForSelector('[data-testid="page-stock-changes"]', { state: "visible" });
+});

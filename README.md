@@ -177,7 +177,7 @@ Adjust if your local runs need a different default.
 
 ### Coverage overview
 
-There are **12** feature files under `e2e/features/` (login, users, profile, reservations, products, consumptions, debts, society, menus, notifications/real-time, etc.). For gaps vs API surface, see `docs/KNOWN_ISSUES.md`.
+There are **22** feature files under `e2e/features/` (login, users, profile, reservations, products, stock changes/receipts/takes, consumptions, debts, society, menus, payments, etc.). For gaps vs API surface, see `docs/KNOWN_ISSUES.md`.
 
 ---
 

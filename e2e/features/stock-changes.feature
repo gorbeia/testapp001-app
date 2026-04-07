@@ -9,6 +9,10 @@ Feature: Stock changes log and audited adjustments
     And I log in as a admin user
     And I should see the dashboard instead of the login form
 
+  Scenario: Stock changes page is reachable
+    When I navigate to the stock changes page
+    Then the stock changes page should be visible
+
   Scenario: Stock adjustment is listed on the stock changes page
     Given I navigate to the products page
     When I click the new product button

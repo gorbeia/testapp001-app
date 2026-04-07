@@ -18,6 +18,8 @@ import {
   List,
   Landmark,
   ClipboardList,
+  Truck,
+  ClipboardCheck,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -145,6 +147,8 @@ export function AppSidebar() {
       ? [
           { title: t("products"), url: "/produktuak", icon: Package },
           { title: t("stockChanges"), url: "/stock-aldaketak", icon: ClipboardList },
+          { title: t("supplies"), url: "/hornidurak", icon: Truck },
+          { title: t("stockTake"), url: "/inbentarioa", icon: ClipboardCheck },
         ]
       : []),
     ...(userCan(user, Permission.SEPA_EXPORT) && societySepaMode !== "disabled"

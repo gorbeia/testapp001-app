@@ -255,6 +255,34 @@ export const stockMovementListQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
+export const stockReceiptLineInputSchema = z.object({
+  productId: z.string().uuid(),
+  quantity: z.number().int().positive(),
+  unitCost: z.string().max(32).optional(),
+});
+
+export const createStockReceiptSchema = z.object({
+  supplier: z.string().max(500).optional(),
+  invoiceReference: z.string().max(200).optional(),
+  notes: z.string().max(2000).optional(),
+  lines: z.array(stockReceiptLineInputSchema).min(1),
+});
+
+export const createStockTakeSchema = z.object({
+  notes: z.string().max(2000).optional(),
+  productIds: z.array(z.string().uuid()).optional(),
+});
+
+export const updateStockTakeLineSchema = z.object({
+  countedStock: z.string().regex(/^\d+$/),
+  notes: z.string().max(500).optional(),
+});
+
+export const paginatedQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
 export const insertProductCategorySchema = createInsertSchema(productCategories).pick({
   color: true,
   icon: true,
@@ -318,6 +346,74 @@ export const stockMovements = pgTable("stock_movements", {
   newStock: text("new_stock").notNull(),
   createdBy: varchar("created_by").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+// Incoming supply receipts (restock); each line updates stock and writes stock_movements type purchase
+export const stockReceipts = pgTable("stock_receipts", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
+  supplier: text("supplier"),
+  invoiceReference: text("invoice_reference"),
+  notes: text("notes"),
+  receivedAt: timestamp("received_at").notNull().defaultNow(),
+  createdBy: varchar("created_by").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const stockReceiptLines = pgTable("stock_receipt_lines", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  receiptId: varchar("receipt_id")
+    .notNull()
+    .references(() => stockReceipts.id, { onDelete: "cascade" }),
+  productId: varchar("product_id")
+    .notNull()
+    .references(() => products.id),
+  quantity: integer("quantity").notNull(),
+  unitCost: text("unit_cost"),
+});
+
+export const stockTakeStatusEnum = pgEnum("stock_take_status", [
+  "draft",
+  "completed",
+  "cancelled",
+]);
+
+export const stockTakes = pgTable("stock_takes", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
+  date: timestamp("date").notNull().defaultNow(),
+  status: stockTakeStatusEnum("status").notNull().default("draft"),
+  notes: text("notes"),
+  completedAt: timestamp("completed_at"),
+  createdBy: varchar("created_by").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const stockTakeLines = pgTable("stock_take_lines", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  stockTakeId: varchar("stock_take_id")
+    .notNull()
+    .references(() => stockTakes.id, { onDelete: "cascade" }),
+  productId: varchar("product_id")
+    .notNull()
+    .references(() => products.id),
+  systemStock: text("system_stock").notNull(),
+  countedStock: text("counted_stock"),
+  variance: text("variance"),
+  notes: text("notes"),
 });
 
 // Reservations (events, bookings, etc.)

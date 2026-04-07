@@ -101,7 +101,7 @@
 - **Shipped:** `stock_movements` populated from **consumption** (type **`consumption`**) and from **adjust / damage** ( **`POST /api/products/:id/adjust`** )
 - **Shipped:** **`GET /api/stock-movements`** (filters: product, type, date range, pagination) and **`GET /api/products/:id/stock-movements`**
 - **Shipped:** admin UI **`/stock-aldaketak`** (“Stock aldaketak”) — list and filters (distinct from account **`/mugimenduak`**)
-- **Partial:** schema allows **`purchase`** but nothing writes it yet (see purchase/receipts backlog)
+- **Shipped:** **`purchase`** rows from **`POST /api/stock-receipts`** (hornidura / supply receipt); see Purchase epic
 
 ---
 
@@ -109,7 +109,24 @@
 
 ### Stories 7–9: Purchases, Suppliers, POs
 
-**Status:** ❌ **Not implemented** beyond optional **`supplier`** string on `products`.
+**Acceptance criteria (current):**
+
+- **Shipped:** **`stock_receipts`** + **`stock_receipt_lines`**; **`POST /api/stock-receipts`** (multi-line, updates `products.stock`, **`stock_movements`** type **`purchase`**); **`GET /api/stock-receipts`** and **`GET /api/stock-receipts/:id`**; UI **`/hornidurak`**
+- ❌ **`supplier`** row is still free text on product and optional fields on receipt — **no** supplier master / PO workflow
+
+---
+
+## Epic: Stock take (physical count)
+
+### Story: Periodic inventory count
+
+**As a** Sotolaria  
+**I want to** run a stock take and align system quantities with the count  
+**So that** drift is corrected with an audit trail
+
+**Acceptance criteria:**
+
+- **Shipped:** **`stock_takes`** + **`stock_take_lines`**; one **draft** per society (DB unique partial index); **`POST /api/stock-takes`** (all active products or optional `productIds`); **`PATCH /api/stock-takes/:takeId/lines/:lineId`**; **`POST /api/stock-takes/:id/finalize`** (writes **`adjustment`** movements when counted ≠ current stock); **`POST /api/stock-takes/:id/cancel`**; UI **`/inbentarioa`**
 
 ---
 

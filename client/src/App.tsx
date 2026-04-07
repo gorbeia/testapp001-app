@@ -27,6 +27,8 @@ import { MyDebtsPage } from "@/pages/MyDebtsPage";
 import { UsersPage } from "@/pages/UsersPage";
 import { ProductsPage } from "@/pages/ProductsPage";
 import { StockChangesPage } from "@/pages/StockChangesPage";
+import { StockReceiptsPage } from "@/pages/StockReceiptsPage";
+import { StockTakePage } from "@/pages/StockTakePage";
 import { SocietyPage } from "@/pages/SocietyPage";
 import { SepaExportPage } from "@/pages/SepaExportPage";
 import { MyMovementsPage } from "@/pages/MyMovementsPage";
@@ -128,6 +130,20 @@ function AppRoutes() {
         {() => (
           <ProtectedRoute requires={Permission.PRODUCTS_MANAGE}>
             <StockChangesPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/hornidurak">
+        {() => (
+          <ProtectedRoute requires={Permission.PRODUCTS_MANAGE}>
+            <StockReceiptsPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/inbentarioa">
+        {() => (
+          <ProtectedRoute requires={Permission.PRODUCTS_MANAGE}>
+            <StockTakePage />
           </ProtectedRoute>
         )}
       </Route>
