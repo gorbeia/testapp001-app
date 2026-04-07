@@ -28,8 +28,8 @@ When(
     const page = getPage();
     if (!page) throw new Error("Page not available");
     await page.click('[data-testid="select-receipt-product-0"]');
-    await page.waitForSelector('[role="option"]', { state: "visible" });
-    const firstOption = page.locator('[role="option"]').first();
+    await page.waitForSelector("[cmdk-item]", { state: "visible" });
+    const firstOption = page.locator("[cmdk-item]").first();
     await firstOption.click();
     await page.fill('[data-testid="input-receipt-qty-0"]', quantity);
   }

@@ -295,6 +295,25 @@ export const paginatedQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
+/** GET /api/stock-receipts — pagination + optional filters (month YYYY-MM, supplier/reference substring). */
+export const stockReceiptListQuerySchema = paginatedQuerySchema
+  .extend({
+    month: z.string().optional(),
+    supplier: z.string().max(200).optional(),
+    reference: z.string().max(200).optional(),
+  })
+  .transform(val => ({
+    ...val,
+    month: val.month?.trim() ? val.month.trim() : undefined,
+    supplier: val.supplier?.trim() ? val.supplier.trim() : undefined,
+    reference: val.reference?.trim() ? val.reference.trim() : undefined,
+  }))
+  .superRefine((val, ctx) => {
+    if (val.month && !/^\d{4}-\d{2}$/.test(val.month)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid month (expected YYYY-MM)", path: ["month"] });
+    }
+  });
+
 export const insertProductCategorySchema = createInsertSchema(productCategories).pick({
   color: true,
   icon: true,

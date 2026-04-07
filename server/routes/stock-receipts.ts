@@ -5,10 +5,10 @@ import {
   stockReceipts,
   stockReceiptLines,
   createStockReceiptSchema,
-  paginatedQuerySchema,
+  stockReceiptListQuerySchema,
   type JwtSessionUser,
 } from "@shared/schema";
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, inArray, lt, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
 import {
@@ -22,6 +22,13 @@ const getUserSocietyId = (user: JwtSessionUser): string => {
   }
   return user.societyId;
 };
+
+/** Strip ILIKE wildcards so user input cannot broaden the pattern. Returns null if nothing searchable remains. */
+function ilikeContainsPattern(term: string): string | null {
+  const s = term.replace(/\\/g, "").replace(/%/g, "").replace(/_/g, "").trim();
+  if (!s) return null;
+  return `%${s}%`;
+}
 
 export function registerStockReceiptRoutes(app: Express) {
   app.post(
@@ -136,17 +143,44 @@ export function registerStockReceiptRoutes(app: Express) {
         }
 
         const societyId = getUserSocietyId(user);
-        const pq = paginatedQuerySchema.safeParse({
+        const pq = stockReceiptListQuerySchema.safeParse({
           page: req.query.page,
           limit: req.query.limit,
+          month: req.query.month,
+          supplier: req.query.supplier,
+          reference: req.query.reference,
         });
         if (!pq.success) {
           return res.status(400).json({ message: "Invalid query", issues: pq.error.flatten() });
         }
-        const { page, limit } = pq.data;
+        const { page, limit, month, supplier, reference } = pq.data;
         const offset = (page - 1) * limit;
 
-        const whereClause = eq(stockReceipts.societyId, societyId);
+        const conditions = [eq(stockReceipts.societyId, societyId)];
+
+        if (month) {
+          const [y, m] = month.split("-").map(Number);
+          const start = new Date(Date.UTC(y, m - 1, 1, 0, 0, 0, 0));
+          const end = new Date(Date.UTC(y, m, 1, 0, 0, 0, 0));
+          conditions.push(gte(stockReceipts.receivedAt, start));
+          conditions.push(lt(stockReceipts.receivedAt, end));
+        }
+
+        if (supplier) {
+          const sp = ilikeContainsPattern(supplier);
+          if (sp) {
+            conditions.push(ilike(stockReceipts.supplier, sp));
+          }
+        }
+
+        if (reference) {
+          const rp = ilikeContainsPattern(reference);
+          if (rp) {
+            conditions.push(ilike(stockReceipts.invoiceReference, rp));
+          }
+        }
+
+        const whereClause = and(...conditions);
 
         const [countRow] = await db
           .select({ count: sql<number>`count(*)::int` })
