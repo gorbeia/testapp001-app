@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLanguage } from "@/lib/i18n";
+import { useLanguage, type TranslationKey } from "@/lib/i18n";
 import { authFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,6 +45,12 @@ type BankTransferRow = {
   notes: string | null;
   status: string;
   memberName: string | null;
+};
+
+const BANK_TRANSFER_STATUS_I18N: Record<string, TranslationKey> = {
+  pending: "bankTransferStatusPending",
+  validated: "bankTransferStatusValidated",
+  rejected: "bankTransferStatusRejected",
 };
 
 export function BankTransfersPage() {
@@ -397,7 +403,11 @@ export function BankTransfersPage() {
                       {parseFloat(tr.amount).toFixed(2)}€
                     </TableCell>
                     <TableCell>{tr.transferDate}</TableCell>
-                    <TableCell>{tr.status}</TableCell>
+                    <TableCell data-testid={`transfer-status-${tr.id}`}>
+                      {BANK_TRANSFER_STATUS_I18N[tr.status]
+                        ? t(BANK_TRANSFER_STATUS_I18N[tr.status])
+                        : tr.status}
+                    </TableCell>
                     <TableCell className="flex gap-2">
                       <Button
                         size="sm"
