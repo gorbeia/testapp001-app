@@ -2,7 +2,6 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import {
   products,
-  stockMovements,
   stockReceipts,
   stockReceiptLines,
   createStockReceiptSchema,
@@ -12,7 +11,10 @@ import {
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
-import { refreshLowStockNotificationForProduct } from "../lib/stock-notifications";
+import {
+  applyStockDelta,
+  refreshLowStockNotifications,
+} from "../lib/inventory/inventory-service";
 
 const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
@@ -75,22 +77,6 @@ export function registerStockReceiptRoutes(app: Express) {
             .returning();
 
           for (const line of lines) {
-            const [pRow] = await tx
-              .select()
-              .from(products)
-              .where(and(eq(products.id, line.productId), eq(products.societyId, societyId)))
-              .limit(1);
-
-            if (!pRow) {
-              throw new Error("Product missing in transaction");
-            }
-
-            const currentStock = parseInt(pRow.stock, 10);
-            if (Number.isNaN(currentStock)) {
-              throw new Error("Invalid stock on product");
-            }
-            const newStock = currentStock + line.quantity;
-
             await tx.insert(stockReceiptLines).values({
               receiptId: receipt.id,
               productId: line.productId,
@@ -98,25 +84,18 @@ export function registerStockReceiptRoutes(app: Express) {
               unitCost: line.unitCost ?? null,
             });
 
-            await tx
-              .update(products)
-              .set({ stock: String(newStock), updatedAt: new Date() })
-              .where(and(eq(products.id, line.productId), eq(products.societyId, societyId)));
-
             const reasonParts = ["Hornidura / Supply receipt", receipt.id.slice(0, 8)];
             if (invoiceReference) {
               reasonParts.push(`Ref: ${invoiceReference}`);
             }
 
-            await tx.insert(stockMovements).values({
+            await applyStockDelta(tx, {
               productId: line.productId,
               societyId,
+              delta: line.quantity,
               type: "purchase",
-              quantity: line.quantity,
               reason: reasonParts.join(" · "),
               referenceId: receipt.id,
-              previousStock: String(currentStock),
-              newStock: String(newStock),
               createdBy: user.id,
             });
           }
@@ -125,9 +104,7 @@ export function registerStockReceiptRoutes(app: Express) {
         });
 
         const touchedProducts = Array.from(new Set(lines.map(l => l.productId)));
-        for (const productId of touchedProducts) {
-          await refreshLowStockNotificationForProduct(productId, societyId);
-        }
+        await refreshLowStockNotifications(touchedProducts, societyId);
 
         const [full] = await db
           .select()

@@ -2,7 +2,6 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import {
   products,
-  stockMovements,
   stockTakeLines,
   stockTakes,
   createStockTakeSchema,
@@ -14,7 +13,10 @@ import {
 import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
-import { refreshLowStockNotificationForProduct } from "../lib/stock-notifications";
+import {
+  applyStockDelta,
+  refreshLowStockNotifications,
+} from "../lib/inventory/inventory-service";
 
 const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
@@ -366,21 +368,15 @@ export function registerStockTakeRoutes(app: Express) {
 
             const delta = newQty - prev;
 
-            await tx
-              .update(products)
-              .set({ stock: countedStock, updatedAt: new Date() })
-              .where(and(eq(products.id, line.productId), eq(products.societyId, societyId)));
-
-            await tx.insert(stockMovements).values({
+            await applyStockDelta(tx, {
               productId: line.productId,
               societyId,
+              delta,
               type: "adjustment",
-              quantity: delta,
               reason: `Inbentarioa / Stock take ${take.id.slice(0, 8)}`,
               referenceId: take.id,
-              previousStock: String(prev),
-              newStock: countedStock,
               createdBy: user.id,
+              newStockOverride: countedStock,
             });
           }
 
@@ -395,9 +391,7 @@ export function registerStockTakeRoutes(app: Express) {
         });
 
         const refreshedProducts = Array.from(new Set(lines.map(l => l.productId)));
-        for (const productId of refreshedProducts) {
-          await refreshLowStockNotificationForProduct(productId, societyId);
-        }
+        await refreshLowStockNotifications(refreshedProducts, societyId);
 
         const [finalTake] = await db
           .select()

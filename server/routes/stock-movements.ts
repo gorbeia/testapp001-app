@@ -11,7 +11,11 @@ import {
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
-import { refreshLowStockNotificationForProduct } from "../lib/stock-notifications";
+import {
+  applyStockDelta,
+  InventoryServiceError,
+  refreshLowStockNotificationForProduct,
+} from "../lib/inventory/inventory-service";
 
 const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
@@ -256,70 +260,36 @@ export function registerStockMovementRoutes(app: Express) {
 
         const { type, quantity, reason } = parsed.data;
 
-        const [preCheck] = await db
-          .select({ id: products.id, stockMode: products.stockMode })
-          .from(products)
-          .where(and(eq(products.id, productId), eq(products.societyId, societyId)))
-          .limit(1);
-
-        if (!preCheck) {
-          return res.status(404).json({ message: "Product not found" });
-        }
-        if ((preCheck.stockMode ?? "auto") === "none") {
-          return res.status(400).json({
-            message: "Stock adjustments are not available for products without inventory tracking",
-          });
-        }
-
-        const result = await db.transaction(async tx => {
-          const [productRow] = await tx
-            .select()
-            .from(products)
-            .where(and(eq(products.id, productId), eq(products.societyId, societyId)))
-            .limit(1);
-
-          if (!productRow) {
-            return null;
-          }
-
-          const currentStock = parseInt(productRow.stock, 10);
-          if (Number.isNaN(currentStock)) {
-            throw new Error("Invalid product stock value");
-          }
-
-          const newStock = currentStock + quantity;
-
-          await tx
-            .update(products)
-            .set({ stock: String(newStock), updatedAt: new Date() })
-            .where(and(eq(products.id, productId), eq(products.societyId, societyId)));
-
-          const [movement] = await tx
-            .insert(stockMovements)
-            .values({
-              productId,
-              societyId,
-              type,
-              quantity,
-              reason,
-              referenceId: null,
-              previousStock: String(currentStock),
-              newStock: String(newStock),
-              createdBy: user.id,
-            })
-            .returning();
-
-          return movement;
-        });
-
-        if (!result) {
-          return res.status(404).json({ message: "Product not found" });
-        }
+        const result = await db.transaction(tx =>
+          applyStockDelta(tx, {
+            productId,
+            societyId,
+            delta: quantity,
+            type,
+            reason,
+            referenceId: null,
+            createdBy: user.id,
+          })
+        );
 
         await refreshLowStockNotificationForProduct(productId, societyId);
 
         return res.status(201).json(result);
       } catch (err) {
+        if (err instanceof InventoryServiceError) {
+          if (err.code === "PRODUCT_NOT_FOUND") {
+            return res.status(404).json({ message: "Product not found" });
+          }
+          if (err.code === "STOCK_MODE_NONE") {
+            return res.status(400).json({
+              message:
+                "Stock adjustments are not available for products without inventory tracking",
+            });
+          }
+          if (err.code === "INVALID_STOCK") {
+            return res.status(400).json({ message: err.message });
+          }
+        }
         next(err);
       }
     }

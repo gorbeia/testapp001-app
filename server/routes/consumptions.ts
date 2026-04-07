@@ -5,7 +5,6 @@ import {
   consumptionItems,
   products,
   users,
-  stockMovements,
   addConsumptionItemsBodySchema,
   apiConsumptionCreateBodySchema,
   type JwtSessionUser,
@@ -20,7 +19,11 @@ import {
   notifyIfCrossedPrepaymentFloor,
   prepaymentFloorHttpBody,
 } from "../lib/prepayment-ledger-floor";
-import { refreshLowStockNotificationForProduct } from "../lib/stock-notifications";
+import {
+  applyStockDelta,
+  refreshLowStockNotificationForProduct,
+  shouldAutoDecrement,
+} from "../lib/inventory/inventory-service";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -551,30 +554,16 @@ export function registerConsumptionRoutes(app: Express) {
             createdBy: user.id,
           });
 
-          const mode = product[0].stockMode ?? "auto";
-          if (mode === "auto") {
-            // Update product stock (manual/none: billed only; stock via receipts/takes/adjust)
-            const currentStock = parseInt(product[0].stock);
-            const newStock = currentStock - item.quantity;
-
-            // Allow negative stocks since consumption represents actual usage
-            await db
-              .update(products)
-              .set({ stock: newStock.toString(), updatedAt: new Date() })
-              .where(and(eq(products.id, item.productId), eq(products.societyId, societyId)));
-
-            await db.insert(stockMovements).values({
+          if (shouldAutoDecrement(product[0])) {
+            await applyStockDelta(db, {
               productId: item.productId,
               societyId,
+              delta: -item.quantity,
               type: "consumption",
-              quantity: -item.quantity,
               reason: "Bar consumption",
               referenceId: id,
-              previousStock: currentStock.toString(),
-              newStock: newStock.toString(),
               createdBy: user.id,
             });
-
             await refreshLowStockNotificationForProduct(item.productId, societyId);
           }
         }
