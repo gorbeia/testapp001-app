@@ -180,7 +180,7 @@ Status legend:
 4. **Low stock awareness**
    - **Status**: ✅ Implemented (`minStock` + **`ProductsPage`** emphasis; **`products.low_stock_notified`** + `refreshLowStockNotificationForProduct` after stock/threshold-related changes; in-app `notifyFinancialEvent` to admin/cellarman; **`GET /api/products/low-stock-summary`**; dashboard widget for **`products.manage`**)
 5. **Supply receipts (hornidurak)**
-   - **Status**: 🟡 Partial (`POST` / `GET /api/stock-receipts`, UI **`/hornidurak`**; **no** supplier entity / POs — see `inventory.md`)
+   - **Status**: 🟡 Partial (`POST` / `GET /api/stock-receipts` + **`GET /api/stock-receipts/:id`**, UI **`/hornidurak`** with per-receipt detail modal (all lines); **no** supplier entity / POs — see `inventory.md`)
 6. **Physical stock take (inbentarioa)**
    - **Status**: ✅ Implemented (`stock_takes` / `stock_take_lines`, **`/inbentarioa`**, finalize → `stock_movements` **adjustment**)
 7. **Inventory analytics & optimization**

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Link } from "wouter";
-import { ChevronLeft, Plus, Truck } from "lucide-react";
+import { ChevronLeft, Eye, Plus, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -53,6 +53,28 @@ type ReceiptRow = {
   lineCount: number;
 };
 
+type ReceiptLineDetail = {
+  id: string;
+  receiptId: string;
+  productId: string;
+  quantity: number;
+  unitCost: string | null;
+  productName: string;
+  productUnit: string;
+};
+
+type ReceiptDetail = {
+  id: string;
+  societyId: string;
+  supplier: string | null;
+  invoiceReference: string | null;
+  notes: string | null;
+  receivedAt: string;
+  createdBy: string;
+  createdAt: string;
+  lines: ReceiptLineDetail[];
+};
+
 type ProductOption = { id: string; name: string; unit: string };
 
 type LineForm = { productId: string; quantity: string; unitCost: string };
@@ -69,6 +91,10 @@ export function StockReceiptsPage() {
   const [invoiceRef, setInvoiceRef] = useState("");
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<LineForm[]>([{ productId: "", quantity: "1", unitCost: "" }]);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<ReceiptDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
 
   const loadReceipts = useCallback(async () => {
     setLoading(true);
@@ -103,6 +129,43 @@ export function StockReceiptsPage() {
   useEffect(() => {
     void loadProducts();
   }, [loadProducts]);
+
+  useEffect(() => {
+    if (!detailId) {
+      setDetail(null);
+      setDetailError(null);
+      setDetailLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setDetail(null);
+    setDetailError(null);
+    setDetailLoading(true);
+    void (async () => {
+      try {
+        const res = await authFetch(`/api/stock-receipts/${detailId}`);
+        if (!res.ok) {
+          const b = await res.json().catch(() => ({}));
+          throw new Error(b.message || "Failed to load receipt");
+        }
+        const data = (await res.json()) as ReceiptDetail;
+        if (!cancelled) {
+          setDetail(data);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setDetailError(getErrorMessage(e));
+        }
+      } finally {
+        if (!cancelled) {
+          setDetailLoading(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [detailId]);
 
   const addLine = () => {
     setLines([...lines, { productId: "", quantity: "1", unitCost: "" }]);
@@ -324,18 +387,21 @@ export function StockReceiptsPage() {
                 <TableHead>{t("supplier")}</TableHead>
                 <TableHead>{t("invoiceReference")}</TableHead>
                 <TableHead className="text-right">{t("receiptLineCount")}</TableHead>
+                <TableHead className="text-right w-14">
+                  <span className="sr-only">{t("openDetail")}</span>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     {t("loading")}…
                   </TableCell>
                 </TableRow>
               ) : receipts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground">
                     {t("noStockReceipts")}
                   </TableCell>
                 </TableRow>
@@ -346,12 +412,101 @@ export function StockReceiptsPage() {
                     <TableCell>{r.supplier ?? "—"}</TableCell>
                     <TableCell>{r.invoiceReference ?? "—"}</TableCell>
                     <TableCell className="text-right">{r.lineCount}</TableCell>
+                    <TableCell className="text-right p-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        aria-label={t("openDetail")}
+                        data-testid={`button-stock-receipt-detail-${r.id}`}
+                        onClick={() => setDetailId(r.id)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
         </Card>
+
+        <Dialog
+          open={detailId !== null}
+          onOpenChange={open => {
+            if (!open) {
+              setDetailId(null);
+            }
+          }}
+        >
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t("stockReceiptDetails")}</DialogTitle>
+            </DialogHeader>
+            {detailLoading ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">{t("loading")}…</p>
+            ) : detailError ? (
+              <p className="text-sm text-destructive py-4">{t("stockReceiptDetailsLoadFailed")}</p>
+            ) : detail ? (
+              <div className="space-y-4">
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div>
+                    <dt className="text-muted-foreground">{t("date")}</dt>
+                    <dd>{new Date(detail.receivedAt).toLocaleString()}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">{t("supplier")}</dt>
+                    <dd>{detail.supplier ?? "—"}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">{t("invoiceReference")}</dt>
+                    <dd>{detail.invoiceReference ?? "—"}</dd>
+                  </div>
+                  {detail.notes?.trim() ? (
+                    <div className="sm:col-span-2">
+                      <dt className="text-muted-foreground">{t("notes")}</dt>
+                      <dd className="whitespace-pre-wrap">{detail.notes}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+                <div>
+                  <p className="text-sm font-medium mb-2">{t("receiptLines")}</p>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("product")}</TableHead>
+                        <TableHead>{t("unit")}</TableHead>
+                        <TableHead className="text-right">{t("quantity")}</TableHead>
+                        <TableHead className="text-right">{t("unitCost")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {detail.lines.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={4} className="text-center text-muted-foreground">
+                            —
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        detail.lines.map(line => (
+                          <TableRow key={line.id} data-testid={`stock-receipt-detail-line-${line.id}`}>
+                            <TableCell>{line.productName}</TableCell>
+                            <TableCell>{line.productUnit}</TableCell>
+                            <TableCell className="text-right tabular-nums">{line.quantity}</TableCell>
+                            <TableCell className="text-right tabular-nums">
+                              {line.unitCost?.trim() ? line.unitCost : "—"}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            ) : null}
+          </DialogContent>
+        </Dialog>
       </div>
     </ErrorBoundary>
   );
