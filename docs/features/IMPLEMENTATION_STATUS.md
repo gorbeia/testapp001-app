@@ -176,7 +176,7 @@ Status legend:
 2. **Product categories**
    - **Status**: ✅ Implemented (see Consumptions §5; `/kategoriak`)
 3. **Stock management & movements**
-   - **Status**: 🟡 Partial (`GET /api/stock-movements`, `POST /api/products/:id/adjust`, UI **`/stock-aldaketak`**; consumption creates **consumption** movements only for **`stock_mode = auto`**; **purchase** / **adjustment** from receipts & stock takes per product mode — see `inventory.md`)
+   - **Status**: 🟡 Partial (`GET /api/stock-movements`, `POST /api/products/:id/adjust`, UI **`/stock-aldaketak`** with filters + **pagination**; consumption creates **consumption** movements only for **`stock_mode = auto`**; **purchase** / **adjustment** from receipts & stock takes per product mode — see `inventory.md`)
 4. **Low stock awareness**
    - **Status**: ✅ Implemented (`minStock` + **`ProductsPage`** emphasis; **`products.low_stock_notified`** + `refreshLowStockNotificationForProduct` after stock/threshold-related changes; in-app `notifyFinancialEvent` to admin/cellarman; **`GET /api/products/low-stock-summary`**; dashboard widget for **`products.manage`**)
 5. **Supply receipts (hornidurak)**

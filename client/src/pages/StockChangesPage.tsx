@@ -27,6 +27,8 @@ import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorBoundary";
 import { getErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
+import PaginationControls from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/use-pagination";
 
 const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
   const token = localStorage.getItem("auth:token");
@@ -73,6 +75,7 @@ function typeBadgeVariant(
 
 export function StockChangesPage() {
   const { t } = useLanguage();
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
   const [rows, setRows] = useState<StockMovementListRow[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -113,8 +116,8 @@ export function StockChangesPage() {
       if (toDate) {
         params.set("to", toDate);
       }
-      params.set("limit", "100");
-      params.set("page", "1");
+      params.set("limit", String(pagination.limit));
+      params.set("page", String(pagination.page));
 
       const res = await authFetch(`/api/stock-movements?${params.toString()}`);
       if (!res.ok) {
@@ -127,12 +130,13 @@ export function StockChangesPage() {
       };
       setRows(body.data);
       setTotal(body.total);
+      pagination.updatePagination(body.total);
     } catch (e) {
       setError(e instanceof Error ? e : new Error(String(e)));
     } finally {
       setLoading(false);
     }
-  }, [typeFilter, productIdFilter, fromDate, toDate]);
+  }, [typeFilter, productIdFilter, fromDate, toDate, pagination.page, pagination.limit]);
 
   useEffect(() => {
     void loadProducts();
@@ -191,7 +195,13 @@ export function StockChangesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <Label>{t("filterByType")}</Label>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <Select
+                value={typeFilter}
+                onValueChange={v => {
+                  setTypeFilter(v);
+                  pagination.setPage(1);
+                }}
+              >
                 <SelectTrigger data-testid="select-stock-type-filter">
                   <SelectValue />
                 </SelectTrigger>
@@ -206,7 +216,13 @@ export function StockChangesPage() {
             </div>
             <div className="space-y-2">
               <Label>{t("filterByProduct")}</Label>
-              <Select value={productIdFilter} onValueChange={setProductIdFilter}>
+              <Select
+                value={productIdFilter}
+                onValueChange={v => {
+                  setProductIdFilter(v);
+                  pagination.setPage(1);
+                }}
+              >
                 <SelectTrigger data-testid="select-stock-product-filter">
                   <SelectValue />
                 </SelectTrigger>
@@ -225,7 +241,10 @@ export function StockChangesPage() {
               <Input
                 type="date"
                 value={fromDate}
-                onChange={e => setFromDate(e.target.value)}
+                onChange={e => {
+                  setFromDate(e.target.value);
+                  pagination.setPage(1);
+                }}
                 data-testid="input-stock-from-date"
               />
             </div>
@@ -234,7 +253,10 @@ export function StockChangesPage() {
               <Input
                 type="date"
                 value={toDate}
-                onChange={e => setToDate(e.target.value)}
+                onChange={e => {
+                  setToDate(e.target.value);
+                  pagination.setPage(1);
+                }}
                 data-testid="input-stock-to-date"
               />
             </div>
@@ -312,6 +334,13 @@ export function StockChangesPage() {
             </Table>
           </div>
         </Card>
+
+        {total > 0 && (
+          <PaginationControls
+            pagination={pagination}
+            itemType="stockMovementsForPagination"
+          />
+        )}
       </div>
     </ErrorBoundary>
   );

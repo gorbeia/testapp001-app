@@ -491,6 +491,7 @@ export const translations = {
     showing: "Erakusten",
     showingResults: "{total} {type}tik {from}tik {to}ra erakusten",
     reservationsForPagination: "erreserba",
+    stockMovementsForPagination: "stock aldaketa",
     // Society and SEPA
     societyDataAndSepaConfig: "Elkartearen datuak eta SEPA konfigurazioa",
     societyBasicInfo: "Elkartearen oinarrizko informazioa",
@@ -1278,6 +1279,7 @@ export const translations = {
     showing: "Mostrando",
     showingResults: "Mostrando {from} a {to} de {total} {type}",
     reservationsForPagination: "reservas",
+    stockMovementsForPagination: "cambios de stock",
     // Society and SEPA
     societyDataAndSepaConfig: "Datos de la sociedad y configuración SEPA",
     societyBasicInfo: "Información básica de la sociedad",
