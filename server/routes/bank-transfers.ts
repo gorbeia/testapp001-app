@@ -13,7 +13,7 @@ import {
 } from "@shared/schema";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
-import { insertAccountMovementRow } from "../lib/account-movements";
+import { validateBankTransferAndPostLedger } from "../lib/ledger/ledger-service";
 import { notifyFinancialEvent } from "../lib/financial-notifications";
 
 const requireTreasurerAccess = (user: JwtSessionUser): boolean =>
@@ -236,41 +236,35 @@ export function registerBankTransferRoutes(app: Express) {
         }
 
         const amountNum = parseFloat(String(bt.amount));
-        const ledgerAmount = amountNum.toFixed(2);
 
-        const movement = await insertAccountMovementRow({
+        const { movementId } = await validateBankTransferAndPostLedger({
           societyId,
+          bankTransferId: id,
           userId: bt.userId,
-          type: "bank_transfer",
-          amount: ledgerAmount,
-          description: bt.reference ? `Prepayment: ${bt.reference}` : "Prepayment validated",
-          referenceId: bt.id,
-          referenceType: "bank_transfer",
-          createdBy: req.user!.id,
+          amount: amountNum,
+          referenceNote: bt.reference ?? null,
+          validatedByUserId: req.user!.id,
         });
 
-        const [updated] = await db
-          .update(bankTransfers)
-          .set({
-            status: "validated",
-            validatedBy: req.user!.id,
-            validatedAt: new Date(),
-            movementId: movement.id,
-            updatedAt: new Date(),
-          })
-          .where(eq(bankTransfers.id, id))
-          .returning();
+        const [updatedBt] = await db
+          .select()
+          .from(bankTransfers)
+          .where(and(eq(bankTransfers.id, id), eq(bankTransfers.societyId, societyId)))
+          .limit(1);
+        if (!updatedBt) {
+          return res.status(500).json({ message: "Failed to load validated prepayment" });
+        }
 
         await notifyFinancialEvent({
           userId: bt.userId,
           societyId,
-          referenceId: movement.id,
+          referenceId: movementId,
           titleKey: "financialBankTransferValidatedTitle",
           messageKey: "financialBankTransferValidatedMessage",
           params: { amount: amountNum.toFixed(2) },
         });
 
-        res.json(updated);
+        res.json(updatedBt);
       } catch (e) {
         next(e);
       }

@@ -13,7 +13,7 @@ import {
 import { eq, and, gte, desc, count, sql, like, or, between } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { debtCalculationService } from "../cron-jobs";
-import { insertAccountMovementRow } from "../lib/account-movements";
+import { postConsumptionDebit } from "../lib/ledger/ledger-service";
 import {
   assertPrepaymentDebitAllowed,
   notifyIfCrossedPrepaymentFloor,
@@ -547,16 +547,14 @@ export function registerConsumptionRoutes(app: Express) {
           addedItems.push(newItem);
           totalAmount += totalPrice;
 
-          await insertAccountMovementRow({
+          await postConsumptionDebit({
             societyId,
             userId: consumption[0].userId,
-            type: "consumption",
-            amount: (-totalPrice).toFixed(2),
+            totalPrice,
             description: product[0].name
               ? `Consumption: ${product[0].name} x${item.quantity}`
               : "Consumption line",
             referenceId: newItem.id,
-            referenceType: "consumption_item",
             createdBy: user.id,
           });
 

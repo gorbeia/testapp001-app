@@ -12,7 +12,11 @@ import {
   type JwtSessionUser,
 } from "@shared/schema";
 import { sessionMiddleware, requireAuth } from "./middleware";
-import { insertAccountMovementRow, movementExistsForReference } from "../lib/account-movements";
+import { movementExistsForReference } from "../lib/account-movements";
+import {
+  postCashReservationSettlement,
+  postCashSubscriptionSettlement,
+} from "../lib/ledger/ledger-service";
 import { debtCalculationService } from "../cron-jobs";
 
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -181,31 +185,16 @@ export function registerCashSettlementRoutes(app: Express) {
               .json({ message: `Reservation ${reservationId} has invalid amount` });
           }
 
-          if (!(await movementExistsForReference(societyId, "reservation", reservationId))) {
-            await insertAccountMovementRow({
-              societyId,
-              userId: user.id,
-              type: "reservation",
-              amount: (-amt).toFixed(2),
-              description: `Reservation: ${resRow.name}`,
-              referenceId: reservationId,
-              referenceType: "reservation",
-              createdBy: user.id,
-            });
-          }
-
-          const row = await insertAccountMovementRow({
+          const { cashPaymentMovementId } = await postCashReservationSettlement({
             societyId,
             userId: user.id,
-            type: "cash_payment",
-            amount: amt.toFixed(2),
-            description: `Cash — reservation: ${resRow.name}`,
-            referenceId: reservationId,
-            referenceType: ACCOUNT_MOVEMENT_REF_RESERVATION_CASH,
+            reservationId,
+            totalAmount: amt,
+            reservationName: resRow.name,
             createdBy: user.id,
           });
           movements.push({
-            id: row.id,
+            id: cashPaymentMovementId,
             referenceType: ACCOUNT_MOVEMENT_REF_RESERVATION_CASH,
             referenceId: reservationId,
             amount: amt.toFixed(2),
@@ -247,18 +236,19 @@ export function registerCashSettlementRoutes(app: Express) {
             return res.status(400).json({ message: `Invalid subscription amount for ${month}` });
           }
 
-          const row = await insertAccountMovementRow({
+          const subResult = await postCashSubscriptionSettlement({
             societyId,
             userId: user.id,
-            type: "cash_payment",
-            amount: amt.toFixed(2),
-            description: `Cash — subscription ${month}`,
-            referenceId: subRef,
-            referenceType: ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH,
+            month,
+            subRef,
+            amount: amt,
             createdBy: user.id,
           });
+          if ("skipped" in subResult) {
+            continue;
+          }
           movements.push({
-            id: row.id,
+            id: subResult.movementId,
             referenceType: ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH,
             referenceId: subRef,
             amount: amt.toFixed(2),

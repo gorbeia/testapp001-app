@@ -9,6 +9,8 @@
     "build": "tsx script/build.ts",
     "start": "NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "db:push": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
     "db:generate": "drizzle-kit generate",
@@ -148,7 +150,8 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.20.5",
     "typescript": "5.6.3",
-    "vite": "^6.4.1"
+    "vite": "^6.4.1",
+    "vitest": "^3.2.4"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"

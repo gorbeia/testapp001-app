@@ -41,5 +41,12 @@ jobs:
       - name: ESLint (errors only)
         run: pnpm lint:ci
 
+      - name: Unit tests (Vitest)
+        run: pnpm test:unit
+        env:
+          NODE_ENV: test
+          # server/db.ts throws if unset; unit tests mock DB but this avoids accidental real imports in CI
+          DATABASE_URL: postgresql://127.0.0.1:5432/vitest_ci
+
       - name: Build
         run: pnpm build

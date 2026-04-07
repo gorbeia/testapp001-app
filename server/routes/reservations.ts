@@ -7,8 +7,6 @@ import {
   notificationMessages,
   cancelReservationBodySchema,
   createReservationBodySchema,
-  ACCOUNT_MOVEMENT_REF_RESERVATION_CASH,
-  ACCOUNT_MOVEMENT_REF_RESERVATION_CASH_CANCEL,
   type JwtSessionUser,
   type Reservation,
 } from "@shared/schema";
@@ -16,7 +14,7 @@ import { eq, and, or, like, gte, between, ne, count, desc, asc, sql } from "driz
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { translateWithParams, formatDate, translations } from "../lib/i18n";
 import { debtCalculationService } from "../cron-jobs";
-import { insertAccountMovementRow, movementExistsForReference } from "../lib/account-movements";
+import { reverseReservationLedgerOnCancel } from "../lib/ledger/ledger-service";
 import {
   assertPrepaymentDebitAllowed,
   prepaymentFloorHttpBody,
@@ -137,64 +135,6 @@ const createReservationNotifications = async (
 
   return notification;
 };
-
-/** Reverse reservation charge and/or cash-settlement legs when cancelling or deleting. */
-async function reverseReservationLedgerOnCancel(params: {
-  societyId: string;
-  pre: Reservation;
-  cancelledByUserId: string;
-  cancelDescriptionPrefix: "Reservation cancelled:" | "Reservation deleted:";
-}) {
-  const { societyId, pre, cancelledByUserId, cancelDescriptionPrefix } = params;
-  const preTotal = parseFloat(pre.totalAmount || "0");
-  if (preTotal <= 0) return;
-
-  const hasReservationCharge = await movementExistsForReference(societyId, "reservation", pre.id);
-  const hasCashPayment = await movementExistsForReference(
-    societyId,
-    ACCOUNT_MOVEMENT_REF_RESERVATION_CASH,
-    pre.id
-  );
-
-  if (
-    hasReservationCharge &&
-    !(await movementExistsForReference(societyId, "reservation_cancel", pre.id))
-  ) {
-    await insertAccountMovementRow({
-      societyId,
-      userId: pre.userId,
-      type: "adjustment",
-      amount: preTotal.toFixed(2),
-      description: `${cancelDescriptionPrefix} ${pre.name}`,
-      referenceId: pre.id,
-      referenceType: "reservation_cancel",
-      createdBy: cancelledByUserId,
-    });
-  }
-
-  if (
-    hasCashPayment &&
-    !(await movementExistsForReference(
-      societyId,
-      ACCOUNT_MOVEMENT_REF_RESERVATION_CASH_CANCEL,
-      pre.id
-    ))
-  ) {
-    await insertAccountMovementRow({
-      societyId,
-      userId: pre.userId,
-      type: "adjustment",
-      amount: (-preTotal).toFixed(2),
-      description:
-        cancelDescriptionPrefix === "Reservation cancelled:"
-          ? `Reservation cancelled (cash reversal): ${pre.name}`
-          : `Reservation deleted (cash reversal): ${pre.name}`,
-      referenceId: pre.id,
-      referenceType: ACCOUNT_MOVEMENT_REF_RESERVATION_CASH_CANCEL,
-      createdBy: cancelledByUserId,
-    });
-  }
-}
 
 export function registerReservationRoutes(app: Express) {
   // Reservations API

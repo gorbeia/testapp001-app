@@ -157,13 +157,8 @@ NODE_ENV=production
 
 ## 9. Testing
 
-Automated tests are **E2E** (Cucumber + Playwright) only; there is no `test:unit` script in this repo.
-
-```bash
-pnpm test:e2e
-```
-
-See [README](README.md) for full E2E prerequisites (database seed, Playwright browsers).
+- **Unit:** `pnpm test:unit` (Vitest) — ledger rules and service in `server/lib/ledger/` (no database).
+- **E2E:** `pnpm test:e2e` (Cucumber + Playwright) — full product flows; see [README](README.md) for prerequisites (database seed, Playwright browsers).
 
 ## 10. Error Handling
 
@@ -180,7 +175,7 @@ See [README](README.md) for full E2E prerequisites (database seed, Playwright br
 
 ## 12. Future Improvements
 
-1. **Testing**: Add comprehensive test coverage
+1. **Testing**: Expand Vitest coverage beyond the ledger module
 2. **CI/CD**: Set up automated deployments
 3. **Containerization**: Add Docker support
 4. **API Documentation**: Generate OpenAPI/Swagger docs

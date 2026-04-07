@@ -1,4 +1,4 @@
-import { When, Then } from "@cucumber/cucumber";
+import { Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
 import { getPage, e2eUrl, e2eDebug } from "./shared-state";
 

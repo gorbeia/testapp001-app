@@ -1,13 +1,17 @@
 import { and, eq, sql } from "drizzle-orm";
-import { db } from "../db";
+import { db, type AppDatabase } from "../db";
 import { accountMovements, type AccountMovementType } from "@shared/schema";
 
 /**
  * Member **account balance** from ledger movements (sum of `amount`).
  * Negative means the member owes; positive means prepaid/credit.
  */
-export async function getMemberAccountBalance(societyId: string, userId: string): Promise<number> {
-  const [row] = await db
+export async function getMemberAccountBalance(
+  societyId: string,
+  userId: string,
+  executor: AppDatabase = db
+): Promise<number> {
+  const [row] = await executor
     .select({
       bal: sql<string>`coalesce(sum(cast(${accountMovements.amount} as decimal)), 0)`.mapWith(
         Number
@@ -33,8 +37,11 @@ export type InsertMovementInput = {
   createdAt?: Date;
 };
 
-export async function insertAccountMovementRow(input: InsertMovementInput) {
-  const [row] = await db
+export async function insertAccountMovementRow(
+  input: InsertMovementInput,
+  executor: AppDatabase = db
+) {
+  const [row] = await executor
     .insert(accountMovements)
     .values({
       societyId: input.societyId,
@@ -55,9 +62,10 @@ export async function insertAccountMovementRow(input: InsertMovementInput) {
 export async function movementExistsForReference(
   societyId: string,
   referenceType: string,
-  referenceId: string
+  referenceId: string,
+  executor: AppDatabase = db
 ): Promise<boolean> {
-  const [row] = await db
+  const [row] = await executor
     .select({ id: accountMovements.id })
     .from(accountMovements)
     .where(

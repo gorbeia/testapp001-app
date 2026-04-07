@@ -118,6 +118,8 @@ Status legend:
 
 ## 5b. Account movements / ledger (`account-movements.md`)
 
+**Implementation note:** Ledger writes are centralized in [`server/lib/ledger/ledger-service.ts`](../../server/lib/ledger/ledger-service.ts) (Drizzle transactions for multi-step flows), with pure helpers in [`server/lib/ledger/ledger-rules.ts`](../../server/lib/ledger/ledger-rules.ts). **Vitest** unit tests: `pnpm test:unit`. **SEPA bounce** rows use `account_movements.reference_type = "sepa_bounce"` (and `reference_id = credit.id`) so idempotency matches API checks.
+
 1. **Member movement list & balance** – `/nire-mugimenduak`, `GET /api/account-movements/me`
    - **Status**: ✅ Implemented (+ top stat cards: balance status, period count/net; E2E: ledger smoke via `bank-transfers.feature` / `refunds.feature` on `/nire-mugimenduak`)
 2. **Treasurer movement audit** – `/mugimenduak`, `GET /api/account-movements` (filters, running balance via SQL window; response includes `sumAmount`, `selectedMemberBalance` when a member filter is set)

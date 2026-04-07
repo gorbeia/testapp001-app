@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import { batchCreditStatusBodySchema, credits, users, type JwtSessionUser } from "@shared/schema";
-import { insertAccountMovementRow, movementExistsForReference } from "../lib/account-movements";
+import { appendSepaCollectionMovementsForCredits } from "../lib/ledger/ledger-service";
 import { eq, and, sum, inArray, desc } from "drizzle-orm";
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { sessionMiddleware, requireAuth } from "./middleware";
@@ -211,30 +211,23 @@ export function registerDebtRoutes(app: Express) {
             : {}),
         };
 
-        const updatedCredits = await db
-          .update(credits)
-          .set(updateData)
-          .where(and(inArray(credits.id, uniqueCreditIds), eq(credits.societyId, societyId)))
-          .returning();
+        const updatedCredits = await db.transaction(async tx => {
+          const rows = await tx
+            .update(credits)
+            .set(updateData)
+            .where(and(inArray(credits.id, uniqueCreditIds), eq(credits.societyId, societyId)))
+            .returning();
 
-        if (status === "paid") {
-          for (const credit of updatedCredits) {
-            const exists = await movementExistsForReference(societyId, "credit", credit.id);
-            if (exists) continue;
-            const amt = parseFloat(String(credit.totalAmount));
-            if (amt <= 0) continue;
-            await insertAccountMovementRow({
+          if (status === "paid") {
+            await appendSepaCollectionMovementsForCredits(tx, {
               societyId,
-              userId: credit.memberId,
-              type: "sepa_collection",
-              amount: amt.toFixed(2),
-              description: `SEPA collection — ${credit.month}`,
-              referenceId: credit.id,
-              referenceType: "credit",
+              credits: rows,
               createdBy: req.user!.id,
             });
           }
-        }
+
+          return rows;
+        });
 
         res.json({
           message: `Updated ${updatedCredits.length} credits`,

@@ -61,9 +61,7 @@ Root onboarding docs ([`README.md`](../README.md), [`INSTALLATION_UBUNTU_24.md`]
 
 CI is documented in the root [README](../README.md) (workflows: [`.github/workflows/`](../.github/workflows/) — `ci.yml`, `e2e.yml`, `security-audit.yml`).
 
-| Issue                                                        | Severity | Notes                                                                  |
-| ------------------------------------------------------------ | -------- | ---------------------------------------------------------------------- |
-| **No unit test runner** in use — E2E only (`pnpm test:e2e`). | Low      | `tsconfig` excludes `*.test.ts`; riskier refactors without fast tests. |
+**Unit tests:** Fast checks run with **`pnpm test:unit`** (Vitest; ledger module in `server/lib/ledger/`). Broader product coverage remains **E2E** (`pnpm test:e2e`). CI runs both paths where configured in [`.github/workflows/`](../.github/workflows/).
 
 ## End-to-end test coverage gaps
 

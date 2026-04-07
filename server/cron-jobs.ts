@@ -13,7 +13,11 @@ import {
   ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH,
   type Society,
 } from "@shared/schema";
-import { insertAccountMovementRow, movementExistsForReference } from "./lib/account-movements";
+import { movementExistsForReference } from "./lib/account-movements";
+import {
+  maybePostReservationCharge,
+  maybePostSubscriptionCharge,
+} from "./lib/ledger/ledger-service";
 import { notifyFinancialEvent } from "./lib/financial-notifications";
 
 class DebtCalculationService {
@@ -255,20 +259,16 @@ class DebtCalculationService {
         }
 
         if (subscriptionCharge > 0) {
-          const exists = await movementExistsForReference(activeSociety.id, "subscription", subRef);
-          if (!exists) {
-            const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
-            await insertAccountMovementRow({
-              societyId: activeSociety.id,
-              userId: member.id,
-              type: "subscription",
-              amount: (-subscriptionCharge).toFixed(2),
-              description: `Subscription — ${monthLabel}`,
-              referenceId: subRef,
-              referenceType: "subscription",
-              createdBy: null,
-              createdAt: endOfMonth,
-            });
+          const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+          const { inserted } = await maybePostSubscriptionCharge({
+            societyId: activeSociety.id,
+            userId: member.id,
+            monthLabel,
+            subRef,
+            subscriptionCharge,
+            createdAt: endOfMonth,
+          });
+          if (inserted) {
             try {
               await notifyFinancialEvent({
                 userId: member.id,
@@ -318,28 +318,27 @@ class DebtCalculationService {
             59,
             999
           );
-          await insertAccountMovementRow({
+          const { inserted } = await maybePostReservationCharge({
             societyId: activeSociety.id,
             userId: member.id,
-            type: "reservation",
-            amount: (-amt).toFixed(2),
-            description: `Reservation: ${resRow.name}`,
-            referenceId: resRow.id,
-            referenceType: "reservation",
-            createdBy: null,
+            reservationId: resRow.id,
+            amount: amt,
+            reservationName: resRow.name,
             createdAt: chargeAt,
           });
-          try {
-            await notifyFinancialEvent({
-              userId: member.id,
-              societyId: activeSociety.id,
-              referenceId: resRow.id,
-              titleKey: "financialReservationChargeTitle",
-              messageKey: "financialReservationChargeMessage",
-              params: { name: resRow.name, amount: amt.toFixed(2) },
-            });
-          } catch (notifyErr) {
-            console.error("Reservation charge notification failed:", notifyErr);
+          if (inserted) {
+            try {
+              await notifyFinancialEvent({
+                userId: member.id,
+                societyId: activeSociety.id,
+                referenceId: resRow.id,
+                titleKey: "financialReservationChargeTitle",
+                messageKey: "financialReservationChargeMessage",
+                params: { name: resRow.name, amount: amt.toFixed(2) },
+              });
+            } catch (notifyErr) {
+              console.error("Reservation charge notification failed:", notifyErr);
+            }
           }
         }
 

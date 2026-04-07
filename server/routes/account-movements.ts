@@ -12,11 +12,13 @@ import {
 import { and, eq, sql, asc } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { pool } from "../db";
+import { getMemberAccountBalance } from "../lib/account-movements";
+import { computeRunningBalances } from "../lib/ledger/ledger-rules";
 import {
-  getMemberAccountBalance,
-  insertAccountMovementRow,
-  movementExistsForReference,
-} from "../lib/account-movements";
+  bounceAlreadyRecorded,
+  postLedgerRefund,
+  postSepaBounceAndResetCredit,
+} from "../lib/ledger/ledger-service";
 import { notifyFinancialEvent } from "../lib/financial-notifications";
 
 const requireTreasurerAccess = (user: JwtSessionUser): boolean =>
@@ -33,26 +35,6 @@ const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) throw new Error("User societyId not found in JWT");
   return user.societyId;
 };
-
-type MovementRow = typeof accountMovements.$inferSelect;
-
-function attachRunningBalances(rows: MovementRow[]): (MovementRow & { runningBalance: number })[] {
-  const sorted = [...rows].sort((a, b) => {
-    const t = a.createdAt.getTime() - b.createdAt.getTime();
-    if (t !== 0) return t;
-    return a.id.localeCompare(b.id);
-  });
-  const byUser = new Map<string, number>();
-  const out: (MovementRow & { runningBalance: number })[] = [];
-  for (const r of sorted) {
-    const prev = byUser.get(r.userId) ?? 0;
-    const amt = parseFloat(String(r.amount));
-    const next = prev + amt;
-    byUser.set(r.userId, next);
-    out.push({ ...r, runningBalance: next });
-  }
-  return out;
-}
 
 export function registerAccountMovementRoutes(app: Express) {
   app.get("/api/account-movements", sessionMiddleware, requireTreasurer, async (req, res, next) => {
@@ -220,7 +202,7 @@ export function registerAccountMovementRoutes(app: Express) {
         .orderBy(asc(accountMovements.createdAt), asc(accountMovements.id));
 
       const balance = await getMemberAccountBalance(societyId, user.id);
-      const withRunning = attachRunningBalances(rows).sort(
+      const withRunning = computeRunningBalances(rows).sort(
         (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
       );
 
@@ -261,16 +243,11 @@ export function registerAccountMovementRoutes(app: Express) {
           .where(and(eq(users.id, userId), eq(users.societyId, societyId)));
         if (!member) return res.status(404).json({ message: "User not found" });
 
-        const movementAmountStr = amountNum.toFixed(2);
-
-        const movement = await insertAccountMovementRow({
+        const movement = await postLedgerRefund({
           societyId,
           userId,
-          type: "refund",
-          amount: movementAmountStr,
+          amount: amountNum,
           description,
-          referenceId: null,
-          referenceType: null,
           createdBy: req.user!.id,
         });
 
@@ -317,31 +294,24 @@ export function registerAccountMovementRoutes(app: Express) {
         }
 
         const refKey = credit.id;
-        if (await movementExistsForReference(societyId, "sepa_bounce", refKey)) {
+        if (await bounceAlreadyRecorded(societyId, refKey)) {
           return res.status(400).json({ message: "Bounce already recorded for this credit" });
         }
 
-        const amountNum = parseFloat(String(credit.totalAmount));
-        const movement = await insertAccountMovementRow({
-          societyId,
-          userId: credit.memberId,
-          type: "sepa_bounce",
-          amount: (-amountNum).toFixed(2),
-          description: `SEPA bounce — ${credit.month}`,
-          referenceId: refKey,
-          referenceType: "credit",
-          createdBy: req.user!.id,
-        });
-
-        await db
-          .update(credits)
-          .set({
-            status: "pending",
-            markedAsPaidBy: null,
-            markedAsPaidAt: null,
-            updatedAt: new Date(),
-          })
-          .where(eq(credits.id, creditId));
+        let movement;
+        try {
+          movement = await postSepaBounceAndResetCredit({
+            societyId,
+            credit,
+            createdBy: req.user!.id,
+          });
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg.includes("Bounce already recorded")) {
+            return res.status(400).json({ message: "Bounce already recorded for this credit" });
+          }
+          throw err;
+        }
 
         await notifyFinancialEvent({
           userId: credit.memberId,

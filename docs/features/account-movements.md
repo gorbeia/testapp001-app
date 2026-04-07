@@ -2,6 +2,15 @@
 
 Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amount`** is the change in **member account balance** (`SUM(amount)` per member in a society).
 
+## Server implementation boundary
+
+- **Ledger orchestration:** [`server/lib/ledger/ledger-service.ts`](../../server/lib/ledger/ledger-service.ts) — transactional posting (prepayment validate + movement, cash double-leg, SEPA collections with credit update, subscription/reservation idempotent charges, cancellation reversals, etc.).
+- **Pure rules:** [`server/lib/ledger/ledger-rules.ts`](../../server/lib/ledger/ledger-rules.ts) — amount formatting, running balance for member lists, prepayment floor math (also reused from `prepayment-ledger-floor.ts`).
+- **DB helpers:** [`server/lib/account-movements.ts`](../../server/lib/account-movements.ts) — balance query, insert, idempotency `movementExistsForReference` (accepts a transaction client for read-your-writes inside `db.transaction`).
+- **Tests:** `pnpm test:unit` (Vitest).
+
+**SEPA bounce idempotency:** Bounce movements store **`reference_type` = `sepa_bounce`** and **`reference_id` = credit id** (distinct from `sepa_collection`, which uses `reference_type` = `credit` on the same id).
+
 ## Sign convention (member balance)
 
 - **Negative `amount`**: balance goes down — consumption, reservation charge, subscription charge, SEPA bounce (re-charge after failed collection).
@@ -61,6 +70,7 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 ### Acceptance criteria
 
 - Credit must be `paid`; insert `sepa_bounce` **negative** movement for the collected amount (reverses the collection in balance terms); set credit back to `pending`; notify member.
+- Idempotent: at most one bounce per credit (`reference_type` **`sepa_bounce`**, `reference_id` = credit id).
 
 ## F7 – Subscription fees
 

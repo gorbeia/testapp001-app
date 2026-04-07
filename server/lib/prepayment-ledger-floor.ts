@@ -3,8 +3,7 @@ import { db } from "../db";
 import { societies, societyAllowsBankTransferPrepayment } from "@shared/schema";
 import { getMemberAccountBalance } from "./account-movements";
 import { notifyFinancialEvent } from "./financial-notifications";
-
-const EPS = 1e-6;
+import { isFloorBreachedAfterDebit, isFloorBreachedWithZeroDebit } from "./ledger/ledger-rules";
 
 export async function getEffectivePrepaymentFloor(societyId: string): Promise<number | null> {
   const [row] = await db
@@ -51,7 +50,7 @@ export async function assertPrepaymentDebitAllowed(
   }
 
   if (debitTotal <= 0) {
-    if (balanceBefore + EPS < floor) {
+    if (isFloorBreachedWithZeroDebit(balanceBefore, floor)) {
       return {
         allowed: false,
         floor,
@@ -64,7 +63,7 @@ export async function assertPrepaymentDebitAllowed(
   }
 
   const projected = balanceBefore - debitTotal;
-  if (projected + EPS < floor) {
+  if (isFloorBreachedAfterDebit(balanceBefore, debitTotal, floor)) {
     return {
       allowed: false,
       floor,
@@ -102,7 +101,10 @@ export async function notifyIfCrossedPrepaymentFloor(opts: {
   if (floor === null) return;
 
   const after = opts.balanceBefore - opts.debitTotal;
-  if (opts.balanceBefore + EPS >= floor && after + EPS < floor) {
+  if (
+    !isFloorBreachedWithZeroDebit(opts.balanceBefore, floor) &&
+    isFloorBreachedWithZeroDebit(after, floor)
+  ) {
     await notifyFinancialEvent({
       userId: opts.userId,
       societyId: opts.societyId,

@@ -202,6 +202,7 @@ There are **12** feature files under `e2e/features/` (login, users, profile, res
 | `pnpm db:reset`                           | Drop app tables + `db:push`                                    |
 | `pnpm db:reset:seed`                      | `db:reset` then `db:seed`                                      |
 | `pnpm docker:db:up` / `down` / `reset`    | Postgres via Docker Compose                                    |
+| `pnpm test:unit`                          | Vitest unit tests (ledger rules/service; no DB)                |
 | `pnpm test:e2e`                           | Full Cucumber suite (compact **`progress-bar`** output)        |
 | `pnpm test:e2e:verbose`                   | Same suite, **pretty** (verbose) formatter                     |
 | `pnpm test:e2e:only`                      | `@only` scenarios                                              |
@@ -221,7 +222,7 @@ Apply fixes with **`pnpm audit --fix`** (review lockfile changes) or targeted de
 
 ### GitHub Actions
 
-Workflows in [`.github/workflows/`](.github/workflows/): **CI** (Prettier, `pnpm check`, `pnpm lint:ci`, `pnpm build` on PRs and pushes to `main`), **E2E** (Postgres service, `drizzle-kit push`, `pnpm db:seed`, `pnpm dev`, `pnpm test:e2e`), and **Security audit** (weekly + manual, `pnpm audit:security`).
+Workflows in [`.github/workflows/`](.github/workflows/): **CI** (Prettier, `pnpm check`, `pnpm lint:ci`, `pnpm test:unit`, `pnpm build` on PRs and pushes to `main`), **E2E** (Postgres service, `drizzle-kit push`, `pnpm db:seed`, `pnpm dev`, `pnpm test:e2e`), and **Security audit** (weekly + manual, `pnpm audit:security`).
 
 ---
 
