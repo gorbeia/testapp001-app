@@ -11,6 +11,7 @@ import {
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
+import { refreshLowStockNotificationForProduct } from "../lib/stock-notifications";
 
 const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
@@ -299,6 +300,8 @@ export function registerStockMovementRoutes(app: Express) {
         if (!result) {
           return res.status(404).json({ message: "Product not found" });
         }
+
+        await refreshLowStockNotificationForProduct(productId, societyId);
 
         return res.status(201).json(result);
       } catch (err) {

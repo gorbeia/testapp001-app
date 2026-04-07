@@ -9,6 +9,7 @@ import {
 import { and, eq } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
+import { refreshLowStockNotificationForProduct } from "../lib/stock-notifications";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -19,6 +20,45 @@ const getUserSocietyId = (user: JwtSessionUser): string => {
 };
 
 export function registerProductRoutes(app: Express) {
+  app.get(
+    "/api/products/low-stock-summary",
+    sessionMiddleware,
+    requireAuth,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const user = req.user!;
+        if (!canMutateProducts(user)) {
+          return res.status(403).json({ message: "Product management not allowed" });
+        }
+
+        const societyId = getUserSocietyId(user);
+        const rows = await db
+          .select({
+            id: products.id,
+            name: products.name,
+            stock: products.stock,
+            minStock: products.minStock,
+            unit: products.unit,
+          })
+          .from(products)
+          .where(eq(products.societyId, societyId));
+
+        const low = rows.filter(p => {
+          const s = parseInt(p.stock, 10);
+          const m = parseInt(p.minStock, 10);
+          return !Number.isNaN(s) && !Number.isNaN(m) && s <= m;
+        });
+
+        return res.status(200).json({
+          count: low.length,
+          products: low.slice(0, 25),
+        });
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
+
   // Products: get all products
   app.get(
     "/api/products",
@@ -68,6 +108,8 @@ export function registerProductRoutes(app: Express) {
             societyId,
           })
           .returning();
+
+        await refreshLowStockNotificationForProduct(newProduct.id, societyId);
 
         return res.status(201).json(newProduct);
       } catch (err) {
@@ -120,6 +162,8 @@ export function registerProductRoutes(app: Express) {
         if (!updatedProduct) {
           return res.status(404).json({ message: "Product not found" });
         }
+
+        await refreshLowStockNotificationForProduct(id, societyId);
 
         return res.status(200).json(updatedProduct);
       } catch (err) {

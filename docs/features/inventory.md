@@ -85,8 +85,10 @@
 
 **Acceptance Criteria:**
 
-- **Partial:** `minStock` threshold on product; low-stock banner / highlighting on **`ProductsPage`**
-- ❌ Push notifications, supplier integrations — **not implemented**
+- **Shipped:** `minStock` threshold on product; low-stock banner / highlighting on **`ProductsPage`**
+- **Shipped:** In-app notifications to **admin** / **cellarman** (full members) when stock first crosses to at or below `minStock`, debounced per product via DB flag **`low_stock_notified`** (cleared when stock rises above threshold); reconciliation after consumptions, adjustments, receipts, stock take finalize, and catalog create/update
+- **Shipped:** Dashboard card for product managers — **`GET /api/products/low-stock-summary`** + widget on **`/`** (Hasiera)
+- ❌ Supplier integrations — **not implemented**
 
 ---
 

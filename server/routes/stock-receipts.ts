@@ -12,6 +12,7 @@ import {
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
+import { refreshLowStockNotificationForProduct } from "../lib/stock-notifications";
 
 const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
@@ -43,7 +44,7 @@ export function registerStockReceiptRoutes(app: Express) {
         const societyId = getUserSocietyId(user);
         const { supplier, invoiceReference, notes, lines } = parsed.data;
 
-        const productIds = [...new Set(lines.map(l => l.productId))];
+        const productIds = Array.from(new Set(lines.map(l => l.productId)));
         const productRows = await db
           .select()
           .from(products)
@@ -114,6 +115,11 @@ export function registerStockReceiptRoutes(app: Express) {
 
           return receipt.id;
         });
+
+        const touchedProducts = Array.from(new Set(lines.map(l => l.productId)));
+        for (const productId of touchedProducts) {
+          await refreshLowStockNotificationForProduct(productId, societyId);
+        }
 
         const [full] = await db
           .select()

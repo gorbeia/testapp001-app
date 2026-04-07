@@ -22,6 +22,14 @@ export interface NoteWithMessages extends Note {
   notifyUsers?: boolean;
 }
 
+export interface LowStockSummaryProduct {
+  id: string;
+  name: string;
+  stock: string;
+  minStock: string;
+  unit: string;
+}
+
 export interface DashboardStats {
   todayReservations: number;
   todayPeople: number;
@@ -35,6 +43,9 @@ export interface DashboardStats {
   sepaModeDisabled: boolean;
   /** Current ledger balance (same as My movements) when `sepaModeDisabled`. */
   memberAccountBalance?: number;
+  /** Low-stock catalog rows (staff with product management only; from `GET /api/products/low-stock-summary`). */
+  lowStockCount: number;
+  lowStockProducts: LowStockSummaryProduct[];
 }
 
 export interface UpcomingReservation {
@@ -162,6 +173,22 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
       }
     }
 
+    let lowStockCount = 0;
+    let lowStockProducts: LowStockSummaryProduct[] = [];
+    try {
+      const lowRes = await authFetch("/api/products/low-stock-summary");
+      if (lowRes.ok) {
+        const data = (await lowRes.json()) as {
+          count?: number;
+          products?: LowStockSummaryProduct[];
+        };
+        lowStockCount = data.count ?? 0;
+        lowStockProducts = Array.isArray(data.products) ? data.products : [];
+      }
+    } catch (error) {
+      console.log("Low stock summary not loaded:", error);
+    }
+
     return {
       todayReservations: reservationsCount,
       todayPeople: peopleCount,
@@ -173,6 +200,8 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
       activeMembers: usersCount,
       sepaModeDisabled,
       memberAccountBalance: sepaModeDisabled ? (memberAccountBalance ?? 0) : undefined,
+      lowStockCount,
+      lowStockProducts,
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);

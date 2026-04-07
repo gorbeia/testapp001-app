@@ -169,6 +169,8 @@ export const products = pgTable("products", {
   stock: text("stock").notNull().default("0"), // Using text for large numbers
   unit: text("unit").notNull().default("unit"), // e.g., "unit", "kg", "liter"
   minStock: text("min_stock").notNull().default("0"), // Alert threshold
+  /** When true, staff were notified for low stock; reset when stock rises above minStock. */
+  lowStockNotified: boolean("low_stock_notified").notNull().default(false),
   supplier: text("supplier"),
   isActive: boolean("is_active").notNull().default(true),
   societyId: varchar("society_id")

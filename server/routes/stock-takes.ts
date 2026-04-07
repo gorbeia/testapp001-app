@@ -14,6 +14,7 @@ import {
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
+import { refreshLowStockNotificationForProduct } from "../lib/stock-notifications";
 
 const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
@@ -382,6 +383,11 @@ export function registerStockTakeRoutes(app: Express) {
             })
             .where(eq(stockTakes.id, id));
         });
+
+        const refreshedProducts = Array.from(new Set(lines.map(l => l.productId)));
+        for (const productId of refreshedProducts) {
+          await refreshLowStockNotificationForProduct(productId, societyId);
+        }
 
         const [finalTake] = await db
           .select()

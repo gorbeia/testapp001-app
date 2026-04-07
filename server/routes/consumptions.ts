@@ -20,6 +20,7 @@ import {
   notifyIfCrossedPrepaymentFloor,
   prepaymentFloorHttpBody,
 } from "../lib/prepayment-ledger-floor";
+import { refreshLowStockNotificationForProduct } from "../lib/stock-notifications";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -572,6 +573,8 @@ export function registerConsumptionRoutes(app: Express) {
             newStock: newStock.toString(),
             createdBy: user.id,
           });
+
+          await refreshLowStockNotificationForProduct(item.productId, societyId);
         }
 
         // Update consumption total

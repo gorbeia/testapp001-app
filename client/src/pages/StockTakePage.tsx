@@ -327,8 +327,8 @@ export function StockTakePage() {
             <CardContent className="p-4 text-sm">
               {t("stockTakeDraftBanner")}{" "}
               <Button
-                variant="link"
-                className="p-0 h-auto"
+                variant="ghost"
+                className="p-0 h-auto text-primary underline underline-offset-2"
                 data-testid="link-resume-stock-take"
                 onClick={() => setSelectedId(draftTake.id)}
               >

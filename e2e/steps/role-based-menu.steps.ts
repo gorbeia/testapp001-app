@@ -60,9 +60,9 @@ const FINANCIAL_MANAGEMENT_LINKS = [
 ];
 
 /** Any sidebar link that implies staff config or management beyond a plain member. */
-const ALL_STAFF_NAV_TEST_IDS = [
-  ...new Set([...ADMIN_MANAGEMENT_LINKS, ...CONFIG_LINKS, ANNOUNCEMENTS_LINK]),
-];
+const ALL_STAFF_NAV_TEST_IDS = Array.from(
+  new Set([...ADMIN_MANAGEMENT_LINKS, ...CONFIG_LINKS, ANNOUNCEMENTS_LINK])
+);
 
 /** Desktop sidebar may start collapsed (cookie); ensure nav links are in view for assertions. */
 async function ensureSidebarNavReady(page: Page): Promise<void> {

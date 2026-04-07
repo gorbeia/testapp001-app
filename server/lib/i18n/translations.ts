@@ -32,6 +32,9 @@ export const translations = {
       "Zure kontu-saldoa ({balance} €) elkarteak ezarritako gutxienekoa ({floor} €) baino txikiagoa da. Egiten aurreordainketa bat.",
     financialSubscriptionChargeTitle: "Harpidetza kargua",
     financialSubscriptionChargeMessage: "{month} hilabeteko harpidetza: {amount} €.",
+    stockLowAlertTitle: "Stock baxua",
+    stockLowAlertMessage:
+      "{productName}: {newStock} {unit} geratzen dira (minimoa: {minStock}).",
   },
 
   es: {
@@ -65,6 +68,9 @@ export const translations = {
       "El saldo de tu cuenta ({balance} €) es inferior al mínimo fijado por la sociedad ({floor} €). Realiza un anticipo.",
     financialSubscriptionChargeTitle: "Cuota de suscripción",
     financialSubscriptionChargeMessage: "Cuota de suscripción {month}: {amount} €.",
+    stockLowAlertTitle: "Stock bajo",
+    stockLowAlertMessage:
+      "{productName}: quedan {newStock} {unit} (mínimo: {minStock}).",
   },
 
   en: {
@@ -97,6 +103,9 @@ export const translations = {
       "Your account balance ({balance} €) is below the society minimum ({floor} €). Please make a prepayment.",
     financialSubscriptionChargeTitle: "Subscription charge",
     financialSubscriptionChargeMessage: "Subscription charge for {month}: {amount} €.",
+    stockLowAlertTitle: "Low stock",
+    stockLowAlertMessage:
+      "{productName}: {newStock} {unit} remaining (minimum: {minStock}).",
   },
 };
 
