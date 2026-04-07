@@ -26,6 +26,7 @@ import { CreditsPage } from "@/pages/CreditsPage";
 import { MyDebtsPage } from "@/pages/MyDebtsPage";
 import { UsersPage } from "@/pages/UsersPage";
 import { ProductsPage } from "@/pages/ProductsPage";
+import { StockChangesPage } from "@/pages/StockChangesPage";
 import { SocietyPage } from "@/pages/SocietyPage";
 import { SepaExportPage } from "@/pages/SepaExportPage";
 import { MyMovementsPage } from "@/pages/MyMovementsPage";
@@ -120,6 +121,13 @@ function AppRoutes() {
         {() => (
           <ProtectedRoute requires={Permission.PRODUCTS_MANAGE}>
             <ProductsPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/stock-aldaketak">
+        {() => (
+          <ProtectedRoute requires={Permission.PRODUCTS_MANAGE}>
+            <StockChangesPage />
           </ProtectedRoute>
         )}
       </Route>

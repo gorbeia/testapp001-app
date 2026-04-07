@@ -109,7 +109,7 @@
 - **Shipped**: decrement on **`POST .../items`**; **`stock_movements`** audit row per decrement
 - **Shipped**: `minStock` on products + low-stock cue on **`/produktuak`** (banner / highlights)
 - ❌ Automatic reorder suggestions, push alerts — **not implemented**
-- Manual stock edits via **`PUT /api/products`** change `stock` **without** creating a movement (see `inventory.md`)
+- Stock changes off the POS path: use **`POST /api/products/:id/adjust`** (or initial **`stock`** on **`POST /api/products`**); **`PUT /api/products/:id`** no longer accepts **`stock`** (see `inventory.md`)
 
 ---
 

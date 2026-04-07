@@ -176,7 +176,7 @@ Status legend:
 2. **Product categories**
    - **Status**: ✅ Implemented (see Consumptions §5; `/kategoriak`)
 3. **Stock management & movements**
-   - **Status**: 🟡 Partial (consumption-driven decrement + `stock_movements` rows; direct `stock` edit via product PUT without movement; **no** movements list API/UI)
+   - **Status**: 🟡 Partial (`GET /api/stock-movements`, `GET /api/products/:id/stock-movements`, `POST /api/products/:id/adjust`; UI **`/stock-aldaketak`**; `PUT /api/products/:id` rejects **`stock`**; consumption + adjustment/damage write `stock_movements`; **no** purchase-type movements yet — see `inventory.md`)
 4. **Low stock awareness**
    - **Status**: 🟡 Partial (`minStock` + banner on ProductsPage; no push notifications)
 5. **Purchases & suppliers**

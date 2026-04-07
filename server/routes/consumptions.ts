@@ -486,7 +486,7 @@ export function registerConsumptionRoutes(app: Express) {
           const productRow = await db
             .select()
             .from(products)
-            .where(eq(products.id, item.productId))
+            .where(and(eq(products.id, item.productId), eq(products.societyId, societyId)))
             .limit(1);
           if (!productRow.length) {
             return res.status(404).json({ message: `Product ${item.productId} not found` });
@@ -513,7 +513,7 @@ export function registerConsumptionRoutes(app: Express) {
           const product = await db
             .select()
             .from(products)
-            .where(eq(products.id, item.productId))
+            .where(and(eq(products.id, item.productId), eq(products.societyId, societyId)))
             .limit(1);
 
           if (!product.length) {
@@ -558,7 +558,7 @@ export function registerConsumptionRoutes(app: Express) {
           await db
             .update(products)
             .set({ stock: newStock.toString(), updatedAt: new Date() })
-            .where(eq(products.id, item.productId));
+            .where(and(eq(products.id, item.productId), eq(products.societyId, societyId)));
 
           // Create stock movement
           await db.insert(stockMovements).values({

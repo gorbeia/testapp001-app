@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { getErrorMessage } from "@/lib/errors";
-import { Plus, Search, Package, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { Plus, Search, Package, Edit, Trash2, AlertTriangle, ClipboardList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -47,6 +47,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useLanguage } from "@/lib/i18n";
+import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
@@ -158,11 +159,20 @@ export function ProductsPage() {
     description: "",
     categoryId: "",
     price: "",
-    stock: "",
     unit: "unit",
     minStock: "",
     supplier: "",
     isActive: true,
+  });
+
+  const [adjustDialog, setAdjustDialog] = useState<{ open: boolean; product: Product | null }>({
+    open: false,
+    product: null,
+  });
+  const [adjustForm, setAdjustForm] = useState({
+    type: "adjustment" as "adjustment" | "damage",
+    quantityInput: "",
+    reason: "",
   });
 
   const handleCreateProduct = async () => {
@@ -250,7 +260,6 @@ export function ProductsPage() {
       description: product.description || "",
       categoryId: product.categoryId || "",
       price: product.price,
-      stock: product.stock,
       unit: product.unit,
       minStock: product.minStock,
       supplier: product.supplier || "",
@@ -259,13 +268,75 @@ export function ProductsPage() {
     setEditDialog({ open: true, product });
   };
 
+  const openAdjustStock = (product: Product) => {
+    setAdjustForm({ type: "adjustment", quantityInput: "", reason: "" });
+    setAdjustDialog({ open: true, product });
+  };
+
+  const submitAdjustStock = async () => {
+    if (!adjustDialog.product) return;
+    const raw = parseInt(adjustForm.quantityInput, 10);
+    if (Number.isNaN(raw) || adjustForm.reason.trim() === "") {
+      toast({
+        title: t("error"),
+        description: t("stockAdjustFormInvalid"),
+        variant: "destructive",
+      });
+      return;
+    }
+    let quantity: number;
+    if (adjustForm.type === "damage") {
+      quantity = -Math.abs(raw);
+    } else {
+      quantity = raw;
+    }
+
+    try {
+      const response = await authFetch(`/api/products/${adjustDialog.product.id}/adjust`, {
+        method: "POST",
+        body: JSON.stringify({
+          type: adjustForm.type,
+          quantity,
+          reason: adjustForm.reason.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        const updated = await authFetch("/api/products");
+        if (updated.ok) {
+          setProducts(await updated.json());
+        }
+        toast({ title: t("stockAdjustSuccess") });
+        setAdjustDialog({ open: false, product: null });
+      } else {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || t("stockAdjustFailed"));
+      }
+    } catch (e: unknown) {
+      toast({
+        title: t("error"),
+        description: getErrorMessage(e) || t("stockAdjustFailed"),
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleUpdateProduct = async () => {
     if (!editDialog.product) return;
 
     try {
       const response = await authFetch(`/api/products/${editDialog.product.id}`, {
         method: "PUT",
-        body: JSON.stringify(editProduct),
+        body: JSON.stringify({
+          name: editProduct.name,
+          description: editProduct.description || undefined,
+          categoryId: editProduct.categoryId,
+          price: editProduct.price,
+          unit: editProduct.unit,
+          minStock: editProduct.minStock,
+          supplier: editProduct.supplier || undefined,
+          isActive: editProduct.isActive,
+        }),
       });
 
       if (response.ok) {
@@ -316,7 +387,14 @@ export function ProductsPage() {
             <h2 className="text-2xl font-bold">{t("products")}</h2>
             <p className="text-muted-foreground">{t("manageProductsAndStock")}</p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <div className="flex flex-wrap gap-2 items-center">
+            <Button variant="outline" asChild data-testid="link-stock-changes">
+              <Link href="/stock-aldaketak">
+                <ClipboardList className="mr-2 h-4 w-4" />
+                {t("stockChanges")}
+              </Link>
+            </Button>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button data-testid="button-new-product" aria-label="Produktu berria sortu">
                 <Plus className="mr-2 h-4 w-4" />
@@ -465,6 +543,7 @@ export function ProductsPage() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         {lowStockProducts.length > 0 && (
@@ -521,8 +600,8 @@ export function ProductsPage() {
                 <TableRow>
                   <TableHead scope="col">{t("name")}</TableHead>
                   <TableHead scope="col">{t("category")}</TableHead>
-                  <TableHead scope="col">{t("stock")}</TableHead>
-                  <TableHead scope="col">{t("price")}</TableHead>
+                  <TableHead scope="col" className="text-right">{t("stock")}</TableHead>
+                  <TableHead scope="col" className="text-right">{t("price")}</TableHead>
                   <TableHead scope="col" className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -568,9 +647,6 @@ export function ProductsPage() {
                               "Kategoria ezezaguna"}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {parseFloat(product.price).toFixed(2)}€
-                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             {isLowStock && <AlertTriangle className="h-4 w-4 text-destructive" />}
@@ -578,6 +654,9 @@ export function ProductsPage() {
                               {stock} {product.unit}
                             </span>
                           </div>
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {parseFloat(product.price).toFixed(2)}€
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -600,6 +679,13 @@ export function ProductsPage() {
                               <DropdownMenuItem onClick={() => handleEditProduct(product)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 {t("edit")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => openAdjustStock(product)}
+                                data-testid={`menu-adjust-stock-${product.id}`}
+                              >
+                                <ClipboardList className="mr-2 h-4 w-4" />
+                                {t("adjustStock")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 className="text-destructive"
@@ -692,19 +778,15 @@ export function ProductsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label>{t("productStock")}</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    aria-label="Editatu produktuaren stock kopurua"
-                    value={editProduct.stock}
-                    onChange={e => setEditProduct({ ...editProduct, stock: e.target.value })}
-                    data-testid="input-edit-product-stock"
-                  />
-                </div>
+              {editDialog.product && (
+                <p className="text-sm text-muted-foreground rounded-md border bg-muted/40 p-3">
+                  <span className="font-medium text-foreground">{t("productStock")}: </span>
+                  {editDialog.product.stock} {editDialog.product.unit}
+                  <span className="block mt-2">{t("stockUseAdjustNotPut")}</span>
+                </p>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>{t("productUnit")}</Label>
                   <Select
@@ -759,6 +841,82 @@ export function ProductsPage() {
                   aria-label="Eguneratu produktua"
                 >
                   {t("update")}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog
+          open={adjustDialog.open}
+          onOpenChange={open => !open && setAdjustDialog({ open: false, product: null })}
+        >
+          <DialogContent data-testid="dialog-adjust-stock">
+            <DialogHeader>
+              <DialogTitle>{t("adjustStock")}</DialogTitle>
+              <DialogDescription>
+                {adjustDialog.product
+                  ? `${adjustDialog.product.name} — ${t("productStock")}: ${adjustDialog.product.stock} ${adjustDialog.product.unit}`
+                  : ""}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="space-y-2">
+                <Label>{t("type")}</Label>
+                <Select
+                  value={adjustForm.type}
+                  onValueChange={v =>
+                    setAdjustForm({
+                      ...adjustForm,
+                      type: v as "adjustment" | "damage",
+                    })
+                  }
+                >
+                  <SelectTrigger data-testid="select-adjust-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="adjustment">{t("stockTypeAdjustment")}</SelectItem>
+                    <SelectItem value="damage">{t("stockTypeDamage")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("quantity")}</Label>
+                <Input
+                  type="number"
+                  data-testid="input-adjust-quantity"
+                  value={adjustForm.quantityInput}
+                  onChange={e =>
+                    setAdjustForm({ ...adjustForm, quantityInput: e.target.value })
+                  }
+                  aria-label={t("quantity")}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {adjustForm.type === "damage"
+                    ? t("stockDamagePositiveHint")
+                    : t("stockQuantityDelta")}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("reason")}</Label>
+                <Input
+                  data-testid="input-adjust-reason"
+                  value={adjustForm.reason}
+                  onChange={e => setAdjustForm({ ...adjustForm, reason: e.target.value })}
+                  placeholder={t("reason")}
+                  aria-label={t("reason")}
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setAdjustDialog({ open: false, product: null })}
+                >
+                  {t("cancel")}
+                </Button>
+                <Button onClick={() => void submitAdjustStock()} data-testid="button-apply-adjust">
+                  {t("applyAdjustStock")}
                 </Button>
               </div>
             </div>

@@ -27,9 +27,9 @@
 
 **Acceptance Criteria:**
 
-- **Shipped:** edit dialog + `PUT /api/products/:id` for name, description, category, price, stock, unit, min stock, supplier, active flag
-- ❌ Audit trail of field changes — **not implemented**
-- **Note:** editing **`stock` directly** does **not** write a `stock_movements` row (only consumption flow does today)
+- **Shipped:** edit dialog + `PUT /api/products/:id` for name, description, category, price, unit, min stock, supplier, active flag (**`stock` is rejected** on PUT; use adjustment flow below)
+- ❌ Audit trail of non-stock field changes — **not implemented**
+- **Shipped:** stock changes via **`POST /api/products/:id/adjust`** (types **`adjustment`** / **`damage`**) write **`stock_movements`** rows
 
 ---
 
@@ -71,9 +71,9 @@
 
 **Acceptance Criteria:**
 
-- **Partial:** manual numeric edit via product update UI/API
+- **Shipped:** manual stock changes via **`Stock doitu` / adjust dialog** on **`/produktuak`** and audited **`POST /api/products/:id/adjust`**
 - **Shipped:** automatic decrement when consumption items are posted (with **`stock_movements`** row, type **`consumption`**)
-- ❌ Reason-coded adjustments, batch adjustment wizard — **not implemented**
+- ❌ Batch adjustment wizard — **not implemented**
 
 ---
 
@@ -98,8 +98,10 @@
 
 **Acceptance Criteria:**
 
-- **Partial:** `stock_movements` table populated from **consumption** flow only (schema allows `purchase` / `adjustment` / `damage` but app does not write them yet)
-- ❌ HTTP API + admin UI to list/filter movements — **not implemented**
+- **Shipped:** `stock_movements` populated from **consumption** (type **`consumption`**) and from **adjust / damage** ( **`POST /api/products/:id/adjust`** )
+- **Shipped:** **`GET /api/stock-movements`** (filters: product, type, date range, pagination) and **`GET /api/products/:id/stock-movements`**
+- **Shipped:** admin UI **`/stock-aldaketak`** (“Stock aldaketak”) — list and filters (distinct from account **`/mugimenduak`**)
+- **Partial:** schema allows **`purchase`** but nothing writes it yet (see purchase/receipts backlog)
 
 ---
 

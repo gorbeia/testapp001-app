@@ -3,7 +3,7 @@ import { db } from "../db";
 import {
   products,
   insertProductSchema,
-  updateProductSchema,
+  updateProductCatalogSchema,
   type JwtSessionUser,
 } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
@@ -92,7 +92,19 @@ export function registerProductRoutes(app: Express) {
         }
 
         const societyId = getUserSocietyId(user);
-        const parsed = updateProductSchema.safeParse(req.body);
+
+        if (
+          req.body != null &&
+          typeof req.body === "object" &&
+          Object.prototype.hasOwnProperty.call(req.body, "stock")
+        ) {
+          return res.status(400).json({
+            message:
+              "Stock cannot be updated here. Use POST /api/products/:id/adjust for audited changes.",
+          });
+        }
+
+        const parsed = updateProductCatalogSchema.safeParse(req.body);
         if (!parsed.success) {
           return res
             .status(400)

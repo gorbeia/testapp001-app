@@ -223,6 +223,38 @@ export const insertProductSchema = createInsertSchema(products).pick({
 /** PATCH-style product updates; tenant is never taken from the client. */
 export const updateProductSchema = insertProductSchema.partial();
 
+/** Catalog-only update (PUT /api/products/:id); stock changes must use POST /api/products/:id/adjust. */
+export const updateProductCatalogSchema = updateProductSchema.omit({ stock: true });
+
+/** Body for audited stock adjustment (cellarman/admin). */
+export const stockAdjustmentSchema = z
+  .object({
+    type: z.enum(["adjustment", "damage"]),
+    quantity: z.number().int(),
+    reason: z.string().min(1).max(500),
+  })
+  .superRefine((data, ctx) => {
+    if (data.type === "damage" && data.quantity >= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Damage quantity must be negative (units removed)",
+        path: ["quantity"],
+      });
+    }
+  });
+
+export type StockAdjustmentInput = z.infer<typeof stockAdjustmentSchema>;
+
+/** Query params for GET /api/stock-movements */
+export const stockMovementListQuerySchema = z.object({
+  productId: z.string().uuid().optional(),
+  type: z.enum(["consumption", "purchase", "adjustment", "damage"]).optional(),
+  from: z.string().optional(),
+  to: z.string().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
 export const insertProductCategorySchema = createInsertSchema(productCategories).pick({
   color: true,
   icon: true,

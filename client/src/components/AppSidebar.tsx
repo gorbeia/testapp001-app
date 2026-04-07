@@ -17,6 +17,7 @@ import {
   Palette,
   List,
   Landmark,
+  ClipboardList,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -141,7 +142,10 @@ export function AppSidebar() {
       ? [{ title: t("adminCredits"), url: "/zorrak", icon: CreditCard }]
       : []),
     ...(userCan(user, Permission.PRODUCTS_MANAGE)
-      ? [{ title: t("products"), url: "/produktuak", icon: Package }]
+      ? [
+          { title: t("products"), url: "/produktuak", icon: Package },
+          { title: t("stockChanges"), url: "/stock-aldaketak", icon: ClipboardList },
+        ]
       : []),
     ...(userCan(user, Permission.SEPA_EXPORT) && societySepaMode !== "disabled"
       ? [{ title: t("sepaExport"), url: "/sepa", icon: FileSpreadsheet }]
