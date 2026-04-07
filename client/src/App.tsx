@@ -9,6 +9,7 @@ import { LanguageProvider } from "@/components/LanguageProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAuth } from "@/lib/auth";
+import { Permission } from "@shared/permissions";
 import { LoginForm } from "@/components/LoginForm";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
@@ -47,7 +48,7 @@ function AppRoutes() {
       <Route path="/erreserbak" component={ReservationsPage} />
       <Route path="/admin-erreserbak">
         {() => (
-          <ProtectedRoute requiredAccess="admin">
+          <ProtectedRoute requires={Permission.RESERVATIONS_REGISTRY}>
             <AdminReservationsPage />
           </ProtectedRoute>
         )}
@@ -57,14 +58,14 @@ function AppRoutes() {
       <Route path="/nire-erreserbak" component={MyReservationsPage} />
       <Route path="/kontsumoak-zerrenda">
         {() => (
-          <ProtectedRoute requiredAccess="admin">
+          <ProtectedRoute requires={Permission.CONSUMPTIONS_ADMIN}>
             <ConsumptionsListPage />
           </ProtectedRoute>
         )}
       </Route>
       <Route path="/zorrak">
         {() => (
-          <ProtectedRoute requiredAccess="admin">
+          <ProtectedRoute requires={Permission.CREDITS_VIEW}>
             <CreditsPage />
           </ProtectedRoute>
         )}
@@ -73,28 +74,28 @@ function AppRoutes() {
       <Route path="/nire-mugimenduak" component={MyMovementsPage} />
       <Route path="/mugimenduak">
         {() => (
-          <ProtectedRoute requiredAccess="treasurer">
+          <ProtectedRoute requires={Permission.MOVEMENTS_VIEW}>
             <AccountMovementsPage />
           </ProtectedRoute>
         )}
       </Route>
       <Route path="/transferentziak">
         {() => (
-          <ProtectedRoute requiredAccess="treasurer">
+          <ProtectedRoute requires={Permission.BANK_TRANSFERS_MANAGE}>
             <BankTransfersPage />
           </ProtectedRoute>
         )}
       </Route>
       <Route path="/itzulketak">
         {() => (
-          <ProtectedRoute requiredAccess="treasurer">
+          <ProtectedRoute requires={Permission.BANK_TRANSFERS_MANAGE}>
             <Redirect to="/transferentziak" />
           </ProtectedRoute>
         )}
       </Route>
       <Route path="/oharrak">
         {() => (
-          <ProtectedRoute requiredAccess="admin">
+          <ProtectedRoute requires={Permission.NOTES_MANAGE}>
             <OharrakPage />
           </ProtectedRoute>
         )}
@@ -103,49 +104,49 @@ function AppRoutes() {
       <Route path="/profila" component={UserProfile} />
       <Route path="/erabiltzaileak">
         {() => (
-          <ProtectedRoute requiredAccess="admin">
+          <ProtectedRoute requires={Permission.USERS_MANAGE}>
             <UsersPage />
           </ProtectedRoute>
         )}
       </Route>
       <Route path="/subscriptions">
         {() => (
-          <ProtectedRoute requiredAccess="admin">
+          <ProtectedRoute requires={Permission.SUBSCRIPTIONS_MANAGE}>
             <SubscriptionsPage />
           </ProtectedRoute>
         )}
       </Route>
       <Route path="/produktuak">
         {() => (
-          <ProtectedRoute requiredAccess="cellarman">
+          <ProtectedRoute requires={Permission.PRODUCTS_MANAGE}>
             <ProductsPage />
           </ProtectedRoute>
         )}
       </Route>
       <Route path="/mahaiak">
         {() => (
-          <ProtectedRoute requiredAccess="admin">
+          <ProtectedRoute requires={Permission.TABLES_MANAGE}>
             <TablesPage />
           </ProtectedRoute>
         )}
       </Route>
       <Route path="/kategoriak">
         {() => (
-          <ProtectedRoute requiredAccess="admin">
+          <ProtectedRoute requires={Permission.CATEGORIES_MANAGE}>
             <CategoriesPage />
           </ProtectedRoute>
         )}
       </Route>
       <Route path="/elkartea">
         {() => (
-          <ProtectedRoute requiredAccess="treasurer">
+          <ProtectedRoute requires={Permission.SOCIETY_MANAGE}>
             <SocietyPage />
           </ProtectedRoute>
         )}
       </Route>
       <Route path="/sepa">
         {() => (
-          <ProtectedRoute requiredAccess="treasurer">
+          <ProtectedRoute requires={Permission.SEPA_EXPORT}>
             <SepaExportPage />
           </ProtectedRoute>
         )}

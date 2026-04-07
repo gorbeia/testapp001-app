@@ -1,24 +1,69 @@
-Feature: Role-based menu access
-  As a user with different roles
-  I want to see menu entries based on my permissions
-  So that I can only access functionality I'm authorized for
+Feature: Role-based access control
+  As a user with a specific access role
+  I want to see only the menu entries and pages I am authorized for
+  So that the application enforces role-based permissions
 
   Background:
     Given the application is running
     When I open the login page
 
   @role-based
-  Scenario: Bazkide user sees basic menu but no admin entries
-    When I log in as a bazkide user
-    Then I should see the dashboard instead of the login form
-    And I should see the main menu entries
-    But I should not see any admin management entries
-    And I should not be able to access admin pages directly
-
-  @role-based
-  Scenario: Admin user sees all menu entries including admin
+  Scenario: Admin sees all menu entries
     When I log in as a admin user
     Then I should see the dashboard instead of the login form
     And I should see the main menu entries
-    And I should see the admin management section
-    And I should be able to access all admin pages
+    And I should see admin management links
+    And I should see config links
+
+  @role-based
+  Scenario: Treasurer sees financial management but not user or product admin
+    When I log in as a diruzaina user
+    Then I should see the dashboard instead of the login form
+    And I should see the main menu entries
+    And I should not see the announcements menu link
+    And I should see treasurer management links
+    But I should not see admin-only management links
+    And I should not see admin-only config links
+    And I should see treasurer config links
+
+  @role-based
+  Scenario: Cellarman sees products and consumptions but not financial management
+    When I log in as a sotolaria user
+    Then I should see the dashboard instead of the login form
+    And I should see the main menu entries
+    And I should not see the announcements menu link
+    And I should see cellarman management links
+    But I should not see financial management links
+
+  @role-based
+  Scenario: Member sees no management entries
+    When I log in as a bazkide user
+    Then I should see the dashboard instead of the login form
+    And I should see the main menu entries
+    And I should not see the announcements menu link
+    But I should not see any management entries
+
+  @role-based
+  Scenario: Member cannot access protected pages directly
+    When I log in as a bazkide user
+    Then I should not be able to access protected pages as a member
+
+  @role-based
+  Scenario: Treasurer cannot access admin-only pages directly
+    When I log in as a diruzaina user
+    Then I should not be able to access admin-only pages as a treasurer
+
+  @role-based
+  Scenario: Cellarman cannot access financial pages directly
+    When I log in as a sotolaria user
+    Then I should not be able to access financial pages as a cellarman
+
+  @role-based
+  Scenario: Member API calls to admin endpoints return 403
+    When I log in as a bazkide user
+    Then API calls to admin-protected endpoints should return 403
+
+  @role-based
+  Scenario: Treasurer API calls to user-management endpoints return 403
+    When I log in as a diruzaina user
+    Then API calls to user-management endpoints should return 403

@@ -2,6 +2,7 @@ import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Client } from "pg";
 import { users, societies } from "../shared/schema";
+import type { AccessRole, MembershipType } from "../shared/permissions";
 import { eq } from "drizzle-orm";
 
 async function main() {
@@ -33,12 +34,24 @@ async function main() {
 
   console.log("Using society ID:", societyId);
 
-  const inactiveUser = {
+  const inactiveUser: {
+    username: string;
+    password: string;
+    name: string;
+    membershipType: MembershipType;
+    accessRole: AccessRole;
+    phone: string;
+    iban: string;
+    societyId: string;
+    linkedMemberId: null;
+    linkedMemberName: null;
+    isActive: boolean;
+  } = {
     username: "bazkide-ezaktiboa@txokoa.eus",
     password: "demo",
     name: "Patxi Mendizabal",
-    role: "bazkidea",
-    function: "arrunta",
+    membershipType: "full_member",
+    accessRole: "member",
     phone: "+34 943 678 901",
     iban: "ES91 2100 0418 4502 0005 1336",
     societyId,

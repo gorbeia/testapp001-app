@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   pgTable,
+  pgEnum,
   text,
   varchar,
   timestamp,
@@ -11,6 +12,7 @@ import {
   unique,
   jsonb,
 } from "drizzle-orm/pg-core";
+import { accessRoleSchema, membershipTypeSchema } from "./permissions";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -93,6 +95,10 @@ export const societies = pgTable("societies", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const accessRoleEnum = pgEnum("access_role", ["admin", "treasurer", "cellarman", "member"]);
+
+export const membershipTypeEnum = pgEnum("membership_type", ["full_member", "companion"]);
+
 export const users = pgTable("users", {
   id: varchar("id")
     .primaryKey()
@@ -100,8 +106,8 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   name: text("name"),
-  role: text("role"),
-  function: text("function"),
+  accessRole: accessRoleEnum("access_role").notNull().default("member"),
+  membershipType: membershipTypeEnum("membership_type").notNull().default("full_member"),
   phone: text("phone"),
   iban: text("iban"),
   linkedMemberId: varchar("linked_member_id"),
@@ -139,8 +145,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   name: true,
-  role: true,
-  function: true,
+  accessRole: true,
+  membershipType: true,
   phone: true,
   iban: true,
   linkedMemberId: true,
@@ -580,8 +586,8 @@ export const jwtUserPayloadSchema = z.object({
   id: z.string(),
   username: z.string(),
   name: z.string().nullable(),
-  role: z.string().nullable(),
-  function: z.string().nullable(),
+  accessRole: accessRoleSchema,
+  membershipType: membershipTypeSchema,
   phone: z.string().nullable(),
   iban: z.string().nullable(),
   linkedMemberId: z.string().nullable(),
@@ -847,7 +853,12 @@ export const batchCreditStatusBodySchema = z.object({
   status: z.enum(["pending", "paid", "partial"]),
 });
 
-export const apiCreateUserBodySchema = insertUserSchema.omit({ societyId: true });
+export const apiCreateUserBodySchema = insertUserSchema
+  .omit({ societyId: true, accessRole: true, membershipType: true })
+  .extend({
+    accessRole: accessRoleSchema.optional(),
+    membershipType: membershipTypeSchema.optional(),
+  });
 
 export const updateUserProfileBodySchema = z
   .object({
@@ -867,8 +878,8 @@ export const changePasswordBodySchema = z.object({
 export const updateUserAdminBodySchema = z
   .object({
     name: z.string().optional(),
-    role: z.string().nullable().optional(),
-    function: z.string().nullable().optional(),
+    membershipType: membershipTypeSchema.optional(),
+    accessRole: accessRoleSchema.optional(),
     phone: z.string().nullable().optional(),
     iban: z.string().nullable().optional(),
     linkedMemberId: z.string().nullable().optional(),

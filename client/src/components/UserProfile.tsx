@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth";
 import { authFetch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import type { User } from "@/lib/auth";
+import type { AccessRole, MembershipType } from "@shared/permissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -82,29 +83,20 @@ export function UserProfile() {
       .slice(0, 2);
   };
 
-  const getRoleLabel = (role: string) => {
-    switch (role) {
-      case "bazkidea":
-        return t("member");
-      case "laguna":
-        return t("companion");
-      default:
-        return role || "Unknown";
-    }
+  const getMembershipLabel = (mt: MembershipType) => {
+    return mt === "full_member" ? t("member") : t("companion");
   };
 
-  const getFunctionLabel = (func: string) => {
-    switch (func) {
-      case "administratzailea":
+  const getAccessRoleLabel = (ar: AccessRole) => {
+    switch (ar) {
+      case "admin":
         return t("administrator");
-      case "diruzaina":
+      case "treasurer":
         return t("treasurer");
-      case "sotolaria":
+      case "cellarman":
         return t("cellarman");
-      case "arrunta":
-        return t("regular");
       default:
-        return func || "None";
+        return t("regular");
     }
   };
 
@@ -146,9 +138,20 @@ export function UserProfile() {
         throw new Error(errorData.message || "Failed to update profile");
       }
 
-      const updatedUser = await response.json();
-      setUser(updatedUser);
-      updateUser(updatedUser);
+      const u = (await response.json()) as Record<string, unknown>;
+      const mapped: User = {
+        id: String(u.id),
+        email: String(u.username ?? ""),
+        name: String(u.name ?? u.username ?? ""),
+        accessRole: (u.accessRole as AccessRole) ?? "member",
+        membershipType: (u.membershipType as MembershipType) ?? "full_member",
+        phone: u.phone != null ? String(u.phone) : undefined,
+        iban: u.iban != null ? String(u.iban) : undefined,
+        linkedMemberId: u.linkedMemberId != null ? String(u.linkedMemberId) : undefined,
+        linkedMemberName: u.linkedMemberName != null ? String(u.linkedMemberName) : undefined,
+      };
+      setUser(mapped);
+      updateUser(mapped);
       setIsEditing(false);
 
       toast({
@@ -240,9 +243,9 @@ export function UserProfile() {
             <div className="space-y-1">
               <h2 className="text-xl font-semibold">{user.name}</h2>
               <div className="flex items-center gap-2">
-                <Badge variant="secondary">{getRoleLabel(user.role)}</Badge>
-                {user.function !== "arrunta" && (
-                  <Badge variant="outline">{getFunctionLabel(user.function)}</Badge>
+                <Badge variant="secondary">{getMembershipLabel(user.membershipType)}</Badge>
+                {user.accessRole !== "member" && (
+                  <Badge variant="outline">{getAccessRoleLabel(user.accessRole)}</Badge>
                 )}
               </div>
             </div>

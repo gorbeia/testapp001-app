@@ -9,31 +9,16 @@ import {
   type SepaMode,
 } from "@shared/schema";
 import { eq, and, inArray } from "drizzle-orm";
-import { sessionMiddleware, requireAuth } from "./middleware";
+import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
+import { Permission } from "@shared/permissions";
 
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
-
-const requireTreasurerAccess = (user: JwtSessionUser): boolean => {
-  return user.function === "diruzaina" || user.function === "administratzailea";
-};
 
 const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found in JWT");
   }
   return user.societyId;
-};
-
-const requireTreasurer = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    return res.status(401).json({ message: "Authentication required" });
-  }
-
-  if (!requireTreasurerAccess(req.user)) {
-    return res.status(403).json({ message: "Treasurer access required" });
-  }
-
-  next();
 };
 
 /** Parse YYYY-MM into { y, m } month 1-12. */
@@ -173,7 +158,7 @@ export function registerSepaRoutes(app: Express) {
     "/api/credits/sepa-export",
     sessionMiddleware,
     requireAuth,
-    requireTreasurer,
+    requirePermission(Permission.SEPA_EXPORT),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const societyId = getUserSocietyId(req.user!);

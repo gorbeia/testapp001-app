@@ -1,5 +1,6 @@
 import "dotenv/config";
 import { users, societies } from "../shared/schema";
+import type { AccessRole, MembershipType } from "../shared/permissions";
 import { eq } from "drizzle-orm";
 import { DEMO_SOCIETY_ALPHABETIC_ID, DEMO_SOCIETY_ID } from "./seed-demo-society";
 import type { SeedDb } from "./seed-db-type";
@@ -53,14 +54,26 @@ export async function seedUsers(dbConn: SeedDb) {
   const plainPassword = "demo";
   const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
-  const demoUsers = [
+  const demoUsers: Array<{
+    id: string;
+    username: string;
+    password: string;
+    name: string;
+    membershipType: MembershipType;
+    accessRole: AccessRole;
+    phone: string;
+    iban: string | null;
+    societyId: string;
+    linkedMemberId: string | null;
+    linkedMemberName: string | null;
+  }> = [
     {
       id: USER_UUIDS.admin,
       username: "admin@txokoa.eus",
       password: hashedPassword,
       name: "Mikel Etxeberria",
-      role: "bazkidea",
-      function: "administratzailea",
+      membershipType: "full_member",
+      accessRole: "admin",
       phone: "+34 943 123 456",
       iban: "ES91 2100 0418 4502 0005 1332",
       societyId,
@@ -72,8 +85,8 @@ export async function seedUsers(dbConn: SeedDb) {
       username: "diruzaina@txokoa.eus",
       password: hashedPassword,
       name: "Ane Zelaia",
-      role: "bazkidea",
-      function: "diruzaina",
+      membershipType: "full_member",
+      accessRole: "treasurer",
       phone: "+34 943 234 567",
       iban: "ES91 2100 0418 4502 0005 1333",
       societyId,
@@ -85,8 +98,8 @@ export async function seedUsers(dbConn: SeedDb) {
       username: "sotolaria@txokoa.eus",
       password: hashedPassword,
       name: "Jon Agirre",
-      role: "bazkidea",
-      function: "sotolaria",
+      membershipType: "full_member",
+      accessRole: "cellarman",
       phone: "+34 943 345 678",
       iban: "ES91 2100 0418 4502 0005 1334",
       societyId,
@@ -98,8 +111,8 @@ export async function seedUsers(dbConn: SeedDb) {
       username: "bazkidea@txokoa.eus",
       password: hashedPassword,
       name: "Miren Urrutia",
-      role: "bazkidea",
-      function: "arrunta",
+      membershipType: "full_member",
+      accessRole: "member",
       phone: "+34 943 456 789",
       iban: "ES91 2100 0418 4502 0005 1335",
       societyId,
@@ -111,8 +124,8 @@ export async function seedUsers(dbConn: SeedDb) {
       username: "laguna@txokoa.eus",
       password: hashedPassword,
       name: "Andoni Garcia",
-      role: "laguna",
-      function: "arrunta",
+      membershipType: "companion",
+      accessRole: "member",
       phone: "+34 943 567 890",
       iban: null,
       societyId,
@@ -124,7 +137,25 @@ export async function seedUsers(dbConn: SeedDb) {
   console.log("Seeding demo users with predefined UUIDs...");
 
   for (const user of demoUsers) {
-    await dbConn.insert(users).values(user).onConflictDoNothing({ target: users.username });
+    // Upsert so RBAC columns stay correct after migrations (e.g. 0005 defaulted NULL access_role to member).
+    await dbConn
+      .insert(users)
+      .values(user)
+      .onConflictDoUpdate({
+        target: users.username,
+        set: {
+          password: user.password,
+          name: user.name,
+          accessRole: user.accessRole,
+          membershipType: user.membershipType,
+          phone: user.phone,
+          iban: user.iban,
+          societyId: user.societyId,
+          linkedMemberId: user.linkedMemberId,
+          linkedMemberName: user.linkedMemberName,
+          updatedAt: new Date(),
+        },
+      });
   }
 
   console.log("Done. Users seeded with stable UUIDs.");

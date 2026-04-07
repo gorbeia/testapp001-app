@@ -18,7 +18,7 @@ Status legend:
 1. **User Login** – Login form & auth context
    - **Status**: ✅ Implemented (real `POST /api/login` + bcrypt/legacy passwords; society alphabetic id; access + refresh httpOnly cookies; Bearer token in localStorage; E2E tested)
 2. **Role-Based Access Control** – menus & route protection
-   - **Status**: ✅ Implemented (menus and most guards use **function**: administratzailea, diruzaina, sotolaria, arrunta; member type is **role** bazkidea/laguna)
+   - **Status**: ✅ Implemented (**`accessRole`** + **`membershipType`**, shared **`Permission`** checks on API + client; see [`rbac.md`](./rbac.md); E2E: `e2e/features/role-based-menu.feature` for sidebar, direct URL denial, API 403)
 3. **View Personal Profile** – self profile view
    - **Status**: ✅ Implemented (`/profila`, JWT-backed user payload + profile API)
 4. **Update Password** – change password flow
@@ -29,13 +29,13 @@ Status legend:
 ## 2. User Management (`user-management.md`)
 
 1. **List users** – table with search/filter
-   - **Status**: ✅ Implemented (UsersPage + `GET /api/users`, society-scoped list; **`accountBalance`** from ledger sums per row; **IBAN column hidden** when `sepaMode === disabled`; **requires** diruzaina or administratzailea; UI page is administratzailea-only)
+   - **Status**: ✅ Implemented (UsersPage + `GET /api/users`, society-scoped list; **`accountBalance`** from ledger sums per row; **IBAN column hidden** when `sepaMode === disabled`; **`Permission.USERS_LIST`** — admin, treasurer, cellarman; Users page UI **`Permission.USERS_MANAGE`**)
 2. **Create a new member** – add bazkide with contact/bank details
-   - **Status**: 🟡 Partial (real `POST /api/users`; create dialog currently persists email/username + default password; several displayed fields not yet wired to POST — see PRD)
+   - **Status**: ✅ Implemented (`POST /api/users` with **`accessRole`**, **`membershipType`**, phone, IBAN, linked member, subscription type; default password `demo`)
 3. **Create a companion linked to a member** – add laguna linked to bazkide
-   - **Status**: 🟡 Partial (schema + admin `PUT` support linking; create-dialog link control not wired to API)
+   - **Status**: ✅ Implemented (create dialog sets `membershipType: companion` + optional `linkedMemberId` / name)
 4. **Edit user details** – update contact/role information
-   - **Status**: ✅ Implemented (`PUT /api/users/:id`; subscription type; linked member read-only in UI)
+   - **Status**: ✅ Implemented (`PUT /api/users/:id`; **`accessRole`** + **`membershipType`**; subscription type; linked member read-only in UI)
 5. **Delete a user** – remove users
    - **Status**: ✅ Implemented (dependency checks)
 6. **Role-based access to user management** – restrict admin page access

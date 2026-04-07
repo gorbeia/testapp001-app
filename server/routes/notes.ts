@@ -14,7 +14,8 @@ import {
   type NoteMessage,
 } from "@shared/schema";
 import { eq, and, desc } from "drizzle-orm";
-import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
+import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
+import { Permission } from "@shared/permissions";
 
 // Helper function to convert a note into notifications for all users in a society
 async function convertNoteToNotifications(noteId: string, societyId: string) {
@@ -146,7 +147,7 @@ export function registerNoteRoutes(app: Express) {
     "/api/notes",
     sessionMiddleware,
     requireAuth,
-    requireAdmin,
+    requirePermission(Permission.NOTES_MANAGE),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const societyId = getUserSocietyId(req.user!);
@@ -198,7 +199,7 @@ export function registerNoteRoutes(app: Express) {
     "/api/notes/:id",
     sessionMiddleware,
     requireAuth,
-    requireAdmin,
+    requirePermission(Permission.NOTES_MANAGE),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
@@ -263,7 +264,7 @@ export function registerNoteRoutes(app: Express) {
     "/api/notes/:id",
     sessionMiddleware,
     requireAuth,
-    requireAdmin,
+    requirePermission(Permission.NOTES_MANAGE),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
@@ -290,7 +291,7 @@ export function registerNoteRoutes(app: Express) {
     "/api/notes/:id/notify",
     sessionMiddleware,
     requireAuth,
-    requireAdmin,
+    requirePermission(Permission.NOTES_MANAGE),
     async (req, res, next) => {
       try {
         const { id } = req.params;

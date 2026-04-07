@@ -12,6 +12,7 @@ import {
 } from "@shared/schema";
 import { eq, and, gte, desc, count, sql, like, or, between } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
+import { canModerateConsumptions } from "@shared/permissions";
 import { debtCalculationService } from "../cron-jobs";
 import { postConsumptionDebit } from "../lib/ledger/ledger-service";
 import {
@@ -141,10 +142,7 @@ export function registerConsumptionRoutes(app: Express) {
         const baseConditions = [eq(consumptions.societyId, societyId)];
 
         // Add user filter (only admins can filter by user)
-        if (
-          filterUserId &&
-          ["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "")
-        ) {
+        if (filterUserId && canModerateConsumptions(user.accessRole)) {
           baseConditions.push(eq(consumptions.userId, filterUserId as string));
         }
 
@@ -161,7 +159,7 @@ export function registerConsumptionRoutes(app: Express) {
         }
 
         let allConsumptions;
-        if (["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "")) {
+        if (canModerateConsumptions(user.accessRole)) {
           // Admin can see all consumptions with user names
           allConsumptions = await db
             .select({
@@ -363,10 +361,7 @@ export function registerConsumptionRoutes(app: Express) {
         const consumption = consumptionData[0];
 
         // Check permissions
-        if (
-          consumption.userId !== user.id &&
-          !["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "")
-        ) {
+        if (consumption.userId !== user.id && !canModerateConsumptions(user.accessRole)) {
           return res.status(403).json({ message: "Access denied" });
         }
 
@@ -413,7 +408,7 @@ export function registerConsumptionRoutes(app: Express) {
             and(
               eq(consumptions.id, id),
               eq(consumptions.societyId, societyId),
-              ["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "")
+              canModerateConsumptions(user.accessRole)
                 ? undefined
                 : eq(consumptions.userId, user.id)
             )
@@ -478,10 +473,7 @@ export function registerConsumptionRoutes(app: Express) {
           return res.status(404).json({ message: "Consumption not found" });
         }
 
-        if (
-          consumption[0].userId !== user.id &&
-          !["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "")
-        ) {
+        if (consumption[0].userId !== user.id && !canModerateConsumptions(user.accessRole)) {
           return res.status(403).json({ message: "Access denied" });
         }
 
@@ -635,10 +627,7 @@ export function registerConsumptionRoutes(app: Express) {
           return res.status(404).json({ message: "Consumption not found" });
         }
 
-        if (
-          consumption[0].userId !== user.id &&
-          !["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "")
-        ) {
+        if (consumption[0].userId !== user.id && !canModerateConsumptions(user.accessRole)) {
           return res.status(403).json({ message: "Access denied" });
         }
 

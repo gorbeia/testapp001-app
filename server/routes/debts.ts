@@ -1,34 +1,17 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express } from "express";
 import { db } from "../db";
-import { batchCreditStatusBodySchema, credits, users, type JwtSessionUser } from "@shared/schema";
+import { batchCreditStatusBodySchema, credits, users } from "@shared/schema";
+import { Permission } from "@shared/permissions";
 import { appendSepaCollectionMovementsForCredits } from "../lib/ledger/ledger-service";
 import { eq, and, sum, inArray, desc } from "drizzle-orm";
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
-import { sessionMiddleware, requireAuth } from "./middleware";
+import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
 
-// Helper function to check if user has treasurer access
-const requireTreasurerAccess = (user: JwtSessionUser): boolean => {
-  return user.function === "diruzaina" || user.function === "administratzailea";
-};
-
-const getUserSocietyId = (user: JwtSessionUser): string => {
+const getUserSocietyId = (user: { societyId: string }): string => {
   if (!user.societyId) {
     throw new Error("User societyId not found in JWT");
   }
   return user.societyId;
-};
-
-// Treasurer middleware
-const requireTreasurer = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    return res.status(401).json({ message: "Authentication required" });
-  }
-
-  if (!requireTreasurerAccess(req.user)) {
-    return res.status(403).json({ message: "Treasurer access required" });
-  }
-
-  next();
 };
 
 export function registerDebtRoutes(app: Express) {
@@ -64,99 +47,109 @@ export function registerDebtRoutes(app: Express) {
   });
 
   // Get all credits (treasurer only)
-  app.get("/api/credits", sessionMiddleware, requireTreasurer, async (req, res, next) => {
-    try {
-      const { month, status } = req.query;
-      const societyId = getUserSocietyId(req.user!);
+  app.get(
+    "/api/credits",
+    sessionMiddleware,
+    requirePermission(Permission.CREDITS_VIEW),
+    async (req, res, next) => {
+      try {
+        const { month, status } = req.query;
+        const societyId = getUserSocietyId(req.user!);
 
-      const conditions = [eq(credits.societyId, societyId)];
+        const conditions = [eq(credits.societyId, societyId)];
 
-      if (month) {
-        conditions.push(eq(credits.month, month as string));
-      }
+        if (month) {
+          conditions.push(eq(credits.month, month as string));
+        }
 
-      if (status) {
-        conditions.push(eq(credits.status, status as string));
-      }
+        if (status) {
+          conditions.push(eq(credits.status, status as string));
+        }
 
-      const allCredits = await db
-        .select()
-        .from(credits)
-        .where(and(...conditions))
-        .orderBy(credits.year, credits.monthNumber, credits.memberId);
+        const allCredits = await db
+          .select()
+          .from(credits)
+          .where(and(...conditions))
+          .orderBy(credits.year, credits.monthNumber, credits.memberId);
 
-      // Get member names and payment tracking info
-      const creditsWithNames = await Promise.all(
-        allCredits.map(async credit => {
-          const [member] = await db
-            .select()
-            .from(users)
-            .where(and(eq(users.id, credit.memberId), eq(users.societyId, societyId)));
-          let markedByUser = null;
-
-          if (credit.markedAsPaidBy) {
-            const [markedBy] = await db
+        // Get member names and payment tracking info
+        const creditsWithNames = await Promise.all(
+          allCredits.map(async credit => {
+            const [member] = await db
               .select()
               .from(users)
-              .where(and(eq(users.id, credit.markedAsPaidBy), eq(users.societyId, societyId)));
-            markedByUser = markedBy?.name || null;
-            if (!markedBy) {
-              console.log(
-                `User not found for markedAsPaidBy: ${credit.markedAsPaidBy} for credit ${credit.id}`
-              );
+              .where(and(eq(users.id, credit.memberId), eq(users.societyId, societyId)));
+            let markedByUser = null;
+
+            if (credit.markedAsPaidBy) {
+              const [markedBy] = await db
+                .select()
+                .from(users)
+                .where(and(eq(users.id, credit.markedAsPaidBy), eq(users.societyId, societyId)));
+              markedByUser = markedBy?.name || null;
+              if (!markedBy) {
+                console.log(
+                  `User not found for markedAsPaidBy: ${credit.markedAsPaidBy} for credit ${credit.id}`
+                );
+              }
+            } else if (credit.status === "paid") {
+              // Credit was marked as paid before tracking was implemented
+              markedByUser = "Ezezaguna (aurreko sistema)";
             }
-          } else if (credit.status === "paid") {
-            // Credit was marked as paid before tracking was implemented
-            markedByUser = "Ezezaguna (aurreko sistema)";
-          }
 
-          return {
-            ...credit,
-            memberName: member?.name || "Unknown",
-            markedByUser: markedByUser,
-            markedByUserName: markedByUser,
-          };
-        })
-      );
+            return {
+              ...credit,
+              memberName: member?.name || "Unknown",
+              markedByUser: markedByUser,
+              markedByUserName: markedByUser,
+            };
+          })
+        );
 
-      res.json(creditsWithNames);
-    } catch (error) {
-      next(error);
+        res.json(creditsWithNames);
+      } catch (error) {
+        next(error);
+      }
     }
-  });
+  );
 
   // Get credits sum by status (for dashboard stats)
-  app.get("/api/credits/sum", sessionMiddleware, requireTreasurer, async (req, res, next) => {
-    try {
-      const { status } = req.query;
-      const societyId = getUserSocietyId(req.user!);
+  app.get(
+    "/api/credits/sum",
+    sessionMiddleware,
+    requirePermission(Permission.CREDITS_VIEW),
+    async (req, res, next) => {
+      try {
+        const { status } = req.query;
+        const societyId = getUserSocietyId(req.user!);
 
-      const conditions = [eq(credits.societyId, societyId)];
+        const conditions = [eq(credits.societyId, societyId)];
 
-      if (status && ["pending", "paid", "partial"].includes(status as string)) {
-        conditions.push(eq(credits.status, status as string));
+        if (status && ["pending", "paid", "partial"].includes(status as string)) {
+          conditions.push(eq(credits.status, status as string));
+        }
+
+        const result = await db
+          .select({
+            sum: sum(credits.totalAmount),
+          })
+          .from(credits)
+          .where(and(...conditions));
+
+        const totalSum = result[0]?.sum || 0;
+
+        res.json({ sum: parseFloat(totalSum.toString()) || 0 });
+      } catch (error) {
+        next(error);
       }
-
-      const result = await db
-        .select({
-          sum: sum(credits.totalAmount),
-        })
-        .from(credits)
-        .where(and(...conditions));
-
-      const totalSum = result[0]?.sum || 0;
-
-      res.json({ sum: parseFloat(totalSum.toString()) || 0 });
-    } catch (error) {
-      next(error);
     }
-  });
+  );
 
   // Batch update credit status
   app.put(
     "/api/credits/batch-status",
     sessionMiddleware,
-    requireTreasurer,
+    requirePermission(Permission.CREDITS_MANAGE),
     async (req, res, next) => {
       try {
         const parsedBody = batchCreditStatusBodySchema.safeParse(req.body);

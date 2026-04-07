@@ -7,10 +7,11 @@ import {
   type JwtSessionUser,
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
+import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
+import { hasPermission, Permission } from "@shared/permissions";
 
 const canManageOwnSocietySettings = (user: JwtSessionUser): boolean =>
-  user.function === "administratzailea" || user.function === "diruzaina";
+  hasPermission(user.accessRole, Permission.SOCIETY_MANAGE);
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -22,16 +23,22 @@ const getUserSocietyId = (user: JwtSessionUser): string => {
 
 export function registerSocietyRoutes(app: Express) {
   // Society management routes
-  app.get("/api/societies", requireAuth, requireAdmin, async (req, res, next) => {
-    try {
-      const allSocieties = await db.select().from(societies).orderBy(societies.createdAt);
-      res.json(allSocieties);
-    } catch (error) {
-      next(error);
+  app.get(
+    "/api/societies",
+    sessionMiddleware,
+    requireAuth,
+    requirePermission(Permission.USERS_MANAGE),
+    async (req, res, next) => {
+      try {
+        const allSocieties = await db.select().from(societies).orderBy(societies.createdAt);
+        res.json(allSocieties);
+      } catch (error) {
+        next(error);
+      }
     }
-  });
+  );
 
-  app.get("/api/societies/active", requireAuth, async (req, res, next) => {
+  app.get("/api/societies/active", sessionMiddleware, requireAuth, async (req, res, next) => {
     try {
       const activeSociety = await db
         .select()
@@ -70,48 +77,59 @@ export function registerSocietyRoutes(app: Express) {
     }
   });
 
-  app.get("/api/societies/:id", requireAuth, requireAdmin, async (req, res, next) => {
-    try {
-      const { id } = req.params;
-      const society = await db.select().from(societies).where(eq(societies.id, id));
+  app.get(
+    "/api/societies/:id",
+    sessionMiddleware,
+    requireAuth,
+    requirePermission(Permission.USERS_MANAGE),
+    async (req, res, next) => {
+      try {
+        const { id } = req.params;
+        const society = await db.select().from(societies).where(eq(societies.id, id));
 
-      if (society.length === 0) {
-        return res.status(404).json({ message: "Society not found" });
+        if (society.length === 0) {
+          return res.status(404).json({ message: "Society not found" });
+        }
+
+        res.json(society[0]);
+      } catch (error) {
+        next(error);
       }
-
-      res.json(society[0]);
-    } catch (error) {
-      next(error);
     }
-  });
+  );
 
-  app.post("/api/societies", requireAdmin, async (req, res, next) => {
-    try {
-      const parsed = insertSocietySchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({
-          message: "Invalid society payload",
-          issues: parsed.error.flatten(),
-        });
+  app.post(
+    "/api/societies",
+    sessionMiddleware,
+    requirePermission(Permission.USERS_MANAGE),
+    async (req, res, next) => {
+      try {
+        const parsed = insertSocietySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid society payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
+        const societyData = {
+          ...parsed.data,
+          sepaMode: parsed.data.sepaMode ?? "monthly",
+        };
+
+        // If this is the first society, make it active
+        const existingSocieties = await db.select().from(societies);
+        if (existingSocieties.length === 0) {
+          societyData.isActive = true;
+        }
+
+        const [newSociety] = await db.insert(societies).values(societyData).returning();
+        res.status(201).json(newSociety);
+      } catch (error) {
+        next(error);
       }
-
-      const societyData = {
-        ...parsed.data,
-        sepaMode: parsed.data.sepaMode ?? "monthly",
-      };
-
-      // If this is the first society, make it active
-      const existingSocieties = await db.select().from(societies);
-      if (existingSocieties.length === 0) {
-        societyData.isActive = true;
-      }
-
-      const [newSociety] = await db.insert(societies).values(societyData).returning();
-      res.status(201).json(newSociety);
-    } catch (error) {
-      next(error);
     }
-  });
+  );
 
   app.put("/api/societies/:id", sessionMiddleware, requireAuth, async (req, res, next) => {
     try {
@@ -155,56 +173,66 @@ export function registerSocietyRoutes(app: Express) {
     }
   });
 
-  app.post("/api/societies/:id/toggle", requireAdmin, async (req, res, next) => {
-    try {
-      const { id } = req.params;
+  app.post(
+    "/api/societies/:id/toggle",
+    sessionMiddleware,
+    requirePermission(Permission.USERS_MANAGE),
+    async (req, res, next) => {
+      try {
+        const { id } = req.params;
 
-      // Get current society
-      const [currentSociety] = await db.select().from(societies).where(eq(societies.id, id));
-      if (!currentSociety) {
-        return res.status(404).json({ message: "Society not found" });
+        // Get current society
+        const [currentSociety] = await db.select().from(societies).where(eq(societies.id, id));
+        if (!currentSociety) {
+          return res.status(404).json({ message: "Society not found" });
+        }
+
+        // If activating this society, deactivate all others first
+        if (!currentSociety.isActive) {
+          await db.update(societies).set({ isActive: false }).where(eq(societies.isActive, true));
+        }
+
+        // Toggle the society
+        const [updatedSociety] = await db
+          .update(societies)
+          .set({
+            isActive: !currentSociety.isActive,
+            updatedAt: new Date(),
+          })
+          .where(eq(societies.id, id))
+          .returning();
+
+        res.json(updatedSociety);
+      } catch (error) {
+        next(error);
       }
-
-      // If activating this society, deactivate all others first
-      if (!currentSociety.isActive) {
-        await db.update(societies).set({ isActive: false }).where(eq(societies.isActive, true));
-      }
-
-      // Toggle the society
-      const [updatedSociety] = await db
-        .update(societies)
-        .set({
-          isActive: !currentSociety.isActive,
-          updatedAt: new Date(),
-        })
-        .where(eq(societies.id, id))
-        .returning();
-
-      res.json(updatedSociety);
-    } catch (error) {
-      next(error);
     }
-  });
+  );
 
-  app.delete("/api/societies/:id", requireAdmin, async (req, res, next) => {
-    try {
-      const { id } = req.params;
+  app.delete(
+    "/api/societies/:id",
+    sessionMiddleware,
+    requirePermission(Permission.USERS_MANAGE),
+    async (req, res, next) => {
+      try {
+        const { id } = req.params;
 
-      // Check if society exists
-      const [existingSociety] = await db.select().from(societies).where(eq(societies.id, id));
-      if (!existingSociety) {
-        return res.status(404).json({ message: "Society not found" });
+        // Check if society exists
+        const [existingSociety] = await db.select().from(societies).where(eq(societies.id, id));
+        if (!existingSociety) {
+          return res.status(404).json({ message: "Society not found" });
+        }
+
+        // Don't allow deletion of active society
+        if (existingSociety.isActive) {
+          return res.status(400).json({ message: "Cannot delete active society" });
+        }
+
+        await db.delete(societies).where(eq(societies.id, id));
+        res.status(204).send();
+      } catch (error) {
+        next(error);
       }
-
-      // Don't allow deletion of active society
-      if (existingSociety.isActive) {
-        return res.status(400).json({ message: "Cannot delete active society" });
-      }
-
-      await db.delete(societies).where(eq(societies.id, id));
-      res.status(204).send();
-    } catch (error) {
-      next(error);
     }
-  });
+  );
 }

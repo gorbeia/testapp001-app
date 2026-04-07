@@ -24,7 +24,8 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import MonthGrid from "@/components/MonthGrid";
 import { useLanguage } from "@/lib/i18n";
-import { useAuth, hasAdminAccess, hasTreasurerAccess } from "@/lib/auth";
+import { useAuth, userCan } from "@/lib/auth";
+import { Permission } from "@shared/permissions";
 import { authFetch } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Credit } from "@shared/schema";
@@ -104,8 +105,8 @@ export function CreditsPage() {
     initialValue: "all",
   });
 
-  const isAdmin = hasAdminAccess(user);
-  const canTreasurer = hasTreasurerAccess(user);
+  const isAdmin = userCan(user, Permission.USERS_MANAGE);
+  const canTreasurer = userCan(user, Permission.CREDITS_MANAGE);
 
   const queryClient = useQueryClient();
 

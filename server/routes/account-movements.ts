@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express, Request as ExpressRequest } from "express";
 import { db } from "../db";
 import {
   accountMovements,
@@ -8,10 +8,10 @@ import {
   credits,
   societies,
   users,
-  type JwtSessionUser,
 } from "@shared/schema";
+import { Permission } from "@shared/permissions";
 import { and, eq, sql, asc, inArray } from "drizzle-orm";
-import { sessionMiddleware, requireAuth } from "./middleware";
+import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
 import { pool } from "../db";
 import {
   getAllMemberBalances,
@@ -29,24 +29,14 @@ import {
 } from "../lib/ledger/ledger-service";
 import { notifyFinancialEvent } from "../lib/financial-notifications";
 
-const requireTreasurerAccess = (user: JwtSessionUser): boolean =>
-  user.function === "diruzaina" || user.function === "administratzailea";
-
-const requireTreasurer = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) return res.status(401).json({ message: "Authentication required" });
-  if (!requireTreasurerAccess(req.user))
-    return res.status(403).json({ message: "Treasurer access required" });
-  next();
-};
-
-const getUserSocietyId = (user: JwtSessionUser): string => {
+const getUserSocietyId = (user: { societyId: string }): string => {
   if (!user.societyId) throw new Error("User societyId not found in JWT");
   return user.societyId;
 };
 
 const MONTH_YM = /^\d{4}-\d{2}$/;
 
-function parseStatementFromTo(req: Request): { from: string; to: string } | null {
+function parseStatementFromTo(req: ExpressRequest): { from: string; to: string } | null {
   const from = String(req.query.from ?? "");
   const to = String(req.query.to ?? "");
   if (!MONTH_YM.test(from) || !MONTH_YM.test(to)) return null;
@@ -205,43 +195,50 @@ async function buildSocietyStatementJson(societyId: string, from: string, to: st
 }
 
 export function registerAccountMovementRoutes(app: Express) {
-  app.get("/api/account-movements", sessionMiddleware, requireTreasurer, async (req, res, next) => {
-    try {
-      const societyId = getUserSocietyId(req.user!);
-      const userId = req.query.userId as string | undefined;
-      const month = req.query.month as string | undefined;
-      const typeRaw = req.query.type as string | undefined;
-      const page = Math.max(1, parseInt(String(req.query.page || "1"), 10) || 1);
-      const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || "50"), 10) || 50));
-      const offset = (page - 1) * limit;
+  app.get(
+    "/api/account-movements",
+    sessionMiddleware,
+    requirePermission(Permission.MOVEMENTS_VIEW),
+    async (req, res, next) => {
+      try {
+        const societyId = getUserSocietyId(req.user!);
+        const userId = req.query.userId as string | undefined;
+        const month = req.query.month as string | undefined;
+        const typeRaw = req.query.type as string | undefined;
+        const page = Math.max(1, parseInt(String(req.query.page || "1"), 10) || 1);
+        const limit = Math.min(
+          100,
+          Math.max(1, parseInt(String(req.query.limit || "50"), 10) || 50)
+        );
+        const offset = (page - 1) * limit;
 
-      const params: unknown[] = [societyId];
-      let p = 2;
-      let userClause = "";
-      if (userId) {
-        userClause = ` AND user_id = $${p}`;
-        params.push(userId);
-        p++;
-      }
-      let monthClause = "";
-      if (month && /^\d{4}-\d{2}$/.test(month)) {
-        monthClause = ` AND to_char(created_at, 'YYYY-MM') = $${p}`;
-        params.push(month);
-        p++;
-      }
-      let typeClause = "";
-      if (typeRaw && typeRaw !== "all") {
-        const parsedType = accountMovementTypeSchema.safeParse(typeRaw);
-        if (parsedType.success) {
-          typeClause = ` AND type = $${p}`;
-          params.push(parsedType.data);
+        const params: unknown[] = [societyId];
+        let p = 2;
+        let userClause = "";
+        if (userId) {
+          userClause = ` AND user_id = $${p}`;
+          params.push(userId);
           p++;
         }
-      }
+        let monthClause = "";
+        if (month && /^\d{4}-\d{2}$/.test(month)) {
+          monthClause = ` AND to_char(created_at, 'YYYY-MM') = $${p}`;
+          params.push(month);
+          p++;
+        }
+        let typeClause = "";
+        if (typeRaw && typeRaw !== "all") {
+          const parsedType = accountMovementTypeSchema.safeParse(typeRaw);
+          if (parsedType.success) {
+            typeClause = ` AND type = $${p}`;
+            params.push(parsedType.data);
+            p++;
+          }
+        }
 
-      const filterParams = [...params];
+        const filterParams = [...params];
 
-      const countSql = `
+        const countSql = `
           WITH base AS (
             SELECT m.*, SUM(m.amount::numeric) OVER (
               PARTITION BY m.user_id ORDER BY m.created_at ASC, m.id ASC
@@ -251,23 +248,23 @@ export function registerAccountMovementRoutes(app: Express) {
           )
           SELECT COUNT(*)::int AS c FROM base WHERE 1=1 ${userClause} ${monthClause} ${typeClause}
         `;
-      const countRes = await pool.query(countSql, filterParams);
-      const total = countRes.rows[0]?.c ?? 0;
+        const countRes = await pool.query(countSql, filterParams);
+        const total = countRes.rows[0]?.c ?? 0;
 
-      const sumSql = `
+        const sumSql = `
           SELECT coalesce(sum(m.amount::numeric), 0) AS s
           FROM account_movements m
           WHERE m.society_id = $1${userClause} ${monthClause} ${typeClause}
         `;
-      const sumRes = await pool.query(sumSql, filterParams);
-      const sumAmount = parseFloat(String(sumRes.rows[0]?.s ?? 0));
+        const sumRes = await pool.query(sumSql, filterParams);
+        const sumAmount = parseFloat(String(sumRes.rows[0]?.s ?? 0));
 
-      let selectedMemberBalance: number | null = null;
-      if (userId) {
-        selectedMemberBalance = await getMemberAccountBalance(societyId, userId);
-      }
+        let selectedMemberBalance: number | null = null;
+        if (userId) {
+          selectedMemberBalance = await getMemberAccountBalance(societyId, userId);
+        }
 
-      const dataSql = `
+        const dataSql = `
           WITH base AS (
             SELECT m.*, SUM(m.amount::numeric) OVER (
               PARTITION BY m.user_id ORDER BY m.created_at ASC, m.id ASC
@@ -280,67 +277,68 @@ export function registerAccountMovementRoutes(app: Express) {
           ORDER BY created_at DESC, id DESC
           LIMIT $${p} OFFSET $${p + 1}
         `;
-      const dataParams = [...filterParams, limit, offset];
-      const dataRes = await pool.query(dataSql, dataParams);
-      type PgMov = {
-        id: string;
-        society_id: string;
-        user_id: string;
-        type: string;
-        amount: string;
-        description: string | null;
-        reference_id: string | null;
-        reference_type: string | null;
-        created_by: string | null;
-        created_at: Date;
-        running_balance: string;
-      };
+        const dataParams = [...filterParams, limit, offset];
+        const dataRes = await pool.query(dataSql, dataParams);
+        type PgMov = {
+          id: string;
+          society_id: string;
+          user_id: string;
+          type: string;
+          amount: string;
+          description: string | null;
+          reference_id: string | null;
+          reference_type: string | null;
+          created_by: string | null;
+          created_at: Date;
+          running_balance: string;
+        };
 
-      const withNames = await Promise.all(
-        (dataRes.rows as PgMov[]).map(async m => {
-          const [u] = await db
-            .select({ name: users.name, username: users.username })
-            .from(users)
-            .where(and(eq(users.id, m.user_id), eq(users.societyId, societyId)));
-          let createdByName: string | null = null;
-          if (m.created_by) {
-            const [cu] = await db
-              .select({ name: users.name })
+        const withNames = await Promise.all(
+          (dataRes.rows as PgMov[]).map(async m => {
+            const [u] = await db
+              .select({ name: users.name, username: users.username })
               .from(users)
-              .where(and(eq(users.id, m.created_by), eq(users.societyId, societyId)));
-            createdByName = cu?.name ?? null;
-          }
-          return {
-            id: m.id,
-            societyId: m.society_id,
-            userId: m.user_id,
-            type: m.type,
-            amount: m.amount,
-            description: m.description,
-            referenceId: m.reference_id,
-            referenceType: m.reference_type,
-            createdBy: m.created_by,
-            createdAt: m.created_at,
-            runningBalance: parseFloat(String(m.running_balance ?? 0)),
-            memberName: u?.name ?? null,
-            memberUsername: u?.username ?? null,
-            createdByName,
-          };
-        })
-      );
+              .where(and(eq(users.id, m.user_id), eq(users.societyId, societyId)));
+            let createdByName: string | null = null;
+            if (m.created_by) {
+              const [cu] = await db
+                .select({ name: users.name })
+                .from(users)
+                .where(and(eq(users.id, m.created_by), eq(users.societyId, societyId)));
+              createdByName = cu?.name ?? null;
+            }
+            return {
+              id: m.id,
+              societyId: m.society_id,
+              userId: m.user_id,
+              type: m.type,
+              amount: m.amount,
+              description: m.description,
+              referenceId: m.reference_id,
+              referenceType: m.reference_type,
+              createdBy: m.created_by,
+              createdAt: m.created_at,
+              runningBalance: parseFloat(String(m.running_balance ?? 0)),
+              memberName: u?.name ?? null,
+              memberUsername: u?.username ?? null,
+              createdByName,
+            };
+          })
+        );
 
-      res.json({
-        movements: withNames,
-        total,
-        sumAmount,
-        selectedMemberBalance,
-        page,
-        limit,
-      });
-    } catch (e) {
-      next(e);
+        res.json({
+          movements: withNames,
+          total,
+          sumAmount,
+          selectedMemberBalance,
+          page,
+          limit,
+        });
+      } catch (e) {
+        next(e);
+      }
     }
-  });
+  );
 
   app.get("/api/account-movements/me", sessionMiddleware, requireAuth, async (req, res, next) => {
     try {
@@ -413,7 +411,7 @@ export function registerAccountMovementRoutes(app: Express) {
   app.get(
     "/api/account-movements/statement",
     sessionMiddleware,
-    requireTreasurer,
+    requirePermission(Permission.MOVEMENTS_VIEW),
     async (req, res, next) => {
       try {
         const parsed = parseStatementFromTo(req);
@@ -439,7 +437,7 @@ export function registerAccountMovementRoutes(app: Express) {
   app.get(
     "/api/account-movements/society-statement",
     sessionMiddleware,
-    requireTreasurer,
+    requirePermission(Permission.MOVEMENTS_VIEW),
     async (req, res, next) => {
       try {
         const parsed = parseStatementFromTo(req);
@@ -458,7 +456,7 @@ export function registerAccountMovementRoutes(app: Express) {
   app.get(
     "/api/account-movements/balances",
     sessionMiddleware,
-    requireTreasurer,
+    requirePermission(Permission.MOVEMENTS_VIEW),
     async (req, res, next) => {
       try {
         const societyId = getUserSocietyId(req.user!);
@@ -483,7 +481,7 @@ export function registerAccountMovementRoutes(app: Express) {
   app.post(
     "/api/account-movements/refund",
     sessionMiddleware,
-    requireTreasurer,
+    requirePermission(Permission.MOVEMENTS_MANAGE),
     async (req, res, next) => {
       try {
         const parsed = accountMovementRefundBodySchema.safeParse(req.body);
@@ -535,7 +533,7 @@ export function registerAccountMovementRoutes(app: Express) {
   app.post(
     "/api/account-movements/sepa-bounce",
     sessionMiddleware,
-    requireTreasurer,
+    requirePermission(Permission.MOVEMENTS_MANAGE),
     async (req, res, next) => {
       try {
         const parsed = accountMovementSepaBounceBodySchema.safeParse(req.body);

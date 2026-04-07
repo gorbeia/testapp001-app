@@ -3,13 +3,14 @@ import { chromium, Browser, Page } from "playwright";
 import assert from "node:assert/strict";
 import { getBrowser, setBrowser, getPage, setPage, e2eUrl } from "./shared-state";
 
-setDefaultTimeout(10 * 1000);
+setDefaultTimeout(25 * 1000);
 
 let lastRandomUserEmail: string | undefined;
 
 const DEMO_EMAIL_BY_ROLE: Record<string, string> = {
   bazkide: "bazkidea@txokoa.eus",
   admin: "admin@txokoa.eus",
+  diruzaina: "diruzaina@txokoa.eus",
   sotolaria: "sotolaria@txokoa.eus",
   laguna: "laguna@txokoa.eus",
 };
@@ -22,12 +23,9 @@ export async function fillDemoLogin(page: Page, role: string): Promise<void> {
   await page.fill('[data-testid="input-email"]', email);
   await page.fill('[data-testid="input-password"]', "demo");
 
-  await Promise.all([
-    page.waitForLoadState("networkidle"),
-    page.click('[data-testid="button-login"]'),
-  ]);
-
-  await page.waitForSelector('[data-testid="input-email"]', { state: "detached", timeout: 10000 });
+  // Avoid waiting on `networkidle` here — long-polling/websockets can prevent it from ever firing.
+  await page.click('[data-testid="button-login"]');
+  await page.waitForSelector('[data-testid="input-email"]', { state: "detached", timeout: 20_000 });
 }
 
 BeforeAll(async function () {
@@ -67,8 +65,9 @@ When("I open the login page", async function () {
   }
 
   const pageInstance: Page = await browserInstance.newPage();
+  await pageInstance.setViewportSize({ width: 1280, height: 720 });
   setPage(pageInstance);
-  await pageInstance.goto(e2eUrl("/"), { waitUntil: "networkidle" });
+  await pageInstance.goto(e2eUrl("/"), { waitUntil: "domcontentloaded" });
 });
 
 /**
@@ -132,10 +131,7 @@ When("I try to log in as a bazkide user with a wrong password", async function (
   await page.fill('[data-testid="input-email"]', "bazkidea@txokoa.eus");
   await page.fill('[data-testid="input-password"]', "wrong-password");
 
-  await Promise.all([
-    page.waitForLoadState("networkidle"),
-    page.click('[data-testid="button-login"]'),
-  ]);
+  await page.click('[data-testid="button-login"]');
 });
 
 Then("I should see the dashboard instead of the login form", async function () {

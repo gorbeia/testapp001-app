@@ -19,6 +19,7 @@ import {
   assertPrepaymentDebitAllowed,
   prepaymentFloorHttpBody,
 } from "../lib/prepayment-ledger-floor";
+import { canModerateReservations, canViewReservationRegistry } from "@shared/permissions";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -148,8 +149,8 @@ export function registerReservationRoutes(app: Express) {
         const societyId = getUserSocietyId(user);
         const { limit, month, user: userId, page = 1, search, type, status } = req.query;
 
-        // Check if user is admin (administratzailea or diruzaina)
-        const isAdmin = user.function === "administratzailea" || user.function === "diruzaina";
+        // Full registry view (admin + treasurer; cellarman keeps member-style filters)
+        const isAdmin = canViewReservationRegistry(user.accessRole);
 
         // Parse pagination parameters
         const pageNum = parseInt(page as string, 10);
@@ -553,10 +554,7 @@ export function registerReservationRoutes(app: Express) {
         }
 
         // Check access permissions
-        if (
-          reservation[0].userId !== user.id &&
-          !["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "")
-        ) {
+        if (reservation[0].userId !== user.id && !canModerateReservations(user.accessRole)) {
           return res.status(403).json({ message: "Access denied" });
         }
 
@@ -710,13 +708,10 @@ export function registerReservationRoutes(app: Express) {
           return res.status(404).json({ message: "Reservation not found" });
         }
 
-        // Check access permissions - users can only cancel their own reservations, but admins can cancel any
-        if (user.function !== "administratzailea" && reservation[0].userId !== user.id) {
+        if (!canModerateReservations(user.accessRole) && reservation[0].userId !== user.id) {
           return res.status(403).json({ message: "You can only cancel your own reservations" });
         }
-        const isAdmin =
-          ["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "") ||
-          ["administratzailea", "diruzaina", "sotolaria"].includes(user.role || "");
+        const isAdmin = canModerateReservations(user.accessRole);
         // For admin cancelling someone else's reservation, a cancellation reason is required
         if (isAdmin && reservation[0].userId !== user.id) {
           if (!cancellationReason || !String(cancellationReason).trim()) {
@@ -786,10 +781,7 @@ export function registerReservationRoutes(app: Express) {
           return res.status(404).json({ message: "Reservation not found" });
         }
 
-        // Check access permissions
-        const isAdmin =
-          ["administratzailea", "diruzaina", "sotolaria"].includes(user.function || "") ||
-          ["administratzailea", "diruzaina", "sotolaria"].includes(user.role || "");
+        const isAdmin = canModerateReservations(user.accessRole);
 
         if (reservation[0].userId !== user.id && !isAdmin) {
           return res.status(403).json({ message: "Access denied" });

@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, ShoppingCart, CreditCard, Users, AlertCircle, Wallet } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
-import { useAuth, hasCellarmanAccess, hasAdminAccess } from "@/lib/auth";
+import { useAuth, userCan } from "@/lib/auth";
+import { Permission } from "@shared/permissions";
 import { DashboardStats } from "./api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
@@ -78,7 +79,7 @@ export function StatsCards({ stats, loading }: StatsCardsProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {hasAdminAccess(user)
+            {userCan(user, Permission.USERS_MANAGE)
               ? `${(stats.monthlyConsumptionsAmount || 0).toFixed(2)}€`
               : `${(stats.memberMonthlyConsumptionsAmount || 0).toFixed(2)}€`}
           </div>
@@ -113,7 +114,7 @@ export function StatsCards({ stats, loading }: StatsCardsProps) {
         </CardContent>
       </Card>
 
-      {hasCellarmanAccess(user) && (
+      {userCan(user, Permission.PRODUCTS_MANAGE) && (
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
             <CardTitle className="text-sm font-medium">{t("users")}</CardTitle>

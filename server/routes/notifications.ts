@@ -9,6 +9,7 @@ import {
 } from "@shared/schema";
 import { eq, and, desc, count, isNotNull } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
+import { hasPermission, Permission } from "@shared/permissions";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -290,11 +291,13 @@ export const createNotification = async (req: Request, res: Response, next: Next
       defaultLanguage: parsed.data.defaultLanguage ?? "eu",
     };
 
-    // Only admins can create notifications for other users
-    if (targetUserId && targetUserId !== user.id && user.role !== "admin") {
-      return res
-        .status(403)
-        .json({ message: "Only admins can create notifications for other users" });
+    // Only staff with broadcast permission can target other users
+    if (
+      targetUserId &&
+      targetUserId !== user.id &&
+      !hasPermission(user.accessRole, Permission.NOTIFICATIONS_BROADCAST)
+    ) {
+      return res.status(403).json({ message: "Insufficient permissions to notify other users" });
     }
 
     const notificationData = {

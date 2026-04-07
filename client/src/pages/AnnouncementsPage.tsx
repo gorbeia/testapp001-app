@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/lib/i18n";
-import { useAuth, canPostAnnouncements } from "@/lib/auth";
+import { useAuth, userCan } from "@/lib/auth";
+import { Permission } from "@shared/permissions";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
@@ -55,7 +56,7 @@ export function AnnouncementsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const canPost = canPostAnnouncements(user);
+  const canPost = userCan(user, Permission.NOTIFICATIONS_BROADCAST);
 
   // Fetch announcements from API
   useEffect(() => {
@@ -81,12 +82,18 @@ export function AnnouncementsPage() {
 
   const getRoleLabel = (role: string) => {
     switch (role) {
+      case "admin":
       case "administratzailea":
         return t("administrator");
+      case "treasurer":
       case "diruzaina":
         return t("treasurer");
+      case "cellarman":
       case "sotolaria":
         return t("cellarman");
+      case "member":
+      case "arrunta":
+        return t("regular");
       default:
         return t("member");
     }

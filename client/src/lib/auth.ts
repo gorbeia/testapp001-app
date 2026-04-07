@@ -1,14 +1,22 @@
 import { createContext, useContext } from "react";
+import {
+  hasPermission,
+  type AccessRole,
+  type AppPermission,
+  type MembershipType,
+} from "@shared/permissions";
 
-export type UserRole = "bazkidea" | "laguna";
-export type UserFunction = "administratzailea" | "diruzaina" | "sotolaria" | "arrunta";
+export type { AccessRole, MembershipType, AppPermission };
+
+/** Alias for permission string literals (see `Permission` constants in `@shared/permissions`). */
+export type Permission = AppPermission;
 
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: UserRole;
-  function: UserFunction;
+  accessRole: AccessRole;
+  membershipType: MembershipType;
   linkedMemberId?: string;
   linkedMemberName?: string;
   iban?: string;
@@ -34,22 +42,8 @@ export const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-export const hasAdminAccess = (user: User | null): boolean => {
-  return user?.function === "administratzailea";
-};
-
-export const hasTreasurerAccess = (user: User | null): boolean => {
-  return user?.function === "diruzaina" || user?.function === "administratzailea";
-};
-
-export const hasCellarmanAccess = (user: User | null): boolean => {
-  return user?.function === "sotolaria" || user?.function === "administratzailea";
-};
-
-export const canPostAnnouncements = (user: User | null): boolean => {
-  return (
-    user?.function === "administratzailea" ||
-    user?.function === "diruzaina" ||
-    user?.function === "sotolaria"
-  );
+/** True if the user has the given permission (via access role). */
+export const userCan = (user: User | null, permission: AppPermission): boolean => {
+  if (!user) return false;
+  return hasPermission(user.accessRole, permission);
 };

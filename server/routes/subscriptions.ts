@@ -7,7 +7,8 @@ import {
   type JwtSessionUser,
 } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
-import { requireAuth, requireAdmin } from "./middleware";
+import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
+import { Permission } from "@shared/permissions";
 
 // Helper function to get society ID from user
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -74,7 +75,8 @@ export function registerSubscriptionRoutes(app: Express) {
   // Create a new subscription type (admin only)
   app.post(
     "/api/subscription-types",
-    requireAdmin,
+    sessionMiddleware,
+    requirePermission(Permission.SUBSCRIPTIONS_MANAGE),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const user = req.user!;
@@ -116,7 +118,8 @@ export function registerSubscriptionRoutes(app: Express) {
   // Update a subscription type (admin only)
   app.put(
     "/api/subscription-types/:id",
-    requireAdmin,
+    sessionMiddleware,
+    requirePermission(Permission.SUBSCRIPTIONS_MANAGE),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
@@ -186,7 +189,8 @@ export function registerSubscriptionRoutes(app: Express) {
   // Delete a subscription type (admin only)
   app.delete(
     "/api/subscription-types/:id",
-    requireAdmin,
+    sessionMiddleware,
+    requirePermission(Permission.SUBSCRIPTIONS_MANAGE),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;

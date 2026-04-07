@@ -1,67 +1,41 @@
 import { ReactNode } from "react";
-import { useAuth, hasAdminAccess, hasCellarmanAccess, hasTreasurerAccess } from "@/lib/auth";
+import { useAuth, userCan } from "@/lib/auth";
 import { useLocation } from "wouter";
 import { useEffect } from "react";
 import { AccessDenied } from "@/components/AccessDenied";
+import type { AppPermission } from "@shared/permissions";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requiredAccess?: "admin" | "cellarman" | "treasurer";
+  /** User must have at least one of these permissions (OR). */
+  requires?: AppPermission | AppPermission[];
 }
 
-export function ProtectedRoute({ children, requiredAccess }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, requires }: ProtectedRouteProps) {
   const { user, isAuthenticated } = useAuth();
   const [, setLocation] = useLocation();
+
+  const requiredList: AppPermission[] = !requires
+    ? []
+    : Array.isArray(requires)
+      ? requires
+      : [requires];
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
       setLocation("/");
-      return;
     }
+  }, [isAuthenticated, user, setLocation]);
 
-    let hasAccess = false;
-    switch (requiredAccess) {
-      case "admin":
-        hasAccess = hasAdminAccess(user);
-        break;
-      case "cellarman":
-        hasAccess = hasCellarmanAccess(user);
-        break;
-      case "treasurer":
-        hasAccess = hasTreasurerAccess(user);
-        break;
-      default:
-        hasAccess = true;
-    }
-
-    if (!hasAccess) {
-      // Don't redirect, just show access denied
-      // This prevents hanging in E2E tests
-    }
-  }, [isAuthenticated, user, requiredAccess, setLocation]);
-
-  // Don't render children while checking access
   if (!isAuthenticated || !user) {
     return null;
   }
 
-  let hasAccess = false;
-  switch (requiredAccess) {
-    case "admin":
-      hasAccess = hasAdminAccess(user);
-      break;
-    case "cellarman":
-      hasAccess = hasCellarmanAccess(user);
-      break;
-    case "treasurer":
-      hasAccess = hasTreasurerAccess(user);
-      break;
-    default:
-      hasAccess = true;
-  }
-
-  if (!hasAccess) {
-    return <AccessDenied />;
+  if (requiredList.length > 0) {
+    const hasAccess = requiredList.some(p => userCan(user, p));
+    if (!hasAccess) {
+      return <AccessDenied />;
+    }
   }
 
   return <>{children}</>;

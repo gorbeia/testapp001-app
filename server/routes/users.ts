@@ -16,7 +16,8 @@ import {
 } from "@shared/schema";
 import { eq, and, count, sql } from "drizzle-orm";
 import bcrypt from "bcrypt";
-import { sessionMiddleware, requireAuth, requireAdmin, requireTreasurer } from "./middleware";
+import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
+import { Permission } from "@shared/permissions";
 import { generateToken, setAuthCookie } from "./index";
 import { toPublicUser } from "../lib/public-user";
 
@@ -38,11 +39,11 @@ const validateUserId = (req: Request, res: Response, next: NextFunction) => {
 };
 
 export function registerUserRoutes(app: Express) {
-  // Users: list all users from the database (admin, diruzaina, sotolaria only)
+  // Users: list all users (staff with users.list)
   app.get(
     "/api/users",
     sessionMiddleware,
-    requireTreasurer,
+    requirePermission(Permission.USERS_LIST),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const societyId = getUserSocietyId(req.user!);
@@ -60,8 +61,8 @@ export function registerUserRoutes(app: Express) {
             id: users.id,
             username: users.username,
             name: users.name,
-            role: users.role,
-            function: users.function,
+            accessRole: users.accessRole,
+            membershipType: users.membershipType,
             phone: users.phone,
             iban: users.iban,
             linkedMemberId: users.linkedMemberId,
@@ -138,50 +139,61 @@ export function registerUserRoutes(app: Express) {
     }
   );
 
-  // Users: create a new user in the database (admin only)
-  app.post("/api/users", requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const parsed = apiCreateUserBodySchema.safeParse(req.body);
-      if (!parsed.success) {
-        return res.status(400).json({
-          message: "Invalid user payload",
-          issues: parsed.error.flatten(),
-        });
-      }
+  // Users: create a new user in the database (users.manage)
+  app.post(
+    "/api/users",
+    sessionMiddleware,
+    requirePermission(Permission.USERS_MANAGE),
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const parsed = apiCreateUserBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid user payload",
+            issues: parsed.error.flatten(),
+          });
+        }
 
-      const {
-        username,
-        password,
-        name,
-        phone,
-        iban,
-        role,
-        function: userFunction,
-        subscriptionTypeId,
-      } = parsed.data;
-
-      const hashedPassword = await bcrypt.hash(password, 10);
-      const societyId = getUserSocietyId(req.user!);
-      const [created] = await db
-        .insert(users)
-        .values({
+        const {
           username,
-          password: hashedPassword,
-          societyId,
-          name: name || null,
-          phone: phone || null,
-          iban: iban || null,
-          role: role || null,
-          function: userFunction || null,
-          subscriptionTypeId: subscriptionTypeId || null,
-        })
-        .returning();
+          password,
+          name,
+          phone,
+          iban,
+          accessRole: newAccessRole,
+          membershipType: newMembershipType,
+          linkedMemberId,
+          linkedMemberName,
+          subscriptionTypeId,
+          isActive,
+        } = parsed.data;
 
-      return res.status(201).json(created);
-    } catch (err) {
-      next(err);
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const societyId = getUserSocietyId(req.user!);
+        const [created] = await db
+          .insert(users)
+          .values({
+            username,
+            password: hashedPassword,
+            societyId,
+            name: name || null,
+            phone: phone ?? null,
+            iban: iban ?? null,
+            accessRole: newAccessRole ?? "member",
+            membershipType: newMembershipType ?? "full_member",
+            linkedMemberId: linkedMemberId ?? null,
+            linkedMemberName: linkedMemberName ?? null,
+            subscriptionTypeId: subscriptionTypeId ?? null,
+            isActive: isActive ?? true,
+          })
+          .returning();
+
+        return res.status(201).json(created);
+      } catch (err) {
+        next(err);
+      }
     }
-  });
+  );
 
   // Users: update own profile (authenticated user only)
   app.put(
@@ -291,7 +303,8 @@ export function registerUserRoutes(app: Express) {
   // Users: update an existing user (admin only)
   app.put(
     "/api/users/:id",
-    requireAdmin,
+    sessionMiddleware,
+    requirePermission(Permission.USERS_MANAGE),
     validateUserId,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
@@ -307,8 +320,8 @@ export function registerUserRoutes(app: Express) {
 
         const {
           name,
-          role,
-          function: userFunction,
+          membershipType: bodyMembershipType,
+          accessRole: bodyAccessRole,
           phone,
           iban,
           linkedMemberId,
@@ -318,8 +331,9 @@ export function registerUserRoutes(app: Express) {
 
         const updateData: Partial<typeof users.$inferInsert> = {};
         if (typeof name !== "undefined") updateData.name = name;
-        if (typeof role !== "undefined") updateData.role = role;
-        if (typeof userFunction !== "undefined") updateData.function = userFunction;
+        if (typeof bodyMembershipType !== "undefined")
+          updateData.membershipType = bodyMembershipType;
+        if (typeof bodyAccessRole !== "undefined") updateData.accessRole = bodyAccessRole;
         if (typeof phone !== "undefined") updateData.phone = phone;
         if (typeof iban !== "undefined") updateData.iban = iban;
         if (typeof linkedMemberId !== "undefined") updateData.linkedMemberId = linkedMemberId;
@@ -346,7 +360,8 @@ export function registerUserRoutes(app: Express) {
   // Users: delete a user by id (admin only)
   app.delete(
     "/api/users/:id",
-    requireAdmin,
+    sessionMiddleware,
+    requirePermission(Permission.USERS_MANAGE),
     validateUserId,
     async (req: Request, res: Response, next: NextFunction) => {
       try {
@@ -409,7 +424,8 @@ export function registerUserRoutes(app: Express) {
   // Users: toggle user active status (admin only)
   app.patch(
     "/api/users/:id/toggle-active",
-    requireAdmin,
+    sessionMiddleware,
+    requirePermission(Permission.USERS_MANAGE),
     validateUserId,
     async (req: Request, res: Response, next: NextFunction) => {
       try {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ErrorBoundary } from "react-error-boundary";
-import { useLanguage } from "@/lib/i18n";
+import { useLanguage, type TranslationKey } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -42,6 +42,12 @@ import { Search, Plus, Edit, Trash2, Link2, UserX, UserCheck } from "lucide-reac
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
 import type { SubscriptionType as SubscriptionTypeEntity } from "@shared/schema";
+import {
+  ROLE_PERMISSIONS,
+  type AccessRole,
+  type AppPermission,
+  type MembershipType,
+} from "@shared/permissions";
 
 function balanceAmountClass(b: number) {
   if (b < 0) return "text-destructive";
@@ -54,8 +60,8 @@ type UsersApiRow = {
   id: string;
   username: string;
   name: string | null;
-  role: string | null;
-  function: string | null;
+  accessRole: AccessRole;
+  membershipType: MembershipType;
   phone: string | null;
   iban: string | null;
   linkedMemberId: string | null;
@@ -87,8 +93,8 @@ type UsersPageUser = {
   id: string;
   name: string;
   email: string;
-  role: string;
-  function: string;
+  accessRole: AccessRole;
+  membershipType: MembershipType;
   phone: string;
   iban: string | null;
   accountBalance: number;
@@ -108,7 +114,7 @@ export function UsersPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [membershipTypeFilter, setMembershipTypeFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("active");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -168,8 +174,8 @@ export function UsersPage() {
     id: dbUser.id,
     name: dbUser.name ?? dbUser.username,
     email: dbUser.username,
-    role: dbUser.role ?? "bazkidea",
-    function: dbUser.function ?? "arrunta",
+    accessRole: dbUser.accessRole ?? "member",
+    membershipType: dbUser.membershipType ?? "full_member",
     phone: dbUser.phone ?? "",
     iban: dbUser.iban ?? null,
     accountBalance: typeof dbUser.accountBalance === "number" ? dbUser.accountBalance : 0,
@@ -184,11 +190,16 @@ export function UsersPage() {
   const editNameRef = useRef<HTMLInputElement | null>(null);
   const editPhoneRef = useRef<HTMLInputElement | null>(null);
   const editIbanRef = useRef<HTMLInputElement | null>(null);
-  const [editRole, setEditRole] = useState<string>("");
-  const [editFunction, setEditFunction] = useState<string>("");
+  const [editMembershipType, setEditMembershipType] = useState<MembershipType>("full_member");
+  const [editAccessRole, setEditAccessRole] = useState<AccessRole>("member");
   const [editSubscriptionTypeId, setEditSubscriptionTypeId] = useState<string>("none");
 
   const [createSubscriptionTypeId, setCreateSubscriptionTypeId] = useState<string>("none");
+  const [createMembershipType, setCreateMembershipType] = useState<MembershipType>("full_member");
+  const [createAccessRole, setCreateAccessRole] = useState<AccessRole>("member");
+  const [createLinkedMemberId, setCreateLinkedMemberId] = useState<string>("none");
+  const createPhoneRef = useRef<HTMLInputElement | null>(null);
+  const createIbanRef = useRef<HTMLInputElement | null>(null);
 
   if (isInitialLoad && isLoading) {
     return (
@@ -208,35 +219,58 @@ export function UsersPage() {
     const matchesSearch =
       u.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === "all" || u.role === roleFilter;
+    const matchesMembership =
+      membershipTypeFilter === "all" || u.membershipType === membershipTypeFilter;
     const matchesStatus =
       statusFilter === "all" ||
       (statusFilter === "active" && u.isActive) ||
       (statusFilter === "inactive" && !u.isActive);
-    return matchesSearch && matchesRole && matchesStatus;
+    return matchesSearch && matchesMembership && matchesStatus;
   });
 
-  const getRoleLabel = (role: string) => {
-    return role === "bazkidea" ? t("member") : t("companion");
+  const getMembershipTypeLabel = (mt: MembershipType) => {
+    return mt === "full_member" ? t("member") : t("companion");
   };
 
-  const getFunctionLabel = (func: string) => {
-    switch (func) {
-      case "administratzailea":
+  const getAccessRoleLabel = (ar: AccessRole) => {
+    switch (ar) {
+      case "admin":
         return t("administrator");
-      case "diruzaina":
+      case "treasurer":
         return t("treasurer");
-      case "sotolaria":
+      case "cellarman":
         return t("cellarman");
       default:
         return t("regular");
     }
   };
 
+  const permissionTranslationKeys: Record<AppPermission, string> = {
+    "users.list": "permUsersList",
+    "users.manage": "permUsersManage",
+    "products.manage": "permProductsManage",
+    "categories.manage": "permCategoriesManage",
+    "tables.manage": "permTablesManage",
+    "subscriptions.manage": "permSubscriptionsManage",
+    "reservations.registry": "permReservationsRegistry",
+    "reservations.moderate": "permReservationsModerate",
+    "reservations.admin": "permReservationsAdmin",
+    "consumptions.admin": "permConsumptionsAdmin",
+    "credits.view": "permCreditsView",
+    "credits.manage": "permCreditsManage",
+    "sepa.export": "permSepaExport",
+    "movements.view": "permMovementsView",
+    "movements.manage": "permMovementsManage",
+    "bank-transfers.manage": "permBankTransfersManage",
+    "notes.manage": "permNotesManage",
+    "society.manage": "permSocietyManage",
+    "notifications.broadcast": "permNotificationsBroadcast",
+  };
+
   const handleOpenEditUser = (user: UsersPageUser) => {
     setEditingUser(user);
-    setEditRole(user.role);
-    setEditFunction(user.function);
+    setEditMembershipType(user.membershipType);
+    setEditAccessRole(user.accessRole);
     setEditSubscriptionTypeId(user.subscriptionTypeId || "none");
     setIsEditDialogOpen(true);
   };
@@ -248,8 +282,8 @@ export function UsersPage() {
       name: editNameRef.current?.value.trim() || editingUser.name,
       phone: editPhoneRef.current?.value.trim() || editingUser.phone,
       iban: editIbanRef.current?.value.trim() ?? editingUser.iban ?? null,
-      role: editRole,
-      function: editFunction,
+      membershipType: editMembershipType,
+      accessRole: editAccessRole,
       subscriptionTypeId: editSubscriptionTypeId === "none" ? null : editSubscriptionTypeId || null,
     };
 
@@ -268,8 +302,8 @@ export function UsersPage() {
         id: string;
         username: string;
         name: string | null;
-        role: string | null;
-        function: string | null;
+        accessRole: AccessRole;
+        membershipType: MembershipType;
         phone: string | null;
         iban: string | null;
         linkedMemberName: string | null;
@@ -280,8 +314,8 @@ export function UsersPage() {
         id: updated.id,
         name: updated.name ?? updated.username,
         email: updated.username,
-        role: updated.role ?? editingUser.role,
-        function: updated.function ?? editingUser.function,
+        accessRole: updated.accessRole ?? editingUser.accessRole,
+        membershipType: updated.membershipType ?? editingUser.membershipType,
         phone: updated.phone ?? "",
         iban: updated.iban ?? null,
         accountBalance: editingUser.accountBalance,
@@ -324,8 +358,8 @@ export function UsersPage() {
         id: string;
         username: string;
         name: string | null;
-        role: string | null;
-        function: string | null;
+        accessRole: AccessRole;
+        membershipType: MembershipType;
         phone: string | null;
         iban: string | null;
         linkedMemberName: string | null;
@@ -336,8 +370,8 @@ export function UsersPage() {
         id: updated.id,
         name: updated.name ?? updated.username,
         email: updated.username,
-        role: updated.role ?? user.role,
-        function: updated.function ?? user.function,
+        accessRole: updated.accessRole ?? user.accessRole,
+        membershipType: updated.membershipType ?? user.membershipType,
         phone: updated.phone ?? "",
         iban: updated.iban ?? null,
         accountBalance: user.accountBalance,
@@ -428,6 +462,18 @@ export function UsersPage() {
     }
 
     try {
+      const phone = createPhoneRef.current?.value.trim() ?? "";
+      const ibanRaw = createIbanRef.current?.value.trim();
+      const linkedMember =
+        createLinkedMemberId === "none"
+          ? { linkedMemberId: null as string | null, linkedMemberName: null as string | null }
+          : (() => {
+              const m = users.find(u => u.id === createLinkedMemberId);
+              return {
+                linkedMemberId: createLinkedMemberId,
+                linkedMemberName: m?.name ?? null,
+              };
+            })();
       const response = await authFetch("/api/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -435,6 +481,11 @@ export function UsersPage() {
           username: email,
           password: "demo",
           name: name || undefined,
+          phone: phone || null,
+          iban: ibanRaw ? ibanRaw : null,
+          membershipType: createMembershipType,
+          accessRole: createAccessRole,
+          ...linkedMember,
           subscriptionTypeId:
             createSubscriptionTypeId === "none" ? null : createSubscriptionTypeId || null,
         }),
@@ -511,17 +562,24 @@ export function UsersPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>{t("phone")}</Label>
-                    <Input placeholder="+34..." data-testid="input-user-phone" />
+                    <Input
+                      placeholder="+34..."
+                      data-testid="input-user-phone"
+                      ref={createPhoneRef}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label>{t("role")}</Label>
-                    <Select>
+                    <Label>{t("membershipType")}</Label>
+                    <Select
+                      value={createMembershipType}
+                      onValueChange={v => setCreateMembershipType(v as MembershipType)}
+                    >
                       <SelectTrigger data-testid="select-user-role">
-                        <SelectValue placeholder={t("role")} />
+                        <SelectValue placeholder={t("membershipType")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="bazkidea">{t("member")}</SelectItem>
-                        <SelectItem value="laguna">{t("companion")}</SelectItem>
+                        <SelectItem value="full_member">{t("member")}</SelectItem>
+                        <SelectItem value="companion">{t("companion")}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -529,29 +587,39 @@ export function UsersPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>{t("function")}</Label>
-                    <Select>
+                    <Label>{t("accessRole")}</Label>
+                    <Select
+                      value={createAccessRole}
+                      onValueChange={v => setCreateAccessRole(v as AccessRole)}
+                    >
                       <SelectTrigger data-testid="select-user-function">
-                        <SelectValue placeholder={t("function")} />
+                        <SelectValue placeholder={t("accessRole")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="arrunta">{t("regular")}</SelectItem>
-                        <SelectItem value="administratzailea">{t("administrator")}</SelectItem>
-                        <SelectItem value="diruzaina">{t("treasurer")}</SelectItem>
-                        <SelectItem value="sotolaria">{t("cellarman")}</SelectItem>
+                        <SelectItem value="member">{t("regular")}</SelectItem>
+                        <SelectItem value="admin">{t("administrator")}</SelectItem>
+                        <SelectItem value="treasurer">{t("treasurer")}</SelectItem>
+                        <SelectItem value="cellarman">{t("cellarman")}</SelectItem>
                       </SelectContent>
                     </Select>
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {ROLE_PERMISSIONS[createAccessRole].map(p => (
+                        <Badge key={p} variant="secondary" className="text-[10px] font-normal">
+                          {t(permissionTranslationKeys[p] as TranslationKey)}
+                        </Badge>
+                      ))}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label>{t("linkedMember")}</Label>
-                    <Select>
+                    <Select value={createLinkedMemberId} onValueChange={setCreateLinkedMemberId}>
                       <SelectTrigger data-testid="select-linked-member">
                         <SelectValue placeholder={t("selectPlaceholder")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">{t("noOne")}</SelectItem>
                         {users
-                          .filter(u => u.role === "bazkidea")
+                          .filter(u => u.membershipType === "full_member")
                           .map(u => (
                             <SelectItem key={u.id} value={u.id}>
                               {u.name}
@@ -567,6 +635,7 @@ export function UsersPage() {
                   <Input
                     placeholder="ES00 0000 0000 0000 0000 0000"
                     data-testid="input-user-iban"
+                    ref={createIbanRef}
                   />
                 </div>
 
@@ -627,14 +696,17 @@ export function UsersPage() {
                       <Input defaultValue={editingUser.phone} ref={editPhoneRef} />
                     </div>
                     <div className="space-y-2">
-                      <Label>{t("role")}</Label>
-                      <Select value={editRole} onValueChange={setEditRole}>
+                      <Label>{t("membershipType")}</Label>
+                      <Select
+                        value={editMembershipType}
+                        onValueChange={v => setEditMembershipType(v as MembershipType)}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="bazkidea">{t("member")}</SelectItem>
-                          <SelectItem value="laguna">{t("companion")}</SelectItem>
+                          <SelectItem value="full_member">{t("member")}</SelectItem>
+                          <SelectItem value="companion">{t("companion")}</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -642,18 +714,31 @@ export function UsersPage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>{t("function")}</Label>
-                      <Select value={editFunction} onValueChange={setEditFunction}>
+                      <Label>{t("accessRole")}</Label>
+                      <Select
+                        value={editAccessRole}
+                        onValueChange={v => setEditAccessRole(v as AccessRole)}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="arrunta">{t("regular")}</SelectItem>
-                          <SelectItem value="administratzailea">{t("administrator")}</SelectItem>
-                          <SelectItem value="diruzaina">{t("treasurer")}</SelectItem>
-                          <SelectItem value="sotolaria">{t("cellarman")}</SelectItem>
+                          <SelectItem value="member">{t("regular")}</SelectItem>
+                          <SelectItem value="admin">{t("administrator")}</SelectItem>
+                          <SelectItem value="treasurer">{t("treasurer")}</SelectItem>
+                          <SelectItem value="cellarman">{t("cellarman")}</SelectItem>
                         </SelectContent>
                       </Select>
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        <p className="text-xs text-muted-foreground w-full">
+                          {t("effectivePermissions")}
+                        </p>
+                        {ROLE_PERMISSIONS[editAccessRole].map(p => (
+                          <Badge key={p} variant="secondary" className="text-[10px] font-normal">
+                            {t(permissionTranslationKeys[p] as TranslationKey)}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label>{t("linkedMember")}</Label>
@@ -716,14 +801,14 @@ export function UsersPage() {
               data-testid="input-search-users"
             />
           </div>
-          <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <Select value={membershipTypeFilter} onValueChange={setMembershipTypeFilter}>
             <SelectTrigger className="w-full sm:w-48" data-testid="select-filter-role">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t("allTime")}</SelectItem>
-              <SelectItem value="bazkidea">{t("member")}</SelectItem>
-              <SelectItem value="laguna">{t("companion")}</SelectItem>
+              <SelectItem value="all">{t("all")}</SelectItem>
+              <SelectItem value="full_member">{t("member")}</SelectItem>
+              <SelectItem value="companion">{t("companion")}</SelectItem>
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -744,8 +829,8 @@ export function UsersPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("name")}</TableHead>
-                  <TableHead>{t("role")}</TableHead>
-                  <TableHead>{t("function")}</TableHead>
+                  <TableHead>{t("membershipType")}</TableHead>
+                  <TableHead>{t("accessRole")}</TableHead>
                   <TableHead>{t("subscription")}</TableHead>
                   <TableHead>{t("status")}</TableHead>
                   <TableHead>{t("phone")}</TableHead>
@@ -791,12 +876,14 @@ export function UsersPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={user.role === "bazkidea" ? "default" : "secondary"}>
-                          {getRoleLabel(user.role)}
+                        <Badge
+                          variant={user.membershipType === "full_member" ? "default" : "secondary"}
+                        >
+                          {getMembershipTypeLabel(user.membershipType)}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline">{getFunctionLabel(user.function)}</Badge>
+                        <Badge variant="outline">{getAccessRoleLabel(user.accessRole)}</Badge>
                       </TableCell>
                       <TableCell>
                         {user.subscriptionType ? (

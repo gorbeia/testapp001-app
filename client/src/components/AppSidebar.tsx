@@ -35,7 +35,8 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/lib/i18n";
-import { useAuth, hasAdminAccess, hasTreasurerAccess, hasCellarmanAccess } from "@/lib/auth";
+import { useAuth, userCan } from "@/lib/auth";
+import { Permission } from "@shared/permissions";
 import { authFetch } from "@/lib/api";
 import { societyAllowsBankTransferPrepayment } from "@shared/schema";
 
@@ -84,12 +85,12 @@ export function AppSidebar() {
 
   const getRoleBadgeVariant = () => {
     if (!user) return "secondary";
-    switch (user.function) {
-      case "administratzailea":
+    switch (user.accessRole) {
+      case "admin":
         return "default";
-      case "diruzaina":
+      case "treasurer":
         return "default";
-      case "sotolaria":
+      case "cellarman":
         return "default";
       default:
         return "secondary";
@@ -98,13 +99,13 @@ export function AppSidebar() {
 
   const getRoleLabel = () => {
     if (!user) return "";
-    if (user.role === "laguna") return t("companion");
-    switch (user.function) {
-      case "administratzailea":
+    if (user.membershipType === "companion") return t("companion");
+    switch (user.accessRole) {
+      case "admin":
         return t("administrator");
-      case "diruzaina":
+      case "treasurer":
         return t("treasurer");
-      case "sotolaria":
+      case "cellarman":
         return t("cellarman");
       default:
         return t("member");
@@ -121,43 +122,49 @@ export function AppSidebar() {
       ? [{ title: t("credits"), url: "/nire-zorrak", icon: CreditCard } as NavItem]
       : []),
     { title: t("myMovements"), url: "/nire-mugimenduak", icon: List },
-    { title: t("announcements"), url: "/oharrak", icon: Megaphone },
+    ...(userCan(user, Permission.NOTES_MANAGE)
+      ? [{ title: t("announcements"), url: "/oharrak", icon: Megaphone } as NavItem]
+      : []),
   ];
 
   const adminMenuItems: NavItem[] = [
-    ...(hasAdminAccess(user) ? [{ title: t("users"), url: "/erabiltzaileak", icon: Users }] : []),
-    ...(hasAdminAccess(user)
+    ...(userCan(user, Permission.USERS_MANAGE)
+      ? [{ title: t("users"), url: "/erabiltzaileak", icon: Users }]
+      : []),
+    ...(userCan(user, Permission.RESERVATIONS_REGISTRY)
       ? [{ title: t("reservationsManagement"), url: "/admin-erreserbak", icon: Calendar }]
       : []),
-    ...(hasAdminAccess(user)
+    ...(userCan(user, Permission.CONSUMPTIONS_ADMIN)
       ? [{ title: t("consumptionList"), url: "/kontsumoak-zerrenda", icon: Receipt }]
       : []),
-    ...(hasAdminAccess(user) && societySepaMode !== "disabled"
+    ...(userCan(user, Permission.CREDITS_VIEW) && societySepaMode !== "disabled"
       ? [{ title: t("adminCredits"), url: "/zorrak", icon: CreditCard }]
       : []),
-    ...(hasCellarmanAccess(user)
+    ...(userCan(user, Permission.PRODUCTS_MANAGE)
       ? [{ title: t("products"), url: "/produktuak", icon: Package }]
       : []),
-    ...(hasTreasurerAccess(user) && societySepaMode !== "disabled"
+    ...(userCan(user, Permission.SEPA_EXPORT) && societySepaMode !== "disabled"
       ? [{ title: t("sepaExport"), url: "/sepa", icon: FileSpreadsheet }]
       : []),
-    ...(hasTreasurerAccess(user)
+    ...(userCan(user, Permission.MOVEMENTS_VIEW)
       ? [{ title: t("adminMovements"), url: "/mugimenduak", icon: List }]
       : []),
-    ...(hasTreasurerAccess(user) && allowsBankTransferPrepayment
+    ...(userCan(user, Permission.BANK_TRANSFERS_MANAGE) && allowsBankTransferPrepayment
       ? [{ title: t("bankTransfersMenu"), url: "/transferentziak", icon: Landmark }]
       : []),
   ];
 
   const configMenuItems: NavItem[] = [
-    ...(hasAdminAccess(user) ? [{ title: t("tables"), url: "/mahaiak", icon: TableIcon }] : []),
-    ...(hasAdminAccess(user)
+    ...(userCan(user, Permission.TABLES_MANAGE)
+      ? [{ title: t("tables"), url: "/mahaiak", icon: TableIcon }]
+      : []),
+    ...(userCan(user, Permission.CATEGORIES_MANAGE)
       ? [{ title: t("productCategories"), url: "/kategoriak", icon: Palette }]
       : []),
-    ...(hasAdminAccess(user)
+    ...(userCan(user, Permission.SUBSCRIPTIONS_MANAGE)
       ? [{ title: t("subscriptionTypes"), url: "/subscriptions", icon: SubscriptionIcon }]
       : []),
-    ...(hasTreasurerAccess(user)
+    ...(userCan(user, Permission.SOCIETY_MANAGE)
       ? [{ title: t("society"), url: "/elkartea", icon: Building2 }]
       : []),
   ];

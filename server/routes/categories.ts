@@ -11,6 +11,7 @@ import {
 } from "@shared/schema";
 import { eq, and, asc } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
+import { hasPermission, Permission } from "@shared/permissions";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -183,7 +184,7 @@ export function registerCategoryRoutes(app: Express) {
         const societyId = getUserSocietyId(user);
 
         // Check if user has permission (admin or manager)
-        if (!["administratzailea", "diruzaina"].includes(user.function || "")) {
+        if (!hasPermission(user.accessRole, Permission.CATEGORIES_MANAGE)) {
           return res.status(403).json({ message: "Access denied" });
         }
 
@@ -237,7 +238,7 @@ export function registerCategoryRoutes(app: Express) {
         const societyId = getUserSocietyId(user);
 
         // Check if user has permission (admin or manager)
-        if (!["administratzailea", "diruzaina"].includes(user.function || "")) {
+        if (!hasPermission(user.accessRole, Permission.CATEGORIES_MANAGE)) {
           return res.status(403).json({ message: "Access denied" });
         }
 
@@ -330,7 +331,7 @@ export function registerCategoryRoutes(app: Express) {
         const societyId = getUserSocietyId(user);
 
         // Check if user has permission (admin or manager)
-        if (!["administratzailea", "diruzaina"].includes(user.function || "")) {
+        if (!hasPermission(user.accessRole, Permission.CATEGORIES_MANAGE)) {
           return res.status(403).json({ message: "Access denied" });
         }
 
@@ -397,7 +398,7 @@ export function registerCategoryRoutes(app: Express) {
         const societyId = getUserSocietyId(user);
 
         // Check if user has permission (admin or manager)
-        if (!["administratzailea", "diruzaina"].includes(user.function || "")) {
+        if (!hasPermission(user.accessRole, Permission.CATEGORIES_MANAGE)) {
           return res.status(403).json({ message: "Access denied" });
         }
 

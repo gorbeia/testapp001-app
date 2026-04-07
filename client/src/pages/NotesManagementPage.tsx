@@ -16,7 +16,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/lib/i18n";
-import { useAuth } from "@/lib/auth";
+import { useAuth, userCan } from "@/lib/auth";
+import { Permission } from "@shared/permissions";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ErrorDisplay } from "@/components/ErrorDisplay";
@@ -67,7 +68,7 @@ export function NotesManagementPage() {
   });
 
   // Check if user is admin
-  const isAdmin = user?.function === "administratzailea";
+  const isAdmin = userCan(user, Permission.NOTES_MANAGE);
 
   // Fetch notes from API
   useEffect(() => {

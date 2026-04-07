@@ -8,6 +8,7 @@ import {
 } from "@shared/schema";
 import { and, eq } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
+import { canMutateProducts } from "@shared/permissions";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -15,11 +16,6 @@ const getUserSocietyId = (user: JwtSessionUser): string => {
     throw new Error("User societyId not found in JWT");
   }
   return user.societyId;
-};
-
-// Helper function to check if user is admin
-const requireAdminAccess = (user: JwtSessionUser): boolean => {
-  return user.role === "bazkidea" && user.function === "administratzailea";
 };
 
 export function registerProductRoutes(app: Express) {
@@ -52,8 +48,8 @@ export function registerProductRoutes(app: Express) {
         const user = req.user!;
 
         // Check if user is admin
-        if (!requireAdminAccess(user)) {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!canMutateProducts(user)) {
+          return res.status(403).json({ message: "Product management not allowed" });
         }
 
         const parsed = insertProductSchema.safeParse(req.body);
@@ -91,8 +87,8 @@ export function registerProductRoutes(app: Express) {
         const user = req.user!;
 
         // Check if user is admin
-        if (!requireAdminAccess(user)) {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!canMutateProducts(user)) {
+          return res.status(403).json({ message: "Product management not allowed" });
         }
 
         const societyId = getUserSocietyId(user);
@@ -131,8 +127,8 @@ export function registerProductRoutes(app: Express) {
         const user = req.user!;
 
         // Check if user is admin
-        if (!requireAdminAccess(user)) {
-          return res.status(403).json({ message: "Admin access required" });
+        if (!canMutateProducts(user)) {
+          return res.status(403).json({ message: "Product management not allowed" });
         }
 
         const societyId = getUserSocietyId(user);

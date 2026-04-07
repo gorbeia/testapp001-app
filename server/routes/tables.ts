@@ -8,7 +8,8 @@ import {
   type JwtSessionUser,
 } from "@shared/schema";
 import { eq, and, gte, ne, count } from "drizzle-orm";
-import { sessionMiddleware, requireAuth, requireAdmin } from "./middleware";
+import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
+import { Permission } from "@shared/permissions";
 
 const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
@@ -23,7 +24,7 @@ export function registerTableRoutes(app: Express) {
     "/api/tables",
     sessionMiddleware,
     requireAuth,
-    requireAdmin,
+    requirePermission(Permission.TABLES_MANAGE),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const societyId = getUserSocietyId(req.user!);
@@ -64,7 +65,7 @@ export function registerTableRoutes(app: Express) {
     "/api/tables",
     sessionMiddleware,
     requireAuth,
-    requireAdmin,
+    requirePermission(Permission.TABLES_MANAGE),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const parsed = insertTableSchema.safeParse(req.body);
@@ -93,7 +94,7 @@ export function registerTableRoutes(app: Express) {
     "/api/tables/:id",
     sessionMiddleware,
     requireAuth,
-    requireAdmin,
+    requirePermission(Permission.TABLES_MANAGE),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;
@@ -128,7 +129,7 @@ export function registerTableRoutes(app: Express) {
     "/api/tables/:id",
     sessionMiddleware,
     requireAuth,
-    requireAdmin,
+    requirePermission(Permission.TABLES_MANAGE),
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const { id } = req.params;

@@ -16,7 +16,7 @@ export async function seedNotes(dbConn: SeedDb) {
   const [adminUser] = await dbConn
     .select()
     .from(users)
-    .where(and(eq(users.role, "bazkidea"), eq(users.function, "administratzailea")))
+    .where(and(eq(users.membershipType, "full_member"), eq(users.accessRole, "admin")))
     .limit(1);
   if (!adminUser) {
     throw new Error("No admin user found. Please seed users first.");

@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from "express";
 import { jwtUserPayloadSchema, type JwtSessionUser } from "@shared/schema";
+import { hasPermission, type AppPermission } from "@shared/permissions";
 import jwt from "jsonwebtoken";
 
 // JWT Configuration
@@ -47,30 +48,22 @@ const verifyToken = (token: string): JwtSessionUser | null => {
   }
 };
 
-// Role-based middleware
-export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    return res.status(401).json({ message: "Authentication required" });
-  }
+/** User must be authenticated and have at least one of the given permissions (OR). */
+export const requirePermission =
+  (...permissions: AppPermission[]) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return res.status(401).json({ message: "Authentication required" });
+    }
 
-  if (req.user.function !== "administratzailea") {
-    return res.status(403).json({ message: "Admin access required" });
-  }
+    const role = req.user.accessRole;
+    const allowed = permissions.some(p => hasPermission(role, p));
+    if (!allowed) {
+      return res.status(403).json({ message: "Insufficient permissions" });
+    }
 
-  next();
-};
-
-export const requireTreasurer = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    return res.status(401).json({ message: "Authentication required" });
-  }
-
-  if (!hasTreasurerAccess(req.user)) {
-    return res.status(403).json({ message: "Treasurer access required" });
-  }
-
-  next();
-};
+    next();
+  };
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
@@ -78,8 +71,4 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
   }
 
   next();
-};
-
-const hasTreasurerAccess = (user: JwtSessionUser): boolean => {
-  return user.function === "diruzaina" || user.function === "administratzailea";
 };
