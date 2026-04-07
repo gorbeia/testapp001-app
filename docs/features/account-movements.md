@@ -5,7 +5,8 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 ## Sign convention (member balance)
 
 - **Negative `amount`**: balance goes down — consumption, reservation charge, subscription charge, SEPA bounce (re-charge after failed collection).
-- **Positive `amount`**: balance goes up — validated **prepayment** (`bank_transfer` movement type), SEPA collection when marking a credit paid, **cash settlement at the bar** (`cash_payment`, e.g. `reservation_cash` / `subscription_cash` reference types), refund, reservation cancel/delete adjustment (reversal of prior charge).
+- **Positive `amount`**: balance goes up — validated **prepayment** (`bank_transfer` movement type), SEPA collection when marking a credit paid, **cash settlement at the bar** (`cash_payment`, e.g. `reservation_cash` / `subscription_cash` reference types), refund, positive **adjustment** when cancelling/deleting a reservation that had a ledger charge (`reservation_cancel`, reverses the reservation debit).
+- **Negative `amount` on `adjustment`**: e.g. `reservation_cash_cancel` — reverses a prior **cash** settlement leg when a reservation is cancelled after being paid in cash at the bar (pairs with the earlier positive `cash_payment`).
 - **`SUM(amount)`** = **member balance**: negative ⇒ owes the society; positive ⇒ prepaid/credit (saldo a favor). There is **no** society flag that blocks positive balance; treasurer/admin discretion applies when validating prepayment proposals or issuing refunds.
 
 `bank_transfers` (implementation table name for prepayment proposals), `credits.*`, etc. keep their own “absolute money” semantics; only **`account_movements.amount`** uses this signed balance convention.
@@ -65,13 +66,21 @@ Movement-based ledger alongside monthly `credits` for SEPA. Each row’s **`amou
 
 **When** monthly debt calculation runs **then** subscription charge is added to `credits.totalAmount` / `subscriptionAmount`. A `subscription` ledger movement (**negative** amount) is posted once per member per month when `subscriptionCharge > 0` (idempotent key). This applies to **all** `sepaMode` values, including **`disabled`**: the fee hits **member balance** (saldoa); **`sepaMode: disabled`** only turns off in-app SEPA XML export, not ledger subscription charges.
 
+## F7b – Reservation charges (after table use)
+
+**When** a member creates a reservation **no** immediate ledger line is posted. **`DebtCalculationService`** (`server/cron-jobs.ts`) posts a **`reservation`** movement (**negative** amount, idempotent per reservation id) once **`startDate` has passed** (in the calculated month), the reservation is not `cancelled`, and no charge row exists yet. This matches SEPA `credits.reservationAmount`, which only sums reservations whose **`startDate` is in the month and not in the future** (relative to the run time) and excludes rows already settled via **`reservation_cash`** for SEPA totals.
+
+**Cash at the bar** (`POST /api/me/cash-settlements`): for a reservation, the API posts **double entry** when needed — a **`reservation`** debit (if not already present) plus a **`cash_payment`** credit with `reservation_cash` — net balance change zero, full audit trail. The deferred cron step then skips that reservation because the **`reservation`** reference already exists.
+
+**Cancellation / delete**: if a **`reservation`** charge exists, a compensating **`adjustment`** with `reservation_cancel` is posted (positive amount). If a **`reservation_cash`** row exists, a **`reservation_cash_cancel`** **adjustment** (negative amount) reverses the cash leg.
+
 ## F8 – Notifications
 
 Server notifications (eu/es/en) for: prepayment validated/rejected, refund issued, SEPA bounce, reservation financial charge, subscription charge, **prepayment ledger floor crossed** (debit moves balance from at/above configured floor to below).
 
 ## F9 – Prepayment minimum ledger balance
 
-When the society enables **`bank_transfer_prepayment`** and sets **`prepaymentMinLedgerBalance`**, new **reservation** charges and **consumption** debits that would leave the member balance **below** that floor are rejected (`403`, code `prepayment_ledger_floor`). Members see status via **`GET /api/me/prepayment-ledger-status`** and an in-app banner when below the floor. See [prepayment-ledger-floor.md](./prepayment-ledger-floor.md).
+When the society enables **`bank_transfer_prepayment`** and sets **`prepaymentMinLedgerBalance`**, **reservation** create and **consumption** debits are checked **at request time** against the projected balance (the reservation check uses the booked amount even though the ledger charge is deferred until after `startDate`). Requests that would leave the member balance **below** the floor are rejected (`403`, code `prepayment_ledger_floor`). Members see status via **`GET /api/me/prepayment-ledger-status`** and an in-app banner when below the floor. See [prepayment-ledger-floor.md](./prepayment-ledger-floor.md).
 
 ## Society setting
 
@@ -94,4 +103,4 @@ Flipping from a legacy debt-oriented convention to member balance is done with:
 
 ## Month filtering
 
-No `month` column on movements; filter with `to_char(created_at, 'YYYY-MM')`. Cron posts subscription with `createdAt` at end of billed month.
+No `month` column on movements; filter with `to_char(created_at, 'YYYY-MM')`. Cron posts subscription with `createdAt` at end of billed month. Reservation charges use `createdAt` at end of the reservation’s **`startDate`** (local calendar day).

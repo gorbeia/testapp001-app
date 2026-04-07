@@ -115,8 +115,9 @@
 
 **Acceptance Criteria:**
 
-- **Shipped (partial):** monthly **`credits.reservationAmount`** (and totals) are populated by **debt calculation** from `reservations.totalAmount` (non-cancelled, in-month) plus consumptions — see `credits.md` and `server/cron-jobs.ts`
-- ❌ Immediate “charge notification” or per-booking credit line — **not implemented**
+- **Shipped:** monthly **`credits.reservationAmount`** (and totals) are populated by **`DebtCalculationService`** from `reservations.totalAmount` for rows whose **`startDate` falls in that month and is not in the future** (relative to calculation time), **not** `cancelled`, and without a **`reservation_cash`** settlement (excluded from SEPA-facing totals) — see `server/cron-jobs.ts`.
+- **Shipped:** the member ledger posts a **`reservation`** movement (**negative** amount) only **after** that date has passed (same cron pass), idempotent per reservation id; **no** charge at **`POST /api/reservations`**.
+- **Shipped:** cancel/delete posts **`reservation_cancel`** (**adjustment**, positive) only if a **`reservation`** charge exists; if the reservation was paid in cash at the bar, **`reservation_cash_cancel`** (**adjustment**, negative) reverses the cash leg — see [account-movements.md](./account-movements.md) F7b.
 
 ---
 

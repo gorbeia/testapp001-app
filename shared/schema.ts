@@ -505,6 +505,8 @@ export type CashSettlementBody = z.infer<typeof cashSettlementBodySchema>;
 
 /** `account_movements.reference_type` for idempotent cash settlement rows */
 export const ACCOUNT_MOVEMENT_REF_RESERVATION_CASH = "reservation_cash";
+/** Reversal of cash settlement when reservation is cancelled (idempotent per reservation id) */
+export const ACCOUNT_MOVEMENT_REF_RESERVATION_CASH_CANCEL = "reservation_cash_cancel";
 export const ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH = "subscription_cash";
 
 export const bankTransferCreateBodySchema = z.object({

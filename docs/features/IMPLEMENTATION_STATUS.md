@@ -64,7 +64,7 @@ Status legend:
 7. **Cost calculation** – guest × rates + optional kitchen
    - **Status**: 🟡 Partial (client-computed `totalAmount`; stored as sent; no server-side recomputation)
 8. **Cost integration with credits (Zorrak)** – monthly debt rows
-   - **Status**: 🟡 Partial (`DebtCalculationService` / cron aggregates reservations + consumptions into `credits`; not “charge at booking” UX)
+   - **Status**: ✅ Implemented (`DebtCalculationService` / cron aggregates reservations whose **`startDate` has passed** (in-month) + consumptions into `credits`; ledger **`reservation`** charge deferred until after **`startDate`**, not at booking)
 
 ---
 
@@ -87,7 +87,7 @@ Status legend:
 8. **Consumption analytics**
    - **Status**: ❌ Not Implemented
 9. **Cash settlement (pending reservations / subscription) on POS** — when society cash methods enabled
-   - **Status**: ✅ Implemented (`GET /api/me/pending-cash-items`, `POST /api/me/cash-settlements`, `ConsumptionsPage` pending category + cart; `cash_payment` ledger type; cron aligns **`credits`**; E2E `consumption-cash-pending.feature`; `seedCashPosFixtures` + demo reservation)
+   - **Status**: ✅ Implemented (`GET /api/me/pending-cash-items`, `POST /api/me/cash-settlements`, `ConsumptionsPage` pending category + cart; reservations: **`reservation`** + **`cash_payment`** double entry; cron aligns **`credits`**; E2E `consumption-cash-pending.feature`; `seedCashPosFixtures` + demo reservation)
 
 ---
 
@@ -130,7 +130,7 @@ Status legend:
    - **Status**: ✅ Implemented
 6. **SEPA bounce** – `POST /api/account-movements/sepa-bounce`, **`/zorrak` action column when `sepaMode` is not `disabled`** (+ E2E: `sepa-bounce.feature`); bounce posts **negative** `amount` to reverse collection
    - **Status**: ✅ Implemented
-7. **Consumption / reservation lines on ledger** – movements on item add, reservation create; cancellation/deletion adjustment
+7. **Consumption / reservation lines on ledger** – movements on item add; reservation ledger charge after **`startDate`** (cron); cash settlement double entry; cancellation/deletion adjustments (`reservation_cancel` / `reservation_cash_cancel` when applicable)
    - **Status**: ✅ Implemented
 8. **Subscription fees on ledger** – `DebtCalculationService` posts `subscription` movement + `credits.subscription_amount` for all societies (including **`sepaMode` = `disabled`**); `disabled` affects SEPA export only
    - **Status**: ✅ Implemented (multi-tenant cron + per-society real-time triggers; see `server/cron-jobs.ts`)

@@ -130,6 +130,7 @@ class DebtCalculationService {
 
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+    const now = new Date();
 
     let totalDebts = 0;
     let processedCount = 0;
@@ -163,6 +164,7 @@ class DebtCalculationService {
               eq(reservations.societyId, activeSociety.id),
               gte(reservations.startDate, startDate),
               lte(reservations.startDate, endDate),
+              lte(reservations.startDate, now),
               ne(reservations.status, "cancelled"),
               notExists(
                 db
@@ -279,6 +281,65 @@ class DebtCalculationService {
             } catch (notifyErr) {
               console.error("Subscription charge notification failed:", notifyErr);
             }
+          }
+        }
+
+        const reservationsToLedger = await db
+          .select()
+          .from(reservations)
+          .where(
+            and(
+              eq(reservations.userId, member.id),
+              eq(reservations.societyId, activeSociety.id),
+              gte(reservations.startDate, startDate),
+              lte(reservations.startDate, endDate),
+              lte(reservations.startDate, now),
+              ne(reservations.status, "cancelled"),
+              sql`CAST(${reservations.totalAmount} AS DECIMAL) > 0`
+            )
+          );
+
+        for (const resRow of reservationsToLedger) {
+          const existsCharge = await movementExistsForReference(
+            activeSociety.id,
+            "reservation",
+            resRow.id
+          );
+          if (existsCharge) continue;
+          const amt = parseFloat(String(resRow.totalAmount ?? "0"));
+          if (!Number.isFinite(amt) || amt <= 0) continue;
+          const resStart = new Date(resRow.startDate);
+          const chargeAt = new Date(
+            resStart.getFullYear(),
+            resStart.getMonth(),
+            resStart.getDate(),
+            23,
+            59,
+            59,
+            999
+          );
+          await insertAccountMovementRow({
+            societyId: activeSociety.id,
+            userId: member.id,
+            type: "reservation",
+            amount: (-amt).toFixed(2),
+            description: `Reservation: ${resRow.name}`,
+            referenceId: resRow.id,
+            referenceType: "reservation",
+            createdBy: null,
+            createdAt: chargeAt,
+          });
+          try {
+            await notifyFinancialEvent({
+              userId: member.id,
+              societyId: activeSociety.id,
+              referenceId: resRow.id,
+              titleKey: "financialReservationChargeTitle",
+              messageKey: "financialReservationChargeMessage",
+              params: { name: resRow.name, amount: amt.toFixed(2) },
+            });
+          } catch (notifyErr) {
+            console.error("Reservation charge notification failed:", notifyErr);
           }
         }
 

@@ -173,6 +173,19 @@ export function registerCashSettlementRoutes(app: Express) {
             return res.status(400).json({ message: `Reservation ${reservationId} has invalid amount` });
           }
 
+          if (!(await movementExistsForReference(societyId, "reservation", reservationId))) {
+            await insertAccountMovementRow({
+              societyId,
+              userId: user.id,
+              type: "reservation",
+              amount: (-amt).toFixed(2),
+              description: `Reservation: ${resRow.name}`,
+              referenceId: reservationId,
+              referenceType: "reservation",
+              createdBy: user.id,
+            });
+          }
+
           const row = await insertAccountMovementRow({
             societyId,
             userId: user.id,
