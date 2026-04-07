@@ -593,6 +593,11 @@ export const translations = {
     management: "Kudeaketa",
     configuration: "Konfigurazioa",
     sidebar: "Alboko barra",
+    sidebarNavPeopleAndOps: "Jendea eta eragiketak",
+    sidebarNavInventory: "Inbentarioa eta hornidurak",
+    sidebarNavFinance: "Finantzak",
+    sidebarNavSpaceAndCatalog: "Mahaiak eta kategoriak",
+    sidebarNavSocietySettings: "Elkartea eta harpidetzak",
     // Subscription management
     subscriptionTypes: "Harpidetza motak",
     subscriptionTypesDescription: "Kudeatu elkarteko harpidetza motak",
@@ -1384,6 +1389,11 @@ export const translations = {
     management: "Gestión",
     configuration: "Configuración",
     sidebar: "Barra lateral",
+    sidebarNavPeopleAndOps: "Socios y operaciones",
+    sidebarNavInventory: "Inventario y suministros",
+    sidebarNavFinance: "Finanzas",
+    sidebarNavSpaceAndCatalog: "Mesas y categorías",
+    sidebarNavSocietySettings: "Sociedad y suscripciones",
     // Subscription management
     subscriptionTypes: "Tipos de suscripción",
     subscriptionTypesDescription: "Gestionar los tipos de suscripción de la sociedad",

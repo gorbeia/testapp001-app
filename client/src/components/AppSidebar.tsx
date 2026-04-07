@@ -1,5 +1,5 @@
 import { useLocation, Link } from "wouter";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Calendar,
   ShoppingCart,
@@ -20,6 +20,7 @@ import {
   ClipboardList,
   Truck,
   ClipboardCheck,
+  ChevronRight,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -31,10 +32,14 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarHeader,
   SidebarFooter,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/lib/i18n";
@@ -42,8 +47,21 @@ import { useAuth, userCan } from "@/lib/auth";
 import { Permission } from "@shared/permissions";
 import { authFetch } from "@/lib/api";
 import { societyAllowsBankTransferPrepayment } from "@shared/schema";
+import { cn } from "@/lib/utils";
 
 type NavItem = { title: string; url: string; icon: LucideIcon };
+
+type NavSubGroup = {
+  id: string;
+  labelKey:
+    | "sidebarNavPeopleAndOps"
+    | "sidebarNavInventory"
+    | "sidebarNavFinance"
+    | "sidebarNavSpaceAndCatalog"
+    | "sidebarNavSocietySettings";
+  icon: LucideIcon;
+  items: NavItem[];
+};
 
 export function AppSidebar() {
   const { t } = useLanguage();
@@ -78,12 +96,10 @@ export function AppSidebar() {
     loadSociety();
   }, []);
 
-  const handleNavigation = (href: string) => {
-    // On mobile, close the sidebar after navigation
+  const handleNavigation = () => {
     if (isMobile) {
       setOpenMobile(false);
     }
-    console.log("Navigating to:", href); // Use href to avoid unused variable error
   };
 
   const getRoleBadgeVariant = () => {
@@ -130,52 +146,122 @@ export function AppSidebar() {
       : []),
   ];
 
-  const adminMenuItems: NavItem[] = [
-    ...(userCan(user, Permission.USERS_MANAGE)
-      ? [{ title: t("users"), url: "/erabiltzaileak", icon: Users }]
-      : []),
-    ...(userCan(user, Permission.RESERVATIONS_REGISTRY)
-      ? [{ title: t("reservationsManagement"), url: "/admin-erreserbak", icon: Calendar }]
-      : []),
-    ...(userCan(user, Permission.CONSUMPTIONS_ADMIN)
-      ? [{ title: t("consumptionList"), url: "/kontsumoak-zerrenda", icon: Receipt }]
-      : []),
-    ...(userCan(user, Permission.CREDITS_VIEW) && societySepaMode !== "disabled"
-      ? [{ title: t("adminCredits"), url: "/zorrak", icon: CreditCard }]
-      : []),
-    ...(userCan(user, Permission.PRODUCTS_MANAGE)
+  const managementGroups: NavSubGroup[] = useMemo(() => {
+    const peopleItems: NavItem[] = [
+      ...(userCan(user, Permission.USERS_MANAGE)
+        ? [{ title: t("users"), url: "/erabiltzaileak", icon: Users }]
+        : []),
+      ...(userCan(user, Permission.RESERVATIONS_REGISTRY)
+        ? [{ title: t("reservationsManagement"), url: "/admin-erreserbak", icon: Calendar }]
+        : []),
+      ...(userCan(user, Permission.CONSUMPTIONS_ADMIN)
+        ? [{ title: t("consumptionList"), url: "/kontsumoak-zerrenda", icon: Receipt }]
+        : []),
+      ...(userCan(user, Permission.CREDITS_VIEW) && societySepaMode !== "disabled"
+        ? [{ title: t("adminCredits"), url: "/zorrak", icon: CreditCard }]
+        : []),
+    ];
+
+    const inventoryItems: NavItem[] = userCan(user, Permission.PRODUCTS_MANAGE)
       ? [
           { title: t("products"), url: "/produktuak", icon: Package },
           { title: t("stockChanges"), url: "/stock-aldaketak", icon: ClipboardList },
           { title: t("supplies"), url: "/hornidurak", icon: Truck },
           { title: t("stockTake"), url: "/inbentarioa", icon: ClipboardCheck },
         ]
-      : []),
-    ...(userCan(user, Permission.SEPA_EXPORT) && societySepaMode !== "disabled"
-      ? [{ title: t("sepaExport"), url: "/sepa", icon: FileSpreadsheet }]
-      : []),
-    ...(userCan(user, Permission.MOVEMENTS_VIEW)
-      ? [{ title: t("adminMovements"), url: "/mugimenduak", icon: List }]
-      : []),
-    ...(userCan(user, Permission.BANK_TRANSFERS_MANAGE) && allowsBankTransferPrepayment
-      ? [{ title: t("bankTransfersMenu"), url: "/transferentziak", icon: Landmark }]
-      : []),
-  ];
+      : [];
 
-  const configMenuItems: NavItem[] = [
-    ...(userCan(user, Permission.TABLES_MANAGE)
-      ? [{ title: t("tables"), url: "/mahaiak", icon: TableIcon }]
-      : []),
-    ...(userCan(user, Permission.CATEGORIES_MANAGE)
-      ? [{ title: t("productCategories"), url: "/kategoriak", icon: Palette }]
-      : []),
-    ...(userCan(user, Permission.SUBSCRIPTIONS_MANAGE)
-      ? [{ title: t("subscriptionTypes"), url: "/subscriptions", icon: SubscriptionIcon }]
-      : []),
-    ...(userCan(user, Permission.SOCIETY_MANAGE)
-      ? [{ title: t("society"), url: "/elkartea", icon: Building2 }]
-      : []),
-  ];
+    const financeItems: NavItem[] = [
+      ...(userCan(user, Permission.SEPA_EXPORT) && societySepaMode !== "disabled"
+        ? [{ title: t("sepaExport"), url: "/sepa", icon: FileSpreadsheet }]
+        : []),
+      ...(userCan(user, Permission.MOVEMENTS_VIEW)
+        ? [{ title: t("adminMovements"), url: "/mugimenduak", icon: List }]
+        : []),
+      ...(userCan(user, Permission.BANK_TRANSFERS_MANAGE) && allowsBankTransferPrepayment
+        ? [{ title: t("bankTransfersMenu"), url: "/transferentziak", icon: Landmark }]
+        : []),
+    ];
+
+    const groups: NavSubGroup[] = [];
+    if (peopleItems.length > 0) {
+      groups.push({
+        id: "mgmt-people",
+        labelKey: "sidebarNavPeopleAndOps",
+        icon: Users,
+        items: peopleItems,
+      });
+    }
+    if (inventoryItems.length > 0) {
+      groups.push({
+        id: "mgmt-inventory",
+        labelKey: "sidebarNavInventory",
+        icon: Package,
+        items: inventoryItems,
+      });
+    }
+    if (financeItems.length > 0) {
+      groups.push({
+        id: "mgmt-finance",
+        labelKey: "sidebarNavFinance",
+        icon: Landmark,
+        items: financeItems,
+      });
+    }
+    return groups;
+  }, [user, t, societySepaMode, allowsBankTransferPrepayment]);
+
+  const configurationGroups: NavSubGroup[] = useMemo(() => {
+    const spaceItems: NavItem[] = [
+      ...(userCan(user, Permission.TABLES_MANAGE)
+        ? [{ title: t("tables"), url: "/mahaiak", icon: TableIcon }]
+        : []),
+      ...(userCan(user, Permission.CATEGORIES_MANAGE)
+        ? [{ title: t("productCategories"), url: "/kategoriak", icon: Palette }]
+        : []),
+    ];
+    const societyItems: NavItem[] = [
+      ...(userCan(user, Permission.SUBSCRIPTIONS_MANAGE)
+        ? [{ title: t("subscriptionTypes"), url: "/subscriptions", icon: SubscriptionIcon }]
+        : []),
+      ...(userCan(user, Permission.SOCIETY_MANAGE)
+        ? [{ title: t("society"), url: "/elkartea", icon: Building2 }]
+        : []),
+    ];
+
+    const groups: NavSubGroup[] = [];
+    if (spaceItems.length > 0) {
+      groups.push({
+        id: "cfg-space",
+        labelKey: "sidebarNavSpaceAndCatalog",
+        icon: TableIcon,
+        items: spaceItems,
+      });
+    }
+    if (societyItems.length > 0) {
+      groups.push({
+        id: "cfg-society",
+        labelKey: "sidebarNavSocietySettings",
+        icon: Building2,
+        items: societyItems,
+      });
+    }
+    return groups;
+  }, [user, t]);
+
+  const [submenuOpen, setSubmenuOpen] = useState<Record<string, boolean | undefined>>({});
+
+  const isSubgroupOpen = (group: NavSubGroup) => {
+    const v = submenuOpen[group.id];
+    if (v !== undefined) return v;
+    return group.items.some(i => i.url === location);
+  };
+
+  const setSubgroupOpen = (id: string, open: boolean) => {
+    setSubmenuOpen(prev => ({ ...prev, [id]: open }));
+  };
+
+  const navTestId = (url: string) => `link-${url.replace("/", "") || "home"}`;
 
   const getInitials = (name: string) => {
     return name
@@ -213,7 +299,7 @@ export function AppSidebar() {
                       <Link
                         href={item.url}
                         data-testid={`link-${item.url.replace("/", "") || "home"}`}
-                        onClick={() => handleNavigation(item.url)}
+                        onClick={() => handleNavigation()}
                       >
                         <Icon className="h-4 w-4" />
                         <span>{item.title}</span>
@@ -226,26 +312,75 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {adminMenuItems.length > 0 && (
+        {managementGroups.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>{t("management")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {adminMenuItems.map(item => {
-                  const Icon = item.icon;
+                {managementGroups.map(group => {
+                  if (group.items.length === 1) {
+                    const item = group.items[0];
+                    const Icon = item.icon;
+                    return (
+                      <SidebarMenuItem key={group.id}>
+                        <SidebarMenuButton asChild isActive={location === item.url}>
+                          <Link
+                            href={item.url}
+                            data-testid={navTestId(item.url)}
+                            onClick={() => handleNavigation()}
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  }
+
+                  const GroupIcon = group.icon;
                   return (
-                    <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton asChild isActive={location === item.url}>
-                        <Link
-                          href={item.url}
-                          data-testid={`link-${item.url.replace("/", "")}`}
-                          onClick={() => handleNavigation(item.url)}
-                        >
-                          <Icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <Collapsible
+                      key={group.id}
+                      asChild
+                      open={isSubgroupOpen(group)}
+                      onOpenChange={open => setSubgroupOpen(group.id, open)}
+                    >
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton type="button">
+                            <GroupIcon className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{t(group.labelKey)}</span>
+                            <ChevronRight
+                              className={cn(
+                                "ml-auto h-4 w-4 shrink-0 transition-transform duration-200",
+                                isSubgroupOpen(group) && "rotate-90"
+                              )}
+                            />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {group.items.map(item => {
+                              const ItemIcon = item.icon;
+                              return (
+                                <SidebarMenuSubItem key={item.url}>
+                                  <SidebarMenuSubButton asChild isActive={location === item.url}>
+                                    <Link
+                                      href={item.url}
+                                      data-testid={navTestId(item.url)}
+                                      onClick={() => handleNavigation()}
+                                    >
+                                      <ItemIcon className="h-4 w-4" />
+                                      <span>{item.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              );
+                            })}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
                   );
                 })}
               </SidebarMenu>
@@ -253,26 +388,75 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {configMenuItems.length > 0 && (
+        {configurationGroups.length > 0 && (
           <SidebarGroup>
             <SidebarGroupLabel>{t("configuration")}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {configMenuItems.map(item => {
-                  const Icon = item.icon;
+                {configurationGroups.map(group => {
+                  if (group.items.length === 1) {
+                    const item = group.items[0];
+                    const Icon = item.icon;
+                    return (
+                      <SidebarMenuItem key={group.id}>
+                        <SidebarMenuButton asChild isActive={location === item.url}>
+                          <Link
+                            href={item.url}
+                            data-testid={navTestId(item.url)}
+                            onClick={() => handleNavigation()}
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span>{item.title}</span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  }
+
+                  const GroupIcon = group.icon;
                   return (
-                    <SidebarMenuItem key={item.url}>
-                      <SidebarMenuButton asChild isActive={location === item.url}>
-                        <Link
-                          href={item.url}
-                          data-testid={`link-${item.url.replace("/", "")}`}
-                          onClick={() => handleNavigation(item.url)}
-                        >
-                          <Icon className="h-4 w-4" />
-                          <span>{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <Collapsible
+                      key={group.id}
+                      asChild
+                      open={isSubgroupOpen(group)}
+                      onOpenChange={open => setSubgroupOpen(group.id, open)}
+                    >
+                      <SidebarMenuItem>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton type="button">
+                            <GroupIcon className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{t(group.labelKey)}</span>
+                            <ChevronRight
+                              className={cn(
+                                "ml-auto h-4 w-4 shrink-0 transition-transform duration-200",
+                                isSubgroupOpen(group) && "rotate-90"
+                              )}
+                            />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {group.items.map(item => {
+                              const ItemIcon = item.icon;
+                              return (
+                                <SidebarMenuSubItem key={item.url}>
+                                  <SidebarMenuSubButton asChild isActive={location === item.url}>
+                                    <Link
+                                      href={item.url}
+                                      data-testid={navTestId(item.url)}
+                                      onClick={() => handleNavigation()}
+                                    >
+                                      <ItemIcon className="h-4 w-4" />
+                                      <span>{item.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              );
+                            })}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </SidebarMenuItem>
+                    </Collapsible>
                   );
                 })}
               </SidebarMenu>
@@ -288,7 +472,7 @@ export function AppSidebar() {
               href="/profila"
               className="flex items-center gap-3 flex-1 min-w-0 hover-elevate active-elevate-2 rounded-md p-1 -m-1"
               data-testid="link-profile"
-              onClick={() => handleNavigation("/profila")}
+              onClick={() => handleNavigation()}
             >
               <Avatar className="h-9 w-9">
                 <AvatarFallback className="text-xs bg-accent">
