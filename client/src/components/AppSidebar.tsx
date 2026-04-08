@@ -48,7 +48,9 @@ import { useAuth, userCan } from "@/lib/auth";
 import { Permission } from "@shared/permissions";
 import { authFetch } from "@/lib/api";
 import { societyAllowsBankTransferPrepayment } from "@shared/schema";
+import { deriveSocietyAcronym } from "@shared/society-acronym";
 import { cn } from "@/lib/utils";
+import { ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT } from "@/lib/society-events";
 
 type NavItem = { title: string; url: string; icon: LucideIcon };
 
@@ -70,6 +72,8 @@ export function AppSidebar() {
   const [location] = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
   const [societyName, setSocietyName] = useState<string | null>(null);
+  const [societyAcronym, setSocietyAcronym] = useState("?");
+  const [societyShortDescription, setSocietyShortDescription] = useState<string | null>(null);
   const [societySepaMode, setSocietySepaMode] = useState<string | null>(null);
   const [allowsBankTransferPrepayment, setAllowsBankTransferPrepayment] = useState(true);
 
@@ -81,7 +85,15 @@ export function AppSidebar() {
           const data = await response.json();
           if (data && typeof data.name === "string") {
             setSocietyName(data.name);
+            const stored = typeof data.acronym === "string" ? data.acronym.trim() : "";
+            const derived = deriveSocietyAcronym(data.name);
+            const circle = (stored || derived || "?").toUpperCase().slice(0, 3);
+            setSocietyAcronym(circle);
           }
+          const sd = data?.shortDescription;
+          setSocietyShortDescription(
+            typeof sd === "string" && sd.trim() !== "" ? sd.trim() : null
+          );
           if (data && typeof data.sepaMode === "string") {
             setSocietySepaMode(data.sepaMode);
           } else {
@@ -94,7 +106,10 @@ export function AppSidebar() {
       }
     };
 
-    loadSociety();
+    void loadSociety();
+    const onProfileUpdated = () => void loadSociety();
+    window.addEventListener(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT, onProfileUpdated);
+    return () => window.removeEventListener(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT, onProfileUpdated);
   }, []);
 
   const handleNavigation = () => {
@@ -280,12 +295,16 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-sm">GT</span>
+          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0">
+            <span className="text-primary-foreground font-bold text-sm" aria-hidden>
+              {societyAcronym}
+            </span>
           </div>
-          <div>
-            <h1 className="font-semibold text-sm">{societyName || t("appName")}</h1>
-            <p className="text-xs text-muted-foreground">Sociedad Gastronómica</p>
+          <div className="min-w-0">
+            <h1 className="font-semibold text-sm truncate">{societyName || t("appName")}</h1>
+            {societyShortDescription ? (
+              <p className="text-xs text-muted-foreground line-clamp-2">{societyShortDescription}</p>
+            ) : null}
           </div>
         </div>
       </SidebarHeader>

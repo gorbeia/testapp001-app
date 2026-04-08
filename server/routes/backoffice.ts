@@ -10,6 +10,7 @@ import {
   createSuperadminBodySchema,
   updateSuperadminBodySchema,
 } from "../../shared/schema";
+import { deriveSocietyAcronym } from "../../shared/society-acronym";
 import { eq } from "drizzle-orm";
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { z } from "zod";
@@ -155,6 +156,8 @@ export function registerBackofficeRoutes(app: Express) {
 
         const {
           name,
+          shortDescription,
+          acronym: acronymRaw,
           iban,
           creditorId,
           address,
@@ -165,6 +168,9 @@ export function registerBackofficeRoutes(app: Express) {
           sepaMode,
           paymentMethods,
         } = parsed.data;
+
+        const acronym =
+          acronymRaw && acronymRaw.length > 0 ? acronymRaw : deriveSocietyAcronym(name) || "?";
 
         // Generate alphabetic ID (similar to existing society creation logic)
         const alphabeticId = name
@@ -205,6 +211,13 @@ export function registerBackofficeRoutes(app: Express) {
           .insert(societies)
           .values({
             name,
+            shortDescription:
+              shortDescription === undefined
+                ? null
+                : shortDescription === null || shortDescription.trim() === ""
+                  ? null
+                  : shortDescription.trim(),
+            acronym,
             alphabeticId: finalAlphabeticId,
             iban: iban ?? null,
             creditorId: creditorId ?? null,

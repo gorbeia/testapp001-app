@@ -12,9 +12,9 @@
 
 **Acceptance Criteria:**
 
-- **Shipped (partial):** `SocietyPage` at **`/elkartea`** loads **`GET /api/societies/user`** and saves **`PUT /api/societies/:id`** with name, address, phone, email, **IBAN**, **creditorId**, **`sepaMode`** (SEPA billing cadence / off via checkbox + cadence select), **`paymentMethods`** (JSON array: prepayment-with-proposal rail `bank_transfer_prepayment`, manual cash, cash change machine — cash options are configuration only for now; the rail is not limited to wire transfer in product copy), optional **`prepaymentMinLedgerBalance`** when prepayment is enabled (minimum allowed member ledger balance / max debt — see [prepayment-ledger-floor.md](./prepayment-ledger-floor.md)), and **reservation pricing** fields (`reservationPricePerMember`, `kitchenPricePerMember`)
+- **Shipped (partial):** `SocietyPage` at **`/elkartea`** loads **`GET /api/societies/user`** and saves **`PUT /api/societies/:id`** with name (required), **`acronym`** (required, up to three letters; inferred from name in the browser until the user edits it, then recalculated when the name changes only if still auto-linked), optional **`shortDescription`** (line under the society name in the sidebar), address, phone, email, **IBAN**, **creditorId**, **`sepaMode`** (SEPA billing cadence / off via checkbox + cadence select), **`paymentMethods`** (JSON array: prepayment-with-proposal rail `bank_transfer_prepayment`, manual cash, cash change machine — cash options are configuration only for now; the rail is not limited to wire transfer in product copy), optional **`prepaymentMinLedgerBalance`** when prepayment is enabled (minimum allowed member ledger balance / max debt — see [prepayment-ledger-floor.md](./prepayment-ledger-floor.md)), and **reservation pricing** fields (`reservationPricePerMember`, `kitchenPricePerMember`)
 - **Route note:** SPA uses **`ProtectedRoute` “treasurer”**; `PUT` middleware may require **`administratzailea`** only — verify alignment for diruzaina-only treasurers
-- ❌ Logo upload, long description, establishment date fields — **not implemented**
+- ❌ Logo upload, long description, establishment date fields — **not implemented** (short sidebar line is implemented via **`shortDescription`**)
 
 ### Story 2: SEPA Configuration
 

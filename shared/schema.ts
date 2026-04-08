@@ -63,6 +63,10 @@ export const societies = pgTable("societies", {
     .default(sql`gen_random_uuid()`),
   alphabeticId: varchar("alphabetic_id").notNull().unique(),
   name: text("name").notNull(),
+  /** Optional short line under the society name in the app sidebar. */
+  shortDescription: text("short_description"),
+  /** Up to 3 letters for the sidebar header circle (required in UI; DB default for legacy rows). */
+  acronym: varchar("acronym", { length: 3 }).notNull().default(""),
   iban: text("iban"),
   creditorId: text("creditor_id"),
   address: text("address"),
@@ -122,10 +126,23 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+/** Uppercase Latin letters + common Latin-1 / Latin Extended-A letters (matches deriveSocietyAcronym output). */
+const SOCIETY_ACRONYM_CHARS = /^[A-Za-z\xC0-\xFF\u0100-\u017F\u0180-\u024F]+$/;
+
+export const societyAcronymFieldSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .max(3)
+  .regex(SOCIETY_ACRONYM_CHARS)
+  .transform(s => s.toUpperCase());
+
 export const insertSocietySchema = createInsertSchema(societies)
   .pick({
     alphabeticId: true,
     name: true,
+    shortDescription: true,
+    acronym: true,
     iban: true,
     creditorId: true,
     address: true,
@@ -140,6 +157,8 @@ export const insertSocietySchema = createInsertSchema(societies)
   .extend({
     sepaMode: sepaModeSchema.optional(),
     paymentMethods: societyPaymentMethodsSchema.optional(),
+    shortDescription: z.string().max(500).nullable().optional(),
+    acronym: societyAcronymFieldSchema.optional(),
   });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -1237,6 +1256,8 @@ export const createNotificationBodySchema = z
 export const updateSocietySettingsBodySchema = insertSocietySchema
   .pick({
     name: true,
+    shortDescription: true,
+    acronym: true,
     iban: true,
     creditorId: true,
     address: true,
@@ -1252,6 +1273,26 @@ export const updateSocietySettingsBodySchema = insertSocietySchema
     sepaMode: sepaModeSchema.optional(),
     paymentMethods: societyPaymentMethodsSchema.optional(),
     prepaymentMinLedgerBalance: z.union([z.string(), z.number()]).nullable().optional(),
+    shortDescription: z.union([z.string().max(500), z.null()]).optional(),
+    acronym: societyAcronymFieldSchema.optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.name !== undefined && data.name.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["name"],
+        message: "Society name is required",
+      });
+    }
+    if (data.shortDescription !== undefined && data.shortDescription !== null) {
+      if (data.shortDescription.length > 500) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["shortDescription"],
+          message: "Too long",
+        });
+      }
+    }
   })
   .refine(data => Object.values(data).some(v => v !== undefined), {
     message: "At least one field is required",
@@ -1259,6 +1300,8 @@ export const updateSocietySettingsBodySchema = insertSocietySchema
 
 export const backofficeCreateSocietyBodySchema = z.object({
   name: z.string().min(1),
+  shortDescription: z.union([z.string().max(500), z.null()]).optional(),
+  acronym: societyAcronymFieldSchema.optional(),
   iban: z.string().nullish(),
   creditorId: z.string().nullish(),
   address: z.string().nullish(),

@@ -86,11 +86,12 @@ Then('I find the debt amount for "Miren Urrutia"', async function () {
   const amountElement = mirenRow.locator('[data-testid^="credit-amount-"]');
   const amountText = await amountElement.textContent();
   assert.ok(amountText?.trim(), "Expected credit amount cell for Miren");
+  const amountTextNonNull = amountText as string;
 
-  const amountMatch = amountText.match(/([\d.]+)€/);
-  assert.ok(amountMatch, `Could not parse debt from ${JSON.stringify(amountText)}`);
+  const amountMatch = amountTextNonNull.match(/([\d.]+)€/);
+  assert.ok(amountMatch, `Could not parse debt from ${JSON.stringify(amountTextNonNull)}`);
   testState.initialDebt = parseFloat(amountMatch[1]);
-  assert.ok(Number.isFinite(testState.initialDebt), `Invalid initial debt: ${amountText}`);
+  assert.ok(Number.isFinite(testState.initialDebt), `Invalid initial debt: ${amountTextNonNull}`);
 });
 
 When("I capture the consumption amount from the confirmation dialog", async function () {
@@ -99,8 +100,9 @@ When("I capture the consumption amount from the confirmation dialog", async func
 
   const totalAmountText = await page.locator('[data-testid="total-amount"]').textContent();
   assert.ok(totalAmountText?.trim(), "Confirmation dialog total should be visible");
-  const amountMatch = totalAmountText.match(/([\d.]+)€/);
-  assert.ok(amountMatch, `Could not parse total from ${JSON.stringify(totalAmountText)}`);
+  const totalAmountTextNonNull = totalAmountText as string;
+  const amountMatch = totalAmountTextNonNull.match(/([\d.]+)€/);
+  assert.ok(amountMatch, `Could not parse total from ${JSON.stringify(totalAmountTextNonNull)}`);
   testState.consumptionAmount = parseFloat(amountMatch[1]);
   assert.ok(
     testState.consumptionAmount > 0.01,

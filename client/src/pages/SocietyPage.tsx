@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Building2, Save, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -14,10 +15,12 @@ import {
 } from "@/components/ui/select";
 import type { SepaMode, SocietyPaymentMethod } from "@shared/schema";
 import { normalizeSocietyPaymentMethods } from "@shared/schema";
+import { deriveSocietyAcronym } from "@shared/society-acronym";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "@/components/ErrorBoundary";
+import { ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT } from "@/lib/society-events";
 
 const SEPA_CADENCE_MODES = ["monthly", "bimonthly", "quarterly", "on_demand"] as const;
 type SepaCadenceMode = (typeof SEPA_CADENCE_MODES)[number];
@@ -25,6 +28,8 @@ type SepaCadenceMode = (typeof SEPA_CADENCE_MODES)[number];
 interface Society {
   id: string;
   name: string;
+  shortDescription?: string | null;
+  acronym?: string | null;
   iban: string;
   creditorId: string;
   address: string;
@@ -38,6 +43,28 @@ interface Society {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+const ACRONYM_LETTERS_RE =
+  /^[A-Za-z\xC0-\xFF\u0100-\u017F\u0180-\u024F]+$/;
+const ACRONYM_INPUT_FILTER = /[^A-Za-z\xC0-\xFF\u0100-\u017F\u0180-\u024F]/g;
+
+function isAcronymCustomized(name: string, storedAcronym: string): boolean {
+  const derived = deriveSocietyAcronym(name);
+  const stored = storedAcronym.trim();
+  if (!stored) return false;
+  return stored.toUpperCase() !== derived.toUpperCase();
+}
+
+function societyFromApiPayload(data: Society): Society {
+  const derived = deriveSocietyAcronym(data.name);
+  const stored = (data.acronym ?? "").trim();
+  const acronym = stored || derived;
+  return {
+    ...data,
+    acronym,
+    shortDescription: data.shortDescription ?? "",
+  };
 }
 
 function togglePaymentMethod(
@@ -57,6 +84,7 @@ export function SocietyPage() {
   const [society, setSociety] = useState<Society | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const lastSepaCadenceRef = useRef<SepaCadenceMode>("monthly");
+  const acronymCustomizedRef = useRef(false);
 
   // Load current society from API
   useEffect(() => {
@@ -72,13 +100,14 @@ export function SocietyPage() {
 
         if (response.ok) {
           const data = (await response.json()) as Society;
-          const normalized: Society = {
+          const withMeta = societyFromApiPayload({
             ...data,
             paymentMethods: normalizeSocietyPaymentMethods(data.paymentMethods),
-          };
-          setSociety(normalized);
-          if (normalized.sepaMode && normalized.sepaMode !== "disabled") {
-            lastSepaCadenceRef.current = normalized.sepaMode as SepaCadenceMode;
+          });
+          acronymCustomizedRef.current = isAcronymCustomized(data.name, data.acronym ?? "");
+          setSociety(withMeta);
+          if (withMeta.sepaMode && withMeta.sepaMode !== "disabled") {
+            lastSepaCadenceRef.current = withMeta.sepaMode as SepaCadenceMode;
           }
         } else {
           const errorText = await response.text();
@@ -102,10 +131,46 @@ export function SocietyPage() {
   const handleSave = async () => {
     if (!society) return;
 
+    const nameTrim = society.name.trim();
+    const derivedAcronym = deriveSocietyAcronym(nameTrim);
+    const acronymForSave = acronymCustomizedRef.current
+      ? (society.acronym ?? "").trim().toUpperCase()
+      : derivedAcronym;
+
+    if (!nameTrim) {
+      toast({
+        title: t("error"),
+        description: t("societyNameRequired"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!acronymForSave || acronymForSave.length < 1 || acronymForSave.length > 3) {
+      toast({
+        title: t("error"),
+        description: t("societyAcronymRequired"),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!ACRONYM_LETTERS_RE.test(acronymForSave)) {
+      toast({
+        title: t("error"),
+        description: t("societyAcronymInvalid"),
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const token = localStorage.getItem("auth:token");
+      const sd = society.shortDescription?.trim() ?? "";
       const updateBody = {
-        name: society.name,
+        name: nameTrim,
+        shortDescription: sd === "" ? null : sd.slice(0, 500),
+        acronym: acronymForSave,
         iban: society.iban,
         creditorId: society.creditorId,
         address: society.address,
@@ -134,14 +199,16 @@ export function SocietyPage() {
 
       if (response.ok) {
         const raw = (await response.json()) as Society;
-        const savedSociety: Society = {
+        const savedSociety = societyFromApiPayload({
           ...raw,
           paymentMethods: normalizeSocietyPaymentMethods(raw.paymentMethods),
-        };
+        });
+        acronymCustomizedRef.current = isAcronymCustomized(raw.name, raw.acronym ?? "");
         setSociety(savedSociety);
         if (savedSociety.sepaMode && savedSociety.sepaMode !== "disabled") {
           lastSepaCadenceRef.current = savedSociety.sepaMode as SepaCadenceMode;
         }
+        window.dispatchEvent(new Event(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT));
         toast({
           title: t("success"),
           description: t("societyUpdated"),
@@ -198,9 +265,55 @@ export function SocietyPage() {
                 <Label>{t("societyName")}</Label>
                 <Input
                   value={society.name}
-                  onChange={e => setSociety({ ...society, name: e.target.value })}
+                  onChange={e => {
+                    const name = e.target.value;
+                    const next: Society = { ...society, name };
+                    if (!acronymCustomizedRef.current) {
+                      next.acronym = deriveSocietyAcronym(name);
+                    }
+                    setSociety(next);
+                  }}
                   data-testid="input-society-name"
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>{t("societyAcronym")}</Label>
+                <Input
+                  value={society.acronym ?? ""}
+                  maxLength={3}
+                  className="uppercase"
+                  placeholder={deriveSocietyAcronym(society.name)}
+                  onChange={e => {
+                    acronymCustomizedRef.current = true;
+                    const v = e.target.value
+                      .toUpperCase()
+                      .slice(0, 3)
+                      .replace(ACRONYM_INPUT_FILTER, "");
+                    setSociety({ ...society, acronym: v });
+                  }}
+                  onBlur={() => {
+                    const d = deriveSocietyAcronym(society.name);
+                    const cur = (society.acronym ?? "").trim().toUpperCase();
+                    if (cur === d.toUpperCase()) {
+                      acronymCustomizedRef.current = false;
+                    }
+                  }}
+                  data-testid="input-society-acronym"
+                />
+                <p className="text-xs text-muted-foreground">{t("societyAcronymHint")}</p>
+              </div>
+              <div className="space-y-2">
+                <Label>{t("societyShortDescription")}</Label>
+                <Textarea
+                  value={society.shortDescription ?? ""}
+                  onChange={e =>
+                    setSociety({ ...society, shortDescription: e.target.value.slice(0, 500) })
+                  }
+                  maxLength={500}
+                  rows={3}
+                  data-testid="input-society-short-description"
+                />
+                <p className="text-xs text-muted-foreground">{t("societyShortDescriptionHint")}</p>
               </div>
               <div className="space-y-2">
                 <Label>{t("address")}</Label>
