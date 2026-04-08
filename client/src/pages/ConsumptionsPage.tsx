@@ -15,6 +15,7 @@ import {
   ChefHat,
   Wallet,
   Calendar,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,6 +46,7 @@ import {
 import { getErrorMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth";
 import { authFetch } from "@/lib/api";
+import { productImageSrc, thumbFilenameFromImageUrl } from "@/lib/image-urls";
 import type { Product } from "@shared/schema";
 import { societyAllowsCashPayment } from "@shared/schema";
 
@@ -675,13 +677,32 @@ export function ConsumptionsPage() {
                 const stock = parseInt(product.stock, 10);
                 const minStock = parseInt(product.minStock, 10);
                 const isLowStock = !stockUntracked && stock <= minStock;
+                const productThumb =
+                  user?.societyId && product.imageUrl
+                    ? productImageSrc(
+                        user.societyId,
+                        thumbFilenameFromImageUrl(product.imageUrl)
+                      ) ?? productImageSrc(user.societyId, product.imageUrl)
+                    : undefined;
 
                 return (
                   <Card
                     key={product.id}
-                    className="hover-elevate flex h-full flex-col"
+                    className="hover-elevate flex h-full flex-col overflow-hidden"
                     data-testid="product-card"
                   >
+                    <div className="h-24 w-full bg-muted flex items-center justify-center overflow-hidden rounded-t-lg">
+                      {productThumb ? (
+                        <img
+                          src={productThumb}
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <Package className="h-8 w-8 text-muted-foreground" />
+                      )}
+                    </div>
                     <CardContent className="flex flex-1 flex-col p-4">
                       <div className="flex min-h-0 flex-1 flex-col gap-2">
                         <span className="font-medium text-sm">{product.name}</span>

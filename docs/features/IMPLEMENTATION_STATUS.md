@@ -75,7 +75,7 @@ Status legend:
 ## 4. Consumptions (Kontsumoak) (`consumptions.md`)
 
 1. **Register bar consumption (session flow)** – create session, add lines, close
-   - **Status**: ✅ Implemented (`POST /api/consumptions`, `POST .../items`, `POST .../close`; stock decrement on items; **prepayment ledger floor** on create/items — see §5b.10 / `prepayment-ledger-floor.md`)
+   - **Status**: ✅ Implemented (`POST /api/consumptions`, `POST .../items`, `POST .../close`; stock decrement on items; **prepayment ledger floor** on create/items — see §5b.10 / `prepayment-ledger-floor.md`; **`/kontsumoak`** POS product cards show optional thumbnails from `products.imageUrl` / `_thumb.webp`, uniform card height with placeholder when no image)
 2. **View consumption history (member)** – personal list
    - **Status**: ✅ Implemented (`/nire-konsumoak`, `GET /api/consumptions/user` paginated; aggregates for stat cards)
 3. **Manage all consumptions (staff)** – society list/detail
