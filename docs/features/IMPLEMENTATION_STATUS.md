@@ -141,6 +141,7 @@ Status legend:
 10. **Period account statement & balances (CSV)** — `GET /api/account-movements/me/statement`, `GET /api/account-movements/statement`, `GET /api/account-movements/society-statement` (treasurer, all members in range), `GET /api/account-movements/balances`; opening/closing balance + period movements + per-type summary; society-wide flat extract without running balance; **`/nire-mugimenduak`** and **`/mugimenduak`** download buttons (treasurer dialog: whole-society or single-member statement); helpers in `server/lib/account-movements.ts` (`getMemberBalanceBeforeMonth`, `getMemberBalanceThroughMonth`, `getAllMemberBalances`); `computeRunningBalancesWithInitial` in `ledger-rules.ts`
     - **Status**: ✅ Implemented (see `account-movements.md` F10; PDF not in scope)
 11. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
+12. **Society-wide income/expense accounting (planned)** — ❌ Not implemented. **Direction:** Option A first (simple society cashbook + auto-posting from member flows); Options B/C later if needed — see [`society-accounting-options.md`](./society-accounting-options.md)
 
 ---
 
