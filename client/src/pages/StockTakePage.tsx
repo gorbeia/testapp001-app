@@ -36,7 +36,7 @@ import {
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorBoundary";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { getErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 
@@ -269,7 +269,7 @@ export function StockTakePage() {
   };
 
   if (error && !loading) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} cardLayout />;
   }
 
   return (

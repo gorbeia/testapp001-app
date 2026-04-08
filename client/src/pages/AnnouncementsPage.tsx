@@ -20,7 +20,7 @@ import { useAuth, userCan } from "@/lib/auth";
 import { Permission } from "@shared/permissions";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 
 // API helper function
 const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
@@ -154,7 +154,7 @@ export function AnnouncementsPage() {
   }
 
   if (error) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} />;
   }
 
   return (

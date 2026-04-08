@@ -4,6 +4,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { useLanguage, type TranslationKey } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/lib/api";
+import { readJsonOrThrow } from "@/lib/http-error";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,7 +41,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Edit, Trash2, Link2, UserX, UserCheck } from "lucide-react";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import type { SubscriptionType as SubscriptionTypeEntity } from "@shared/schema";
 import {
   ROLE_PERMISSIONS,
@@ -83,8 +84,7 @@ type UsersApiRow = {
 const fetchUsers = async (statusFilter?: string): Promise<UsersApiRow[]> => {
   const statusParam = statusFilter === "all" ? "" : `?status=${statusFilter}`;
   const response = await authFetch(`/api/users${statusParam}`);
-  if (!response.ok) throw new Error("Failed to fetch users");
-  return (await response.json()) as UsersApiRow[];
+  return readJsonOrThrow<UsersApiRow[]>(response);
 };
 
 type SubscriptionPeriodI18nKey = "monthly" | "quarterly" | "yearly" | "custom";
@@ -146,8 +146,7 @@ export function UsersPage() {
     queryKey: ["subscription-types"],
     queryFn: async (): Promise<SubscriptionTypeEntity[]> => {
       const response = await authFetch("/api/subscription-types");
-      if (!response.ok) throw new Error("Failed to fetch subscription types");
-      return response.json();
+      return readJsonOrThrow<SubscriptionTypeEntity[]>(response);
     },
   });
 
@@ -159,8 +158,7 @@ export function UsersPage() {
     queryKey: ["society-user"],
     queryFn: async () => {
       const res = await authFetch("/api/societies/user");
-      if (!res.ok) throw new Error("Failed to load society");
-      return res.json() as { sepaMode?: string };
+      return readJsonOrThrow<{ sepaMode?: string }>(res);
     },
     throwOnError: false,
   });
@@ -212,7 +210,7 @@ export function UsersPage() {
   }
 
   if (error) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} />;
   }
 
   const filteredUsers = users.filter((u: UsersPageUser) => {

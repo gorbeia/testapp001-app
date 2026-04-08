@@ -7,6 +7,8 @@ import { Link } from "wouter";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { useLanguage } from "@/lib/i18n";
+import { AccessDenied } from "@/components/AccessDenied";
+import { isHttpForbidden } from "@/lib/http-error";
 import { Note } from "./api";
 
 interface RecentNotesProps {
@@ -19,6 +21,9 @@ export function RecentNotes({ notes, loading, error }: RecentNotesProps) {
   const { t } = useLanguage();
 
   if (error) {
+    if (isHttpForbidden(error)) {
+      return <AccessDenied />;
+    }
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />

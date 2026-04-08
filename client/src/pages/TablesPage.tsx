@@ -29,7 +29,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Table as TableIcon, Plus, Edit, Trash2, Users, FileText } from "lucide-react";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
+import { readJsonOrThrow } from "@/lib/http-error";
 
 // API helper function
 const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
@@ -79,9 +80,7 @@ export function TablesPage() {
   const fetchTables = async () => {
     try {
       const response = await authFetch("/api/tables");
-      if (!response.ok) throw new Error("Failed to fetch tables");
-
-      const tablesData = await response.json();
+      const tablesData = await readJsonOrThrow<Table[]>(response);
       setTables(tablesData);
     } catch (error) {
       console.error("Error fetching tables:", error);
@@ -231,7 +230,7 @@ export function TablesPage() {
   }
 
   if (error) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} />;
   }
 
   return (

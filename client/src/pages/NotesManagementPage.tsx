@@ -20,8 +20,9 @@ import { useAuth, userCan } from "@/lib/auth";
 import { Permission } from "@shared/permissions";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { authFetch } from "@/lib/api";
+import { readJsonOrThrow } from "@/lib/http-error";
 import { MultiLanguageNoteForm } from "@/pages/announcements/MultiLanguageNoteForm";
 import { NoteWithMessages } from "@/pages/dashboard/api";
 import { Language, DisplayContent, getDisplayContent } from "@shared/schema";
@@ -32,10 +33,7 @@ type Note = NoteWithMessages;
 // Helper function to fetch full multilanguage notes for admin
 const fetchAdminNotes = async (): Promise<Note[]> => {
   const response = await authFetch("/api/notes");
-  if (!response.ok) {
-    throw new Error("Failed to fetch notes");
-  }
-  return response.json();
+  return readJsonOrThrow<Note[]>(response);
 };
 
 export function NotesManagementPage() {
@@ -330,7 +328,7 @@ export function NotesManagementPage() {
   }
 
   if (error) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} />;
   }
 
   return (

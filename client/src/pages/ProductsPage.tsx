@@ -59,7 +59,7 @@ function normalizeStockMode(product: Pick<Product, "stockMode">): StockModeUi {
   return "auto";
 }
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorBoundary";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 
 // Define Category type for frontend
 type Category = {
@@ -418,7 +418,7 @@ export function ProductsPage() {
   }
 
   if (error) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} cardLayout />;
   }
 
   return (

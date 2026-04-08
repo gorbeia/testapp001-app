@@ -26,9 +26,10 @@ import PaginationControls from "@/components/PaginationControls";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/lib/api";
+import { readJsonOrThrow } from "@/lib/http-error";
 import type { Reservation, Society } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { ReservationDialog } from "@/components/ReservationDialog";
 import { usePagination } from "@/hooks/use-pagination";
 
@@ -123,8 +124,10 @@ export function MyReservationsPage() {
       }
 
       const response = await authFetch(`/api/reservations/user?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch reservations");
-      const data = await response.json();
+      const data = await readJsonOrThrow<{
+        data?: Reservation[];
+        pagination?: { total: number };
+      }>(response);
       setReservations(data.data || []);
       pagination.updatePagination(data.pagination?.total || 0);
     } catch (error) {
@@ -270,7 +273,7 @@ export function MyReservationsPage() {
   }
 
   if (error) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} />;
   }
 
   return (

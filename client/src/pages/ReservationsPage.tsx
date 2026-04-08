@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { eu, es } from "date-fns/locale";
 import type { Reservation } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import MonthGrid from "@/components/MonthGrid";
 import { ReservationDialog } from "@/components/ReservationDialog";
 import { useUrlFilter } from "@/hooks/useUrlFilter";
@@ -159,7 +159,7 @@ function ReservationsPage() {
   }
 
   if (error) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} />;
   }
 
   return (

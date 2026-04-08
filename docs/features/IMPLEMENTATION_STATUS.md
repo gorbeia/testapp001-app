@@ -18,7 +18,7 @@ Status legend:
 1. **User Login** – Login form & auth context
    - **Status**: ✅ Implemented (real `POST /api/login` + bcrypt/legacy passwords; society alphabetic id; access + refresh httpOnly cookies; Bearer token in localStorage; E2E tested)
 2. **Role-Based Access Control** – menus & route protection
-   - **Status**: ✅ Implemented (**`accessRole`** + **`membershipType`**, shared **`Permission`** checks on API + client; see [`rbac.md`](./rbac.md); E2E: `e2e/features/role-based-menu.feature` for sidebar, direct URL denial, API 403)
+   - **Status**: ✅ Implemented (**`accessRole`** + **`membershipType`**, shared **`Permission`** checks on API + client; see [`rbac.md`](./rbac.md); E2E: `e2e/features/role-based-menu.feature` for sidebar, direct URL denial, API 403; **HTTP 403** from the API is shown with the same **`AccessDenied`** pattern as route-gated pages via `AccessDeniedOrError` + status-prefixed fetch errors)
 3. **View Personal Profile** – self profile view
    - **Status**: ✅ Implemented (`/profila`, JWT-backed user payload + profile API)
 4. **Update Password** – change password flow

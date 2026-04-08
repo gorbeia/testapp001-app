@@ -4,6 +4,7 @@ import { ErrorBoundary } from "react-error-boundary";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/lib/api";
+import { readJsonOrThrow } from "@/lib/http-error";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -40,7 +41,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Search, Plus, Edit, Trash2, Settings } from "lucide-react";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import type { z } from "zod";
 import { subscriptionTypeCreateBodySchema, subscriptionTypeUpdateBodySchema } from "@shared/schema";
 import { getErrorMessage } from "@/lib/errors";
@@ -74,8 +75,7 @@ type SubscriptionTypeRow = {
 
 const fetchSubscriptionTypes = async (): Promise<SubscriptionTypeRow[]> => {
   const response = await authFetch("/api/subscription-types");
-  if (!response.ok) throw new Error("Failed to fetch subscription types");
-  return response.json();
+  return readJsonOrThrow<SubscriptionTypeRow[]>(response);
 };
 
 const createSubscriptionType = async (data: SubscriptionCreateBody) => {
@@ -272,7 +272,7 @@ export function SubscriptionsPage() {
   };
 
   if (error) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} />;
   }
 
   return (

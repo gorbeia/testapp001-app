@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/select";
 import { useLanguage } from "@/lib/i18n";
 import { authFetch } from "@/lib/api";
+import { readJsonOrThrow } from "@/lib/http-error";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { Notification } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import { eu, es } from "date-fns/locale";
@@ -35,6 +37,8 @@ export default function NotificationsPage() {
   const {
     data: notificationsData,
     isLoading,
+    isError,
+    error,
     refetch,
   } = useQuery({
     queryKey: ["notifications", pagination.page, pagination.limit, filter, typeFilter, language],
@@ -54,11 +58,10 @@ export default function NotificationsPage() {
       }
 
       const response = await authFetch(`/api/notifications?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch notifications");
-      return response.json() as Promise<{
+      return readJsonOrThrow<{
         notifications: Notification[];
         pagination: { page: number; limit: number; total: number; pages: number };
-      }>;
+      }>(response);
     },
   });
 
@@ -79,8 +82,7 @@ export default function NotificationsPage() {
     queryKey: ["notifications", "unread-count"],
     queryFn: async () => {
       const response = await authFetch("/api/notifications/unread-count");
-      if (!response.ok) throw new Error("Failed to fetch unread count");
-      return response.json() as Promise<{ count: number }>;
+      return readJsonOrThrow<{ count: number }>(response);
     },
   });
 
@@ -125,6 +127,15 @@ export default function NotificationsPage() {
       locale,
     });
   };
+
+  if (isError && error) {
+    return (
+      <div className="container mx-auto p-6 space-y-6">
+        <h1 className="text-3xl font-bold">{t("notifications")}</h1>
+        <AccessDeniedOrError error={error} onRetry={() => refetch()} />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">

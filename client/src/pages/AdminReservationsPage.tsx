@@ -40,7 +40,7 @@ import { format } from "date-fns";
 import { eu, es } from "date-fns/locale";
 import type { Reservation, User } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { authFetch } from "@/lib/api";
 import { Textarea } from "@/components/ui/textarea";
 import { usePagination } from "@/hooks/use-pagination";
@@ -299,7 +299,7 @@ export function AdminReservationsPage() {
   }, [monthFilter, userFilter, statusFilter, pagination.page, pagination.limit, searchTerm]);
 
   if (error) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} />;
   }
 
   return (

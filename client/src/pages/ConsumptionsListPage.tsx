@@ -33,7 +33,7 @@ import { useAuth } from "@/lib/auth";
 import { useUrlFilter } from "@/hooks/useUrlFilter";
 import type { Consumption, ConsumptionItem, User as UserType } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 
 // API helper function
 const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
@@ -179,7 +179,7 @@ export function ConsumptionsListPage() {
   }
 
   if (error) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} />;
   }
 
   return (

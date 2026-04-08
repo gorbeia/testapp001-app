@@ -24,7 +24,7 @@ import {
 } from "@/components/ui/table";
 import { useLanguage } from "@/lib/i18n";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorBoundary";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { getErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 import PaginationControls from "@/components/PaginationControls";
@@ -160,7 +160,7 @@ export function StockChangesPage() {
   };
 
   if (error && !loading && rows.length === 0) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} cardLayout />;
   }
 
   return (

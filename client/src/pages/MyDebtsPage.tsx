@@ -26,9 +26,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useUrlFilter } from "@/hooks/useUrlFilter";
 import { authFetch } from "@/lib/api";
+import { readJsonOrThrow } from "@/lib/http-error";
 import type { Credit } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 
 // API function to fetch current user's credits
 const fetchMyCredits = async (filters?: { month?: string; status?: string }): Promise<Credit[]> => {
@@ -44,18 +45,7 @@ const fetchMyCredits = async (filters?: { month?: string; status?: string }): Pr
     },
   });
 
-  if (!response.ok) {
-    // Handle different error types appropriately
-    if (response.status === 401) {
-      throw new Error("Authentication required");
-    } else if (response.status >= 500) {
-      throw new Error("Server error occurred");
-    } else {
-      throw new Error("Failed to fetch my credits");
-    }
-  }
-
-  return response.json();
+  return readJsonOrThrow<Credit[]>(response);
 };
 
 export function MyDebtsPage() {
@@ -82,8 +72,7 @@ export function MyDebtsPage() {
     queryKey: ["society-user"],
     queryFn: async () => {
       const res = await authFetch("/api/societies/user");
-      if (!res.ok) throw new Error("Failed to load society");
-      return res.json() as { sepaMode?: string };
+      return readJsonOrThrow<{ sepaMode?: string }>(res);
     },
     enabled: !!user,
     throwOnError: false,
@@ -148,7 +137,9 @@ export function MyDebtsPage() {
   }
 
   if (error) {
-    return <ErrorDisplay error={error instanceof Error ? error : new Error(String(error))} />;
+    return (
+      <AccessDeniedOrError error={error instanceof Error ? error : new Error(String(error))} />
+    );
   }
 
   return (

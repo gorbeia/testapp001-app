@@ -2,6 +2,8 @@ import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLanguage, type TranslationKey } from "@/lib/i18n";
 import { authFetch } from "@/lib/api";
+import { readJsonOrThrow } from "@/lib/http-error";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -78,8 +80,7 @@ export function BankTransfersPage() {
     queryKey: ["societies", "user"],
     queryFn: async () => {
       const res = await authFetch("/api/societies/user");
-      if (!res.ok) throw new Error("society");
-      return res.json() as { paymentMethods?: unknown };
+      return readJsonOrThrow<{ paymentMethods?: unknown }>(res);
     },
   });
 
@@ -90,8 +91,7 @@ export function BankTransfersPage() {
     enabled: societyQuery.isSuccess && prepaymentEnabled,
     queryFn: async () => {
       const res = await authFetch("/api/users");
-      if (!res.ok) throw new Error("users");
-      return res.json() as Promise<UserRow[]>;
+      return readJsonOrThrow<UserRow[]>(res);
     },
   });
 
@@ -100,8 +100,7 @@ export function BankTransfersPage() {
     enabled: societyQuery.isSuccess && prepaymentEnabled,
     queryFn: async () => {
       const res = await authFetch("/api/bank-transfers");
-      if (!res.ok) throw new Error("list");
-      return res.json() as Promise<BankTransferRow[]>;
+      return readJsonOrThrow<BankTransferRow[]>(res);
     },
   });
 
@@ -193,10 +192,10 @@ export function BankTransfersPage() {
     return <div className="p-4 sm:p-6">{t("loading")}</div>;
   }
 
-  if (societyQuery.isError) {
+  if (societyQuery.isError && societyQuery.error) {
     return (
-      <div className="p-4 sm:p-6 text-destructive" data-testid="bank-transfers-society-error">
-        {t("error")}
+      <div className="p-4 sm:p-6" data-testid="bank-transfers-society-error">
+        <AccessDeniedOrError error={societyQuery.error} onRetry={() => societyQuery.refetch()} />
       </div>
     );
   }

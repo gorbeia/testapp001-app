@@ -27,6 +27,8 @@ import { useLanguage } from "@/lib/i18n";
 import { useAuth, userCan } from "@/lib/auth";
 import { Permission } from "@shared/permissions";
 import { authFetch } from "@/lib/api";
+import { readJsonOrThrow } from "@/lib/http-error";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Credit } from "@shared/schema";
 
@@ -72,19 +74,7 @@ const fetchCredits = async (filters?: { month?: string; status?: string }) => {
   if (filters?.status) params.append("status", filters.status);
 
   const response = await authFetch(`/api/credits?${params}`);
-
-  if (!response.ok) {
-    // Handle different error types appropriately
-    if (response.status === 401) {
-      throw new Error("Authentication required");
-    } else if (response.status >= 500) {
-      throw new Error("Server error occurred");
-    } else {
-      throw new Error("Failed to fetch credits");
-    }
-  }
-
-  return response.json();
+  return readJsonOrThrow<CreditWithMemberName[]>(response);
 };
 
 export function CreditsPage() {
@@ -118,8 +108,7 @@ export function CreditsPage() {
     queryKey: ["society-user"],
     queryFn: async () => {
       const res = await authFetch("/api/societies/user");
-      if (!res.ok) throw new Error("Failed to load society");
-      return res.json() as { sepaMode?: string };
+      return readJsonOrThrow<{ sepaMode?: string }>(res);
     },
     enabled: !!user && isAdmin,
     throwOnError: false,
@@ -152,21 +141,8 @@ export function CreditsPage() {
     return <Redirect to="/mugimenduak" />;
   }
 
-  // Show error state if API call fails
   if (error) {
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">{t("error")}</h1>
-          <p className="text-gray-600">
-            Zorrak kargatzean errorea bat gertatu da. Mesedez, saiatu berriz geroago.
-          </p>
-          {process.env.NODE_ENV === "development" && (
-            <p className="text-sm text-gray-500 mt-2">Error: {error.message}</p>
-          )}
-        </div>
-      </div>
-    );
+    return <AccessDeniedOrError error={error} />;
   }
 
   // Calculate totals from real data

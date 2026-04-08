@@ -14,7 +14,13 @@ import { StatsCards } from "./StatsCards";
 import { UpcomingReservations } from "./UpcomingReservations";
 import { RecentNotes } from "./RecentNotes";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AccessDenied } from "@/components/AccessDenied";
+import { isHttpForbidden } from "@/lib/http-error";
 import { AlertCircle } from "lucide-react";
+
+function errorMessageFromCatch(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
 
 export function Dashboard() {
   const { t } = useLanguage();
@@ -43,7 +49,7 @@ export function Dashboard() {
       setNotes(notesData);
     } catch (error) {
       console.error("Error fetching notes:", error);
-      setNotesError("Failed to load notes");
+      setNotesError(errorMessageFromCatch(error, "Failed to load notes"));
       setNotes([]);
     } finally {
       setLoadingNotes(false);
@@ -62,7 +68,7 @@ export function Dashboard() {
       setTotalReservationsCount(totalCount);
     } catch (error) {
       console.error("Error fetching reservations:", error);
-      setReservationsError("Failed to load reservations");
+      setReservationsError(errorMessageFromCatch(error, "Failed to load reservations"));
       setReservations([]);
       setTotalReservationsCount(0);
     } finally {
@@ -78,7 +84,7 @@ export function Dashboard() {
       setStats(statsData);
     } catch (error) {
       console.error("Error fetching dashboard stats:", error);
-      setStatsError("Failed to load dashboard statistics");
+      setStatsError(errorMessageFromCatch(error, "Failed to load dashboard statistics"));
       setStats(null);
     } finally {
       setLoadingStats(false);
@@ -98,20 +104,28 @@ export function Dashboard() {
       <WelcomeHeader />
 
       {statsError ? (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{statsError}</AlertDescription>
-        </Alert>
+        isHttpForbidden(statsError) ? (
+          <AccessDenied />
+        ) : (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{statsError}</AlertDescription>
+          </Alert>
+        )
       ) : (
         <StatsCards stats={stats} loading={loadingStats} />
       )}
 
       <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
         {reservationsError ? (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{reservationsError}</AlertDescription>
-          </Alert>
+          isHttpForbidden(reservationsError) ? (
+            <AccessDenied />
+          ) : (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{reservationsError}</AlertDescription>
+            </Alert>
+          )
         ) : (
           <UpcomingReservations
             reservations={reservations}

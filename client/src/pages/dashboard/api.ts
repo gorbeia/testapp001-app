@@ -1,4 +1,5 @@
 import { authFetch } from "@/lib/api";
+import { throwIfResNotOk } from "@/lib/http-error";
 import { Language, findMessageByLanguage, MultilingualMessage } from "@shared/schema";
 
 export interface Note {
@@ -77,39 +78,37 @@ interface ReservationsListApiRow {
 export const fetchNotes = async (language?: string): Promise<Note[]> => {
   try {
     const response = await authFetch("/api/notes");
-    if (response.ok) {
-      const data: NoteWithMessages[] = await response.json();
-      // Get only active notes, sorted by creation date, max 4
-      const activeNotes = data
-        .filter((note: NoteWithMessages) => note.isActive)
-        .sort(
-          (a: NoteWithMessages, b: NoteWithMessages) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )
-        .slice(0, 4)
-        .map(note => {
-          // Use provided language or get user's preferred language from localStorage or default to 'eu'
-          const userLanguage = (language ||
-            (typeof window !== "undefined"
-              ? localStorage.getItem("language") || "eu"
-              : "eu")) as Language;
+    await throwIfResNotOk(response);
+    const data: NoteWithMessages[] = await response.json();
+    // Get only active notes, sorted by creation date, max 4
+    const activeNotes = data
+      .filter((note: NoteWithMessages) => note.isActive)
+      .sort(
+        (a: NoteWithMessages, b: NoteWithMessages) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+      .slice(0, 4)
+      .map(note => {
+        // Use provided language or get user's preferred language from localStorage or default to 'eu'
+        const userLanguage = (language ||
+          (typeof window !== "undefined"
+            ? localStorage.getItem("language") || "eu"
+            : "eu")) as Language;
 
-          // Use shared utility for language fallback logic
-          const message = findMessageByLanguage(
-            note.messages as MultilingualMessage[],
-            userLanguage
-          );
+        // Use shared utility for language fallback logic
+        const message = findMessageByLanguage(
+          note.messages as MultilingualMessage[],
+          userLanguage
+        );
 
-          return {
-            ...note,
-            title: message?.title || "",
-            content: message?.content || "",
-            language: message?.language || "unknown", // Track the actual language displayed
-          };
-        });
-      return activeNotes;
-    }
-    throw new Error("Failed to fetch notes");
+        return {
+          ...note,
+          title: message?.title || "",
+          content: message?.content || "",
+          language: message?.language || "unknown", // Track the actual language displayed
+        };
+      });
+    return activeNotes;
   } catch (error) {
     console.error("Error fetching notes:", error);
     throw error;
@@ -213,11 +212,9 @@ const fetchTodayReservationsCount = async (): Promise<number> => {
   try {
     const today = new Date().toISOString().split("T")[0];
     const response = await authFetch(`/api/reservations/count?date=${today}`);
-    if (response.ok) {
-      const data = await response.json();
-      return data.count || 0;
-    }
-    throw new Error("Failed to fetch today reservations count");
+    await throwIfResNotOk(response);
+    const data = await response.json();
+    return data.count || 0;
   } catch (error) {
     console.error("Error fetching today reservations count:", error);
     throw error;
@@ -228,11 +225,9 @@ const fetchTodayPeopleCount = async (): Promise<number> => {
   try {
     const today = new Date().toISOString().split("T")[0];
     const response = await authFetch(`/api/reservations/guests-sum?date=${today}`);
-    if (response.ok) {
-      const data = await response.json();
-      return data.guestsSum || 0;
-    }
-    throw new Error("Failed to fetch today people count");
+    await throwIfResNotOk(response);
+    const data = await response.json();
+    return data.guestsSum || 0;
   } catch (error) {
     console.error("Error fetching today people count:", error);
     throw error;
@@ -243,11 +238,9 @@ const fetchTodayReservationsAmount = async (): Promise<number> => {
   try {
     const today = new Date().toISOString().split("T")[0];
     const response = await authFetch(`/api/reservations/sum?date=${today}`);
-    if (response.ok) {
-      const data = await response.json();
-      return data.sum || 0;
-    }
-    throw new Error("Failed to fetch today reservations amount");
+    await throwIfResNotOk(response);
+    const data = await response.json();
+    return data.sum || 0;
   } catch (error) {
     console.error("Error fetching today reservations amount:", error);
     throw error;
@@ -261,11 +254,9 @@ const fetchMonthlyConsumptionsCount = async (): Promise<number> => {
       .toISOString()
       .split("T")[0];
     const response = await authFetch(`/api/consumptions/count?startDate=${firstDayOfMonth}`);
-    if (response.ok) {
-      const data = await response.json();
-      return data.count || 0;
-    }
-    throw new Error("Failed to fetch monthly consumptions count");
+    await throwIfResNotOk(response);
+    const data = await response.json();
+    return data.count || 0;
   } catch (error) {
     console.error("Error fetching monthly consumptions count:", error);
     throw error;
@@ -279,11 +270,9 @@ const fetchMonthlyConsumptionsAmount = async (): Promise<number> => {
       .toISOString()
       .split("T")[0];
     const response = await authFetch(`/api/consumptions/sum?startDate=${firstDayOfMonth}`);
-    if (response.ok) {
-      const data = await response.json();
-      return data.sum || 0;
-    }
-    throw new Error("Failed to fetch monthly consumptions amount");
+    await throwIfResNotOk(response);
+    const data = await response.json();
+    return data.sum || 0;
   } catch (error) {
     console.error("Error fetching monthly consumptions amount:", error);
     throw error;
@@ -297,11 +286,9 @@ const fetchMemberMonthlyConsumptionsAmount = async (): Promise<number> => {
       .toISOString()
       .split("T")[0];
     const response = await authFetch(`/api/consumptions/member/sum?startDate=${firstDayOfMonth}`);
-    if (response.ok) {
-      const data = await response.json();
-      return data.sum || 0;
-    }
-    throw new Error("Failed to fetch member monthly consumptions amount");
+    await throwIfResNotOk(response);
+    const data = await response.json();
+    return data.sum || 0;
   } catch (error) {
     console.error("Error fetching member monthly consumptions amount:", error);
     throw error;
@@ -325,11 +312,9 @@ const fetchMemberMonthlyConsumptionsAmount = async (): Promise<number> => {
 const fetchActiveUsersCount = async (): Promise<number> => {
   try {
     const response = await authFetch("/api/users/count?status=active");
-    if (response.ok) {
-      const data = await response.json();
-      return data.count || 0;
-    }
-    throw new Error("Failed to fetch active users count");
+    await throwIfResNotOk(response);
+    const data = await response.json();
+    return data.count || 0;
   } catch (error) {
     console.error("Error fetching active users count:", error);
     throw error;
@@ -339,15 +324,13 @@ const fetchActiveUsersCount = async (): Promise<number> => {
 const fetchUserTotalPendingDebt = async (): Promise<number> => {
   try {
     const response = await authFetch("/api/credits/member/current?status=pending");
-    if (response.ok) {
-      const data = (await response.json()) as MemberPendingCreditRow[];
-      return data.reduce(
-        (sum: number, credit: MemberPendingCreditRow) =>
-          sum + (parseFloat(credit.totalAmount) || 0),
-        0
-      );
-    }
-    throw new Error("Failed to fetch user total pending debt");
+    await throwIfResNotOk(response);
+    const data = (await response.json()) as MemberPendingCreditRow[];
+    return data.reduce(
+      (sum: number, credit: MemberPendingCreditRow) =>
+        sum + (parseFloat(credit.totalAmount) || 0),
+      0
+    );
   } catch (error) {
     console.error("Error fetching user total pending debt:", error);
     throw error;
@@ -359,23 +342,21 @@ export const fetchUpcomingReservations = async (limit = 4): Promise<UpcomingRese
     const response = await authFetch(
       `/api/reservations?limit=${limit}&status=confirmed&upcoming=true`
     );
-    if (response.ok) {
-      const result = await response.json();
-      const data = (result.data || result) as ReservationsListApiRow[];
-      return data.map(reservation => ({
-        id: reservation.id,
-        member: reservation.userName || reservation.name || "Unknown",
-        date: reservation.startDate,
-        time: new Date(reservation.startDate).toLocaleTimeString("eu-ES", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        type: reservation.type,
-        table: reservation.table,
-        guests: reservation.guests,
-      }));
-    }
-    return [];
+    await throwIfResNotOk(response);
+    const result = await response.json();
+    const data = (result.data || result) as ReservationsListApiRow[];
+    return data.map(reservation => ({
+      id: reservation.id,
+      member: reservation.userName || reservation.name || "Unknown",
+      date: reservation.startDate,
+      time: new Date(reservation.startDate).toLocaleTimeString("eu-ES", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      type: reservation.type,
+      table: reservation.table,
+      guests: reservation.guests,
+    }));
   } catch (error) {
     console.error("Error fetching upcoming reservations:", error);
     throw error;
@@ -385,11 +366,9 @@ export const fetchUpcomingReservations = async (limit = 4): Promise<UpcomingRese
 export const fetchTotalReservationsCount = async (): Promise<number> => {
   try {
     const response = await authFetch("/api/reservations/count?status=confirmed");
-    if (response.ok) {
-      const data = await response.json();
-      return data.count || 0;
-    }
-    throw new Error("Failed to fetch reservations count");
+    await throwIfResNotOk(response);
+    const data = await response.json();
+    return data.count || 0;
   } catch (error) {
     console.error("Error fetching reservations count:", error);
     throw error;

@@ -25,8 +25,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import type { Consumption, ConsumptionItem } from "@shared/schema";
 import { authFetch } from "@/lib/api";
+import { readJsonOrThrow } from "@/lib/http-error";
 import { ErrorFallback } from "@/components/ErrorBoundary";
-import { ErrorDisplay } from "@/components/ErrorDisplay";
+import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 
 interface ConsumptionWithItems extends Consumption {
   items: ConsumptionItemWithProduct[];
@@ -81,8 +82,7 @@ export function MyConsumptionsPage() {
       }
 
       const response = await authFetch(`/api/consumptions/user?${params}`);
-      if (!response.ok) throw new Error("Failed to fetch consumptions");
-      const data = await response.json();
+      const data = await readJsonOrThrow<Consumption[]>(response);
       setConsumptions(data);
     } catch (error) {
       console.error("Error fetching consumptions:", error);
@@ -98,8 +98,7 @@ export function MyConsumptionsPage() {
     try {
       setDetailsLoading(true);
       const response = await authFetch(`/api/consumptions/${consumptionId}/items`);
-      if (!response.ok) throw new Error("Failed to fetch consumption details");
-      const items = await response.json();
+      const items = await readJsonOrThrow<ConsumptionItemWithProduct[]>(response);
 
       const consumption = consumptions.find(c => c.id === consumptionId);
       if (consumption) {
@@ -151,7 +150,7 @@ export function MyConsumptionsPage() {
   }
 
   if (error) {
-    return <ErrorDisplay error={error} />;
+    return <AccessDeniedOrError error={error} />;
   }
 
   return (
