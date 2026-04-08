@@ -44,10 +44,13 @@ import CategoriesPage from "@/pages/CategoriesPage";
 import NotFound from "@/pages/not-found";
 import { SuperAdminLoginPage } from "@/pages/SuperAdminLoginPage";
 import { BackofficeSocietiesPage, BackofficeSuperadminsPage, BackofficeLayout } from "@/backoffice";
+import { LandingPage } from "@/landing/LandingPage";
 
 function AppRoutes() {
   return (
     <Switch>
+      <Route path="/hasiera">{() => <Redirect to="/" />}</Route>
+      <Route path="/sartu">{() => <Redirect to="/" />}</Route>
       <Route path="/" component={Dashboard} />
       <Route path="/egutegia" component={CalendarPage} />
       <Route path="/admin-erreserbak">
@@ -225,7 +228,16 @@ function AuthenticatedApp() {
   }
 
   if (!isAuthenticated) {
-    return <LoginForm />;
+    return (
+      <Switch>
+        <Route path="/" component={LandingPage} />
+        <Route path="/hasiera" component={LandingPage} />
+        <Route path="/sartu" component={LoginForm} />
+        <Route>
+          <Redirect to="/sartu" />
+        </Route>
+      </Switch>
+    );
   }
 
   const sidebarStyle = {

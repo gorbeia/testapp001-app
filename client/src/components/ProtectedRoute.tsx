@@ -23,7 +23,7 @@ export function ProtectedRoute({ children, requires }: ProtectedRouteProps) {
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      setLocation("/");
+      setLocation("/sartu");
     }
   }, [isAuthenticated, user, setLocation]);
 

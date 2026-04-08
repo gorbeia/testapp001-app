@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Mail, Lock, LogIn, AlertCircle, Building } from "lucide-react";
+import { Link } from "wouter";
+import { Mail, Lock, LogIn, AlertCircle, Building, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +71,15 @@ export function LoginForm() {
         <LanguageToggle />
         <ThemeToggle />
       </div>
+
+      <Link
+        href="/"
+        className="absolute top-4 left-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+        data-testid="link-landing-back"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden />
+        {t("loginBackToPublicHome")}
+      </Link>
 
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">

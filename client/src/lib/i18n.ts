@@ -895,6 +895,7 @@ export const translations = {
     noSuperadminAccountsDescription:
       "Sortu lehen superadministratzaile kontua goiko botoia erabiliz.",
     noSocietiesFound: "Ez da elkarterik aurkitu",
+    loginBackToPublicHome: "Hasierara itzuli",
   },
   es: {
     appName: "Gure Txokoa",
@@ -1714,6 +1715,7 @@ export const translations = {
     iconApple: "Manzana",
     iconCarrot: "Zanahoria",
     iconShoppingBag: "Bolsa de compras",
+    loginBackToPublicHome: "Volver al inicio",
   },
   en: {
     appName: "Gure Txokoa",

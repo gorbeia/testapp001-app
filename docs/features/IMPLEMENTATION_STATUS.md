@@ -236,6 +236,10 @@ Documented alongside auth; shipped as `/profila` with profile edit + password ch
 
 - **Superadmin login, society list, superadmin users** (`/elkarteapp/kudeaketa/*`): Implemented (separate cookie; `superadmins` table)
 
+## 12. Public marketing landing (not in legacy story index)
+
+- **Bilingual landing page** (`/` when logged out, alias `/hasiera`): ✅ Implemented (`client/src/landing/`: copy + `useLandingI18n` in `i18n.ts`, locale in `localStorage` key **`landing:locale`** — independent of app `client/src/lib/i18n.ts` / **`language`**; **member login** at `/sartu`; unauthenticated deep links outside those routes redirect to `/sartu`)
+
 ---
 
 ## Notes for Future Work

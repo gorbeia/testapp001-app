@@ -67,7 +67,7 @@ When("I open the login page", async function () {
   const pageInstance: Page = await browserInstance.newPage();
   await pageInstance.setViewportSize({ width: 1280, height: 720 });
   setPage(pageInstance);
-  await pageInstance.goto(e2eUrl("/"), { waitUntil: "domcontentloaded" });
+  await pageInstance.goto(e2eUrl("/sartu"), { waitUntil: "domcontentloaded" });
 });
 
 /**
@@ -78,7 +78,7 @@ When("I re-login as a {word} user", async function (role: string) {
   const page = getPage();
   assert.ok(page, "Page was not initialized");
 
-  await page.goto(e2eUrl("/"), { waitUntil: "domcontentloaded" });
+  await page.goto(e2eUrl("/sartu"), { waitUntil: "domcontentloaded" });
 
   const loginVisible = await page
     .locator('[data-testid="input-email"]')
