@@ -65,18 +65,15 @@ export function NotesManagementPage() {
     isActive: true,
   });
 
-  // Check if user is admin
+  // Full CRUD only for users with notes.manage; others get read-only active notes (GET /api/notes is society-scoped for any member).
   const isAdmin = userCan(user, Permission.NOTES_MANAGE);
 
-  // Fetch notes from API
   useEffect(() => {
-    if (!isAdmin) return;
-
     const fetchNotes = async () => {
       try {
         setLoading(true);
         const data = await fetchAdminNotes();
-        setNotes(data);
+        setNotes(isAdmin ? data : data.filter(n => n.isActive));
       } catch (err) {
         setError(err instanceof Error ? err : new Error("Failed to fetch notes"));
       } finally {
@@ -84,7 +81,7 @@ export function NotesManagementPage() {
       }
     };
 
-    fetchNotes();
+    void fetchNotes();
   }, [isAdmin]);
 
   const resetForm = () => {
@@ -315,8 +312,6 @@ export function NotesManagementPage() {
     }
   };
 
-  // Access control is now handled by ProtectedRoute
-
   if (loading) {
     return (
       <div className="p-4 sm:p-6">
@@ -337,32 +332,40 @@ export function NotesManagementPage() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold">{t("notes")}</h2>
-            <p className="text-muted-foreground">{t("manageSocietyNotes")}</p>
+            <p className="text-muted-foreground">
+              {isAdmin ? t("manageSocietyNotes") : t("societyNotesAndNews")}
+            </p>
           </div>
-          <Button onClick={openCreateDialog}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t("createNote")}
-          </Button>
+          {isAdmin && (
+            <Button onClick={openCreateDialog}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t("createNote")}
+            </Button>
+          )}
         </div>
 
-        <MultiLanguageNoteForm
-          isOpen={isDialogOpen}
-          onClose={() => {
-            setIsDialogOpen(false);
-            resetForm();
-          }}
-          onSubmit={handleSubmit}
-          formData={formData}
-          setFormData={setFormData}
-          isEditing={!!editingNote}
-        />
+        {isAdmin && (
+          <MultiLanguageNoteForm
+            isOpen={isDialogOpen}
+            onClose={() => {
+              setIsDialogOpen(false);
+              resetForm();
+            }}
+            onSubmit={handleSubmit}
+            formData={formData}
+            setFormData={setFormData}
+            isEditing={!!editingNote}
+          />
+        )}
 
         <div className="space-y-4">
           {notes.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground">{t("noNotes")}</p>
+                <p className="text-muted-foreground">
+                  {isAdmin ? t("noNotes") : t("noActiveNotes")}
+                </p>
               </CardContent>
             </Card>
           ) : (
@@ -376,118 +379,122 @@ export function NotesManagementPage() {
                         <span className="text-sm text-muted-foreground">
                           {new Date(note.createdAt).toLocaleDateString("eu-ES")}
                         </span>
-                        <Badge variant={note.isActive ? "default" : "secondary"}>
-                          {note.isActive ? t("active") : t("inactive")}
-                        </Badge>
-                        {note.notifyUsers && (
+                        {isAdmin && (
+                          <Badge variant={note.isActive ? "default" : "secondary"}>
+                            {note.isActive ? t("active") : t("inactive")}
+                          </Badge>
+                        )}
+                        {isAdmin && note.notifyUsers && (
                           <Badge variant="default" className="text-xs">
                             <Bell className="h-3 w-3 mr-1" />
-                            Jakinarazpenak bidalita
+                            {t("notificationsSent")}
                           </Badge>
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <TooltipProvider>
-                        <div className="flex items-center gap-2">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => openEditDialog(note)}
-                                disabled={loading}
-                              >
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{t("editNote")}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleToggleActive(note.id, note.isActive)}
-                                disabled={loading}
-                              >
-                                {note.isActive ? (
-                                  <Power className="h-4 w-4" />
-                                ) : (
-                                  <Power className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{note.isActive ? t("deactivate") : t("activate")}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          {!note.notifyUsers && (
+                    {isAdmin && (
+                      <div className="flex items-center gap-2">
+                        <TooltipProvider>
+                          <div className="flex items-center gap-2">
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() =>
-                                    setConfirmPushDialog({
-                                      open: true,
-                                      noteId: note.id,
-                                      noteTitle: getNoteDisplayContent(note).title,
-                                    })
-                                  }
+                                  onClick={() => openEditDialog(note)}
                                   disabled={loading}
                                 >
-                                  <Send className="h-4 w-4" />
+                                  <Edit className="h-4 w-4" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>{t("sendNotifications")}</p>
+                                <p>{t("editNote")}</p>
                               </TooltipContent>
                             </Tooltip>
-                          )}
-                          {note.notifyUsers && (
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="outline"
                                   size="sm"
-                                  onClick={() =>
-                                    setConfirmRevertDialog({
-                                      open: true,
-                                      noteId: note.id,
-                                      noteTitle: getNoteDisplayContent(note).title,
-                                    })
-                                  }
+                                  onClick={() => handleToggleActive(note.id, note.isActive)}
                                   disabled={loading}
                                 >
-                                  <X className="h-4 w-4" />
+                                  {note.isActive ? (
+                                    <Power className="h-4 w-4" />
+                                  ) : (
+                                    <Power className="h-4 w-4" />
+                                  )}
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>{t("removeNotifications")}</p>
+                                <p>{note.isActive ? t("deactivate") : t("activate")}</p>
                               </TooltipContent>
                             </Tooltip>
-                          )}
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleDelete(note.id)}
-                                disabled={loading}
-                              >
-                                <Trash className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{t("deleteNote")}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </TooltipProvider>
-                    </div>
+                            {!note.notifyUsers && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      setConfirmPushDialog({
+                                        open: true,
+                                        noteId: note.id,
+                                        noteTitle: getNoteDisplayContent(note).title,
+                                      })
+                                    }
+                                    disabled={loading}
+                                  >
+                                    <Send className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{t("sendNotifications")}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            {note.notifyUsers && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                      setConfirmRevertDialog({
+                                        open: true,
+                                        noteId: note.id,
+                                        noteTitle: getNoteDisplayContent(note).title,
+                                      })
+                                    }
+                                    disabled={loading}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{t("removeNotifications")}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDelete(note.id)}
+                                  disabled={loading}
+                                >
+                                  <Trash className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{t("deleteNote")}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TooltipProvider>
+                      </div>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>

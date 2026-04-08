@@ -15,6 +15,7 @@ const COMMON_MAIN_MENU = [
   "link-nire-konsumoak",
   "link-nire-zorrak",
   "link-nire-mugimenduak",
+  "link-jakinarazpenak",
 ];
 
 const ANNOUNCEMENTS_LINK = "link-oharrak";
@@ -202,7 +203,6 @@ Then(
       "/mahaiak",
       "/kategoriak",
       "/subscriptions",
-      "/oharrak",
     ];
 
     for (const p of deniedPaths) {
@@ -224,7 +224,6 @@ Then(
       "/kontsumoak-zerrenda",
       "/mahaiak",
       "/subscriptions",
-      "/oharrak",
     ];
 
     for (const p of deniedPaths) {
@@ -251,7 +250,6 @@ Then(
       "/mahaiak",
       "/kategoriak",
       "/subscriptions",
-      "/oharrak",
     ];
 
     for (const p of deniedPaths) {

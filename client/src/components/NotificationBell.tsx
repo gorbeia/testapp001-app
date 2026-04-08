@@ -14,6 +14,8 @@ import {
 import { Link } from "wouter";
 import { authFetch } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
+import { useAuth, userCan } from "@/lib/auth";
+import { Permission } from "@shared/permissions";
 import { Notification } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
 import { eu, es } from "date-fns/locale";
@@ -24,6 +26,7 @@ interface NotificationBellProps {
 
 export function NotificationBell({ className }: NotificationBellProps) {
   const { t, language } = useLanguage();
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   // Fetch unread count
@@ -134,7 +137,11 @@ export function NotificationBell({ className }: NotificationBellProps) {
             recentNotifications.map(notification => (
               <DropdownMenuItem key={notification.id} className="p-3 cursor-pointer" asChild>
                 <Link
-                  href={notification.referenceId ? "/oharrak" : "/jakinarazpenak"}
+                  href={
+                    notification.referenceId && userCan(user, Permission.NOTES_MANAGE)
+                      ? "/oharrak"
+                      : "/jakinarazpenak"
+                  }
                   onClick={() => setIsOpen(false)}
                 >
                   <div className="flex items-start gap-3 w-full">

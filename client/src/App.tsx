@@ -104,13 +104,7 @@ function AppRoutes() {
           </ProtectedRoute>
         )}
       </Route>
-      <Route path="/oharrak">
-        {() => (
-          <ProtectedRoute requires={Permission.NOTES_MANAGE}>
-            <OharrakPage />
-          </ProtectedRoute>
-        )}
-      </Route>
+      <Route path="/oharrak" component={OharrakPage} />
       <Route path="/jakinarazpenak" component={NotificationsPage} />
       <Route path="/profila" component={UserProfile} />
       <Route path="/erabiltzaileak">

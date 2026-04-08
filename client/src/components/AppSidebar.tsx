@@ -12,6 +12,7 @@ import {
   FileSpreadsheet,
   LogOut,
   Receipt,
+  Bell,
   Table as TableIcon,
   CreditCard as SubscriptionIcon,
   Palette,
@@ -162,6 +163,7 @@ export function AppSidebar() {
       ? [{ title: t("credits"), url: "/nire-zorrak", icon: CreditCard } as NavItem]
       : []),
     { title: t("myMovements"), url: "/nire-mugimenduak", icon: List },
+    { title: t("notifications"), url: "/jakinarazpenak", icon: Bell },
     ...(userCan(user, Permission.NOTES_MANAGE)
       ? [{ title: t("announcements"), url: "/oharrak", icon: Megaphone } as NavItem]
       : []),

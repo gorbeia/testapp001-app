@@ -159,14 +159,14 @@ Status legend:
 1. **Create notes** – multilingual title/body (eu/es)
    - **Status**: ✅ Implemented (`notes` + `note_messages`, `POST /api/notes`, admin UI `/oharrak`)
 2. **View notes** – read society notices
-   - **Status**: ✅ Implemented (dashboard `RecentNotes` + full admin management)
+   - **Status**: ✅ Implemented (dashboard `RecentNotes`, **active-notes read-only** `/oharrak` for any authenticated member; admin keeps full management UI)
 3. **Note management** – edit/delete
    - **Status**: 🟡 Partial (CRUD; no archive/expiry/analytics as in original epic)
 
 ### Notifications (Jakinarazpenak)
 
 4. **In-app notifications** – list/read DB notifications
-   - **Status**: ✅ Implemented (`/jakinarazpenak`, `notifications` + `notification_messages`; can be fed from notes)
+   - **Status**: ✅ Implemented (`/jakinarazpenak` in main sidebar for all members, `notifications` + `notification_messages`; bell deep-links note pushes to the inbox unless the user can manage notes)
 
 ### Preferences, templates, analytics (backlog)
 

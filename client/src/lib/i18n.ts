@@ -1510,6 +1510,7 @@ export const translations = {
     // Empty states
     noTables: "No hay mesas",
     noActiveNotes: "No hay notas activas",
+    societyNotesAndNews: "Avisos y noticias de la sociedad",
     // Technical/Accessibility labels
     more: "Más",
     menu: "Menú",
