@@ -33,6 +33,7 @@ import { SocietyPage } from "@/pages/SocietyPage";
 import { SepaExportPage } from "@/pages/SepaExportPage";
 import { MyMovementsPage } from "@/pages/MyMovementsPage";
 import { AccountMovementsPage } from "@/pages/AccountMovementsPage";
+import { SocietyAccountingPage } from "@/pages/SocietyAccountingPage";
 import { BankTransfersPage } from "@/pages/BankTransfersPage";
 import { TablesPage } from "@/pages/TablesPage";
 import { UserProfile } from "@/components/UserProfile";
@@ -79,6 +80,13 @@ function AppRoutes() {
         {() => (
           <ProtectedRoute requires={Permission.MOVEMENTS_VIEW}>
             <AccountMovementsPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/kontabilitatea">
+        {() => (
+          <ProtectedRoute requires={Permission.MOVEMENTS_VIEW}>
+            <SocietyAccountingPage />
           </ProtectedRoute>
         )}
       </Route>

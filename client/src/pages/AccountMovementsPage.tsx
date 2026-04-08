@@ -165,40 +165,6 @@ export function AccountMovementsPage() {
 
   return (
     <div className="p-4 sm:p-6 space-y-4" data-testid="admin-movements-page">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold" data-testid="admin-movements-title">
-          {t("adminMovements")}
-        </h1>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={balancesBusy}
-            data-testid="button-download-member-balances-csv"
-            onClick={() => void downloadMemberBalancesCsv()}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {t("ledgerBalancesExport")}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            data-testid="button-download-admin-statement-csv"
-            onClick={() => {
-              setStatementFrom(oneYearAgoMonth());
-              setStatementTo(month || currentYearMonth());
-              setStatementMemberId(userId !== "all" ? userId : STATEMENT_ALL_MEMBERS);
-              setStatementOpen(true);
-            }}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            {t("ledgerStatementDownload")}
-          </Button>
-        </div>
-      </div>
-
       <Dialog open={statementOpen} onOpenChange={setStatementOpen}>
         <DialogContent data-testid="dialog-admin-ledger-statement-csv">
           <DialogHeader>
@@ -319,6 +285,40 @@ export function AccountMovementsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold" data-testid="admin-movements-title">
+          {t("adminMovements")}
+        </h1>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={balancesBusy}
+            data-testid="button-download-member-balances-csv"
+            onClick={() => void downloadMemberBalancesCsv()}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("ledgerBalancesExport")}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            data-testid="button-download-admin-statement-csv"
+            onClick={() => {
+              setStatementFrom(oneYearAgoMonth());
+              setStatementTo(month || currentYearMonth());
+              setStatementMemberId(userId !== "all" ? userId : STATEMENT_ALL_MEMBERS);
+              setStatementOpen(true);
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("ledgerStatementDownload")}
+          </Button>
+        </div>
+      </div>
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card data-testid="card-admin-movements-count">

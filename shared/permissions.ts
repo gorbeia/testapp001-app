@@ -20,6 +20,8 @@ export const Permission = {
   MOVEMENTS_VIEW: "movements.view",
   MOVEMENTS_MANAGE: "movements.manage",
   BANK_TRANSFERS_MANAGE: "bank-transfers.manage",
+  /** Manual society income/expense entries and categories (Kontabilitatea tab). */
+  SOCIETY_TRANSACTIONS_MANAGE: "society_transactions.manage",
   NOTES_MANAGE: "notes.manage",
   SOCIETY_MANAGE: "society.manage",
   /** Create notifications targeted at users other than self (staff). */
@@ -47,6 +49,7 @@ const treasurerPermissions: AppPermission[] = [
   Permission.MOVEMENTS_VIEW,
   Permission.MOVEMENTS_MANAGE,
   Permission.BANK_TRANSFERS_MANAGE,
+  Permission.SOCIETY_TRANSACTIONS_MANAGE,
   Permission.SOCIETY_MANAGE,
   Permission.CATEGORIES_MANAGE,
   Permission.NOTIFICATIONS_BROADCAST,

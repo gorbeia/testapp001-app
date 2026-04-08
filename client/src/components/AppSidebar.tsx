@@ -21,6 +21,7 @@ import {
   Truck,
   ClipboardCheck,
   ChevronRight,
+  Calculator,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -176,7 +177,10 @@ export function AppSidebar() {
         ? [{ title: t("sepaExport"), url: "/sepa", icon: FileSpreadsheet }]
         : []),
       ...(userCan(user, Permission.MOVEMENTS_VIEW)
-        ? [{ title: t("adminMovements"), url: "/mugimenduak", icon: List }]
+        ? [
+            { title: t("adminMovements"), url: "/mugimenduak", icon: List },
+            { title: t("societyAccounting"), url: "/kontabilitatea", icon: Calculator },
+          ]
         : []),
       ...(userCan(user, Permission.BANK_TRANSFERS_MANAGE) && allowsBankTransferPrepayment
         ? [{ title: t("bankTransfersMenu"), url: "/transferentziak", icon: Landmark }]

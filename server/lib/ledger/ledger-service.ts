@@ -9,6 +9,7 @@ import {
 } from "@shared/schema";
 import { db, type AppDatabase } from "../../db";
 import { insertAccountMovementRow, movementExistsForReference } from "../account-movements";
+import { mirrorAccountMovementToSocietyLedger } from "../society-ledger";
 import {
   formatLedgerAmount,
   signedAmountForCreditType,
@@ -29,7 +30,7 @@ export async function postLedgerRefund(params: {
   createdBy: string;
 }) {
   return db.transaction(async tx => {
-    return insertAccountMovementRow(
+    const movement = await insertAccountMovementRow(
       {
         societyId: params.societyId,
         userId: params.userId,
@@ -42,6 +43,8 @@ export async function postLedgerRefund(params: {
       },
       tx
     );
+    await mirrorAccountMovementToSocietyLedger(tx, movement);
+    return movement;
   });
 }
 
@@ -99,6 +102,7 @@ export async function validateBankTransferAndPostLedger(params: {
       },
       tx
     );
+    await mirrorAccountMovementToSocietyLedger(tx, movement);
     await tx
       .update(bankTransfers)
       .set({
@@ -146,6 +150,7 @@ export async function postSepaBounceAndResetCredit(params: {
     if (!movement) {
       throw new Error("Failed to insert SEPA bounce movement");
     }
+    await mirrorAccountMovementToSocietyLedger(tx, movement);
     await tx
       .update(credits)
       .set({
@@ -184,7 +189,7 @@ export async function appendSepaCollectionMovementsForCredits(
     if (exists) continue;
     const amt = parseFloat(String(credit.totalAmount));
     if (amt <= 0) continue;
-    await insertAccountMovementRow(
+    const m = await insertAccountMovementRow(
       {
         societyId: params.societyId,
         userId: credit.memberId,
@@ -197,6 +202,7 @@ export async function appendSepaCollectionMovementsForCredits(
       },
       tx
     );
+    await mirrorAccountMovementToSocietyLedger(tx, m);
   }
 }
 
@@ -240,6 +246,7 @@ export async function postCashReservationSettlement(params: {
       },
       tx
     );
+    await mirrorAccountMovementToSocietyLedger(tx, row);
     return { cashPaymentMovementId: row.id };
   });
 }
@@ -276,6 +283,7 @@ export async function postCashSubscriptionSettlement(params: {
       },
       tx
     );
+    await mirrorAccountMovementToSocietyLedger(tx, row);
     return { movementId: row.id };
   });
 }

@@ -121,6 +121,8 @@ import { registerSepaRoutes } from "./sepa";
 import { registerDebtRoutes } from "./debts";
 import { registerAccountMovementRoutes } from "./account-movements";
 import { registerBankTransferRoutes } from "./bank-transfers";
+import { registerSocietyAccountingRoutes } from "./society-accounting";
+import { registerSocietyTransactionRoutes } from "./society-transactions";
 import { registerSocietyRoutes } from "./societies";
 import { registerUserRoutes } from "./users";
 import { registerSubscriptionRoutes } from "./subscriptions";
@@ -170,6 +172,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   registerAccountMovementRoutes(app);
   registerBankTransferRoutes(app);
+  registerSocietyAccountingRoutes(app);
+  registerSocietyTransactionRoutes(app);
 
   // Register society routes
   registerSocietyRoutes(app);

@@ -260,6 +260,7 @@ export function UsersPage() {
     "movements.view": "permMovementsView",
     "movements.manage": "permMovementsManage",
     "bank-transfers.manage": "permBankTransfersManage",
+    "society_transactions.manage": "permSocietyTransactionsManage",
     "notes.manage": "permNotesManage",
     "society.manage": "permSocietyManage",
     "notifications.broadcast": "permNotificationsBroadcast",

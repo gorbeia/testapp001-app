@@ -617,6 +617,101 @@ export const bankTransfers = pgTable("bank_transfers", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+/** Manual society income/expense categories (Kontabilitatea). */
+export const societyTransactionCategoryTypeSchema = z.enum(["income", "expense"]);
+export type SocietyTransactionCategoryType = z.infer<
+  typeof societyTransactionCategoryTypeSchema
+>;
+
+export const societyTransactionCategories = pgTable("society_transaction_categories", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
+  name: text("name").notNull(),
+  nameEs: text("name_es"),
+  type: text("type").notNull(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/** Posted society cashbook: derived member-ledger mirror + manual entries + adjustments (append-only). */
+export const societyLedgerTypeSchema = z.enum([
+  "prepayment",
+  "sepa_collection",
+  "cash_payment",
+  "refund",
+  "sepa_bounce",
+  "manual_income",
+  "manual_expense",
+  "manual_adjustment",
+]);
+export type SocietyLedgerType = z.infer<typeof societyLedgerTypeSchema>;
+
+export const societyLedger = pgTable("society_ledger", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id),
+  type: text("type").notNull(),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  description: text("description"),
+  referenceId: varchar("reference_id"),
+  referenceType: text("reference_type"),
+  categoryId: varchar("category_id").references(() => societyTransactionCategories.id),
+  bookingDate: date("booking_date").notNull(),
+  isManual: boolean("is_manual").notNull().default(false),
+  voided: boolean("voided").notNull().default(false),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSocietyTransactionCategorySchema = createInsertSchema(
+  societyTransactionCategories
+).pick({
+  societyId: true,
+  name: true,
+  nameEs: true,
+  type: true,
+  sortOrder: true,
+  isActive: true,
+});
+
+export const societyTransactionCategoryBodySchema = z.object({
+  name: z.string().min(1),
+  nameEs: z.string().optional(),
+  type: societyTransactionCategoryTypeSchema,
+  sortOrder: z.number().int().optional(),
+});
+
+export const societyTransactionBodySchema = z.object({
+  categoryId: z.string().min(1),
+  date: z.coerce.date(),
+  amount: z.union([z.coerce.number().positive(), z.string()]),
+  description: z.string().optional(),
+});
+
+export const societyTransactionUpdateBodySchema = z.object({
+  categoryId: z.string().min(1).optional(),
+  date: z.coerce.date().optional(),
+  amount: z.union([z.coerce.number().positive(), z.string()]).optional(),
+  description: z.string().optional(),
+});
+
+export const societyAccountingSummaryQuerySchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}$/),
+});
+
+export type SocietyTransactionCategory = typeof societyTransactionCategories.$inferSelect;
+export type SocietyLedger = typeof societyLedger.$inferSelect;
+
 export const insertAccountMovementSchema = createInsertSchema(accountMovements).pick({
   societyId: true,
   userId: true,
