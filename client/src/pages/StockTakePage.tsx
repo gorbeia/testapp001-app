@@ -39,6 +39,8 @@ import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { getErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
+import PaginationControls from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/use-pagination";
 
 const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
   const token = localStorage.getItem("auth:token");
@@ -83,24 +85,30 @@ export function StockTakePage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [createNotes, setCreateNotes] = useState("");
   const [finalizeOpen, setFinalizeOpen] = useState(false);
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
 
   const loadTakes = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await authFetch("/api/stock-takes?limit=100&page=1");
+      const params = new URLSearchParams({
+        limit: String(pagination.limit),
+        page: String(pagination.page),
+      });
+      const res = await authFetch(`/api/stock-takes?${params.toString()}`);
       if (!res.ok) {
         const b = await res.json().catch(() => ({}));
         throw new Error(b.message || "Failed to load stock takes");
       }
-      const body = (await res.json()) as { data: TakeSummary[] };
+      const body = (await res.json()) as { data: TakeSummary[]; total: number };
       setTakes(body.data);
+      pagination.updatePagination(body.total);
     } catch (e) {
       setError(e instanceof Error ? e : new Error(String(e)));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [pagination.page, pagination.limit, pagination.updatePagination]);
 
   const loadDetail = useCallback(
     async (id: string) => {
@@ -459,46 +467,49 @@ export function StockTakePage() {
             </Card>
           ) : null
         ) : (
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t("date")}</TableHead>
-                  <TableHead>{t("status")}</TableHead>
-                  <TableHead>{t("notes")}</TableHead>
-                  <TableHead></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loading ? (
+          <>
+            <Card>
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
-                      {t("loading")}…
-                    </TableCell>
+                    <TableHead>{t("date")}</TableHead>
+                    <TableHead>{t("status")}</TableHead>
+                    <TableHead>{t("notes")}</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
-                ) : takes.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">
-                      {t("noStockTakes")}
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  takes.map(tk => (
-                    <TableRow key={tk.id}>
-                      <TableCell>{new Date(tk.date).toLocaleString()}</TableCell>
-                      <TableCell>{statusBadge(tk.status)}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{tk.notes ?? "—"}</TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm" onClick={() => setSelectedId(tk.id)}>
-                          {t("openDetail")}
-                        </Button>
+                </TableHeader>
+                <TableBody>
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        {t("loading")}…
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </Card>
+                  ) : takes.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                        {t("noStockTakes")}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    takes.map(tk => (
+                      <TableRow key={tk.id}>
+                        <TableCell>{new Date(tk.date).toLocaleString()}</TableCell>
+                        <TableCell>{statusBadge(tk.status)}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{tk.notes ?? "—"}</TableCell>
+                        <TableCell>
+                          <Button variant="outline" size="sm" onClick={() => setSelectedId(tk.id)}>
+                            {t("openDetail")}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </Card>
+            <PaginationControls pagination={pagination} itemType="stockTakesForPagination" />
+          </>
         )}
 
         <AlertDialog open={finalizeOpen} onOpenChange={setFinalizeOpen}>

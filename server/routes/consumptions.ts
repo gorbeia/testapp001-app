@@ -9,7 +9,18 @@ import {
   apiConsumptionCreateBodySchema,
   type JwtSessionUser,
 } from "@shared/schema";
-import { eq, and, gte, desc, count, sql, like, or, between } from "drizzle-orm";
+import {
+  eq,
+  and,
+  gte,
+  desc,
+  count,
+  sql,
+  or,
+  between,
+  ilike,
+  isNull,
+} from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canModerateConsumptions } from "@shared/permissions";
 import { debtCalculationService } from "../cron-jobs";
@@ -32,6 +43,19 @@ const getUserSocietyId = (user: JwtSessionUser): string => {
   }
   return user.societyId;
 };
+
+function parseConsumptionListPagination(req: Request): {
+  page: number;
+  limit: number;
+  offset: number;
+} {
+  const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10) || 1);
+  const limit = Math.min(
+    100,
+    Math.max(1, parseInt(String(req.query.limit ?? "25"), 10) || 25)
+  );
+  return { page, limit, offset: (page - 1) * limit };
+}
 
 export function registerConsumptionRoutes(app: Express) {
   // Consumptions: create new consumption session
@@ -99,15 +123,38 @@ export function registerConsumptionRoutes(app: Express) {
 
         // Add search filter (search by notes or date)
         if (search) {
-          const searchTerm = `%${search}%`;
+          const searchTerm = `%${String(search).replace(/%/g, "\\%")}%`;
           const searchCondition = or(
-            like(consumptions.notes, searchTerm),
-            like(consumptions.createdAt, searchTerm)
+            ilike(consumptions.notes, searchTerm),
+            ilike(consumptions.createdAt, searchTerm),
+            ilike(sql<string>`cast(${consumptions.id} as text)`, searchTerm)
           );
           if (searchCondition) {
             conditions.push(searchCondition);
           }
         }
+
+        const { limit, offset } = parseConsumptionListPagination(req);
+
+        const whereClause = and(...conditions);
+
+        const [totalRow] = await db
+          .select({ c: count() })
+          .from(consumptions)
+          .where(whereClause);
+        const total = Number(totalRow?.c ?? 0);
+
+        const [sumRow] = await db
+          .select({
+            s: sql<string>`coalesce(sum(${consumptions.totalAmount}::numeric), 0)::text`,
+          })
+          .from(consumptions)
+          .where(whereClause);
+
+        const [pendingRow] = await db
+          .select({ c: count() })
+          .from(consumptions)
+          .where(and(whereClause, isNull(consumptions.closedAt)));
 
         const userConsumptions = await db
           .select({
@@ -121,10 +168,17 @@ export function registerConsumptionRoutes(app: Express) {
             closedBy: consumptions.closedBy,
           })
           .from(consumptions)
-          .where(and(...conditions))
-          .orderBy(desc(consumptions.createdAt));
+          .where(whereClause)
+          .orderBy(desc(consumptions.createdAt))
+          .limit(limit)
+          .offset(offset);
 
-        res.json(userConsumptions);
+        res.json({
+          data: userConsumptions,
+          total,
+          sumTotalAmount: parseFloat(String(sumRow?.s ?? "0")),
+          pendingCount: Number(pendingRow?.c ?? 0),
+        });
       } catch (error) {
         next(error);
       }
@@ -139,7 +193,7 @@ export function registerConsumptionRoutes(app: Express) {
     async (req: Request, res: Response, next: NextFunction) => {
       try {
         const user = req.user!;
-        const { userId: filterUserId, month: filterMonth } = req.query;
+        const { userId: filterUserId, month: filterMonth, search: searchRaw } = req.query;
         const societyId = getUserSocietyId(user);
 
         // Build base conditions
@@ -162,49 +216,51 @@ export function registerConsumptionRoutes(app: Express) {
           }
         }
 
-        let allConsumptions;
-        if (canModerateConsumptions(user.accessRole)) {
-          // Admin can see all consumptions with user names
-          allConsumptions = await db
-            .select({
-              id: consumptions.id,
-              userId: consumptions.userId,
-              userName: users.name,
-              userUsername: users.username,
-              eventId: consumptions.eventId,
-              totalAmount: consumptions.totalAmount,
-              notes: consumptions.notes,
-              createdAt: consumptions.createdAt,
-              closedAt: consumptions.closedAt,
-              closedBy: consumptions.closedBy,
-            })
-            .from(consumptions)
-            .leftJoin(users, eq(consumptions.userId, users.id))
-            .where(and(...baseConditions))
-            .orderBy(desc(consumptions.createdAt));
-        } else {
-          // Regular users can only see their own consumptions
-          baseConditions.push(eq(consumptions.userId, user.id));
-          allConsumptions = await db
-            .select({
-              id: consumptions.id,
-              userId: consumptions.userId,
-              userName: users.name,
-              userUsername: users.username,
-              eventId: consumptions.eventId,
-              totalAmount: consumptions.totalAmount,
-              notes: consumptions.notes,
-              createdAt: consumptions.createdAt,
-              closedAt: consumptions.closedAt,
-              closedBy: consumptions.closedBy,
-            })
-            .from(consumptions)
-            .leftJoin(users, eq(consumptions.userId, users.id))
-            .where(and(...baseConditions))
-            .orderBy(desc(consumptions.createdAt));
+        if (searchRaw && String(searchRaw).trim()) {
+          const term = `%${String(searchRaw).replace(/%/g, "\\%").trim()}%`;
+          const searchCondition = or(
+            ilike(consumptions.notes, term),
+            ilike(sql<string>`cast(${consumptions.id} as text)`, term)
+          );
+          if (searchCondition) {
+            baseConditions.push(searchCondition);
+          }
         }
 
-        return res.status(200).json(allConsumptions);
+        if (!canModerateConsumptions(user.accessRole)) {
+          baseConditions.push(eq(consumptions.userId, user.id));
+        }
+
+        const whereClause = and(...baseConditions);
+        const { limit, offset } = parseConsumptionListPagination(req);
+
+        const [totalRow] = await db
+          .select({ c: count() })
+          .from(consumptions)
+          .where(whereClause);
+        const total = Number(totalRow?.c ?? 0);
+
+        const allConsumptions = await db
+          .select({
+            id: consumptions.id,
+            userId: consumptions.userId,
+            userName: users.name,
+            userUsername: users.username,
+            eventId: consumptions.eventId,
+            totalAmount: consumptions.totalAmount,
+            notes: consumptions.notes,
+            createdAt: consumptions.createdAt,
+            closedAt: consumptions.closedAt,
+            closedBy: consumptions.closedBy,
+          })
+          .from(consumptions)
+          .leftJoin(users, eq(consumptions.userId, users.id))
+          .where(whereClause)
+          .orderBy(desc(consumptions.createdAt))
+          .limit(limit)
+          .offset(offset);
+
+        return res.status(200).json({ data: allConsumptions, total });
       } catch (err) {
         next(err);
       }

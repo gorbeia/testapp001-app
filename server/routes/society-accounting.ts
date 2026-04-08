@@ -222,8 +222,21 @@ export function registerSocietyAccountingRoutes(app: Express): void {
         }
 
         const societyId = getUserSocietyId(req.user!);
+        const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10) || 1);
+        const limit = Math.min(
+          100,
+          Math.max(1, parseInt(String(req.query.limit ?? "25"), 10) || 25)
+        );
+        const offset = (page - 1) * limit;
 
-        const query = `
+        const baseParams = [
+          societyId,
+          from,
+          to,
+          SOCIETY_LEDGER_REF_ACCOUNT_MOVEMENT,
+        ] as const;
+
+        const derivedCte = `
           WITH lines AS (
             SELECT
               sl.id,
@@ -254,9 +267,7 @@ export function registerSocietyAccountingRoutes(app: Express): void {
                 ORDER BY booking_date ASC, created_at ASC, id ASC
               ) AS society_balance
             FROM lines
-          )
-          SELECT * FROM ordered
-          ORDER BY booking_date DESC, created_at DESC, id DESC`;
+          )`;
 
         type PgRow = {
           id: string;
@@ -274,15 +285,22 @@ export function registerSocietyAccountingRoutes(app: Express): void {
           society_balance: string;
         };
 
-        const result = await pool.query<PgRow>(query, [
-          societyId,
-          from,
-          to,
-          SOCIETY_LEDGER_REF_ACCOUNT_MOVEMENT,
+        const countSql = `${derivedCte} SELECT COUNT(*)::int AS c FROM ordered`;
+        const countRes = await pool.query<{ c: number }>(countSql, [...baseParams]);
+        const total = countRes.rows[0]?.c ?? 0;
+
+        const dataSql = `${derivedCte}
+          SELECT * FROM ordered
+          ORDER BY booking_date DESC, created_at DESC, id DESC
+          LIMIT $5 OFFSET $6`;
+        const dataRes = await pool.query<PgRow>(dataSql, [
+          ...baseParams,
+          limit,
+          offset,
         ]);
 
         return res.json({
-          movements: (result.rows as PgRow[]).map(m => {
+          movements: (dataRes.rows as PgRow[]).map(m => {
             const isManual = m.is_manual;
             const isAdjustment = m.sl_type === "manual_adjustment";
             const source =
@@ -314,6 +332,9 @@ export function registerSocietyAccountingRoutes(app: Express): void {
               societyBalance: parseFloat(String(m.society_balance)),
             };
           }),
+          total,
+          page,
+          limit,
         });
       } catch (err) {
         next(err);

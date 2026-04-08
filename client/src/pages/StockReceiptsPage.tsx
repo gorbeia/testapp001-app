@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Link } from "wouter";
 import { ChevronLeft, Eye, Plus, Search, Trash2, Truck } from "lucide-react";
@@ -30,6 +30,8 @@ import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { getErrorMessage } from "@/lib/errors";
 import MonthGrid from "@/components/MonthGrid";
+import PaginationControls from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/use-pagination";
 
 const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
   const token = localStorage.getItem("auth:token");
@@ -94,12 +96,20 @@ export function StockReceiptsPage() {
   const [monthFilter, setMonthFilter] = useState("");
   const [supplierListFilter, setSupplierListFilter] = useState("");
   const [referenceListFilter, setReferenceListFilter] = useState("");
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
+
+  useLayoutEffect(() => {
+    pagination.setPage(1);
+  }, [monthFilter, supplierListFilter, referenceListFilter]);
 
   const loadReceipts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ limit: "100", page: "1" });
+      const params = new URLSearchParams({
+        limit: String(pagination.limit),
+        page: String(pagination.page),
+      });
       if (monthFilter) params.set("month", monthFilter);
       if (supplierListFilter.trim()) params.set("supplier", supplierListFilter.trim());
       if (referenceListFilter.trim()) params.set("reference", referenceListFilter.trim());
@@ -108,14 +118,22 @@ export function StockReceiptsPage() {
         const b = await res.json().catch(() => ({}));
         throw new Error(b.message || "Failed to load receipts");
       }
-      const body = (await res.json()) as { data: ReceiptRow[] };
+      const body = (await res.json()) as { data: ReceiptRow[]; total: number };
       setReceipts(body.data);
+      pagination.updatePagination(body.total);
     } catch (e) {
       setError(e instanceof Error ? e : new Error(String(e)));
     } finally {
       setLoading(false);
     }
-  }, [monthFilter, supplierListFilter, referenceListFilter]);
+  }, [
+    monthFilter,
+    supplierListFilter,
+    referenceListFilter,
+    pagination.page,
+    pagination.limit,
+    pagination.updatePagination,
+  ]);
 
   const loadProducts = useCallback(async () => {
     const res = await authFetch("/api/products");
@@ -519,6 +537,7 @@ export function StockReceiptsPage() {
             </TableBody>
           </Table>
         </Card>
+        <PaginationControls pagination={pagination} itemType="receiptsForPagination" />
 
         <Dialog
           open={detailId !== null}

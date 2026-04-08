@@ -43,6 +43,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { List, Scale, Wallet, Download } from "lucide-react";
+import PaginationControls from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/use-pagination";
 
 function currentYearMonth(): string {
   const d = new Date();
@@ -93,6 +95,11 @@ export function AccountMovementsPage() {
   const [type, setType] = React.useState<string>("all");
   const [userId, setUserId] = React.useState<string>("all");
   const month = monthFilter.value;
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
+
+  React.useLayoutEffect(() => {
+    pagination.setPage(1);
+  }, [month, type, userId]);
 
   const usersQuery = useQuery({
     queryKey: ["users-for-movements"],
@@ -104,12 +111,21 @@ export function AccountMovementsPage() {
   });
 
   const query = useQuery({
-    queryKey: ["account-movements-admin", month, type, userId],
+    queryKey: [
+      "account-movements-admin",
+      month,
+      type,
+      userId,
+      pagination.page,
+      pagination.limit,
+    ],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (month) params.set("month", month);
       if (type !== "all") params.set("type", type);
       if (userId !== "all") params.set("userId", userId);
+      params.set("page", String(pagination.page));
+      params.set("limit", String(pagination.limit));
       const res = await authFetch(`/api/account-movements?${params}`);
       if (!res.ok) throw new Error("movements");
       return res.json() as Promise<{
@@ -129,6 +145,12 @@ export function AccountMovementsPage() {
       }>;
     },
   });
+
+  React.useEffect(() => {
+    if (query.data && typeof query.data.total === "number") {
+      pagination.updatePagination(query.data.total);
+    }
+  }, [query.data?.total]);
 
   const selBal = query.data?.selectedMemberBalance;
   const memberBalanceStatusKey =
@@ -479,6 +501,10 @@ export function AccountMovementsPage() {
               )}
             </TableBody>
           </Table>
+          <PaginationControls
+            pagination={pagination}
+            itemType="movementsForPagination"
+          />
         </CardContent>
       </Card>
     </div>

@@ -176,7 +176,19 @@ export function registerStockTakeRoutes(app: Express) {
           .limit(limit)
           .offset(offset);
 
-        return res.status(200).json({ data: rows, total, page, limit });
+        // Ensure the society's draft take is always visible (not only when it falls in this page).
+        const [draftTake] = await db
+          .select()
+          .from(stockTakes)
+          .where(and(whereClause, eq(stockTakes.status, "draft")))
+          .limit(1);
+
+        let data = rows;
+        if (draftTake && !rows.some(r => r.id === draftTake.id)) {
+          data = [draftTake, ...rows.slice(0, Math.max(0, limit - 1))];
+        }
+
+        return res.status(200).json({ data, total, page, limit });
       } catch (err) {
         next(err);
       }

@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useUrlFilter } from "@/hooks/useUrlFilter";
+import { usePagination } from "@/hooks/use-pagination";
+import PaginationControls from "@/components/PaginationControls";
 import { useLanguage, type TranslationKey } from "@/lib/i18n";
 import { authFetch } from "@/lib/api";
 import MonthGrid from "@/components/MonthGrid";
@@ -144,6 +146,11 @@ export function MyMovementsPage() {
   });
   const [type, setType] = useState<string>("all");
   const month = monthFilter.value;
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
+
+  useLayoutEffect(() => {
+    pagination.setPage(1);
+  }, [month, type]);
 
   const societyQuery = useQuery({
     queryKey: ["societies", "user"],
@@ -157,15 +164,19 @@ export function MyMovementsPage() {
   const prepaymentEnabled = societyAllowsBankTransferPrepayment(societyQuery.data?.paymentMethods);
 
   const query = useQuery({
-    queryKey: ["account-movements-me", month, type],
+    queryKey: ["account-movements-me", month, type, pagination.page, pagination.limit],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (month) params.set("month", month);
       if (type !== "all") params.set("type", type);
+      params.set("page", String(pagination.page));
+      params.set("limit", String(pagination.limit));
       const res = await authFetch(`/api/account-movements/me?${params}`);
       if (!res.ok) throw new Error("Failed to load movements");
       return res.json() as Promise<{
         balance: number;
+        total: number;
+        sumAmount: number;
         movements: Array<{
           id: string;
           type: string;
@@ -177,6 +188,12 @@ export function MyMovementsPage() {
       }>;
     },
   });
+
+  useEffect(() => {
+    if (query.data && typeof query.data.total === "number") {
+      pagination.updatePagination(query.data.total);
+    }
+  }, [query.data?.total]);
 
   const transfersQuery = useQuery({
     queryKey: ["bank-transfers-me", "pending"],
@@ -233,12 +250,8 @@ export function MyMovementsPage() {
     void qc.invalidateQueries({ queryKey: ["bank-transfers-me"] });
   };
 
-  const periodStats = useMemo(() => {
-    const movements = query.data?.movements ?? [];
-    const count = movements.length;
-    const net = movements.reduce((s, m) => s + parseFloat(m.amount), 0);
-    return { count, net };
-  }, [query.data?.movements]);
+  const periodCount = query.data?.total ?? 0;
+  const periodNet = query.data?.sumAmount ?? 0;
 
   const balance = query.data?.balance;
   const balanceStatusKey =
@@ -379,7 +392,7 @@ export function MyMovementsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold" data-testid="my-movements-period-count">
-              {query.isLoading ? "…" : periodStats.count}
+              {query.isLoading ? "…" : periodCount}
             </div>
           </CardContent>
         </Card>
@@ -392,11 +405,11 @@ export function MyMovementsPage() {
           <CardContent>
             <div
               className={`text-2xl font-bold ${
-                query.isLoading ? "" : balanceAmountClass(periodStats.net)
+                query.isLoading ? "" : balanceAmountClass(periodNet)
               }`}
               data-testid="my-movements-period-net"
             >
-              {query.isLoading ? "…" : `${periodStats.net.toFixed(2)}€`}
+              {query.isLoading ? "…" : `${periodNet.toFixed(2)}€`}
             </div>
           </CardContent>
         </Card>
@@ -647,6 +660,7 @@ export function MyMovementsPage() {
               )}
             </TableBody>
           </Table>
+          <PaginationControls pagination={pagination} itemType="movementsForPagination" />
         </CardContent>
       </Card>
     </div>

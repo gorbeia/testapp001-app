@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useCallback } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Search, Eye, Calendar, Receipt } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,8 @@ import { authFetch } from "@/lib/api";
 import { readJsonOrThrow } from "@/lib/http-error";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
+import PaginationControls from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/use-pagination";
 
 interface ConsumptionWithItems extends Consumption {
   items: ConsumptionItemWithProduct[];
@@ -42,6 +44,8 @@ export function MyConsumptionsPage() {
   const { toast } = useToast();
   useAuth();
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
 
   // URL state management
   const [monthFilter, setMonthFilter] = useState<string>(() => {
@@ -57,6 +61,20 @@ export function MyConsumptionsPage() {
   const [error, setError] = useState<Error | null>(null);
   const [selectedConsumption, setSelectedConsumption] = useState<ConsumptionWithItems | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [listMeta, setListMeta] = useState({
+    total: 0,
+    sumTotalAmount: 0,
+    pendingCount: 0,
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useLayoutEffect(() => {
+    pagination.setPage(1);
+  }, [monthFilter, debouncedSearch]);
 
   // Update URL when filters change
   useEffect(() => {
@@ -70,20 +88,33 @@ export function MyConsumptionsPage() {
   }, [monthFilter]);
 
   // Fetch user's own consumptions
-  const fetchConsumptions = async () => {
+  const fetchConsumptions = useCallback(async () => {
     try {
       setLoading(true);
+      setError(null);
       const params = new URLSearchParams();
-      if (searchTerm) params.append("search", searchTerm);
+      if (debouncedSearch.trim()) params.append("search", debouncedSearch.trim());
       if (monthFilter) {
-        // Extract month number from YYYY-MM format for API
         const monthParam = monthFilter.split("-")[1];
         params.append("month", monthParam);
       }
+      params.set("page", String(pagination.page));
+      params.set("limit", String(pagination.limit));
 
       const response = await authFetch(`/api/consumptions/user?${params}`);
-      const data = await readJsonOrThrow<Consumption[]>(response);
-      setConsumptions(data);
+      const body = await readJsonOrThrow<{
+        data: Consumption[];
+        total: number;
+        sumTotalAmount: number;
+        pendingCount: number;
+      }>(response);
+      setConsumptions(body.data);
+      setListMeta({
+        total: body.total,
+        sumTotalAmount: body.sumTotalAmount,
+        pendingCount: body.pendingCount,
+      });
+      pagination.updatePagination(body.total);
     } catch (error) {
       console.error("Error fetching consumptions:", error);
       setError(error instanceof Error ? error : new Error(String(error)));
@@ -91,7 +122,13 @@ export function MyConsumptionsPage() {
       setLoading(false);
       setIsInitialLoad(false);
     }
-  };
+  }, [
+    debouncedSearch,
+    monthFilter,
+    pagination.page,
+    pagination.limit,
+    pagination.updatePagination,
+  ]);
 
   // Fetch consumption details
   const fetchConsumptionDetails = async (consumptionId: string) => {
@@ -120,8 +157,8 @@ export function MyConsumptionsPage() {
   };
 
   useEffect(() => {
-    fetchConsumptions();
-  }, [searchTerm, monthFilter]);
+    void fetchConsumptions();
+  }, [fetchConsumptions]);
 
   const formatDate = (date: string | Date) => {
     const dateObj = typeof date === "string" ? new Date(date) : date;
@@ -132,10 +169,6 @@ export function MyConsumptionsPage() {
     const num = typeof amount === "string" ? parseFloat(amount) : amount;
     return `${num.toFixed(2)}€`;
   };
-
-  const totalAmount = consumptions.reduce((sum, consumption) => {
-    return sum + parseFloat(consumption.totalAmount || "0");
-  }, 0);
 
   if (isInitialLoad && loading) {
     return (
@@ -169,7 +202,7 @@ export function MyConsumptionsPage() {
               <Receipt className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{consumptions.length}</div>
+              <div className="text-2xl font-bold">{listMeta.total}</div>
             </CardContent>
           </Card>
           <Card>
@@ -178,7 +211,7 @@ export function MyConsumptionsPage() {
               <Receipt className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{formatAmount(totalAmount)}</div>
+              <div className="text-2xl font-bold">{formatAmount(listMeta.sumTotalAmount)}</div>
             </CardContent>
           </Card>
           <Card>
@@ -187,9 +220,7 @@ export function MyConsumptionsPage() {
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
-                {consumptions.filter(c => !c.closedAt).length}
-              </div>
+              <div className="text-2xl font-bold">{listMeta.pendingCount}</div>
             </CardContent>
           </Card>
         </div>
@@ -227,7 +258,13 @@ export function MyConsumptionsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {consumptions.length === 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
+                      {t("loading")}
+                    </TableCell>
+                  </TableRow>
+                ) : consumptions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={3} className="text-center py-8 text-muted-foreground">
                       {t("noConsumptionsFound")}
@@ -317,6 +354,10 @@ export function MyConsumptionsPage() {
               </TableBody>
             </Table>
           </div>
+          <PaginationControls
+            pagination={pagination}
+            itemType="consumptionsForPagination"
+          />
         </Card>
       </div>
     </ErrorBoundary>

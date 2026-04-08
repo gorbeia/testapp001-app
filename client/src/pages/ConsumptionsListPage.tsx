@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { Search, Eye, Calendar, User, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,8 @@ import { useUrlFilter } from "@/hooks/useUrlFilter";
 import type { Consumption, ConsumptionItem, User as UserType } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
+import PaginationControls from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/use-pagination";
 
 // API helper function
 const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
@@ -79,11 +81,22 @@ export function ConsumptionsListPage() {
   });
 
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [consumptions, setConsumptions] = useState<ConsumptionWithUser[]>([]);
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [selectedConsumption, setSelectedConsumption] = useState<ConsumptionWithItems | null>(null);
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useLayoutEffect(() => {
+    pagination.setPage(1);
+  }, [userFilter.value, monthFilter.value, debouncedSearch]);
 
   // Fetch users for filtering (page is admin-only)
   useEffect(() => {
@@ -109,15 +122,24 @@ export function ConsumptionsListPage() {
   useEffect(() => {
     const fetchConsumptions = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const params = new URLSearchParams();
         if (userFilter.value !== "all") params.append("userId", userFilter.value);
         if (monthFilter.value) params.append("month", monthFilter.value);
+        if (debouncedSearch.trim()) params.append("search", debouncedSearch.trim());
+        params.set("page", String(pagination.page));
+        params.set("limit", String(pagination.limit));
 
-        const url = `/api/consumptions${params.toString() ? `?${params.toString()}` : ""}`;
+        const url = `/api/consumptions?${params.toString()}`;
         const response = await authFetch(url);
         if (response.ok) {
-          const data = await response.json();
-          setConsumptions(data);
+          const body = (await response.json()) as {
+            data: ConsumptionWithUser[];
+            total: number;
+          };
+          setConsumptions(body.data);
+          pagination.updatePagination(body.total);
         } else {
           throw new Error("Failed to fetch consumptions");
         }
@@ -130,14 +152,13 @@ export function ConsumptionsListPage() {
     };
 
     fetchConsumptions();
-  }, [userFilter.value, monthFilter.value]);
-
-  const filteredConsumptions = consumptions.filter(consumption => {
-    const matchesSearch =
-      consumption.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      consumption.notes?.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  });
+  }, [
+    userFilter.value,
+    monthFilter.value,
+    debouncedSearch,
+    pagination.page,
+    pagination.limit,
+  ]);
 
   const fetchConsumptionDetails = async (consumptionId: string) => {
     try {
@@ -167,16 +188,6 @@ export function ConsumptionsListPage() {
     const date = typeof dateString === "string" ? new Date(dateString) : dateString;
     return date.toLocaleString("eu-ES");
   };
-
-  if (loading) {
-    return (
-      <div className="p-4 sm:p-6">
-        <div className="text-center py-12">
-          <p>{t("loading")}...</p>
-        </div>
-      </div>
-    );
-  }
 
   if (error) {
     return <AccessDeniedOrError error={error} />;
@@ -267,14 +278,14 @@ export function ConsumptionsListPage() {
                       {t("loading")}
                     </TableCell>
                   </TableRow>
-                ) : filteredConsumptions.length === 0 ? (
+                ) : consumptions.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
                       {t("noResults")}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredConsumptions.map(consumption => (
+                  consumptions.map(consumption => (
                     <TableRow key={consumption.id} data-testid="consumption-row">
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -372,6 +383,10 @@ export function ConsumptionsListPage() {
                 )}
               </TableBody>
             </Table>
+            <PaginationControls
+              pagination={pagination}
+              itemType="consumptionsForPagination"
+            />
           </CardContent>
         </Card>
       </div>

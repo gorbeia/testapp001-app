@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { Redirect } from "wouter";
 import { useUrlFilter } from "@/hooks/useUrlFilter";
+import { usePagination } from "@/hooks/use-pagination";
+import PaginationControls from "@/components/PaginationControls";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -68,13 +70,27 @@ const isCurrentMonth = (monthString: string) => {
 // };
 
 // API functions
-const fetchCredits = async (filters?: { month?: string; status?: string }) => {
+const fetchCredits = async (filters: {
+  month?: string;
+  status?: string;
+  search?: string;
+  page: number;
+  limit: number;
+}) => {
   const params = new URLSearchParams();
-  if (filters?.month) params.append("month", filters.month);
-  if (filters?.status) params.append("status", filters.status);
+  if (filters.month) params.append("month", filters.month);
+  if (filters.status) params.append("status", filters.status);
+  if (filters.search?.trim()) params.append("search", filters.search.trim());
+  params.set("page", String(filters.page));
+  params.set("limit", String(filters.limit));
 
   const response = await authFetch(`/api/credits?${params}`);
-  return readJsonOrThrow<CreditWithMemberName[]>(response);
+  return readJsonOrThrow<{
+    data: CreditWithMemberName[];
+    total: number;
+    sumPending: number;
+    sumPaid: number;
+  }>(response);
 };
 
 export function CreditsPage() {
@@ -82,7 +98,15 @@ export function CreditsPage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
   const [selectedCredits, setSelectedCredits] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   const [isMarkingAsPaid, setIsMarkingAsPaid] = useState(false);
   const [bouncingId, setBouncingId] = useState<string | null>(null);
 
@@ -94,6 +118,10 @@ export function CreditsPage() {
     paramName: "status",
     initialValue: "all",
   });
+
+  useLayoutEffect(() => {
+    pagination.setPage(1);
+  }, [monthFilter.value, statusFilter.value, debouncedSearch]);
 
   const isAdmin = userCan(user, Permission.USERS_MANAGE);
   const canTreasurer = userCan(user, Permission.CREDITS_MANAGE);
@@ -115,16 +143,22 @@ export function CreditsPage() {
   });
 
   // Fetch all credits (admin only; monthly-credit UI unused when SEPA is disabled)
-  const {
-    data: credits = [],
-    isLoading,
-    error,
-  } = useQuery({
-    queryKey: ["credits", monthFilter.value, statusFilter.value],
+  const { data: creditsResponse, isLoading, error } = useQuery({
+    queryKey: [
+      "credits",
+      monthFilter.value,
+      statusFilter.value,
+      debouncedSearch,
+      pagination.page,
+      pagination.limit,
+    ],
     queryFn: () =>
       fetchCredits({
-        month: monthFilter.value,
+        month: monthFilter.value || undefined,
         status: statusFilter.value !== "all" ? statusFilter.value : undefined,
+        search: debouncedSearch.trim() || undefined,
+        page: pagination.page,
+        limit: pagination.limit,
       }),
     enabled:
       !!user &&
@@ -132,6 +166,14 @@ export function CreditsPage() {
       !societyPending &&
       (societyError || societyUser?.sepaMode !== "disabled"),
   });
+
+  useEffect(() => {
+    if (creditsResponse && typeof creditsResponse.total === "number") {
+      pagination.updatePagination(creditsResponse.total);
+    }
+  }, [creditsResponse?.total]);
+
+  const credits = creditsResponse?.data ?? [];
 
   if (societyPending) {
     return <div className="p-6 text-muted-foreground">{t("loading")}</div>;
@@ -145,20 +187,11 @@ export function CreditsPage() {
     return <AccessDeniedOrError error={error} />;
   }
 
-  // Calculate totals from real data
-  const totalPending = credits
-    .filter((c: CreditWithMemberName) => c.status === "pending")
-    .reduce((sum: number, c: CreditWithMemberName) => sum + parseFloat(c.totalAmount || "0"), 0);
+  const totalPending = creditsResponse?.sumPending ?? 0;
+  const totalPaid = creditsResponse?.sumPaid ?? 0;
 
-  const totalPaid = credits
-    .filter((c: CreditWithMemberName) => c.status === "paid")
-    .reduce((sum: number, c: CreditWithMemberName) => sum + parseFloat(c.totalAmount || "0"), 0);
-
-  const filteredCredits = credits.filter(
-    (credit: CreditWithMemberName) =>
-      credit.memberName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      credit.month.includes(searchTerm) ||
-      credit.status.includes(searchTerm)
+  const pageEligibleForBatch = credits.filter(
+    (credit: CreditWithMemberName) => credit.status === "pending" && !isCurrentMonth(credit.month)
   );
 
   const handleSelectCredit = (creditId: string) => {
@@ -174,14 +207,10 @@ export function CreditsPage() {
   };
 
   const handleSelectAll = () => {
-    const eligibleCredits = filteredCredits.filter(
-      (credit: CreditWithMemberName) => credit.status === "pending" && !isCurrentMonth(credit.month)
-    );
-
-    if (selectedCredits.size === eligibleCredits.length) {
+    if (selectedCredits.size === pageEligibleForBatch.length && pageEligibleForBatch.length > 0) {
       setSelectedCredits(new Set());
     } else {
-      setSelectedCredits(new Set(eligibleCredits.map((credit: CreditWithMemberName) => credit.id)));
+      setSelectedCredits(new Set(pageEligibleForBatch.map(c => c.id)));
     }
   };
 
@@ -189,6 +218,7 @@ export function CreditsPage() {
     if (selectedCredits.size === 0) return;
 
     setIsMarkingAsPaid(true);
+    const countMarked = selectedCredits.size;
     try {
       const response = await authFetch("/api/credits/batch-status", {
         method: "PUT",
@@ -209,7 +239,7 @@ export function CreditsPage() {
 
       toast({
         title: "Eguneratuta",
-        description: `${selectedCredits.size} zorrak ordaindu gisa markatu dira`,
+        description: `${countMarked} zorrak ordaindu gisa markatu dira`,
       });
     } catch (error) {
       console.error("Error marking credits as paid:", error);
@@ -247,14 +277,9 @@ export function CreditsPage() {
   };
 
   const isAllSelected =
-    filteredCredits.filter(
-      (credit: CreditWithMemberName) => credit.status === "pending" && !isCurrentMonth(credit.month)
-    ).length > 0 &&
-    selectedCredits.size ===
-      filteredCredits.filter(
-        (credit: CreditWithMemberName) =>
-          credit.status === "pending" && !isCurrentMonth(credit.month)
-      ).length;
+    pageEligibleForBatch.length > 0 &&
+    selectedCredits.size === pageEligibleForBatch.length &&
+    pageEligibleForBatch.every(c => selectedCredits.has(c.id));
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6" data-testid="credits-page">
@@ -363,13 +388,18 @@ export function CreditsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={handleSelectAll}
-                    className="rounded"
-                    data-testid="checkbox-select-all"
-                  />
+                  <div className="flex flex-col gap-1">
+                    <input
+                      type="checkbox"
+                      checked={isAllSelected}
+                      onChange={handleSelectAll}
+                      className="rounded"
+                      data-testid="checkbox-select-all"
+                    />
+                    <span className="text-xs font-normal text-muted-foreground max-w-[10rem]">
+                      {t("creditsSelectAllPageHint")}
+                    </span>
+                  </div>
                 </TableHead>
                 {isAdmin && <TableHead>{t("member")}</TableHead>}
                 <TableHead>{t("month")}</TableHead>
@@ -380,18 +410,18 @@ export function CreditsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredCredits.length === 0 ? (
+              {credits.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={isAdmin ? (canTreasurer ? 7 : 6) : canTreasurer ? 6 : 5}
                     className="text-center py-8 text-muted-foreground"
                     data-testid="no-results-message"
                   >
-                    {isLoading ? "Loading..." : t("noResults") || "No results"}
+                    {isLoading ? t("loading") : t("noResults")}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredCredits.map((credit: CreditWithMemberName) => (
+                credits.map((credit: CreditWithMemberName) => (
                   <TableRow key={credit.id} data-testid={`row-credit-${credit.id}`}>
                     <TableCell>
                       <input
@@ -453,6 +483,7 @@ export function CreditsPage() {
             </TableBody>
           </Table>
         </div>
+        <PaginationControls pagination={pagination} itemType="creditsForPagination" />
       </Card>
     </div>
   );

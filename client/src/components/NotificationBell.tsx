@@ -81,8 +81,12 @@ export function NotificationBell({ className }: NotificationBellProps) {
   const unreadCount = unreadData?.count || 0;
   const locale = language === "es" ? es : eu;
 
-  const formatTime = (date: Date) => {
-    return formatDistanceToNow(new Date(date), {
+  const formatTime = (date: Date | string) => {
+    const d = date instanceof Date ? date : new Date(date);
+    if (Number.isNaN(d.getTime())) {
+      return "—";
+    }
+    return formatDistanceToNow(d, {
       addSuffix: true,
       locale,
     });

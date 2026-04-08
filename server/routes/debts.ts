@@ -3,7 +3,7 @@ import { db } from "../db";
 import { batchCreditStatusBodySchema, credits, users } from "@shared/schema";
 import { Permission } from "@shared/permissions";
 import { appendSepaCollectionMovementsForCredits } from "../lib/ledger/ledger-service";
-import { eq, and, sum, inArray, desc } from "drizzle-orm";
+import { eq, and, sum, inArray, desc, sql, or, ilike } from "drizzle-orm";
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
 
@@ -53,8 +53,14 @@ export function registerDebtRoutes(app: Express) {
     requirePermission(Permission.CREDITS_VIEW),
     async (req, res, next) => {
       try {
-        const { month, status } = req.query;
+        const { month, status, search: searchRaw } = req.query;
         const societyId = getUserSocietyId(req.user!);
+        const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10) || 1);
+        const limit = Math.min(
+          100,
+          Math.max(1, parseInt(String(req.query.limit ?? "25"), 10) || 25)
+        );
+        const offset = (page - 1) * limit;
 
         const conditions = [eq(credits.societyId, societyId)];
 
@@ -66,11 +72,61 @@ export function registerDebtRoutes(app: Express) {
           conditions.push(eq(credits.status, status as string));
         }
 
+        if (searchRaw && String(searchRaw).trim()) {
+          const raw = String(searchRaw).replace(/%/g, "\\%").trim();
+          const term = `%${raw}%`;
+          const members = await db
+            .select({ id: users.id })
+            .from(users)
+            .where(
+              and(
+                eq(users.societyId, societyId),
+                or(ilike(users.name, term), ilike(users.username, term))
+              )
+            );
+          const mids = members.map(m => m.id);
+          const parts = [ilike(credits.month, term), ilike(credits.status, term)];
+          if (mids.length > 0) {
+            parts.push(inArray(credits.memberId, mids));
+          }
+          const searchOr = or(...parts);
+          if (searchOr) {
+            conditions.push(searchOr);
+          }
+        }
+
+        const whereClause = and(...conditions);
+
+        const [totalRow] = await db
+          .select({ c: sql<number>`count(*)::int` })
+          .from(credits)
+          .where(whereClause);
+        const total = totalRow?.c ?? 0;
+
+        const [pendingSumRow] = await db
+          .select({
+            s: sql<string>`coalesce(sum(${credits.totalAmount}::numeric), 0)::text`,
+          })
+          .from(credits)
+          .where(and(whereClause, eq(credits.status, "pending")));
+
+        const [paidSumRow] = await db
+          .select({
+            s: sql<string>`coalesce(sum(${credits.totalAmount}::numeric), 0)::text`,
+          })
+          .from(credits)
+          .where(and(whereClause, eq(credits.status, "paid")));
+
+        const sumPending = parseFloat(String(pendingSumRow?.s ?? "0"));
+        const sumPaid = parseFloat(String(paidSumRow?.s ?? "0"));
+
         const allCredits = await db
           .select()
           .from(credits)
-          .where(and(...conditions))
-          .orderBy(credits.year, credits.monthNumber, credits.memberId);
+          .where(whereClause)
+          .orderBy(credits.year, credits.monthNumber, credits.memberId)
+          .limit(limit)
+          .offset(offset);
 
         // Get member names and payment tracking info
         const creditsWithNames = await Promise.all(
@@ -106,7 +162,14 @@ export function registerDebtRoutes(app: Express) {
           })
         );
 
-        res.json(creditsWithNames);
+        res.json({
+          data: creditsWithNames,
+          total,
+          sumPending,
+          sumPaid,
+          page,
+          limit,
+        });
       } catch (error) {
         next(error);
       }

@@ -10,6 +10,8 @@ Status legend:
 > **Scope note:** Authentication, users, reservations, consumptions, products, categories, credits/debts, notes (oharrak), notifications, society fields (including SEPA-related columns and **`payment_methods`** for transfer prepayment + cash placeholders), tables, subscription types, and backoffice society management are backed by Express + Drizzle + PostgreSQL. SEPA XML generation still uses hardcoded creditor defaults in the client generator (see `credits.md`).
 >
 > **Local DB:** `pnpm db:reset` runs [`script/reset.ts`](../script/reset.ts) (drops all `public` tables, then `db:push`). `pnpm db:seed` runs [`script/seed.ts`](../script/seed.ts) (ordered demo seeds in one process).
+>
+> **List pagination (high-volume tables):** Shared UI pattern **`usePagination`** + **`PaginationControls`** with server **`page`/`limit`** (default 25, max 100). Responses use **`{ data, total, ... }`** (admin account movements keep **`movements` + `total`**). Covered: reservations (member/society/admin), notifications, stock movements, stock receipts, stock takes (**draft take always merged into the current page** when it would otherwise be missing), consumptions list + **my consumptions** (includes `sumTotalAmount` / `pendingCount` for stats), treasurer **credits** grid (**`sumPending`/`sumPaid`** for summary cards; batch select-all is **per page**), treasurer **bank transfers** (**pending** list only), **my movements** + **admin movements** (period stats use full filtered totals), **society accounting** derived movements tab (**`/api/society-accounting/derived-movements`**: `movements` + `total`, running balance over full **`from`/`to`** range).
 
 ---
 
@@ -73,9 +75,9 @@ Status legend:
 1. **Register bar consumption (session flow)** – create session, add lines, close
    - **Status**: ✅ Implemented (`POST /api/consumptions`, `POST .../items`, `POST .../close`; stock decrement on items; **prepayment ledger floor** on create/items — see §5b.10 / `prepayment-ledger-floor.md`)
 2. **View consumption history (member)** – personal list
-   - **Status**: ✅ Implemented (`/nire-konsumoak`, `GET /api/consumptions/user`)
+   - **Status**: ✅ Implemented (`/nire-konsumoak`, `GET /api/consumptions/user` paginated; aggregates for stat cards)
 3. **Manage all consumptions (staff)** – society list/detail
-   - **Status**: ✅ Implemented (`/kontsumoak-zerrenda`, `GET /api/consumptions` with role-based scope)
+   - **Status**: ✅ Implemented (`/kontsumoak-zerrenda`, `GET /api/consumptions` with role-based scope + pagination + `search`)
 4. **Close consumption session**
    - **Status**: ✅ Implemented
 5. **Product categories (admin)** – bilingual labels, reorder, soft delete
@@ -96,7 +98,7 @@ Status legend:
 1. **View pending credits (member)** – personal debt view
    - **Status**: ✅ Implemented (`/nire-zorrak`, `GET /api/credits/member/current`; sidebar entry **omitted** and route **redirects to `/nire-mugimenduak`** when `sepaMode === disabled`)
 2. **Monthly credit summary (treasurer/admin)** – per-month overview
-   - **Status**: ✅ Implemented (`/zorrak`, `GET /api/credits`; sidebar **omitted** and route **redirects to `/mugimenduak`** when `sepaMode === disabled`; tighten `societyId` filters in API for multi-tenant hardening)
+   - **Status**: ✅ Implemented (`/zorrak`, `GET /api/credits` paginated + `search` + summary **`sumPending`/`sumPaid`**; sidebar **omitted** and route **redirects to `/mugimenduak`** when `sepaMode === disabled`; tighten `societyId` filters in API for multi-tenant hardening)
 3. **Credit reset / mark paid after payment**
    - **Status**: 🟡 Partial (`PUT /api/credits/batch-status`; admin grid + batch actions on **`/zorrak`** only when `sepaMode !== disabled`; no rich audit UI)
 4. **Generate SEPA export** – debtor list + pain.008-style XML in browser
@@ -121,10 +123,10 @@ Status legend:
 **Implementation note:** Ledger writes are centralized in [`server/lib/ledger/ledger-service.ts`](../../server/lib/ledger/ledger-service.ts) (Drizzle transactions for multi-step flows), with pure helpers in [`server/lib/ledger/ledger-rules.ts`](../../server/lib/ledger/ledger-rules.ts). **Vitest** unit tests: `pnpm test:unit`. **SEPA bounce** rows use `account_movements.reference_type = "sepa_bounce"` (and `reference_id = credit.id`) so idempotency matches API checks.
 
 1. **Member movement list & balance** – `/nire-mugimenduak`, `GET /api/account-movements/me`
-   - **Status**: ✅ Implemented (+ top stat cards: balance status, period count/net; E2E: ledger smoke via `bank-transfers.feature` / `refunds.feature` on `/nire-mugimenduak`)
+   - **Status**: ✅ Implemented (+ pagination; **`total`/`sumAmount`** for period stat cards; balance status; E2E: ledger smoke via `bank-transfers.feature` / `refunds.feature` on `/nire-mugimenduak`)
 2. **Treasurer movement audit** – `/mugimenduak`, `GET /api/account-movements` (filters, running balance via SQL window; response includes `sumAmount`, `selectedMemberBalance` when a member filter is set)
-   - **Status**: ✅ Implemented (+ top stat cards: filtered count, filtered sum, member saldo when filtered)
-3. **Prepayment proposals** (UI: «Aurreordainketak» / Anticipos; impl. `bank_transfers`, `bank_transfer` ledger type) – `/transferentziak`, `POST/GET /api/bank-transfers`, validate/reject + ledger + notifications; members propose from **`/nire-mugimenduak`** via `POST` + `GET /api/bank-transfers/me?status=pending` (table only when pending; validated lines on ledger — see `account-movements.md` F1 / F4); **gated when `bank_transfer_prepayment` is absent from society `payment_methods`** (sidebar, pages, APIs `403`)
+   - **Status**: ✅ Implemented (+ **pagination** in UI; top stat cards: filtered count, filtered sum, member saldo when filtered)
+3. **Prepayment proposals** (UI: «Aurreordainketak» / Anticipos; impl. `bank_transfers`, `bank_transfer` ledger type) – `/transferentziak`, `POST/GET /api/bank-transfers` (**paginated** `{ data, total }`; UI requests **`status=pending`**), validate/reject + ledger + notifications; members propose from **`/nire-mugimenduak`** via `POST` + `GET /api/bank-transfers/me?status=pending` (table only when pending; validated lines on ledger — see `account-movements.md` F1 / F4); **gated when `bank_transfer_prepayment` is absent from society `payment_methods`** (sidebar, pages, APIs `403`)
    - **Status**: ✅ Implemented (+ E2E: `bank-transfers.feature`, `society-payment-methods.feature` for prepayment gating)
 4. **Refunds** – dialog on **`/transferentziak`** (treasurer prepayments page); `POST /api/account-movements/refund`; **`/itzulketak`** redirects to **`/transferentziak`**
    - **Status**: ✅ Implemented (+ E2E: `refunds.feature`)
@@ -142,7 +144,7 @@ Status legend:
     - **Status**: ✅ Implemented (see `account-movements.md` F10; PDF not in scope)
 11. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
 12. **Society accounting (Kontabilitatea)** — [`society-transactions.md`](./society-transactions.md)
-    - **Status**: ✅ Implemented — standalone page **`/kontabilitatea`**: **`society_ledger`** posted cashbook (mirrored member-ledger income/expense + manual lines + adjustments); `GET /api/society-accounting/summary` and **`/derived-movements`** read only from that table; manual CRUD via **`/api/society-transactions`** with fixed **`category`** keys (**`shared/society-categories.ts`**, migration **`0010_category_enum.sql`**); **`Permission.SOCIETY_TRANSACTIONS_MANAGE`**; **`server/lib/society-ledger.ts`** as write gateway from app code; **`0009_society_ledger.sql`** + **`0010_category_enum.sql`**; E2E: `society-accounting.feature`
+    - **Status**: ✅ Implemented — standalone page **`/kontabilitatea`**: **`society_ledger`** posted cashbook (mirrored member-ledger income/expense + manual lines + adjustments); `GET /api/society-accounting/summary` and **`/derived-movements`** (paginated **`page`/`limit`**, response **`movements` + `total`**, running balance via full-range window then **`LIMIT`/`OFFSET`**) read only from that table; manual CRUD via **`/api/society-transactions`** with fixed **`category`** keys (**`shared/society-categories.ts`**, migration **`0010_category_enum.sql`**); **`Permission.SOCIETY_TRANSACTIONS_MANAGE`**; **`server/lib/society-ledger.ts`** as write gateway from app code; **`0009_society_ledger.sql`** + **`0010_category_enum.sql`**; E2E: `society-accounting.feature`
 
 ---
 

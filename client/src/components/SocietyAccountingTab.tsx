@@ -1,4 +1,6 @@
 import * as React from "react";
+import PaginationControls from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/use-pagination";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLanguage, type TranslationKey } from "@/lib/i18n";
 import { authFetch } from "@/lib/api";
@@ -107,6 +109,7 @@ export function SocietyAccountingTab() {
 
   const [from, setFrom] = React.useState(oneYearAgoMonth);
   const [to, setTo] = React.useState(currentYearMonth);
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
 
   const [entryOpen, setEntryOpen] = React.useState(false);
   const [editingId, setEditingId] = React.useState<string | null>(null);
@@ -117,13 +120,29 @@ export function SocietyAccountingTab() {
   const [entryDate, setEntryDate] = React.useState("");
   const [entryDescription, setEntryDescription] = React.useState("");
 
+  React.useLayoutEffect(() => {
+    pagination.setPage(1);
+  }, [from, to]);
+
   const derivedMovementsQuery = useQuery({
-    queryKey: ["society-accounting-derived-movements", from, to],
+    queryKey: [
+      "society-accounting-derived-movements",
+      from,
+      to,
+      pagination.page,
+      pagination.limit,
+    ],
     queryFn: async () => {
-      const params = new URLSearchParams({ from, to });
+      const params = new URLSearchParams({
+        from,
+        to,
+        page: String(pagination.page),
+        limit: String(pagination.limit),
+      });
       const res = await authFetch(`/api/society-accounting/derived-movements?${params}`);
       if (!res.ok) throw new Error("derived-movements");
       return res.json() as Promise<{
+        total: number;
         movements: Array<{
           source: "ledger" | "manual" | "adjustment";
           id: string;
@@ -142,6 +161,13 @@ export function SocietyAccountingTab() {
       }>;
     },
   });
+
+  React.useEffect(() => {
+    const d = derivedMovementsQuery.data;
+    if (d && typeof d.total === "number") {
+      pagination.updatePagination(d.total);
+    }
+  }, [derivedMovementsQuery.data?.total]);
 
   const summaryQuery = useQuery({
     queryKey: ["society-accounting-summary", from, to],
@@ -543,10 +569,14 @@ export function SocietyAccountingTab() {
                     )}
                 </>
               )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                </TableBody>
+              </Table>
+              <PaginationControls
+                pagination={pagination}
+                itemType="societyAccountingDerivedForPagination"
+              />
+            </CardContent>
+          </Card>
 
         </TabsContent>
 
@@ -684,6 +714,10 @@ export function SocietyAccountingTab() {
                   )}
                 </TableBody>
               </Table>
+              <PaginationControls
+                pagination={pagination}
+                itemType="societyAccountingDerivedForPagination"
+              />
             </CardContent>
           </Card>
         </TabsContent>

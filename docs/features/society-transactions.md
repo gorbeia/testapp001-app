@@ -25,7 +25,7 @@ Month bucket for summary/movements: **`booking_date`** as `YYYY-MM` (derived lin
 ### API
 
 - `GET /api/society-accounting/summary?from=YYYY-MM&to=YYYY-MM` — JSON summary from **`society_ledger`** only (derived types, manual by **`category`** key, optional **`adjustmentIncome` / `adjustmentExpense`** from **`manual_adjustment`**).
-- `GET /api/society-accounting/derived-movements?from=YYYY-MM&to=YYYY-MM` — ordered lines from **`society_ledger`** with running **`societyBalance`**; **`source`**: `ledger` | `manual` | `adjustment`; joins **`account_movements` + `users`** for derived lines; **`category`** / **`categoryType`** on manual and adjustment rows when set.
+- `GET /api/society-accounting/derived-movements?from=YYYY-MM&to=YYYY-MM&page=&limit=` — ordered lines from **`society_ledger`** with running **`societyBalance`** (computed over the full **`from`–`to`** range, then paginated); response **`movements`**, **`total`**, **`page`**, **`limit`**; **`source`**: `ledger` | `manual` | `adjustment`; joins **`account_movements` + `users`** for derived lines; **`category`** / **`categoryType`** on manual and adjustment rows when set.
 - `GET|POST|PUT|DELETE /api/society-transactions` — manual list/CRUD backed by **`society_ledger`** (URL unchanged). Body uses **`category`** (enum key), not UUIDs. List query filters: **`category`**, **`type`** (`income` | `expense`), month/range, pagination.
 
 ### UI

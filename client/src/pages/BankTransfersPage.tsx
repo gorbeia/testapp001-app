@@ -1,4 +1,6 @@
 import * as React from "react";
+import PaginationControls from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/use-pagination";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLanguage, type TranslationKey } from "@/lib/i18n";
 import { authFetch } from "@/lib/api";
@@ -95,14 +97,27 @@ export function BankTransfersPage() {
     },
   });
 
+  const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
+
   const listQuery = useQuery({
-    queryKey: ["bank-transfers"],
+    queryKey: ["bank-transfers", pagination.page, pagination.limit],
     enabled: societyQuery.isSuccess && prepaymentEnabled,
     queryFn: async () => {
-      const res = await authFetch("/api/bank-transfers");
-      return readJsonOrThrow<BankTransferRow[]>(res);
+      const params = new URLSearchParams({
+        status: "pending",
+        page: String(pagination.page),
+        limit: String(pagination.limit),
+      });
+      const res = await authFetch(`/api/bank-transfers?${params.toString()}`);
+      return readJsonOrThrow<{ data: BankTransferRow[]; total: number }>(res);
     },
   });
+
+  React.useEffect(() => {
+    if (listQuery.data && typeof listQuery.data.total === "number") {
+      pagination.updatePagination(listQuery.data.total);
+    }
+  }, [listQuery.data?.total]);
 
   const createMut = useMutation({
     mutationFn: async () => {
@@ -186,7 +201,7 @@ export function BankTransfersPage() {
     },
   });
 
-  const pending = (listQuery.data ?? []).filter(x => x.status === "pending");
+  const pendingRows = listQuery.data?.data ?? [];
 
   if (societyQuery.isLoading) {
     return <div className="p-4 sm:p-6">{t("loading")}</div>;
@@ -238,7 +253,10 @@ export function BankTransfersPage() {
                 {t("issueRefund")}
               </Button>
             </DialogTrigger>
-            <DialogContent data-testid="dialog-issue-refund">
+            <DialogContent
+              data-testid="dialog-issue-refund"
+              onCloseAutoFocus={e => e.preventDefault()}
+            >
               <DialogHeader>
                 <DialogTitle>{t("issueRefund")}</DialogTitle>
               </DialogHeader>
@@ -297,7 +315,10 @@ export function BankTransfersPage() {
             <DialogTrigger asChild>
               <Button data-testid="button-new-transfer">{t("createTransfer")}</Button>
             </DialogTrigger>
-            <DialogContent data-testid="dialog-new-transfer">
+            <DialogContent
+              data-testid="dialog-new-transfer"
+              onCloseAutoFocus={e => e.preventDefault()}
+            >
               <DialogHeader>
                 <DialogTitle>{t("createTransfer")}</DialogTitle>
               </DialogHeader>
@@ -386,14 +407,14 @@ export function BankTransfersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {pending.length === 0 ? (
+              {pendingRows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground">
                     {listQuery.isLoading ? "…" : "—"}
                   </TableCell>
                 </TableRow>
               ) : (
-                pending.map(tr => (
+                pendingRows.map(tr => (
                   <TableRow key={tr.id} data-testid={`transfer-row-${tr.id}`}>
                     <TableCell data-testid={`transfer-member-${tr.id}`}>
                       {tr.memberName ?? tr.userId}
@@ -430,11 +451,15 @@ export function BankTransfersPage() {
               )}
             </TableBody>
           </Table>
+          <PaginationControls pagination={pagination} itemType="transfersForPagination" />
         </CardContent>
       </Card>
 
       <Dialog open={!!rejectOpen} onOpenChange={() => setRejectOpen(null)}>
-        <DialogContent data-testid="dialog-reject-transfer">
+        <DialogContent
+          data-testid="dialog-reject-transfer"
+          onCloseAutoFocus={e => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle>{t("rejectTransfer")}</DialogTitle>
           </DialogHeader>

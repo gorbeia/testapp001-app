@@ -18,10 +18,7 @@ import {
   getMemberAccountBalance,
   getMemberBalanceBeforeMonth,
 } from "../lib/account-movements";
-import {
-  computeRunningBalances,
-  computeRunningBalancesWithInitial,
-} from "../lib/ledger/ledger-rules";
+import { computeRunningBalancesWithInitial } from "../lib/ledger/ledger-rules";
 import {
   bounceAlreadyRecorded,
   postLedgerRefund,
@@ -344,37 +341,103 @@ export function registerAccountMovementRoutes(app: Express) {
     try {
       const user = req.user!;
       const societyId = getUserSocietyId(user);
+      const memberId = user.id;
       const month = req.query.month as string | undefined;
       const typeRaw = req.query.type as string | undefined;
+      const page = Math.max(1, parseInt(String(req.query.page || "1"), 10) || 1);
+      const limit = Math.min(
+        100,
+        Math.max(1, parseInt(String(req.query.limit || "50"), 10) || 50)
+      );
+      const offset = (page - 1) * limit;
 
-      const conditions = [
-        eq(accountMovements.societyId, societyId),
-        eq(accountMovements.userId, user.id),
-      ];
+      const params: unknown[] = [societyId, memberId];
+      let p = 3;
+      let monthClauseBase = "";
+      let monthClauseM = "";
       if (month && /^\d{4}-\d{2}$/.test(month)) {
-        conditions.push(sql`to_char(${accountMovements.createdAt}, 'YYYY-MM') = ${month}`);
+        monthClauseBase = ` AND to_char(created_at, 'YYYY-MM') = $${p}`;
+        monthClauseM = ` AND to_char(m.created_at, 'YYYY-MM') = $${p}`;
+        params.push(month);
+        p++;
       }
+      let typeClauseBase = "";
+      let typeClauseM = "";
       if (typeRaw && typeRaw !== "all") {
         const parsedType = accountMovementTypeSchema.safeParse(typeRaw);
         if (parsedType.success) {
-          conditions.push(eq(accountMovements.type, parsedType.data));
+          typeClauseBase = ` AND type = $${p}`;
+          typeClauseM = ` AND m.type = $${p}`;
+          params.push(parsedType.data);
+          p++;
         }
       }
 
-      const rows = await db
-        .select()
-        .from(accountMovements)
-        .where(and(...conditions))
-        .orderBy(asc(accountMovements.createdAt), asc(accountMovements.id));
+      const filterParams = [...params];
 
-      const balance = await getMemberAccountBalance(societyId, user.id);
-      const withRunning = computeRunningBalances(rows).sort(
-        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-      );
+      const countSql = `
+        WITH base AS (
+          SELECT m.*, SUM(m.amount::numeric) OVER (
+            PARTITION BY m.user_id ORDER BY m.created_at ASC, m.id ASC
+          ) AS running_balance
+          FROM account_movements m
+          WHERE m.society_id = $1 AND m.user_id = $2
+        )
+        SELECT COUNT(*)::int AS c FROM base WHERE 1=1 ${monthClauseBase} ${typeClauseBase}
+      `;
+      const countRes = await pool.query(countSql, filterParams);
+      const total = countRes.rows[0]?.c ?? 0;
+
+      const sumSql = `
+        SELECT coalesce(sum(m.amount::numeric), 0) AS s
+        FROM account_movements m
+        WHERE m.society_id = $1 AND m.user_id = $2${monthClauseM} ${typeClauseM}
+      `;
+      const sumRes = await pool.query(sumSql, filterParams);
+      const sumAmount = parseFloat(String(sumRes.rows[0]?.s ?? 0));
+
+      const balance = await getMemberAccountBalance(societyId, memberId);
+
+      const dataSql = `
+        WITH base AS (
+          SELECT m.*, SUM(m.amount::numeric) OVER (
+            PARTITION BY m.user_id ORDER BY m.created_at ASC, m.id ASC
+          ) AS running_balance
+          FROM account_movements m
+          WHERE m.society_id = $1 AND m.user_id = $2
+        )
+        SELECT * FROM base
+        WHERE 1=1 ${monthClauseBase} ${typeClauseBase}
+        ORDER BY created_at DESC, id DESC
+        LIMIT $${p} OFFSET $${p + 1}
+      `;
+      const dataParams = [...filterParams, limit, offset];
+      const dataRes = await pool.query(dataSql, dataParams);
+      type PgMovMe = {
+        id: string;
+        type: string;
+        amount: string;
+        description: string | null;
+        created_at: Date;
+        running_balance: string;
+      };
+
+      const movements = (dataRes.rows as PgMovMe[]).map(m => ({
+        id: m.id,
+        type: m.type,
+        amount: m.amount,
+        description: m.description,
+        createdAt: m.created_at.toISOString(),
+        runningBalance: parseFloat(String(m.running_balance ?? 0)),
+      }));
 
       res.json({
         balance,
-        movements: withRunning,
+        movements,
+        total,
+        sumAmount,
+        page,
+        limit,
       });
     } catch (e) {
       next(e);

@@ -193,11 +193,28 @@ export function registerBankTransferRoutes(app: Express) {
           conditions.push(sql`to_char(${bankTransfers.transferDate}, 'YYYY-MM') = ${month}`);
         }
 
+        const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10) || 1);
+        const limit = Math.min(
+          100,
+          Math.max(1, parseInt(String(req.query.limit ?? "25"), 10) || 25)
+        );
+        const offset = (page - 1) * limit;
+
+        const whereClause = and(...conditions);
+
+        const [countRow] = await db
+          .select({ c: sql<number>`count(*)::int` })
+          .from(bankTransfers)
+          .where(whereClause);
+        const total = countRow?.c ?? 0;
+
         const rows = await db
           .select()
           .from(bankTransfers)
-          .where(and(...conditions))
-          .orderBy(desc(bankTransfers.createdAt));
+          .where(whereClause)
+          .orderBy(desc(bankTransfers.createdAt))
+          .limit(limit)
+          .offset(offset);
 
         const enriched = await Promise.all(
           rows.map(async r => {
@@ -209,7 +226,7 @@ export function registerBankTransferRoutes(app: Express) {
           })
         );
 
-        res.json(enriched);
+        res.json({ data: enriched, total, page, limit });
       } catch (e) {
         next(e);
       }
