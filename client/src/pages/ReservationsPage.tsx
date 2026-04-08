@@ -18,7 +18,6 @@ import { eu, es } from "date-fns/locale";
 import type { Reservation } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
-import { societyMapSrc } from "@/lib/image-urls";
 import MonthGrid from "@/components/MonthGrid";
 import { ReservationDialog } from "@/components/ReservationDialog";
 import { useUrlFilter } from "@/hooks/useUrlFilter";
@@ -54,11 +53,6 @@ function ReservationsPage() {
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [societyReservationContext, setSocietyReservationContext] = useState<{
-    mapSrc: string | null;
-    reservationPricePerMember: string;
-    kitchenPricePerMember: string;
-  } | null>(null);
 
   // Pagination state
   const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
@@ -77,31 +71,6 @@ function ReservationsPage() {
     cancelled: t("cancelled"),
     completed: t("completed"),
   };
-
-  useEffect(() => {
-    const loadSocietyReservationContext = async () => {
-      try {
-        const r = await authFetch("/api/societies/user");
-        if (!r.ok) return;
-        const data = (await r.json()) as {
-          id?: string;
-          mapImageUrl?: string | null;
-          reservationPricePerMember?: string | null;
-          kitchenPricePerMember?: string | null;
-        };
-        const mapSrc =
-          data.id && data.mapImageUrl ? societyMapSrc(data.id, data.mapImageUrl) ?? null : null;
-        setSocietyReservationContext({
-          mapSrc,
-          reservationPricePerMember: String(data.reservationPricePerMember ?? "0"),
-          kitchenPricePerMember: String(data.kitchenPricePerMember ?? "0"),
-        });
-      } catch {
-        setSocietyReservationContext(null);
-      }
-    };
-    void loadSocietyReservationContext();
-  }, []);
 
   // Load reservations
   useEffect(() => {
@@ -277,78 +246,20 @@ function ReservationsPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid gap-4 md:grid-cols-2 md:gap-6">
-                      <div className="space-y-3 min-w-0">
-                        <div className="flex flex-wrap gap-2">
-                          <Badge variant="outline">{eventTypeLabels[reservation.type]}</Badge>
-                          <Badge variant="outline">
-                            <Users className="mr-1 h-3 w-3" />
-                            {reservation.guests}
-                          </Badge>
-                          <Badge variant="outline">{reservation.table || "No table"}</Badge>
-                          {reservation.useKitchen ? (
-                            <Badge variant="outline">{t("kitchen")}</Badge>
-                          ) : null}
-                        </div>
-
-                        {societyReservationContext ? (
-                          <div className="rounded-md border bg-muted/30 p-3 text-sm space-y-2">
-                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                              {t("reservationRatesReference")}
-                            </p>
-                            <dl className="space-y-1.5">
-                              <div className="flex justify-between gap-4 tabular-nums">
-                                <dt className="text-muted-foreground">
-                                  {t("reservationPricePerMember")}
-                                </dt>
-                                <dd>
-                                  {parseFloat(
-                                    societyReservationContext.reservationPricePerMember || "0"
-                                  ).toFixed(2)}
-                                  €
-                                </dd>
-                              </div>
-                              <div className="flex justify-between gap-4 tabular-nums">
-                                <dt className="text-muted-foreground">
-                                  {t("kitchenPricePerMember")}
-                                </dt>
-                                <dd>
-                                  {parseFloat(
-                                    societyReservationContext.kitchenPricePerMember || "0"
-                                  ).toFixed(2)}
-                                  €
-                                </dd>
-                              </div>
-                            </dl>
-                            <div className="flex justify-between gap-4 pt-2 border-t font-medium tabular-nums">
-                              <span>{t("totalAmount")}</span>
-                              <span>{parseFloat(reservation.totalAmount).toFixed(2)}€</span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex flex-wrap gap-2">
-                            <Badge variant="secondary">
-                              {parseFloat(reservation.totalAmount).toFixed(2)}€
-                            </Badge>
-                          </div>
-                        )}
-
-                        {reservation.notes ? (
-                          <p className="text-sm text-muted-foreground">{reservation.notes}</p>
-                        ) : null}
-                      </div>
-
-                      {societyReservationContext?.mapSrc ? (
-                        <div className="space-y-2 min-w-0 md:border-l md:pl-6">
-                          <p className="text-sm font-medium">{t("reservationFloorPlan")}</p>
-                          <img
-                            src={societyReservationContext.mapSrc}
-                            alt=""
-                            className="w-full max-h-48 object-contain rounded-md border bg-muted/20"
-                          />
-                        </div>
-                      ) : null}
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      <Badge variant="outline">{eventTypeLabels[reservation.type]}</Badge>
+                      <Badge variant="outline">
+                        <Users className="mr-1 h-3 w-3" />
+                        {reservation.guests}
+                      </Badge>
+                      <Badge variant="outline">{reservation.table || "No table"}</Badge>
+                      <Badge variant="secondary">
+                        {parseFloat(reservation.totalAmount).toFixed(2)}€
+                      </Badge>
                     </div>
+                    {reservation.notes && (
+                      <p className="text-sm text-muted-foreground">{reservation.notes}</p>
+                    )}
                   </CardContent>
                 </Card>
               ))}
