@@ -1,6 +1,7 @@
 import { When, Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
 import { getPage, e2eUrl } from "./shared-state";
+import { expandAllSidebarSubmenus } from "./sidebar-helpers";
 
 When("I disable bank transfer prepayment on the society page", async function () {
   const page = getPage();
@@ -32,6 +33,7 @@ Then("I should not see the prepayments sidebar link", async function () {
 Then("I should see the prepayments sidebar link", async function () {
   const page = getPage();
   assert.ok(page, "Page not initialized");
+  await expandAllSidebarSubmenus(page);
   const link = page.locator('[data-testid="link-transferentziak"]');
   await link.waitFor({ state: "visible", timeout: 10000 });
 });

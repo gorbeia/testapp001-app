@@ -347,7 +347,10 @@ export function AppSidebar() {
                     >
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
-                          <SidebarMenuButton type="button">
+                          <SidebarMenuButton
+                            type="button"
+                            data-testid={`sidebar-submenu-trigger-${group.id}`}
+                          >
                             <GroupIcon className="h-4 w-4 shrink-0" />
                             <span className="truncate">{t(group.labelKey)}</span>
                             <ChevronRight
@@ -423,7 +426,10 @@ export function AppSidebar() {
                     >
                       <SidebarMenuItem>
                         <CollapsibleTrigger asChild>
-                          <SidebarMenuButton type="button">
+                          <SidebarMenuButton
+                            type="button"
+                            data-testid={`sidebar-submenu-trigger-${group.id}`}
+                          >
                             <GroupIcon className="h-4 w-4 shrink-0" />
                             <span className="truncate">{t(group.labelKey)}</span>
                             <ChevronRight

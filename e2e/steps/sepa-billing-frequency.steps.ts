@@ -1,6 +1,7 @@
 import { When, Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
 import { getPage, e2eUrl } from "./shared-state";
+import { clickSidebarNavLink } from "./sidebar-helpers";
 
 When("I set SEPA mode to quarterly", async function () {
   const page = getPage();
@@ -33,7 +34,7 @@ When("I set SEPA mode to monthly", async function () {
 When("I navigate to the SEPA export page", async function () {
   const page = getPage();
   assert.ok(page);
-  await page.click('[data-testid="link-sepa"]');
+  await clickSidebarNavLink(page, "link-sepa");
   await page.waitForSelector('[data-testid="sepa-export-page"]', { timeout: 15000 });
 });
 

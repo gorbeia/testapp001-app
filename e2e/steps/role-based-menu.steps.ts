@@ -2,6 +2,7 @@ import { Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
 import type { Page } from "playwright";
 import { getPage, e2eUrl, e2eDebug, E2E_BASE_URL } from "./shared-state";
+import { ensureSidebarNavReady, expandAllSidebarSubmenus } from "./sidebar-helpers";
 
 const ACCESS_DENIED_SNIPPET = "Ez duzu baimenik orri hau ikusteko";
 
@@ -64,24 +65,8 @@ const ALL_STAFF_NAV_TEST_IDS = Array.from(
   new Set([...ADMIN_MANAGEMENT_LINKS, ...CONFIG_LINKS, ANNOUNCEMENTS_LINK])
 );
 
-/** Desktop sidebar may start collapsed (cookie); ensure nav links are in view for assertions. */
-async function ensureSidebarNavReady(page: Page): Promise<void> {
-  const home = page.locator('[data-testid="link-home"]');
-  try {
-    await home.waitFor({ state: "visible", timeout: 3_000 });
-    return;
-  } catch {
-    /* collapsed / sheet */
-  }
-  const toggle = page.locator('[data-testid="button-sidebar-toggle"]');
-  if (await toggle.isVisible().catch(() => false)) {
-    await toggle.click();
-    await home.waitFor({ state: "visible", timeout: 10_000 });
-  }
-}
-
 async function assertTestIdsVisible(page: Page, testIds: string[], message: string): Promise<void> {
-  await ensureSidebarNavReady(page);
+  await expandAllSidebarSubmenus(page);
   for (const id of testIds) {
     const loc = page.locator(`[data-testid="${id}"]`).first();
     await loc.waitFor({ state: "visible", timeout: 15_000 });

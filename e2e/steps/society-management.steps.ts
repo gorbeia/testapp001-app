@@ -1,13 +1,13 @@
 import { When, Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
 import { getPage } from "./shared-state";
+import { clickSidebarNavLink } from "./sidebar-helpers";
 
 When("I navigate to the society page", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  // Navigate to society page
-  await page.click('[data-testid="link-elkartea"]');
+  await clickSidebarNavLink(page, "link-elkartea");
 });
 
 Then("I should see the current society information", async function () {
