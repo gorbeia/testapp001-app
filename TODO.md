@@ -1,9 +1,4 @@
-domain and subdomains
-    preload login page based on subdomain (image, society name)
-
 images in reservation dialog
-
-sample images for common products
 
 calendar instead of next reservations
     * society calendar
@@ -24,3 +19,9 @@ remove demo login data
 email support
     * password recovery
     * notifications
+
+domain and subdomains
+    preload login page based on subdomain (image, society name)
+
+
+sample images for common products
