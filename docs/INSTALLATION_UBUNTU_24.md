@@ -280,17 +280,20 @@ pm2 logs
 pm2 monit
 ```
 
-### 5. Save PM2 Configuration
+### 5. Save PM2 Configuration (survive reboot)
 
 ```bash
 # Save current process list
 pm2 save
 
-# Generate startup script
+# Install the startup hook — PM2 prints one command to run (copy and run it; it needs sudo)
 pm2 startup
+```
 
-# Follow the output to enable startup (usually):
-sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u $USER --hp $HOME
+Run exactly the command `pm2 startup` prints (do not skip this step), then:
+
+```bash
+pm2 save
 ```
 
 ### 6. PM2 Commands
@@ -321,58 +324,17 @@ pm2 reload guretxokoa
 pm2 scale guretxokoa 4
 ```
 
-## Systemd Service (Alternative)
-
-To run the application as a system service:
-
-Create a service file:
-
-```bash
-sudo nano /etc/systemd/system/guretxokoa.service
-```
-
-Add the following content:
-
-```ini
-[Unit]
-Description=Elkartearen App
-After=network.target postgresql.service
-
-[Service]
-Type=simple
-User=your_username
-WorkingDirectory=/home/your_username/testapp001-app
-EnvironmentFile=/home/your_username/testapp001-app/.env
-Environment=NODE_ENV=production
-ExecStart=/usr/bin/node dist/index.cjs
-Restart=always
-RestartSec=10
-StandardOutput=journal
-StandardError=journal
-
-[Install]
-WantedBy=multi-user.target
-```
-
-> **Note**: The `EnvironmentFile` directive loads `DATABASE_URL`, `JWT_SECRET`, and other variables from your `.env` file. Update the paths to match your actual installation directory and username.
-
-Enable and start the service:
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable guretxokoa
-sudo systemctl start guretxokoa
-```
-
-Check service status:
-
-```bash
-sudo systemctl status guretxokoa
-```
-
 ## Nginx Reverse Proxy (Recommended)
 
 To set up Nginx as a reverse proxy for ports 80 and 443:
+
+**Important:** Do **not** add `listen 443`, `ssl_certificate`, or `ssl_certificate_key` until **after** Let’s Encrypt has created the files under `/etc/letsencrypt/live/`. If nginx points at certificates that do not exist yet, `sudo nginx -t` fails and **`certbot --nginx` cannot run** (it runs `nginx -t` internally).
+
+Order of operations:
+
+1. Install nginx and deploy an **HTTP-only** site on port **80** (below).
+2. Run **`nginx -t`** and reload nginx — config must be valid.
+3. Run **`certbot --nginx`** — certbot obtains certificates and rewrites nginx for HTTPS (and usually redirects HTTP → HTTPS).
 
 ```bash
 # Install Nginx
@@ -382,43 +344,17 @@ sudo apt install -y nginx
 sudo nano /etc/nginx/sites-available/guretxokoa
 ```
 
-Add the following configuration:
+Add this **initial** configuration (replace `your-domain.com` with your real domain, e.g. `elkartettipia.eus`):
 
 ```nginx
-# HTTP (Port 80) - Redirect to HTTPS
+# HTTP only — until certbot has created certificates (then it adds HTTPS)
 server {
     listen 80;
     server_name your-domain.com www.your-domain.com;
 
-    # Redirect all HTTP traffic to HTTPS
-    return 301 https://$server_name$request_uri;
-}
-
-# HTTPS (Port 443) - Main application
-server {
-    listen 443 ssl http2;
-    server_name your-domain.com www.your-domain.com;
-
-    # SSL Configuration (after obtaining certificates)
-    ssl_certificate /etc/letsencrypt/live/your-domain.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/your-domain.com/privkey.pem;
-
-    # SSL Settings
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384;
-    ssl_prefer_server_ciphers off;
-    ssl_session_cache shared:SSL:10m;
-    ssl_session_timeout 10m;
-
-    # Security Headers
-    add_header X-Frame-Options DENY;
-    add_header X-Content-Type-Options nosniff;
-    add_header X-XSS-Protection "1; mode=block";
-    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
-
     # Application Proxy
     location / {
-        proxy_pass http://localhost:5000;
+        proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -428,15 +364,13 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_cache_bypass $http_upgrade;
 
-        # Timeouts
         proxy_connect_timeout 60s;
         proxy_send_timeout 60s;
         proxy_read_timeout 60s;
     }
 
-    # WebSocket Support (if needed)
     location /ws {
-        proxy_pass http://localhost:5000;
+        proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -446,9 +380,8 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 
-    # Static files caching
     location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
-        proxy_pass http://localhost:5000;
+        proxy_pass http://127.0.0.1:5000;
         expires 1y;
         add_header Cache-Control "public, immutable";
     }
@@ -462,6 +395,8 @@ sudo ln -s /etc/nginx/sites-available/guretxokoa /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl restart nginx
 ```
+
+After HTTPS is working (next section), you can edit the generated SSL server block to add extra **security headers** if you want (e.g. `Strict-Transport-Security`, `X-Frame-Options`). Certbot does not add all of them by default.
 
 ## SSL Certificate (Required for Port 443)
 
@@ -489,10 +424,10 @@ Add this line for auto-renewal:
 
 After SSL setup, your Nginx configuration will automatically handle:
 
-- **Port 80**: HTTP traffic redirected to HTTPS
+- **Port 80**: HTTP traffic (typically redirected to HTTPS by certbot)
 - **Port 443**: HTTPS traffic to your application
 - **SSL certificates**: Automatically renewed
-- **Security headers**: HTTPS-only features enabled
+- **Security headers**: Add any HTTPS-only headers you need in the SSL `server` block
 
 ## Troubleshooting
 
@@ -535,9 +470,27 @@ After SSL setup, your Nginx configuration will automatically handle:
  # Must be v24.x or higher (project requires >=24.0.0)
 ```
 
+5. **Certbot / nginx: `cannot load certificate ... fullchain.pem` / `nginx -t` fails**
+
+This happens when the site config references `/etc/letsencrypt/live/<domain>/fullchain.pem` (and `privkey.pem`) **before** those files exist. The `certbot --nginx` plugin always runs `nginx -t`, so it cannot recover until nginx config is valid again.
+
+**Fix:**
+
+1. Edit the site file under `/etc/nginx/sites-available/` (and check `sites-enabled/` for duplicates).
+2. **Remove or comment out** the entire `server { listen 443 ssl ... }` block, and any `ssl_certificate` / `ssl_certificate_key` directives.
+3. Ensure **port 80** serves your app with `proxy_pass` (see [Nginx Reverse Proxy](#nginx-reverse-proxy-recommended) — HTTP-only starter config). Do **not** use `return 301 https://...` on port 80 until after the first successful certbot run (otherwise Let’s Encrypt HTTP-01 validation can break).
+4. Run:
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+sudo certbot --nginx -d your-domain.com -d www.your-domain.com
+```
+
+5. After certbot succeeds, reload nginx if needed: `sudo systemctl reload nginx`.
+
 ### Logs
 
-- **Application logs**: Check terminal output or use `journalctl` if using systemd
+- **Application logs**: `pm2 logs` / `pm2 logs guretxokoa` (see `logs/` if you use file targets in `ecosystem.config.js`)
 - **Database logs**: `/var/log/postgresql/`
 - **Nginx logs**: `/var/log/nginx/`
 
@@ -551,7 +504,7 @@ This section covers how to deploy a new version of the application after the ini
 2. Read the release notes or commit log for breaking changes (`git log --oneline HEAD..origin/main`).
 3. Ensure no one is mid-operation on the app during the update window.
 
-### Standard Update Procedure (PM2)
+### Standard Update Procedure
 
 ```bash
 cd /home/your_username/testapp001-app
@@ -577,35 +530,6 @@ pm2 reload guretxokoa
 
 # 7. Verify the app is healthy
 pm2 status
-curl -s http://localhost:5000/api | head -c 200
-```
-
-### Standard Update Procedure (systemd)
-
-```bash
-cd /home/your_username/testapp001-app
-
-# 1. Back up the database
-pg_dump "$DATABASE_URL" > ~/backups/guretxokoa_pre_update_$(date +%Y%m%d_%H%M).sql
-
-# 2. Pull latest code
-git fetch origin
-git pull origin main
-
-# 3. Install any new/changed dependencies
-pnpm install --frozen-lockfile
-
-# 4. Apply database schema changes (non-destructive)
-pnpm db:push
-
-# 5. Rebuild the production bundle
-pnpm build
-
-# 6. Restart the service
-sudo systemctl restart guretxokoa
-
-# 7. Verify the app is healthy
-sudo systemctl status guretxokoa
 curl -s http://localhost:5000/api | head -c 200
 ```
 
@@ -639,7 +563,7 @@ pnpm install --frozen-lockfile
 pnpm build
 
 # 4. Restart
-pm2 reload guretxokoa        # or: sudo systemctl restart guretxokoa
+pm2 reload guretxokoa
 
 # 5. Restore database backup if schema changed
 psql "$DATABASE_URL" < ~/backups/guretxokoa_pre_update_YYYYMMDD_HHMM.sql
@@ -713,7 +637,7 @@ pm2 set pm2-logrotate:retain 7
 
 For issues and support:
 
-- Check the application logs: `pm2 logs` or `journalctl -u guretxokoa -f`
+- Check the application logs: `pm2 logs` or `pm2 logs guretxokoa --lines 200`
 - Verify all services are running: `pm2 status` and `sudo systemctl status postgresql`
 - Check database connectivity: `psql "$DATABASE_URL" -c "SELECT 1"`
 - Check network/firewall: `sudo ufw status`
