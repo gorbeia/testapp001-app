@@ -9,24 +9,6 @@ Feature: SEPA billing frequency per society
     And I log in as a admin user
     And I navigate to the society page
 
-  Scenario: Admin sets quarterly SEPA mode and sees quarter options on export page
-    And I set SEPA mode to quarterly
-    And I save the society changes
-    And I navigate to the SEPA export page
-    Then I should see quarterly hints on the SEPA export step
-    When I navigate to the society page
-    And I set SEPA mode to monthly
-    And I save the society changes
-
-  Scenario: Admin sets on-demand SEPA mode and sees month range selectors
-    And I set SEPA mode to on_demand
-    And I save the society changes
-    And I navigate to the SEPA export page
-    Then I should see on-demand month range selectors on SEPA export
-    When I navigate to the society page
-    And I set SEPA mode to monthly
-    And I save the society changes
-
   Scenario: Admin disables SEPA and sidebar hides link; page shows disabled state
     And I set SEPA mode to disabled
     And I save the society changes

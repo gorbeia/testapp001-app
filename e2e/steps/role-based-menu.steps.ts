@@ -1,7 +1,7 @@
 import { Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
 import type { Page } from "playwright";
-import { getPage, e2eUrl, e2eDebug, E2E_BASE_URL } from "./shared-state";
+import { getPage, e2eUrl, e2eDebug } from "./shared-state";
 import { ensureSidebarNavReady, expandAllSidebarSubmenus } from "./sidebar-helpers";
 
 const ACCESS_DENIED_SNIPPET = "Ez duzu baimenik orri hau ikusteko";
@@ -260,31 +260,3 @@ Then(
   }
 );
 
-Then("API calls to admin-protected endpoints should return 403", async function () {
-  const page = getPage();
-  assert.ok(page, "Page was not initialized");
-
-  const status = await page.evaluate(async (origin: string) => {
-    const res = await fetch(`${origin}/api/users`, { credentials: "include" });
-    return res.status;
-  }, E2E_BASE_URL);
-
-  assert.equal(status, 403, "Member should get 403 on GET /api/users");
-});
-
-Then("API calls to user-management endpoints should return 403", async function () {
-  const page = getPage();
-  assert.ok(page, "Page was not initialized");
-
-  const status = await page.evaluate(async (origin: string) => {
-    const res = await fetch(`${origin}/api/users`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    return res.status;
-  }, E2E_BASE_URL);
-
-  assert.equal(status, 403, "Treasurer should get 403 on POST /api/users (users.manage)");
-});

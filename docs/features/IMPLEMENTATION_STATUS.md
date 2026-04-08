@@ -11,6 +11,8 @@ Status legend:
 >
 > **Local DB:** `pnpm db:reset` runs [`script/reset.ts`](../script/reset.ts) (drops all `public` tables, then `db:push`). `pnpm db:seed` runs [`script/seed.ts`](../script/seed.ts) (ordered demo seeds in one process).
 >
+> **Tests:** Three tiers — **unit** (`pnpm test`), **integration** (`pnpm test:integration`, Cucumber + Supertest on the real Express app + DB), **E2E** (`pnpm test:e2e`, Cucumber + Playwright). Story ↔ test mapping: [`TEST_COVERAGE.md`](./TEST_COVERAGE.md).
+>
 > **List pagination (high-volume tables):** Shared UI pattern **`usePagination`** + **`PaginationControls`** with server **`page`/`limit`** (default 25, max 100). Responses use **`{ data, total, ... }`** (admin account movements keep **`movements` + `total`**). Covered: reservations (member/society/admin), notifications, stock movements, stock receipts, stock takes (**draft take always merged into the current page** when it would otherwise be missing), consumptions list + **my consumptions** (includes `sumTotalAmount` / `pendingCount` for stats), treasurer **credits** grid (**`sumPending`/`sumPaid`** for summary cards; batch select-all is **per page**), treasurer **bank transfers** (**pending** list only), **my movements** + **admin movements** (period stats use full filtered totals), **society accounting** derived movements tab (**`/api/society-accounting/derived-movements`**: `movements` + `total`, running balance over full **`from`/`to`** range).
 
 ---
@@ -18,9 +20,9 @@ Status legend:
 ## 1. Authentication (`authentication.md`)
 
 1. **User Login** – Login form & auth context
-   - **Status**: ✅ Implemented (real `POST /api/login` + bcrypt/legacy passwords; society alphabetic id; access + refresh httpOnly cookies; Bearer token in localStorage; E2E tested)
+   - **Status**: ✅ Implemented (real `POST /api/login` + bcrypt/legacy passwords; society alphabetic id; access + refresh httpOnly cookies; Bearer token in localStorage; integration + E2E tested — see `TEST_COVERAGE.md`)
 2. **Role-Based Access Control** – menus & route protection
-   - **Status**: ✅ Implemented (**`accessRole`** + **`membershipType`**, shared **`Permission`** checks on API + client; see [`rbac.md`](./rbac.md); E2E: `e2e/features/role-based-menu.feature` for sidebar, direct URL denial, API 403; **HTTP 403** from the API is shown with the same **`AccessDenied`** pattern as route-gated pages via `AccessDeniedOrError` + status-prefixed fetch errors)
+   - **Status**: ✅ Implemented (**`accessRole`** + **`membershipType`**, shared **`Permission`** checks on API + client; see [`rbac.md`](./rbac.md); E2E: `e2e/features/role-based-menu.feature` for sidebar + direct URL denial; API 403 matrix: `integration/features/rbac.feature`; **HTTP 403** from the API is shown with the same **`AccessDenied`** pattern as route-gated pages via `AccessDeniedOrError` + status-prefixed fetch errors)
 3. **View Personal Profile** – self profile view
    - **Status**: ✅ Implemented (`/profila`, JWT-backed user payload + profile API)
 4. **Update Password** – change password flow

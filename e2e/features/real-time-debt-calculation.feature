@@ -11,7 +11,7 @@ Feature: Real-time Debt Calculation
     When I re-login as a bazkide user
     And I navigate to the consumptions page
     And I add "Kalea Garagardoa" to the cart
-    And I add "Ardoa" to the cart
+    And I add "Txakoli Getariako" to the cart
     And I click the close account button
     And I should see the confirmation dialog
     And I capture the consumption amount from the confirmation dialog

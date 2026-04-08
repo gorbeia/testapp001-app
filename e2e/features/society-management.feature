@@ -21,13 +21,3 @@ Feature: Society Management
     And I should see the updated society name
     And I should see the updated society IBAN
     And I should see the updated society phone
-
-  Scenario: Modify society address information
-    When I navigate to the society page
-    Then I should see the current society information
-    When I update the society address to "Kale Berria 25, 20001 Donostia"
-    And I update the society email to "info@guretxokoberria.eus"
-    And I save the society changes
-    Then I should see a society success message
-    And I should see the updated society address
-    And I should see the updated society email

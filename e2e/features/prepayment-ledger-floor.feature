@@ -1,9 +1,9 @@
 @prepayment-ledger-floor
 Feature: Prepayment minimum ledger balance (E2E)
-  Exercises the member banner and API enforcement when balance is below the society floor.
+  Exercises the member banner and UI when balance is below the society floor (API 403 is covered by `integration/features/reservations.feature`).
   DB fixtures are applied in a Before hook (`pnpm db:seed:prepayment-floor-e2e`) and torn down after (`pnpm db:undo:prepayment-floor-e2e`).
 
-  Scenario: Member below floor sees banner and reservation API returns 403
+  Scenario: Member below floor sees banner and cannot save reservation
     Given the application is running
     When I open the login page
     And I log in as a bazkide user
@@ -16,5 +16,3 @@ Feature: Prepayment minimum ledger balance (E2E)
     And I set the number of guests to 10
     And I select the "Gela Pribatua" table
     Then the reservation save button should be disabled for prepayment ledger floor
-    When I request creating a reservation via the API from the browser session
-    Then the response should be prepayment ledger floor denied

@@ -9,10 +9,13 @@ alwaysApply: true
 
 - Feature requirements: **`docs/features/*.md`** (user stories: *As a / I want to / So that* + acceptance criteria).
 - **Live delivery tracker:** **`docs/features/IMPLEMENTATION_STATUS.md`** (✅ implemented, 🟡 partial/mock/UI-only, ❌ missing).
+- **Test coverage matrix:** **`docs/features/TEST_COVERAGE.md`** — maps user stories to unit / integration / E2E tests (keep in sync when tests change).
 
 ## After code changes
 
 When you implement, extend, or remove a feature, **update `IMPLEMENTATION_STATUS.md`** in the same PR/conversation so status matches reality.
+
+When you add, move, or remove automated tests, **update `TEST_COVERAGE.md`** for the affected stories.
 
 ## Conflicts
 

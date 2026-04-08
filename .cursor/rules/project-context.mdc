@@ -18,7 +18,9 @@ This is **not** Next.js. Files under `client/src/components/ui/` may contain `"u
 | `client/src/` | React app: pages, components, hooks, `lib/` |
 | `server/` | Express entry, `routes/`, `db.ts`, `lib/` |
 | `shared/` | Drizzle schema, shared TS (`schema.ts`, `society.ts`) |
-| `e2e/` | Cucumber features + Playwright steps |
+| `e2e/` | Cucumber features + Playwright steps (browser) |
+| `integration/` | Cucumber API tests + Supertest (no browser) |
+| `server/app.ts` | Express `createApp()` — used by `server/index.ts` and integration tests |
 | `docs/features/` | Feature specs + `IMPLEMENTATION_STATUS.md` |
 | `script/` | build, seed, DB reset |
 

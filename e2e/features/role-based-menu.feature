@@ -57,13 +57,3 @@ Feature: Role-based access control
   Scenario: Cellarman cannot access financial pages directly
     When I log in as a sotolaria user
     Then I should not be able to access financial pages as a cellarman
-
-  @role-based
-  Scenario: Member API calls to admin endpoints return 403
-    When I log in as a bazkide user
-    Then API calls to admin-protected endpoints should return 403
-
-  @role-based
-  Scenario: Treasurer API calls to user-management endpoints return 403
-    When I log in as a diruzaina user
-    Then API calls to user-management endpoints should return 403

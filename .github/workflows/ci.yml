@@ -16,6 +16,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: elkartearen_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d elkartearen_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/elkartearen_test
+      JWT_SECRET: github-actions-integration-test-jwt-not-for-production
+      SESSION_SECRET: github-actions-integration-test-session-not-for-production
+      BACKOFFICE_JWT_SECRET: github-actions-integration-test-backoffice-not-for-production
+
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -32,6 +53,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Apply database schema
+        run: pnpm exec drizzle-kit push --force
+
+      - name: Seed database
+        run: pnpm db:seed
+        timeout-minutes: 5
+
       - name: Prettier
         run: pnpm format:check
 
@@ -45,8 +73,11 @@ jobs:
         run: pnpm test:unit
         env:
           NODE_ENV: test
-          # server/db.ts throws if unset; unit tests mock DB but this avoids accidental real imports in CI
-          DATABASE_URL: postgresql://127.0.0.1:5432/vitest_ci
+
+      - name: Integration tests (Cucumber + Supertest)
+        run: pnpm test:integration
+        env:
+          NODE_ENV: test
 
       - name: Build
         run: pnpm build

@@ -1,4 +1,4 @@
-import { Given, When, Then } from "@cucumber/cucumber";
+import { Given, When, Then, Before } from "@cucumber/cucumber";
 import type { Page } from "playwright";
 import assert from "node:assert/strict";
 import { getPage, e2eUrl } from "./shared-state";
@@ -14,6 +14,13 @@ const testState: TestState = {
   finalDebt: 0,
   consumptionAmount: 0,
 };
+
+/** Reset shared numbers each scenario — module-level state must not leak between features. */
+Before(function () {
+  testState.initialDebt = 0;
+  testState.finalDebt = 0;
+  testState.consumptionAmount = 0;
+});
 
 /** YYYY-MM — same label as `credit.month` in the credits table */
 function currentMonthLabel(): string {
@@ -74,35 +81,31 @@ Then('I find the debt amount for "Miren Urrutia"', async function () {
   if (!page) throw new Error("Page not initialized");
 
   const mirenRow = creditRowForMemberInCurrentMonth(page, "Miren Urrutia");
+  await mirenRow.waitFor({ state: "visible", timeout: 15_000 });
 
-  if (await mirenRow.isVisible()) {
-    const amountElement = mirenRow.locator('[data-testid^="credit-amount-"]');
-    const amountText = await amountElement.textContent();
+  const amountElement = mirenRow.locator('[data-testid^="credit-amount-"]');
+  const amountText = await amountElement.textContent();
+  assert.ok(amountText?.trim(), "Expected credit amount cell for Miren");
 
-    if (amountText) {
-      // Extract numeric value from "XX.XX€"
-      const amountMatch = amountText.match(/([\d.]+)€/);
-      if (amountMatch) {
-        testState.initialDebt = parseFloat(amountMatch[1]);
-      }
-    }
-  } else {
-    testState.initialDebt = 0;
-  }
+  const amountMatch = amountText.match(/([\d.]+)€/);
+  assert.ok(amountMatch, `Could not parse debt from ${JSON.stringify(amountText)}`);
+  testState.initialDebt = parseFloat(amountMatch[1]);
+  assert.ok(Number.isFinite(testState.initialDebt), `Invalid initial debt: ${amountText}`);
 });
 
 When("I capture the consumption amount from the confirmation dialog", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not initialized");
 
-  // Capture the consumption amount from the confirmation dialog
   const totalAmountText = await page.locator('[data-testid="total-amount"]').textContent();
-  if (totalAmountText) {
-    const amountMatch = totalAmountText.match(/([\d.]+)€/);
-    if (amountMatch) {
-      testState.consumptionAmount = parseFloat(amountMatch[1]);
-    }
-  }
+  assert.ok(totalAmountText?.trim(), "Confirmation dialog total should be visible");
+  const amountMatch = totalAmountText.match(/([\d.]+)€/);
+  assert.ok(amountMatch, `Could not parse total from ${JSON.stringify(totalAmountText)}`);
+  testState.consumptionAmount = parseFloat(amountMatch[1]);
+  assert.ok(
+    testState.consumptionAmount > 0.01,
+    `Expected positive consumption total, got ${testState.consumptionAmount}`
+  );
 });
 
 When("I allow time for debt totals to update", async function () {
@@ -146,6 +149,10 @@ Then(
 Then("the debt increase should match the consumption total", async function () {
   const debtIncrease = testState.finalDebt - testState.initialDebt;
 
-  // Allow for small floating point differences
-  assert.ok(Math.abs(debtIncrease - testState.consumptionAmount) < 0.01);
+  // One cent tolerance: UI uses toFixed(2); backend may aggregate decimals slightly differently.
+  const delta = Math.abs(debtIncrease - testState.consumptionAmount);
+  assert.ok(
+    delta < 0.02,
+    `Debt increase ${debtIncrease.toFixed(2)}€ should match dialog total ${testState.consumptionAmount.toFixed(2)}€ (Δ ${delta.toFixed(4)})`
+  );
 });

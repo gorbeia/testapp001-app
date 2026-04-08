@@ -129,6 +129,19 @@ Tests live under `e2e/features/` (Gherkin) and `e2e/steps/` (Playwright + Cucumb
  pnpm db:seed
 ```
 
+### Running integration tests (API, no browser)
+
+Uses **Cucumber** + **Supertest** against the Express app **in-process** with the same **`DATABASE_URL`** as your local Postgres (no `pnpm dev`).
+
+```bash
+pnpm docker:db:up
+pnpm db:push
+pnpm db:seed
+pnpm test:integration
+```
+
+Focused runs: `pnpm test:integration:only`, `pnpm test:integration:feature -- integration/features/auth.feature`, `pnpm test:integration:verbose`. See `docs/features/TEST_COVERAGE.md` for the matrix vs user stories.
+
 ### Running E2E
 
 1. **Terminal A — app running**
@@ -177,7 +190,7 @@ Adjust if your local runs need a different default.
 
 ### Coverage overview
 
-There are **22** feature files under `e2e/features/` (login, users, profile, reservations, products, stock changes/receipts/takes, consumptions, debts, society, menus, payments, etc.). For gaps vs API surface, see `docs/KNOWN_ISSUES.md`.
+There are **12** browser E2E features under `e2e/features/` (UI-critical journeys). API contracts and RBAC are exercised by **integration** features in `integration/features/`. Full mapping: `docs/features/TEST_COVERAGE.md`. For other gaps vs API surface, see `docs/KNOWN_ISSUES.md`.
 
 ---
 
@@ -200,7 +213,11 @@ There are **22** feature files under `e2e/features/` (login, users, profile, res
 | `pnpm db:reset:seed`                      | `db:reset` then `db:seed`                                      |
 | `pnpm docker:db:up` / `down` / `reset`    | Postgres via Docker Compose                                    |
 | `pnpm test:unit`                          | Vitest unit tests (ledger rules/service; no DB)                |
-| `pnpm test:e2e`                           | Full Cucumber suite (compact `**progress-bar`\*\* output)      |
+| `pnpm test:integration`                  | Cucumber API tests (Supertest; requires seeded DB)             |
+| `pnpm test:integration:verbose`           | Same, pretty formatter                                         |
+| `pnpm test:integration:only`              | `@only` integration scenarios                                  |
+| `pnpm test:integration:feature -- <path>` | One integration `.feature` file                                |
+| `pnpm test:e2e`                           | Full Cucumber browser suite (compact `**progress-bar`\*\* output) |
 | `pnpm test:e2e:verbose`                   | Same suite, **pretty** (verbose) formatter                     |
 | `pnpm test:e2e:only`                      | `@only` scenarios                                              |
 | `pnpm test:e2e:feature -- <path>`         | One `.feature` file                                            |
@@ -219,7 +236,7 @@ Apply fixes with `**pnpm audit --fix`** (review lockfile changes) or targeted de
 
 ### GitHub Actions
 
-Workflows in `[.github/workflows/](.github/workflows/)`: **CI** (Prettier, `pnpm check`, `pnpm lint:ci`, `pnpm test:unit`, `pnpm build` on PRs and pushes to `main`), **E2E** (Postgres service, `drizzle-kit push`, `pnpm db:seed`, `pnpm dev`, `pnpm test:e2e`), and **Security audit** (weekly + manual, `pnpm audit:security`).
+Workflows in `[.github/workflows/](.github/workflows/)`: **CI** (Prettier, `pnpm check`, `pnpm lint:ci`, `pnpm test:unit`, Postgres service, schema push, `pnpm db:seed`, `pnpm test:integration`, `pnpm build` on PRs and pushes to `main`), **E2E** (Postgres service, `drizzle-kit push`, `pnpm db:seed`, `pnpm dev`, `pnpm test:e2e`), and **Security audit** (weekly + manual, `pnpm audit:security`).
 
 ---
 

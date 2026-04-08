@@ -1,7 +1,21 @@
 ---
-description: E2E — Cucumber + Playwright conventions
+description: E2E — Cucumber + Playwright conventions (browser only)
 globs: e2e/**/*.ts
 alwaysApply: false
+---
+
+> This rule covers **browser E2E** only. For HTTP/API integration tests (Cucumber + Supertest), see `.cursor/rules/integration-testing.mdc`.
+
+## Test tiers
+
+| Tier | Location | Runner | Use for |
+|------|-----------|--------|---------|
+| **Unit** | `server/**/*.test.ts` | Vitest | Pure logic, mocked DB |
+| **Integration** | `integration/features/` | Cucumber + Supertest | API contracts, RBAC, business rules |
+| **E2E** | `e2e/features/` | Cucumber + Playwright | Critical UI journeys |
+
+Prefer new **backend** coverage in **integration** features, not browser E2E.
+
 ---
 
 # E2E tests (`e2e/`)

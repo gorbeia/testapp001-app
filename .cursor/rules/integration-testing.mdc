@@ -1,0 +1,46 @@
+---
+description: Integration tests — Cucumber + Supertest (API, no browser)
+globs: integration/**/*.ts
+alwaysApply: false
+---
+
+# Integration tests (`integration/`)
+
+## Layout
+
+- **Gherkin:** `integration/features/**/*.feature`
+- **Steps:** `integration/steps/**/*.ts` (`@cucumber/cucumber` + **Supertest** on `server/app.ts`)
+- **Never import Playwright** here.
+- **Cucumber config:** `integration/cucumber.mjs` (optional; CI uses `package.json` scripts with `--import tsx`)
+
+## App factory
+
+- [`server/app.ts`](server/app.ts) exports `createApp()` — Express + `registerRoutes` + API error handler. **No** `listen`, **no** cron, **no** Vite/static.
+
+## Shared world
+
+- Per-scenario **Supertest agent** with cookie jar (`integration/steps/hooks.ts`).
+- Store **`lastResponse`** (`status`, `headers`, `body`) after each HTTP step.
+- **`createdIds`** for IDs used across steps (e.g. last reservation).
+
+## Step layers
+
+1. **Generic HTTP** — [`integration/steps/http-helpers.ts`](integration/steps/http-helpers.ts) (`GET`/`POST`/`PUT`/`DELETE`, status/body assertions). Prefer these.
+2. **Auth** — [`integration/steps/auth.steps.ts`](integration/steps/auth.steps.ts) — `Given I am authenticated as a "{role}" user` (demo users, society `GT001`, password `demo`).
+3. **Domain** — thin steps for multi-step flows or DB fixtures only.
+
+## Commands (repo root)
+
+- Full suite: `pnpm test:integration` (`NODE_ENV=test`)
+- Verbose: `pnpm test:integration:verbose`
+- Tagged `@only`: `pnpm test:integration:only`
+- Single feature: `pnpm test:integration:feature -- integration/features/<name>.feature`
+
+## Data
+
+Same as e2e: **`pnpm db:seed`** (and schema via `pnpm db:push` / `drizzle-kit push`). Scenario-specific DB state: `@tag` + `Before`/`After` hooks (e.g. prepayment floor seed scripts).
+
+## Traceability
+
+- Tag scenarios with **`@story:X-Y`** (see [`docs/features/TEST_COVERAGE.md`](docs/features/TEST_COVERAGE.md)).
+- When adding or changing tests, update **`TEST_COVERAGE.md`**.
