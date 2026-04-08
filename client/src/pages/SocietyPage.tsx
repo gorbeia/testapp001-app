@@ -343,24 +343,6 @@ export function SocietyPage() {
                       window.dispatchEvent(new Event(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT));
                     }}
                   />
-                  <ImageUpload
-                    societyId={society.id}
-                    entity="society-map"
-                    entityId={society.id}
-                    label={t("societyMapLabel")}
-                    description={t("societyMapHint")}
-                    currentFilename={society.mapImageUrl}
-                    thumbFilename={thumbFilenameFromImageUrl(society.mapImageUrl)}
-                    disabled={!user}
-                    onUploaded={filename => {
-                      setSociety({ ...society, mapImageUrl: filename });
-                      window.dispatchEvent(new Event(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT));
-                    }}
-                    onRemoved={() => {
-                      setSociety({ ...society, mapImageUrl: null });
-                      window.dispatchEvent(new Event(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT));
-                    }}
-                  />
                 </div>
               ) : null}
               <div className="space-y-2">
@@ -608,6 +590,28 @@ export function SocietyPage() {
                   />
                 </div>
               </div>
+              {canManageSocietyImages ? (
+                <div className="space-y-2 pt-4 border-t">
+                  <ImageUpload
+                    societyId={society.id}
+                    entity="society-map"
+                    entityId={society.id}
+                    label={t("societyMapLabel")}
+                    description={t("societyMapHint")}
+                    currentFilename={society.mapImageUrl}
+                    thumbFilename={thumbFilenameFromImageUrl(society.mapImageUrl)}
+                    disabled={!user}
+                    onUploaded={filename => {
+                      setSociety({ ...society, mapImageUrl: filename });
+                      window.dispatchEvent(new Event(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT));
+                    }}
+                    onRemoved={() => {
+                      setSociety({ ...society, mapImageUrl: null });
+                      window.dispatchEvent(new Event(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT));
+                    }}
+                  />
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </div>

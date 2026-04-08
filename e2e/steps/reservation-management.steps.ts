@@ -1,7 +1,18 @@
 import { Given, When, Then } from "@cucumber/cucumber";
-import type { Page } from "playwright";
+import type { Page, Response } from "playwright";
 import { getPage, e2eUrl, e2eDebug } from "./shared-state";
 import assert from "node:assert/strict";
+
+/** POST /api/reservations (not /user, /count, etc.). Toast only fires after this response returns. */
+function isCreateReservationPost(response: Response): boolean {
+  if (response.request().method() !== "POST") return false;
+  try {
+    const { pathname } = new URL(response.url());
+    return pathname === "/api/reservations";
+  } catch {
+    return false;
+  }
+}
 
 /** Cost breakdown inside the new-reservation dialog (not other .bg-muted/50 on the page). */
 function reservationCostCard(page: Page) {
@@ -393,24 +404,50 @@ When("I save the reservation", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
+  // Server runs debt recalculation before responding; the success toast only appears after
+  // the POST completes — waiting on the toast alone can flake if the handler exceeds ~15s.
+  const responsePromise = page.waitForResponse(isCreateReservationPost, { timeout: 90_000 });
+
   await page.click('[data-testid="button-save-reservation"]');
+
+  this.reservationCreateResponse = await responsePromise;
 });
 
 Then("I should see a reservation success message", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
+  const response = this.reservationCreateResponse as Response | undefined;
+  if (!response) {
+    throw new Error("Missing reservation POST response — run the save step first");
+  }
+
+  const status = response.status();
+  if (!response.ok()) {
+    let body = "";
+    try {
+      body = await response.text();
+    } catch {
+      /* ignore */
+    }
+    throw new Error(`Reservation API failed (${status}): ${body.slice(0, 800)}`);
+  }
+
   const errorToast = page.locator('[data-testid="toast-destructive"]');
   const successToast = page.locator('[data-testid="toast-default"]');
 
   try {
-    await successToast.waitFor({ state: "visible", timeout: 15000 });
+    await successToast.waitFor({ state: "visible", timeout: 15_000 });
   } catch {
     if (await errorToast.isVisible().catch(() => false)) {
       const msg = await errorToast.textContent();
       throw new Error(`Reservation failed (error toast): ${msg ?? "(empty)"}`);
     }
-    throw new Error("Success toast did not appear within 15s");
+    const dialog = page.locator('[data-testid="dialog-content"]');
+    if ((await dialog.count()) === 0 || !(await dialog.isVisible().catch(() => false))) {
+      return;
+    }
+    throw new Error("Success toast did not appear within 15s after API success");
   }
 
   const text = await successToast.textContent();
