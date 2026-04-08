@@ -5,8 +5,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { AlertCircle, Megaphone } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
 import { useLanguage } from "@/lib/i18n";
+import { dateFnsLocale } from "@/lib/date-locale";
 import { AccessDenied } from "@/components/AccessDenied";
 import { isHttpForbidden } from "@/lib/http-error";
 import { Note } from "./api";
@@ -18,7 +18,7 @@ interface RecentNotesProps {
 }
 
 export function RecentNotes({ notes, loading, error }: RecentNotesProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   if (error) {
     if (isHttpForbidden(error)) {
@@ -79,7 +79,7 @@ export function RecentNotes({ notes, loading, error }: RecentNotesProps) {
                         </TooltipContent>
                       </Tooltip>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {format(new Date(note.createdAt), "PPP", { locale: es })}
+                        {format(new Date(note.createdAt), "PPP", { locale: dateFnsLocale(language) })}
                       </p>
                     </div>
                   </div>

@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useLanguage } from "@/lib/i18n";
+import { useFormattedDates } from "@/lib/date-locale";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { getErrorMessage } from "@/lib/errors";
@@ -73,6 +74,7 @@ function typeBadgeVariant(type: string): "default" | "secondary" | "destructive"
 
 export function StockChangesPage() {
   const { t } = useLanguage();
+  const { formatDateTime } = useFormattedDates();
   const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
   const [rows, setRows] = useState<StockMovementListRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -299,7 +301,7 @@ export function StockChangesPage() {
                   rows.map(row => (
                     <TableRow key={row.id} data-testid={`row-stock-movement-${row.id}`}>
                       <TableCell className="whitespace-nowrap text-sm">
-                        {new Date(row.createdAt).toLocaleString()}
+                        {formatDateTime(row.createdAt)}
                       </TableCell>
                       <TableCell className="font-medium">
                         {row.productName ?? row.productId}

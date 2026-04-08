@@ -24,6 +24,7 @@ import {
 import MonthGrid from "@/components/MonthGrid";
 import PaginationControls from "@/components/PaginationControls";
 import { useLanguage } from "@/lib/i18n";
+import { useFormattedDates } from "@/lib/date-locale";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/lib/api";
 import { readJsonOrThrow } from "@/lib/http-error";
@@ -34,6 +35,7 @@ import { usePagination } from "@/hooks/use-pagination";
 
 export function MyReservationsPage() {
   const { t } = useLanguage();
+  const { formatDateShort, formatTimeShort } = useFormattedDates();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
@@ -165,16 +167,6 @@ export function MyReservationsPage() {
     };
     const label = typeLabels[type] || type;
     return <Badge variant="outline">{label}</Badge>;
-  };
-
-  const formatDate = (date: string | Date) => {
-    const dateObj = typeof date === "string" ? new Date(date) : date;
-    return dateObj.toLocaleDateString("eu-ES");
-  };
-
-  const formatTime = (date: string | Date) => {
-    const dateObj = typeof date === "string" ? new Date(date) : date;
-    return dateObj.toLocaleTimeString("eu-ES", { hour: "2-digit", minute: "2-digit" });
   };
 
   const handleCancelReservation = async (reservationId: string) => {
@@ -362,10 +354,10 @@ export function MyReservationsPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-500" />
-                          <span>{formatDate(reservation.startDate)}</span>
+                          <span>{formatDateShort(reservation.startDate)}</span>
                         </div>
                       </TableCell>
-                      <TableCell>{formatTime(reservation.startDate)}</TableCell>
+                      <TableCell>{formatTimeShort(reservation.startDate)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <MapPin className="h-4 w-4 text-gray-500" />
@@ -441,11 +433,11 @@ export function MyReservationsPage() {
                   </div>
                   <div>
                     <p className="text-sm font-medium">{t("date")}</p>
-                    <p>{formatDate(selectedReservation.startDate)}</p>
+                    <p>{formatDateShort(selectedReservation.startDate)}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">{t("time")}</p>
-                    <p>{formatTime(selectedReservation.startDate)}</p>
+                    <p>{formatTimeShort(selectedReservation.startDate)}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">{t("guests")}</p>

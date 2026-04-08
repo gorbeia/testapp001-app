@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useLanguage } from "@/lib/i18n";
+import { useFormattedDates } from "@/lib/date-locale";
 import { useAuth, userCan } from "@/lib/auth";
 import { Permission } from "@shared/permissions";
 import { useToast } from "@/hooks/use-toast";
@@ -47,6 +48,7 @@ interface Announcement {
 
 export function AnnouncementsPage() {
   const { t } = useLanguage();
+  const { formatDateShort } = useFormattedDates();
   const { user } = useAuth();
   const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -257,7 +259,7 @@ export function AnnouncementsPage() {
                     </div>
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Calendar className="h-3 w-3" />
-                      {new Date(announcement.createdAt).toLocaleDateString("eu-ES")}
+                      {formatDateShort(announcement.createdAt)}
                     </div>
                   </div>
                 </CardHeader>

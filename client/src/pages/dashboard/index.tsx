@@ -23,7 +23,7 @@ function errorMessageFromCatch(error: unknown, fallback: string): string {
 }
 
 export function Dashboard() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loadingNotes, setLoadingNotes] = useState(true);
   const [notesError, setNotesError] = useState<string | null>(null);
@@ -39,13 +39,13 @@ export function Dashboard() {
     fetchNotesData();
     fetchReservationsData();
     fetchStatsData();
-  }, []);
+  }, [language]);
 
   const fetchNotesData = async () => {
     setLoadingNotes(true);
     setNotesError(null);
     try {
-      const notesData = await fetchNotes(t("language") === "es" ? "es" : "eu");
+      const notesData = await fetchNotes(language);
       setNotes(notesData);
     } catch (error) {
       console.error("Error fetching notes:", error);
@@ -61,7 +61,7 @@ export function Dashboard() {
     setReservationsError(null);
     try {
       const [reservationsData, totalCount] = await Promise.all([
-        fetchUpcomingReservations(5),
+        fetchUpcomingReservations(5, language),
         fetchTotalReservationsCount(),
       ]);
       setReservations(reservationsData);

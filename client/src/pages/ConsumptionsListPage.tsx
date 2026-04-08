@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import MonthGrid from "@/components/MonthGrid";
 import { useLanguage } from "@/lib/i18n";
+import { useFormattedDates } from "@/lib/date-locale";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import { useUrlFilter } from "@/hooks/useUrlFilter";
@@ -65,6 +66,7 @@ interface ConsumptionItemWithProduct extends ConsumptionItem {
 
 export function ConsumptionsListPage() {
   const { t } = useLanguage();
+  const { formatDateTime } = useFormattedDates();
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
 
@@ -183,10 +185,9 @@ export function ConsumptionsListPage() {
     return consumption.userName || consumption.userUsername || "Ezezaguna";
   };
 
-  const formatDate = (dateString: string | null | Date) => {
+  const formatConsumptionTimestamp = (dateString: string | null | Date) => {
     if (!dateString) return "-";
-    const date = typeof dateString === "string" ? new Date(dateString) : dateString;
-    return date.toLocaleString("eu-ES");
+    return formatDateTime(dateString);
   };
 
   if (error) {
@@ -299,7 +300,7 @@ export function ConsumptionsListPage() {
                       <TableCell>
                         <div className="flex items-center gap-2 text-sm">
                           <Calendar className="h-4 w-4" />
-                          {formatDate(consumption.createdAt)}
+                          {formatConsumptionTimestamp(consumption.createdAt)}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -332,11 +333,11 @@ export function ConsumptionsListPage() {
                                   </div>
                                   <div>
                                     <p className="text-sm font-medium">Sorrera</p>
-                                    <p>{formatDate(selectedConsumption.consumption.createdAt)}</p>
+                                    <p>{formatConsumptionTimestamp(selectedConsumption.consumption.createdAt)}</p>
                                   </div>
                                   <div>
                                     <p className="text-sm font-medium">Itxiera</p>
-                                    <p>{formatDate(selectedConsumption.consumption.closedAt)}</p>
+                                    <p>{formatConsumptionTimestamp(selectedConsumption.consumption.closedAt)}</p>
                                   </div>
                                 </div>
 

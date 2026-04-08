@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import MonthGrid from "@/components/MonthGrid";
 import { useLanguage } from "@/lib/i18n";
+import { useFormattedDates } from "@/lib/date-locale";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/lib/auth";
 import type { Consumption, ConsumptionItem } from "@shared/schema";
@@ -41,6 +42,7 @@ interface ConsumptionItemWithProduct extends ConsumptionItem {
 
 export function MyConsumptionsPage() {
   const { t } = useLanguage();
+  const { formatDateShort } = useFormattedDates();
   const { toast } = useToast();
   useAuth();
   const [searchTerm, setSearchTerm] = useState("");
@@ -160,11 +162,6 @@ export function MyConsumptionsPage() {
     void fetchConsumptions();
   }, [fetchConsumptions]);
 
-  const formatDate = (date: string | Date) => {
-    const dateObj = typeof date === "string" ? new Date(date) : date;
-    return dateObj.toLocaleDateString("eu-ES");
-  };
-
   const formatAmount = (amount: string | number) => {
     const num = typeof amount === "string" ? parseFloat(amount) : amount;
     return `${num.toFixed(2)}€`;
@@ -276,7 +273,7 @@ export function MyConsumptionsPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-500" />
-                          <span>{formatDate(consumption.createdAt)}</span>
+                          <span>{formatDateShort(consumption.createdAt)}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-right font-medium">
@@ -307,7 +304,7 @@ export function MyConsumptionsPage() {
                                   <div>
                                     <p className="text-sm text-muted-foreground">{t("date")}</p>
                                     <p className="font-medium">
-                                      {formatDate(selectedConsumption.createdAt)}
+                                      {formatDateShort(selectedConsumption.createdAt)}
                                     </p>
                                   </div>
                                   <div>

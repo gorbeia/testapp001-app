@@ -18,7 +18,7 @@ import { useAuth, userCan } from "@/lib/auth";
 import { Permission } from "@shared/permissions";
 import { Notification } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
-import { eu, es } from "date-fns/locale";
+import { dateFnsLocale } from "@/lib/date-locale";
 
 interface NotificationBellProps {
   className?: string;
@@ -82,8 +82,6 @@ export function NotificationBell({ className }: NotificationBellProps) {
   });
 
   const unreadCount = unreadData?.count || 0;
-  const locale = language === "es" ? es : eu;
-
   const formatTime = (date: Date | string) => {
     const d = date instanceof Date ? date : new Date(date);
     if (Number.isNaN(d.getTime())) {
@@ -91,7 +89,7 @@ export function NotificationBell({ className }: NotificationBellProps) {
     }
     return formatDistanceToNow(d, {
       addSuffix: true,
-      locale,
+      locale: dateFnsLocale(language),
     });
   };
 

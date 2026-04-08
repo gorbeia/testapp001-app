@@ -7,6 +7,7 @@ import { useUrlFilter } from "@/hooks/useUrlFilter";
 import { usePagination } from "@/hooks/use-pagination";
 import PaginationControls from "@/components/PaginationControls";
 import { useLanguage, type TranslationKey } from "@/lib/i18n";
+import { formatDateTime } from "@/lib/date-locale";
 import { authFetch } from "@/lib/api";
 import MonthGrid from "@/components/MonthGrid";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -559,7 +560,7 @@ export function MyMovementsPage() {
                   {pendingTransferRows.map(row => (
                     <TableRow key={row.id} data-testid={`transfer-proposal-row-${row.id}`}>
                       <TableCell data-testid={`transfer-proposal-created-${row.id}`}>
-                        {new Date(row.createdAt).toLocaleString()}
+                        {formatDateTime(row.createdAt, language)}
                       </TableCell>
                       <TableCell data-testid={`transfer-proposal-date-${row.id}`}>
                         {row.transferDate}
@@ -643,7 +644,7 @@ export function MyMovementsPage() {
                 query.data!.movements.map(m => (
                   <TableRow key={m.id} data-testid={`movement-row-${m.id}`}>
                     <TableCell data-testid={`movement-date-${m.id}`}>
-                      {new Date(m.createdAt).toLocaleString()}
+                      {formatDateTime(m.createdAt, language)}
                     </TableCell>
                     <TableCell data-testid={`movement-type-${m.id}`}>
                       {t(movementTypeLabelKey(m.type))}

@@ -18,7 +18,7 @@ import { readJsonOrThrow } from "@/lib/http-error";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { Notification } from "@shared/schema";
 import { formatDistanceToNow } from "date-fns";
-import { eu, es } from "date-fns/locale";
+import { dateFnsLocale } from "@/lib/date-locale";
 import PaginationControls from "@/components/PaginationControls";
 import { usePagination } from "@/hooks/use-pagination";
 
@@ -119,12 +119,10 @@ export default function NotificationsPage() {
   const notifications = notificationsData?.notifications || [];
   const paginationData = notificationsData?.pagination;
   const unreadCount = unreadData?.count || 0;
-  const locale = language === "es" ? es : eu;
-
   const formatTime = (date: Date) => {
     return formatDistanceToNow(new Date(date), {
       addSuffix: true,
-      locale,
+      locale: dateFnsLocale(language),
     });
   };
 

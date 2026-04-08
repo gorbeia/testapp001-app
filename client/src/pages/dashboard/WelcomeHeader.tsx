@@ -1,4 +1,5 @@
 import { useLanguage } from "@/lib/i18n";
+import { useFormattedDates } from "@/lib/date-locale";
 import { useAuth } from "@/lib/auth";
 
 interface WelcomeHeaderProps {
@@ -7,6 +8,7 @@ interface WelcomeHeaderProps {
 
 export function WelcomeHeader({ userName }: WelcomeHeaderProps) {
   const { t } = useLanguage();
+  const { formatDateFullWeekday } = useFormattedDates();
   const { user } = useAuth();
 
   const displayName = userName || user?.name?.split(" ")[0] || "User";
@@ -17,12 +19,7 @@ export function WelcomeHeader({ userName }: WelcomeHeaderProps) {
         {t("welcome")}, {displayName}!
       </h2>
       <p className="text-sm sm:text-base text-muted-foreground">
-        {new Date().toLocaleDateString("eu-ES", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
+        {formatDateFullWeekday(new Date())}
       </p>
     </div>
   );

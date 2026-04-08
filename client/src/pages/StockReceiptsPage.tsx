@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useLanguage } from "@/lib/i18n";
+import { useFormattedDates } from "@/lib/date-locale";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
@@ -79,6 +80,7 @@ type LineForm = { productId: string; quantity: string; unitCost: string };
 
 export function StockReceiptsPage() {
   const { t } = useLanguage();
+  const { formatDateTime } = useFormattedDates();
   const { toast } = useToast();
   const [receipts, setReceipts] = useState<ReceiptRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -514,7 +516,7 @@ export function StockReceiptsPage() {
               ) : (
                 receipts.map(r => (
                   <TableRow key={r.id}>
-                    <TableCell>{new Date(r.receivedAt).toLocaleString()}</TableCell>
+                    <TableCell>{formatDateTime(r.receivedAt)}</TableCell>
                     <TableCell>{r.supplier ?? "—"}</TableCell>
                     <TableCell>{r.invoiceReference ?? "—"}</TableCell>
                     <TableCell className="text-right">{r.lineCount}</TableCell>
@@ -560,7 +562,7 @@ export function StockReceiptsPage() {
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
                   <div>
                     <dt className="text-muted-foreground">{t("date")}</dt>
-                    <dd>{new Date(detail.receivedAt).toLocaleString()}</dd>
+                    <dd>{formatDateTime(detail.receivedAt)}</dd>
                   </div>
                   <div>
                     <dt className="text-muted-foreground">{t("supplier")}</dt>

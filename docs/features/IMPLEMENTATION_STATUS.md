@@ -219,7 +219,9 @@ Status legend:
    - **Status**: ✅ Implemented (toggle, `localStorage`; some hardcoded strings remain in components)
 3. **Language preference beyond SPA keys**
    - **Status**: 🟡 Partial (no profile-synced locale; server i18n middleware influences API messages; DB-backed bilingual content for categories/notes)
-4. **Workflows, analytics, QA tooling (stories 3–8, 11–12)**
+4. **Locale-aware date and time display**
+   - **Status**: ✅ Implemented (`client/src/lib/date-locale.ts`: app language maps to `eu-ES` / `es-ES` for `Intl` formatting + shared `date-fns` locales; `useFormattedDates()` in components)
+5. **Workflows, analytics, QA tooling (stories 3–8, 11–12)**
    - **Status**: ❌ Not Implemented
 
 ---

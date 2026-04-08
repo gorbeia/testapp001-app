@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/lib/i18n";
+import { formatDateShort } from "@/lib/date-locale";
 import { useAuth, userCan } from "@/lib/auth";
 import { Permission } from "@shared/permissions";
 import { useToast } from "@/hooks/use-toast";
@@ -377,7 +378,7 @@ export function NotesManagementPage() {
                       <CardTitle className="text-lg">{getNoteDisplayContent(note).title}</CardTitle>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <span className="text-sm text-muted-foreground">
-                          {new Date(note.createdAt).toLocaleDateString("eu-ES")}
+                          {formatDateShort(note.createdAt, language)}
                         </span>
                         {isAdmin && (
                           <Badge variant={note.isActive ? "default" : "secondary"}>

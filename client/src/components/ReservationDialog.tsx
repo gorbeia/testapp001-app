@@ -25,8 +25,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { usePrepaymentLedgerStatus } from "@/hooks/usePrepaymentLedgerStatus";
 import { useLanguage } from "@/lib/i18n";
+import { dateFnsLocale } from "@/lib/date-locale";
 import { format } from "date-fns";
-import { eu, es } from "date-fns/locale";
 import type { Society, SocietyEvent, Table } from "@shared/schema";
 import { startOfDay, endOfDay } from "date-fns";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -393,7 +393,7 @@ export function ReservationDialog({
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {formData.startDate
-                    ? format(formData.startDate, "PPP", { locale: language === "eu" ? eu : es })
+                    ? format(formData.startDate, "PPP", { locale: dateFnsLocale(language) })
                     : t("selectDate")}
                 </Button>
               </PopoverTrigger>

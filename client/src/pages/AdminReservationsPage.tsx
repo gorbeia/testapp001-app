@@ -35,9 +35,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import MonthGrid from "@/components/MonthGrid";
 import PaginationControls from "@/components/PaginationControls";
 import { useLanguage } from "@/lib/i18n";
+import { formatDateShort, dateFnsLocale } from "@/lib/date-locale";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { eu, es } from "date-fns/locale";
 import type { Reservation, User } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
@@ -218,12 +218,12 @@ export function AdminReservationsPage() {
 
   // Format date
   const formatDate = (date: Date) => {
-    return format(date, "yyyy-MM-dd", { locale: language === "es" ? es : eu });
+    return format(date, "yyyy-MM-dd", { locale: dateFnsLocale(language) });
   };
 
   // Format time
   const formatTime = (date: Date) => {
-    return format(date, "HH:mm", { locale: language === "es" ? es : eu });
+    return format(date, "HH:mm", { locale: dateFnsLocale(language) });
   };
 
   // Get status badge variant
@@ -571,14 +571,8 @@ export function AdminReservationsPage() {
                       <p>
                         <span className="font-medium">{t("date")}:</span>{" "}
                         {reservationToCancel.startDate
-                          ? new Date(reservationToCancel.startDate)
-                              .toLocaleDateString("eu-ES", {
-                                year: "numeric",
-                                month: "2-digit",
-                                day: "2-digit",
-                              })
-                              .replace(/\//g, "-")
-                          : "Invalid Date"}
+                          ? formatDateShort(reservationToCancel.startDate, language)
+                          : "—"}
                       </p>
                       <p>
                         <span className="font-medium">{t("guests")}:</span>{" "}

@@ -3,6 +3,7 @@ import PaginationControls from "@/components/PaginationControls";
 import { usePagination } from "@/hooks/use-pagination";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLanguage, type TranslationKey } from "@/lib/i18n";
+import { useFormattedDates } from "@/lib/date-locale";
 import { authFetch } from "@/lib/api";
 import { readJsonOrThrow } from "@/lib/http-error";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
@@ -59,6 +60,7 @@ const BANK_TRANSFER_STATUS_I18N: Record<string, TranslationKey> = {
 
 export function BankTransfersPage() {
   const { t } = useLanguage();
+  const { formatDateShort } = useFormattedDates();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [open, setOpen] = React.useState(false);
@@ -422,7 +424,13 @@ export function BankTransfersPage() {
                     <TableCell data-testid={`transfer-amount-${tr.id}`}>
                       {parseFloat(tr.amount).toFixed(2)}€
                     </TableCell>
-                    <TableCell>{tr.transferDate}</TableCell>
+                    <TableCell>
+                      {formatDateShort(
+                        /^\d{4}-\d{2}-\d{2}$/.test(tr.transferDate)
+                          ? `${tr.transferDate}T12:00:00`
+                          : tr.transferDate
+                      )}
+                    </TableCell>
                     <TableCell data-testid={`transfer-status-${tr.id}`}>
                       {BANK_TRANSFER_STATUS_I18N[tr.status]
                         ? t(BANK_TRANSFER_STATUS_I18N[tr.status])

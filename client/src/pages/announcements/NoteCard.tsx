@@ -13,9 +13,9 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { format } from "date-fns";
-import { es, eu } from "date-fns/locale";
 import { Edit, Trash2, Eye, EyeOff } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
+import { dateFnsLocale } from "@/lib/date-locale";
 import { Oharrak } from "./types";
 
 interface NoteCardProps {
@@ -28,7 +28,6 @@ interface NoteCardProps {
 
 export function NoteCard({ note, isAdmin, onEdit, onDelete, onToggleActive }: NoteCardProps) {
   const { t, language } = useLanguage();
-  const locale = language === "eu" ? eu : es;
 
   return (
     <Card className={!note.isActive ? "opacity-60" : ""}>
@@ -43,7 +42,7 @@ export function NoteCard({ note, isAdmin, onEdit, onDelete, onToggleActive }: No
                 </Badge>
               )}
               <span className="text-sm text-muted-foreground">
-                {format(new Date(note.createdAt), "PPP", { locale })}
+                {format(new Date(note.createdAt), "PPP", { locale: dateFnsLocale(language) })}
               </span>
             </div>
           </div>

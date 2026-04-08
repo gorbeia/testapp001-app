@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/i18n";
+import { formatDateShort } from "@/lib/date-locale";
 import { Shield, Mail, Plus, Edit, Trash2, AlertCircle, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -39,7 +40,7 @@ interface Superadmin {
 }
 
 export function BackofficeSuperadminsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [superadmins, setSuperadmins] = useState<Superadmin[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -238,7 +239,7 @@ export function BackofficeSuperadminsPage() {
                           {sa.email}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Created: {new Date(sa.createdAt).toLocaleDateString()}
+                          Created: {formatDateShort(sa.createdAt, language)}
                         </p>
                       </div>
                     </div>

@@ -1,5 +1,6 @@
 import { buildCsv } from "@/lib/csv-export";
 import { translateMovementType } from "@/lib/movement-type-label";
+import { bcp47Locale } from "@/lib/date-locale";
 import type { TranslationKey, Language } from "@/lib/i18n";
 
 export type SocietyStatementApi = {
@@ -53,13 +54,9 @@ export type MemberBalancesApi = {
   totalBalance: number;
 };
 
-function dateTimeLocaleTag(language: Language): string {
-  return language === "eu" ? "eu-ES" : "es-ES";
-}
-
 function formatStatementDateTime(iso: string, language: Language): string {
   const d = new Date(iso);
-  return new Intl.DateTimeFormat(dateTimeLocaleTag(language), {
+  return new Intl.DateTimeFormat(bcp47Locale(language), {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

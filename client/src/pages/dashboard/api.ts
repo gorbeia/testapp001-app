@@ -1,5 +1,7 @@
 import { authFetch } from "@/lib/api";
 import { throwIfResNotOk } from "@/lib/http-error";
+import { bcp47Locale, formatDateShort } from "@/lib/date-locale";
+import type { Language as UiLanguage } from "@/lib/i18n";
 import { Language, findMessageByLanguage, MultilingualMessage } from "@shared/schema";
 
 export interface Note {
@@ -337,7 +339,10 @@ const fetchUserTotalPendingDebt = async (): Promise<number> => {
   }
 };
 
-export const fetchUpcomingReservations = async (limit = 4): Promise<UpcomingReservation[]> => {
+export const fetchUpcomingReservations = async (
+  limit = 4,
+  uiLanguage: UiLanguage = "eu"
+): Promise<UpcomingReservation[]> => {
   try {
     const response = await authFetch(
       `/api/reservations?limit=${limit}&status=confirmed&upcoming=true`
@@ -345,11 +350,12 @@ export const fetchUpcomingReservations = async (limit = 4): Promise<UpcomingRese
     await throwIfResNotOk(response);
     const result = await response.json();
     const data = (result.data || result) as ReservationsListApiRow[];
+    const localeTag = bcp47Locale(uiLanguage);
     return data.map(reservation => ({
       id: reservation.id,
       member: reservation.userName || reservation.name || "Unknown",
-      date: reservation.startDate,
-      time: new Date(reservation.startDate).toLocaleTimeString("eu-ES", {
+      date: formatDateShort(reservation.startDate, uiLanguage),
+      time: new Date(reservation.startDate).toLocaleTimeString(localeTag, {
         hour: "2-digit",
         minute: "2-digit",
       }),

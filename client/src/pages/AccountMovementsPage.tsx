@@ -2,6 +2,7 @@ import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useUrlFilter } from "@/hooks/useUrlFilter";
 import { useLanguage } from "@/lib/i18n";
+import { formatDateTime } from "@/lib/date-locale";
 import { authFetch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { downloadCsv } from "@/lib/csv-export";
@@ -488,7 +489,7 @@ export function AccountMovementsPage() {
               ) : (
                 query.data!.movements.map(m => (
                   <TableRow key={m.id} data-testid={`admin-movement-row-${m.id}`}>
-                    <TableCell>{new Date(m.createdAt).toLocaleString()}</TableCell>
+                    <TableCell>{formatDateTime(m.createdAt, language)}</TableCell>
                     <TableCell data-testid={`admin-movement-member-${m.id}`}>
                       {m.memberName ?? m.userId}
                     </TableCell>

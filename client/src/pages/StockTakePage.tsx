@@ -34,6 +34,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/lib/i18n";
+import { useFormattedDates } from "@/lib/date-locale";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
@@ -72,6 +73,7 @@ type TakeLine = {
 
 export function StockTakePage() {
   const { t } = useLanguage();
+  const { formatDateTime } = useFormattedDates();
   const { toast } = useToast();
   const [takes, setTakes] = useState<TakeSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -373,7 +375,7 @@ export function StockTakePage() {
                     <div className="flex items-center gap-2">
                       {statusBadge(takeDetail.take.status)}
                       <span className="text-sm text-muted-foreground">
-                        {new Date(takeDetail.take.date).toLocaleString()}
+                        {formatDateTime(takeDetail.take.date)}
                       </span>
                     </div>
                     {takeDetail.take.notes ? (
@@ -494,7 +496,7 @@ export function StockTakePage() {
                   ) : (
                     takes.map(tk => (
                       <TableRow key={tk.id}>
-                        <TableCell>{new Date(tk.date).toLocaleString()}</TableCell>
+                        <TableCell>{formatDateTime(tk.date)}</TableCell>
                         <TableCell>{statusBadge(tk.status)}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{tk.notes ?? "—"}</TableCell>
                         <TableCell>

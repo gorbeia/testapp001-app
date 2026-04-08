@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/i18n";
+import { formatDateShort } from "@/lib/date-locale";
 import { Building2, Plus, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +37,7 @@ interface Society {
 }
 
 export function BackofficeSocietiesPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [societies, setSocieties] = useState<Society[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -304,7 +305,7 @@ export function BackofficeSocietiesPage() {
                     <p className="text-sm text-muted-foreground">{society.address}</p>
                   )}
                   <p className="text-xs text-muted-foreground">
-                    Created: {new Date(society.createdAt).toLocaleDateString()}
+                    Created: {formatDateShort(society.createdAt, language)}
                   </p>
                 </CardContent>
               </Card>

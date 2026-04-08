@@ -3,6 +3,7 @@ import PaginationControls from "@/components/PaginationControls";
 import { usePagination } from "@/hooks/use-pagination";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLanguage, type TranslationKey } from "@/lib/i18n";
+import { formatDateShort, formatDateTime } from "@/lib/date-locale";
 import { authFetch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, userCan } from "@/lib/auth";
@@ -635,12 +636,8 @@ export function SocietyAccountingTab() {
                       >
                         <TableCell>
                           {(m.source === "manual" || m.source === "adjustment") && m.bookingDate
-                            ? new Date(`${m.bookingDate}T12:00:00`).toLocaleDateString(undefined, {
-                                year: "numeric",
-                                month: "numeric",
-                                day: "numeric",
-                              })
-                            : new Date(m.createdAt).toLocaleString()}
+                            ? formatDateShort(`${m.bookingDate}T12:00:00`, language)
+                            : formatDateTime(m.createdAt, language)}
                         </TableCell>
                         <TableCell>
                           {m.source === "manual"

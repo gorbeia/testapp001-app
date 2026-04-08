@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
+import { useFormattedDates } from "@/lib/date-locale";
 import type { Credit } from "@shared/schema";
 
 interface DebtDetailModalProps {
@@ -21,6 +22,7 @@ interface DebtDetailModalProps {
 
 export function DebtDetailModal({ credit, trigger }: DebtDetailModalProps) {
   const { t } = useLanguage();
+  const { formatDateShort } = useFormattedDates();
 
   const consumptionAmount = parseFloat(credit.consumptionAmount || "0");
   const reservationAmount = parseFloat(credit.reservationAmount || "0");
@@ -162,14 +164,14 @@ export function DebtDetailModal({ credit, trigger }: DebtDetailModalProps) {
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600">{t("calculatedOn") || "Calculated on"}</span>
               <span className="text-gray-900">
-                {new Date(credit.calculatedAt).toLocaleDateString()}
+                {formatDateShort(credit.calculatedAt)}
               </span>
             </div>
             {credit.markedAsPaidAt && (
               <div className="flex justify-between items-center text-sm mt-2">
                 <span className="text-gray-600">{t("markedAsPaidOn") || "Marked as paid on"}</span>
                 <span className="text-gray-900">
-                  {new Date(credit.markedAsPaidAt).toLocaleDateString()}
+                  {formatDateShort(credit.markedAsPaidAt)}
                 </span>
               </div>
             )}

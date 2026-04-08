@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import MonthGrid from "@/components/MonthGrid";
 import { useLanguage } from "@/lib/i18n";
+import { useFormattedDates } from "@/lib/date-locale";
 import { useAuth, userCan } from "@/lib/auth";
 import { Permission } from "@shared/permissions";
 import { authFetch } from "@/lib/api";
@@ -95,6 +96,7 @@ const fetchCredits = async (filters: {
 
 export function CreditsPage() {
   const { t } = useLanguage();
+  const { formatDateShort } = useFormattedDates();
   const { user } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -456,7 +458,7 @@ export function CreditsPage() {
                           <div>{credit.markedByUserName}</div>
                           {credit.markedAsPaidAt && (
                             <div className="text-muted-foreground">
-                              {new Date(credit.markedAsPaidAt).toLocaleDateString("eu-ES")}
+                              {formatDateShort(credit.markedAsPaidAt)}
                             </div>
                           )}
                         </div>

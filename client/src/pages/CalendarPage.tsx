@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useLanguage } from "@/lib/i18n";
+import { dateFnsLocale } from "@/lib/date-locale";
 import { authFetch } from "@/lib/api";
 import { readJsonOrThrow } from "@/lib/http-error";
 import { useAuth, userCan } from "@/lib/auth";
@@ -215,7 +216,7 @@ export function CalendarPage() {
     null
   );
 
-  const dateLocale = language === "eu" ? eu : es;
+  const dateLocale = dateFnsLocale(language);
 
   const { data: societyEvents = [], isLoading: eventsLoading } = useQuery({
     queryKey: [CALENDAR_SOCIETY_EVENTS_QUERY_KEY, monthParam],
