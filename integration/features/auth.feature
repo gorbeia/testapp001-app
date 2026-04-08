@@ -53,3 +53,8 @@ Feature: Authentication API
     Given I am authenticated as a "admin" user
     When I POST to "/api/logout"
     Then the response status should be 200
+
+  Scenario: Public tenant-by-host returns apex when apex domain is not configured
+    When I GET "/api/public/tenant-by-host"
+    Then the response status should be 200
+    And the response body should include "mode" equal to "apex"

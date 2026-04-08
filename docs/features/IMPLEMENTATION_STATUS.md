@@ -20,7 +20,7 @@ Status legend:
 ## 1. Authentication (`authentication.md`)
 
 1. **User Login** – Login form & auth context
-   - **Status**: ✅ Implemented (real `POST /api/login` + bcrypt/legacy passwords; society alphabetic id; access + refresh httpOnly cookies; Bearer token in localStorage; integration + E2E tested — see `TEST_COVERAGE.md`)
+   - **Status**: ✅ Implemented (real `POST /api/login` + bcrypt/legacy passwords; society alphabetic id; optional **Host-bound login** when `TENANT_APEX_DOMAIN` is set — see [`subdomain-tenancy.md`](./subdomain-tenancy.md); access + refresh httpOnly cookies; Bearer token in localStorage; integration + E2E tested — see `TEST_COVERAGE.md`)
 2. **Role-Based Access Control** – menus & route protection
    - **Status**: ✅ Implemented (**`accessRole`** + **`membershipType`**, shared **`Permission`** checks on API + client; see [`rbac.md`](./rbac.md); E2E: `e2e/features/role-based-menu.feature` for sidebar + direct URL denial; API 403 matrix: `integration/features/rbac.feature`; **HTTP 403** from the API is shown with the same **`AccessDenied`** pattern as route-gated pages via `AccessDeniedOrError` + status-prefixed fetch errors)
 3. **View Personal Profile** – self profile view
@@ -235,10 +235,11 @@ Documented alongside auth; shipped as `/profila` with profile edit + password ch
 ## 11. Platform backoffice (not in legacy story index)
 
 - **Superadmin login, society list, superadmin users** (`/elkarteapp/kudeaketa/*`): Implemented (separate cookie; `superadmins` table)
+- **Per-society tenant subdomain** (`societies.subdomain`, `PATCH /api/backoffice/societies/:id`, check-subdomain endpoint, backoffice UI): ✅ Implemented — see [`subdomain-tenancy.md`](./subdomain-tenancy.md)
 
 ## 12. Public marketing landing (not in legacy story index)
 
-- **Bilingual landing page** (`/` when logged out, alias `/hasiera`): ✅ Implemented (`client/src/landing/`: copy + `useLandingI18n` in `i18n.ts`, locale in `localStorage` key **`landing:locale`** — independent of app `client/src/lib/i18n.ts` / **`language`**; **member login** at `/sartu`; unauthenticated deep links outside those routes redirect to `/sartu`)
+- **Bilingual landing page** (`/` when logged out, alias `/hasiera`): ✅ Implemented (`client/src/landing/`: copy + `useLandingI18n` in `i18n.ts`, locale in `localStorage` key **`landing:locale`** — independent of app `client/src/lib/i18n.ts` / **`language`**; **member login** at `/sartu`; unauthenticated deep links outside those routes redirect to `/sartu`; **on a configured tenant subdomain**, landing is skipped and `/` + `/hasiera` redirect to `/sartu` — see [`subdomain-tenancy.md`](./subdomain-tenancy.md))
 
 ---
 

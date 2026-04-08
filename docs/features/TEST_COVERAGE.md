@@ -6,7 +6,7 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · *(emp
 
 | Tier | Command / location | Purpose |
 |------|-------------------|---------|
-| **Unit** | `pnpm test` — `server/**/*.test.ts` (Vitest) | Pure logic, mocked DB |
+| **Unit** | `pnpm test:unit` — `server/**/*.test.ts`, `shared/**/*.test.ts` (Vitest) | Pure logic, mocked DB |
 | **Integration** | `pnpm test:integration` — `integration/features/*.feature` (Cucumber + Supertest) | API contracts, RBAC, business rules (seeded DB) |
 | **E2E** | `pnpm test:e2e` — `e2e/features/*.feature` (Cucumber + Playwright) | Critical UI journeys |
 
@@ -18,7 +18,7 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · *(emp
 
 | Story area | Unit | Integration | E2E |
 |------------|------|-------------|-----|
-| Login / tokens / cookies | — | `auth.feature` | `login.feature` (UI) |
+| Login / tokens / cookies / tenant-by-host | `shared/tenant-host.test.ts` | `auth.feature` (incl. public tenant-by-host) | `login.feature` (UI) |
 | Refresh / logout | — | `auth.feature` | — |
 | RBAC (API) | — | `rbac.feature` | — |
 | RBAC (sidebar / URL) | — | — | `role-based-menu.feature` |

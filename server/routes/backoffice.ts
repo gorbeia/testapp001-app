@@ -11,6 +11,11 @@ import {
   updateSuperadminBodySchema,
 } from "../../shared/schema";
 import { deriveSocietyAcronym } from "../../shared/society-acronym";
+import {
+  backofficeSocietySubdomainPatchBodySchema,
+  backofficeCheckSubdomainQuerySchema,
+  societySubdomainFieldSchema,
+} from "../../shared/tenant-host";
 import { eq } from "drizzle-orm";
 import type { PgUpdateSetSource } from "drizzle-orm/pg-core";
 import { z } from "zod";
@@ -135,6 +140,79 @@ export function registerBackofficeRoutes(app: Express) {
         const allSocieties = await db.query.societies.findMany();
         return res.status(200).json(allSocieties);
       } catch (err) {
+        next(err);
+      }
+    }
+  );
+
+  app.get(
+    "/api/backoffice/societies/check-subdomain",
+    requireBackoffice,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const parsed = backofficeCheckSubdomainQuerySchema.safeParse(req.query);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid query",
+            issues: parsed.error.flatten(),
+          });
+        }
+
+        const normalized = societySubdomainFieldSchema.safeParse(parsed.data.value);
+        if (!normalized.success) {
+          return res.status(200).json({ available: false, reason: "invalid" as const });
+        }
+
+        const label = normalized.data;
+        const existing = await db.query.societies.findFirst({
+          where: (s, { eq: e }) => e(s.subdomain, label),
+        });
+
+        const excludeId = parsed.data.excludeId;
+        const available = !existing || (excludeId !== undefined && existing.id === excludeId);
+
+        return res.status(200).json({ available, reason: available ? undefined : ("taken" as const) });
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
+
+  app.patch(
+    "/api/backoffice/societies/:id",
+    requireBackoffice,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const { id } = req.params;
+        const parsed = backofficeSocietySubdomainPatchBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
+        const existing = await db.query.societies.findFirst({
+          where: (s, { eq: e }) => e(s.id, id),
+        });
+        if (!existing) {
+          return res.status(404).json({ message: "Society not found" });
+        }
+
+        const [updated] = await db
+          .update(societies)
+          .set({
+            subdomain: parsed.data.subdomain,
+            updatedAt: new Date(),
+          })
+          .where(eq(societies.id, id))
+          .returning();
+
+        return res.status(200).json(updated);
+      } catch (err: unknown) {
+        if (isPostgresUniqueViolation(err)) {
+          return res.status(409).json({ message: "Subdomain is already in use" });
+        }
         next(err);
       }
     }

@@ -429,6 +429,20 @@ After SSL setup, your Nginx configuration will automatically handle:
 - **SSL certificates**: Automatically renewed
 - **Security headers**: Add any HTTPS-only headers you need in the SSL `server` block
 
+### Wildcard TLS and tenant subdomains (`*.example.com`)
+
+If each society uses **`{subdomain}.your-domain.com`** (same app for all hosts):
+
+1. **DNS**: Point **`your-domain.com`** and **wildcard `*.your-domain.com`** to the server IP (A/AAAA).
+2. **Nginx `server_name`**: Include apex, `www`, and the wildcard in one server block, e.g. `your-domain.com www.your-domain.com *.your-domain.com;`, with the same `proxy_pass` and `proxy_set_header Host $host;` as in the [Nginx Reverse Proxy](#nginx-reverse-proxy-recommended) example.
+3. **Certificate**: A **wildcard** cert for `*.your-domain.com` requires Let’s Encrypt **DNS-01** (HTTP-01 cannot issue wildcards). Use your DNS provider’s **certbot** plugin or `certbot certonly --manual` with a DNS challenge, then point `ssl_certificate` / `ssl_certificate_key` at the resulting `fullchain.pem` / `privkey.pem`. Renew via cron as above (`certbot renew` + reload nginx).
+4. **Application env** (same value for apex in both places):
+   - **Server / PM2**: `TENANT_APEX_DOMAIN=your-domain.com` (no `https://`, no trailing path).
+   - **SPA build** (Vite): `VITE_TENANT_APEX_DOMAIN=your-domain.com` so the browser can avoid flashing the public landing before the first `GET /api/public/tenant-by-host` response.
+5. **Reverse proxy trust**: Set **`TRUST_PROXY=1`** in the environment when nginx terminates TLS (see Express `trust proxy` in the app), or rely on production defaults if your deployment already sets them.
+
+See [subdomain-tenancy.md](features/subdomain-tenancy.md) for behavior (login binding, backoffice subdomain field).
+
 ## Troubleshooting
 
 ### Common Issues

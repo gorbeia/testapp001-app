@@ -11,6 +11,7 @@ import {
 } from "../../shared/schema";
 import { i18nMiddleware } from "../lib/i18n";
 import { toPublicUser } from "../lib/public-user";
+import { getTenantApexDomainFromEnv, parseHostForTenant } from "../../shared/tenant-host";
 
 // JWT Configuration
 const JWT_SECRET = process.env.JWT_SECRET || "your-super-secret-jwt-key-change-in-production";
@@ -132,6 +133,7 @@ import { registerBackofficeRoutes, backofficeSessionMiddleware } from "./backoff
 import { registerCashSettlementRoutes } from "./cash-settlements";
 import { registerPrepaymentLedgerStatusRoutes } from "./prepayment-ledger-status";
 import { registerImageRoutes } from "./images";
+import { registerPublicTenantRoutes } from "./public-tenant";
 import { getUploadsRoot } from "../lib/image-storage";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
@@ -143,6 +145,8 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(i18nMiddleware);
   // Apply no-cache to all API routes
   app.use("/api", noCache);
+
+  registerPublicTenantRoutes(app);
 
   // Uploaded images (GET); upload/delete registered in registerImageRoutes
   app.use("/api/images", express.static(getUploadsRoot(), { index: false }));
@@ -211,13 +215,29 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
       const { email, password, societyId } = parsed.data;
 
-      // Verify society exists by alphabeticId
-      const society = await db.query.societies.findFirst({
-        where: (s, { eq }) => eq(s.alphabeticId, societyId),
-      });
+      const apex = getTenantApexDomainFromEnv();
+      const hostParsed = apex ? parseHostForTenant(req.get("host"), apex) : { kind: "apex" as const };
 
-      if (!society) {
-        return res.status(401).json({ message: "Invalid society ID" });
+      let society: Awaited<ReturnType<typeof db.query.societies.findFirst>> | undefined;
+
+      if (hostParsed.kind === "tenant") {
+        const byHost = await db.query.societies.findFirst({
+          where: (s, { eq: e }) => e(s.subdomain, hostParsed.subdomain),
+        });
+        if (!byHost) {
+          return res.status(401).json({ message: "Invalid tenant host" });
+        }
+        if (byHost.alphabeticId !== societyId) {
+          return res.status(401).json({ message: "Invalid credentials" });
+        }
+        society = byHost;
+      } else {
+        society = await db.query.societies.findFirst({
+          where: (s, { eq }) => eq(s.alphabeticId, societyId),
+        });
+        if (!society) {
+          return res.status(401).json({ message: "Invalid society ID" });
+        }
       }
 
       const dbUser = await db.query.users.findFirst({

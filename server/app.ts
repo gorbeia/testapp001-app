@@ -28,6 +28,11 @@ export async function createApp(): Promise<{ app: Express; httpServer: Server }>
   const app = express();
   const httpServer = createServer(app);
 
+  // Behind nginx (or when TRUST_PROXY=1): trust X-Forwarded-* for req.secure / IP.
+  if (process.env.NODE_ENV === "production" || process.env.TRUST_PROXY === "1") {
+    app.set("trust proxy", 1);
+  }
+
   app.use(cookieParser());
   app.use(
     express.json({

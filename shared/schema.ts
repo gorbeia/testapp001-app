@@ -99,6 +99,10 @@ export const societies = pgTable("societies", {
   logoUrl: varchar("logo_url"),
   /** Floor plan / map image for reservations; same filename convention as logoUrl */
   mapImageUrl: varchar("map_image_url"),
+  /**
+   * DNS label for tenant host `{subdomain}.{TENANT_APEX_DOMAIN}`. Nullable; unique when set.
+   */
+  subdomain: varchar("subdomain", { length: 63 }).unique(),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

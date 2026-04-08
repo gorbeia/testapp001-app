@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/date-locale";
-import { Building2, Plus, AlertCircle } from "lucide-react";
+import { Building2, Plus, AlertCircle, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,7 @@ interface Society {
   id: string;
   name: string;
   alphabeticId: string;
+  subdomain?: string | null;
   email?: string | null;
   phone?: string | null;
   address?: string | null;
@@ -43,6 +44,11 @@ export function BackofficeSocietiesPage() {
   const [error, setError] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [subdomainDialogSociety, setSubdomainDialogSociety] = useState<Society | null>(null);
+  const [subdomainInput, setSubdomainInput] = useState("");
+  const [subdomainCheckMessage, setSubdomainCheckMessage] = useState<string | null>(null);
+  const [subdomainChecking, setSubdomainChecking] = useState(false);
+  const [isSavingSubdomain, setIsSavingSubdomain] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     iban: "",
@@ -75,6 +81,104 @@ export function BackofficeSocietiesPage() {
 
     loadSocieties();
   }, []);
+
+  useEffect(() => {
+    if (!subdomainDialogSociety) return;
+
+    const raw = subdomainInput.trim().toLowerCase();
+    if (raw === "") {
+      setSubdomainCheckMessage(null);
+      setSubdomainChecking(false);
+      return;
+    }
+
+    const handle = window.setTimeout(async () => {
+      setSubdomainChecking(true);
+      setSubdomainCheckMessage(null);
+      try {
+        const params = new URLSearchParams({ value: raw });
+        params.set("excludeId", subdomainDialogSociety.id);
+        const res = await authFetch(`/api/backoffice/societies/check-subdomain?${params}`);
+        if (!res.ok) {
+          setSubdomainCheckMessage(t("subdomainCheckError"));
+          return;
+        }
+        const body = (await res.json()) as {
+          available: boolean;
+          reason?: "invalid" | "taken";
+        };
+        if (!body.available) {
+          if (body.reason === "invalid") {
+            setSubdomainCheckMessage(t("subdomainInvalid"));
+          } else {
+            setSubdomainCheckMessage(t("subdomainTaken"));
+          }
+        }
+      } catch {
+        setSubdomainCheckMessage(t("subdomainCheckError"));
+      } finally {
+        setSubdomainChecking(false);
+      }
+    }, 400);
+
+    return () => window.clearTimeout(handle);
+  }, [subdomainInput, subdomainDialogSociety, t]);
+
+  const openSubdomainDialog = (society: Society) => {
+    setSubdomainDialogSociety(society);
+    setSubdomainInput(society.subdomain ?? "");
+    setSubdomainCheckMessage(null);
+  };
+
+  const closeSubdomainDialog = () => {
+    setSubdomainDialogSociety(null);
+    setSubdomainInput("");
+    setSubdomainCheckMessage(null);
+  };
+
+  const handleSaveSubdomain = async () => {
+    if (!subdomainDialogSociety) return;
+    const trimmed = subdomainInput.trim().toLowerCase();
+    if (trimmed !== "" && subdomainCheckMessage) {
+      return;
+    }
+
+    setIsSavingSubdomain(true);
+    setError(null);
+    try {
+      const response = await authFetch(`/api/backoffice/societies/${subdomainDialogSociety.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subdomain: trimmed === "" ? null : trimmed }),
+      });
+
+      if (response.status === 409) {
+        setError(t("subdomainTaken"));
+        return;
+      }
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        const msg =
+          typeof body === "object" && body && "message" in body
+            ? String((body as { message: string }).message)
+            : t("failedToUpdateSocietySubdomain");
+        setError(msg);
+        return;
+      }
+
+      const loadResponse = await authFetch("/api/backoffice/societies");
+      if (loadResponse.ok) {
+        const data = await loadResponse.json();
+        setSocieties(data);
+      }
+      closeSubdomainDialog();
+    } catch {
+      setError(t("failedToUpdateSocietySubdomain"));
+    } finally {
+      setIsSavingSubdomain(false);
+    }
+  };
 
   const handleCreate = async () => {
     if (!formData.name.trim()) {
@@ -288,11 +392,26 @@ export function BackofficeSocietiesPage() {
             {societies.map(society => (
               <Card key={society.id}>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Building2 className="h-5 w-5" />
-                    {society.name}
-                  </CardTitle>
-                  <CardDescription>ID: {society.alphabeticId}</CardDescription>
+                  <div className="flex items-start justify-between gap-2">
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="h-5 w-5 shrink-0" />
+                      {society.name}
+                    </CardTitle>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="shrink-0"
+                      onClick={() => openSubdomainDialog(society)}
+                      aria-label={t("editSocietySubdomain")}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <CardDescription>
+                    ID: {society.alphabeticId}
+                    {society.subdomain ? ` · ${society.subdomain}` : ""}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {society.email && (
@@ -320,6 +439,58 @@ export function BackofficeSocietiesPage() {
             <p className="text-muted-foreground">{t("noSocietiesFound")}</p>
           </div>
         )}
+
+        <Dialog
+          open={subdomainDialogSociety !== null}
+          onOpenChange={open => {
+            if (!open) closeSubdomainDialog();
+          }}
+        >
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>{t("editSocietySubdomain")}</DialogTitle>
+              <DialogDescription>
+                {subdomainDialogSociety
+                  ? `${subdomainDialogSociety.name} (${subdomainDialogSociety.alphabeticId})`
+                  : ""}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-2">
+              <Label htmlFor="subdomain-input">{t("societySubdomainLabel")}</Label>
+              <Input
+                id="subdomain-input"
+                value={subdomainInput}
+                onChange={e => setSubdomainInput(e.target.value)}
+                placeholder="nire-txokoa"
+                autoComplete="off"
+                data-testid="backoffice-input-society-subdomain"
+              />
+              <p className="text-xs text-muted-foreground">{t("societySubdomainHint")}</p>
+              {subdomainChecking && (
+                <p className="text-xs text-muted-foreground">{t("loading")}</p>
+              )}
+              {subdomainCheckMessage && (
+                <p className="text-xs text-destructive">{subdomainCheckMessage}</p>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={closeSubdomainDialog}>
+                {t("cancel")}
+              </Button>
+              <Button
+                type="button"
+                onClick={handleSaveSubdomain}
+                disabled={
+                  isSavingSubdomain ||
+                  (subdomainInput.trim() !== "" && (!!subdomainCheckMessage || subdomainChecking))
+                }
+                data-testid="backoffice-save-society-subdomain"
+              >
+                {isSavingSubdomain ? t("loading") : t("saveSocietySubdomain")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
