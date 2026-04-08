@@ -19,22 +19,25 @@ Month bucket for summary/movements: **`booking_date`** as `YYYY-MM` (derived lin
 
 ### Manual entries
 
-- Tables: **`society_transaction_categories`** (labels), **`society_ledger`** (amounts; no separate `society_transactions` table).
-- Default categories are seeded on first `GET /api/society-transaction-categories` for the society (expense: Hornidurak, Zerbitzuak, …; income: Bestelako sarrerak).
+- Storage: **`society_ledger`** only; manual lines use column **`category`** (text key, nullable on mirrored rows). Allowed keys are the fixed set in **`shared/society-categories.ts`** (`suppliers`, `services`, `maintenance`, `other_expense`, `events`, `other_income`). Labels are translated in the client via **`client/src/lib/i18n.ts`** (`catSuppliers`, …).
 - **Manage** permission: `SOCIETY_TRANSACTIONS_MANAGE` (treasurer + admin). View summary and lists: `MOVEMENTS_VIEW`.
 
 ### API
 
-- `GET /api/society-accounting/summary?from=YYYY-MM&to=YYYY-MM` — JSON summary from **`society_ledger`** only (derived types, manual by category, optional **`adjustmentIncome` / `adjustmentExpense`** from **`manual_adjustment`**).
-- `GET /api/society-accounting/derived-movements?from=YYYY-MM&to=YYYY-MM` — ordered lines from **`society_ledger`** with running **`societyBalance`**; **`source`**: `ledger` | `manual` | `adjustment`; joins **`account_movements` + `users`** for derived lines and categories for manual/adjustment rows.
-- `GET|POST|PUT|DELETE /api/society-transactions` — manual list/CRUD backed by **`society_ledger`** (URL unchanged).
-- `GET|POST|PUT|DELETE /api/society-transaction-categories` — categories.
+- `GET /api/society-accounting/summary?from=YYYY-MM&to=YYYY-MM` — JSON summary from **`society_ledger`** only (derived types, manual by **`category`** key, optional **`adjustmentIncome` / `adjustmentExpense`** from **`manual_adjustment`**).
+- `GET /api/society-accounting/derived-movements?from=YYYY-MM&to=YYYY-MM` — ordered lines from **`society_ledger`** with running **`societyBalance`**; **`source`**: `ledger` | `manual` | `adjustment`; joins **`account_movements` + `users`** for derived lines; **`category`** / **`categoryType`** on manual and adjustment rows when set.
+- `GET|POST|PUT|DELETE /api/society-transactions` — manual list/CRUD backed by **`society_ledger`** (URL unchanged). Body uses **`category`** (enum key), not UUIDs. List query filters: **`category`**, **`type`** (`income` | `expense`), month/range, pagination.
 
 ### UI
 
 - [client/src/pages/SocietyAccountingPage.tsx](../../client/src/pages/SocietyAccountingPage.tsx) — route **`/kontabilitatea`**; wraps `SocietyAccountingTab`.
 - [client/src/pages/AccountMovementsPage.tsx](../../client/src/pages/AccountMovementsPage.tsx) — treasurer member movements only.
-- [client/src/components/SocietyAccountingTab.tsx](../../client/src/components/SocietyAccountingTab.tsx) — period; tabs: **summary** (stat cards, summary table, category management, CSV) and **movements** (ledger + manual + adjustments, society running balance, add/edit/delete manual lines).
+- [client/src/components/SocietyAccountingTab.tsx](../../client/src/components/SocietyAccountingTab.tsx) — period; tabs: **summary** (stat cards, summary table, CSV) and **movements** (ledger + manual + adjustments, society running balance, add/edit/delete manual lines).
+
+### Migrations
+
+- **`0009_society_ledger.sql`** — introduces **`society_ledger`** (historical; may reference legacy category table in older DBs).
+- **`0010_category_enum.sql`** — replaces per-society category table with fixed keys on **`society_ledger.category`**.
 
 ## User stories
 

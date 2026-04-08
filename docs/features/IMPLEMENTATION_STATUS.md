@@ -142,7 +142,7 @@ Status legend:
     - **Status**: ✅ Implemented (see `account-movements.md` F10; PDF not in scope)
 11. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
 12. **Society accounting (Kontabilitatea)** — [`society-transactions.md`](./society-transactions.md)
-    - **Status**: ✅ Implemented — standalone page **`/kontabilitatea`**: **`society_ledger`** posted cashbook (mirrored member-ledger income/expense + manual lines + adjustments); `GET /api/society-accounting/summary` and **`/derived-movements`** read only from that table; manual CRUD via **`/api/society-transactions`**; categories **`society_transaction_categories`**; **`Permission.SOCIETY_TRANSACTIONS_MANAGE`**; **`server/lib/society-ledger.ts`** as write gateway from app code; migration **`0009_society_ledger.sql`**; E2E: `society-accounting.feature`
+    - **Status**: ✅ Implemented — standalone page **`/kontabilitatea`**: **`society_ledger`** posted cashbook (mirrored member-ledger income/expense + manual lines + adjustments); `GET /api/society-accounting/summary` and **`/derived-movements`** read only from that table; manual CRUD via **`/api/society-transactions`** with fixed **`category`** keys (**`shared/society-categories.ts`**, migration **`0010_category_enum.sql`**); **`Permission.SOCIETY_TRANSACTIONS_MANAGE`**; **`server/lib/society-ledger.ts`** as write gateway from app code; **`0009_society_ledger.sql`** + **`0010_category_enum.sql`**; E2E: `society-accounting.feature`
 
 ---
 

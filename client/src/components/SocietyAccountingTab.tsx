@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useLanguage } from "@/lib/i18n";
+import { useLanguage, type TranslationKey } from "@/lib/i18n";
 import { authFetch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, userCan } from "@/lib/auth";
@@ -35,10 +35,23 @@ import {
 } from "@/components/ui/dialog";
 import { Download, Pencil, Plus, Trash2, TrendingDown, TrendingUp } from "lucide-react";
 import { downloadCsv } from "@/lib/csv-export";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { movementTypeLabelKey } from "@/lib/movement-type-label";
+import {
+  isSocietyCategoryKey,
+  societyExpenseCategories,
+  societyIncomeCategories,
+  SOCIETY_CATEGORY_I18N_KEY,
+  type SocietyCategoryKey,
+} from "@shared/society-categories";
+
+function societyCategoryLabel(
+  cat: string,
+  t: (key: TranslationKey) => string
+): string {
+  if (!isSocietyCategoryKey(cat)) return cat;
+  return t(SOCIETY_CATEGORY_I18N_KEY[cat] as TranslationKey);
+}
 
 function currentYearMonth(): string {
   const d = new Date();
@@ -61,11 +74,11 @@ type SummaryApi = {
     total: number;
   };
   manualIncome: {
-    byCategory: Array<{ categoryId: string; name: string; total: number }>;
+    byCategory: Array<{ category: string; total: number }>;
     total: number;
   };
   manualExpenses: {
-    byCategory: Array<{ categoryId: string; name: string; total: number }>;
+    byCategory: Array<{ category: string; total: number }>;
     total: number;
   };
   adjustmentIncome: number;
@@ -73,15 +86,6 @@ type SummaryApi = {
   grandTotalIncome: number;
   grandTotalExpenses: number;
   net: number;
-};
-
-type CategoryRow = {
-  id: string;
-  name: string;
-  nameEs: string | null;
-  type: string;
-  sortOrder: number;
-  isActive: boolean;
 };
 
 function formatMoney(n: number): string {
@@ -106,15 +110,12 @@ export function SocietyAccountingTab() {
 
   const [entryOpen, setEntryOpen] = React.useState(false);
   const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [entryCategoryId, setEntryCategoryId] = React.useState("");
+  const [entryCategory, setEntryCategory] = React.useState<SocietyCategoryKey>(
+    () => societyExpenseCategories()[0]!
+  );
   const [entryAmount, setEntryAmount] = React.useState("");
   const [entryDate, setEntryDate] = React.useState("");
   const [entryDescription, setEntryDescription] = React.useState("");
-
-  const [categoryOpen, setCategoryOpen] = React.useState(false);
-  const [newCatName, setNewCatName] = React.useState("");
-  const [newCatNameEs, setNewCatNameEs] = React.useState("");
-  const [newCatType, setNewCatType] = React.useState<"income" | "expense">("expense");
 
   const derivedMovementsQuery = useQuery({
     queryKey: ["society-accounting-derived-movements", from, to],
@@ -128,8 +129,7 @@ export function SocietyAccountingTab() {
           id: string;
           userId: string | null;
           type: string;
-          categoryId: string | null;
-          categoryName: string | null;
+          category: string | null;
           categoryType: "income" | "expense" | null;
           amount: string;
           description: string | null;
@@ -153,18 +153,9 @@ export function SocietyAccountingTab() {
     },
   });
 
-  const categoriesQuery = useQuery({
-    queryKey: ["society-transaction-categories"],
-    queryFn: async () => {
-      const res = await authFetch("/api/society-transaction-categories");
-      if (!res.ok) throw new Error("categories");
-      return res.json() as Promise<CategoryRow[]>;
-    },
-  });
-
   const createMutation = useMutation({
     mutationFn: async (body: {
-      categoryId: string;
+      category: SocietyCategoryKey;
       date: string;
       amount: number;
       description?: string;
@@ -239,35 +230,9 @@ export function SocietyAccountingTab() {
     },
   });
 
-  const createCategoryMutation = useMutation({
-    mutationFn: async (body: { name: string; nameEs?: string; type: "income" | "expense" }) => {
-      const res = await authFetch("/api/society-transaction-categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      return res.json();
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ["society-transaction-categories"] });
-      void queryClient.invalidateQueries({ queryKey: ["society-accounting-summary"] });
-      setNewCatName("");
-      setNewCatNameEs("");
-      toast({ title: t("success"), description: t("societyAccountingCategoryCreated") });
-    },
-    onError: () => {
-      toast({
-        title: t("error"),
-        description: t("societyAccountingCategoryCreateFailed"),
-        variant: "destructive",
-      });
-    },
-  });
-
   function resetEntryForm() {
     setEditingId(null);
-    setEntryCategoryId("");
+    setEntryCategory(societyExpenseCategories()[0]!);
     setEntryAmount("");
     setEntryDate(new Date().toISOString().slice(0, 10));
     setEntryDescription("");
@@ -286,14 +251,19 @@ export function SocietyAccountingTab() {
 
   const openEditManualMovement = (row: {
     id: string;
-    categoryId: string | null;
+    category: string | null;
     amount: string;
     bookingDate: string | null;
     description: string | null;
   }) => {
-    if (!row.categoryId || !row.bookingDate) return;
+    if (
+      !row.category ||
+      !isSocietyCategoryKey(row.category) ||
+      !row.bookingDate
+    )
+      return;
     setEditingId(row.id);
-    setEntryCategoryId(row.categoryId);
+    setEntryCategory(row.category);
     setEntryAmount(parseFloat(row.amount).toFixed(2));
     setEntryDate(row.bookingDate.slice(0, 10));
     setEntryDescription(row.description ?? "");
@@ -302,12 +272,12 @@ export function SocietyAccountingTab() {
 
   const submitEntry = () => {
     const amount = parseFloat(entryAmount.replace(",", "."));
-    if (!entryCategoryId || !Number.isFinite(amount) || amount <= 0 || !entryDate) return;
+    if (!entryCategory || !Number.isFinite(amount) || amount <= 0 || !entryDate) return;
     if (editingId) {
       updateMutation.mutate({
         id: editingId,
         body: {
-          categoryId: entryCategoryId,
+          category: entryCategory,
           date: entryDate,
           amount,
           description: entryDescription || undefined,
@@ -315,7 +285,7 @@ export function SocietyAccountingTab() {
       });
     } else {
       createMutation.mutate({
-        categoryId: entryCategoryId,
+        category: entryCategory,
         date: entryDate,
         amount,
         description: entryDescription || undefined,
@@ -333,13 +303,13 @@ export function SocietyAccountingTab() {
       lines.push(["income", t(r.labelKey as never), r.total.toFixed(2)]);
     }
     for (const r of s.manualIncome.byCategory) {
-      lines.push(["income", r.name, r.total.toFixed(2)]);
+      lines.push(["income", societyCategoryLabel(r.category, t), r.total.toFixed(2)]);
     }
     for (const r of s.derivedExpenses.byType) {
       lines.push(["expense", t(r.labelKey as never), r.total.toFixed(2)]);
     }
     for (const r of s.manualExpenses.byCategory) {
-      lines.push(["expense", r.name, r.total.toFixed(2)]);
+      lines.push(["expense", societyCategoryLabel(r.category, t), r.total.toFixed(2)]);
     }
     if ((s.adjustmentIncome ?? 0) > 0) {
       lines.push(["income", t("societyAccountingAdjustmentIncome"), s.adjustmentIncome.toFixed(2)]);
@@ -362,10 +332,8 @@ export function SocietyAccountingTab() {
   };
 
   const s = summaryQuery.data;
-  const expenseCategories =
-    categoriesQuery.data?.filter(c => c.type === "expense" && c.isActive) ?? [];
-  const incomeCategories =
-    categoriesQuery.data?.filter(c => c.type === "income" && c.isActive) ?? [];
+  const expenseCategories = societyExpenseCategories();
+  const incomeCategories = societyIncomeCategories();
 
   return (
     <div className="space-y-4" data-testid="society-accounting-panel">
@@ -503,13 +471,13 @@ export function SocietyAccountingTab() {
                     </TableRow>
                   ))}
                   {s.manualIncome.byCategory.map(r => (
-                    <TableRow key={`m-i-${r.categoryId}`}>
+                    <TableRow key={`m-i-${r.category}`}>
                       <TableCell>
                         <span className="text-xs rounded bg-green-100 text-green-800 px-2 py-0.5 dark:bg-green-900/40 dark:text-green-300">
                           {t("income")}
                         </span>
                       </TableCell>
-                      <TableCell>{r.name}</TableCell>
+                      <TableCell>{societyCategoryLabel(r.category, t)}</TableCell>
                       <TableCell className="text-right">{formatMoney(r.total)}</TableCell>
                     </TableRow>
                   ))}
@@ -525,13 +493,13 @@ export function SocietyAccountingTab() {
                     </TableRow>
                   ))}
                   {s.manualExpenses.byCategory.map(r => (
-                    <TableRow key={`m-e-${r.categoryId}`}>
+                    <TableRow key={`m-e-${r.category}`}>
                       <TableCell>
                         <span className="text-xs rounded bg-red-100 text-red-800 px-2 py-0.5 dark:bg-red-900/40 dark:text-red-300">
                           {t("expenses")}
                         </span>
                       </TableCell>
-                      <TableCell>{r.name}</TableCell>
+                      <TableCell>{societyCategoryLabel(r.category, t)}</TableCell>
                       <TableCell className="text-right">{formatMoney(r.total)}</TableCell>
                     </TableRow>
                   ))}
@@ -580,74 +548,6 @@ export function SocietyAccountingTab() {
         </CardContent>
       </Card>
 
-      {canManage && (
-        <Collapsible open={categoryOpen} onOpenChange={setCategoryOpen}>
-          <CollapsibleTrigger asChild>
-            <Button type="button" variant="outline" className="w-full justify-between">
-              {t("categoryManagement")}
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </CollapsibleTrigger>
-          <CollapsibleContent className="pt-4 space-y-4 border rounded-md p-4">
-            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-4">
-              <div className="space-y-1">
-                <Label className="text-xs">{t("name")}</Label>
-                <Input
-                  value={newCatName}
-                  onChange={e => setNewCatName(e.target.value)}
-                  data-testid="input-new-category-name-eu"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">{t("categoryNameEs")}</Label>
-                <Input
-                  value={newCatNameEs}
-                  onChange={e => setNewCatNameEs(e.target.value)}
-                  data-testid="input-new-category-name-es"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">{t("type")}</Label>
-                <Select
-                  value={newCatType}
-                  onValueChange={v => setNewCatType(v as "income" | "expense")}
-                >
-                  <SelectTrigger data-testid="select-new-category-type">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="expense">{t("expenses")}</SelectItem>
-                    <SelectItem value="income">{t("income")}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-end">
-                <Button
-                  type="button"
-                  data-testid="button-save-new-category"
-                  disabled={!newCatName.trim() || createCategoryMutation.isPending}
-                  onClick={() =>
-                    createCategoryMutation.mutate({
-                      name: newCatName.trim(),
-                      nameEs: newCatNameEs.trim() || undefined,
-                      type: newCatType,
-                    })
-                  }
-                >
-                  {t("create")} {t("category")}
-                </Button>
-              </div>
-            </div>
-            <ul className="text-sm text-muted-foreground space-y-1">
-              {(categoriesQuery.data ?? []).map(c => (
-                <li key={c.id}>
-                  {c.name} ({c.type === "income" ? t("income") : t("expenses")})
-                </li>
-              ))}
-            </ul>
-          </CollapsibleContent>
-        </Collapsible>
-      )}
         </TabsContent>
 
         <TabsContent value="derived-movements" className="space-y-4 mt-0">
@@ -725,10 +625,11 @@ export function SocietyAccountingTab() {
                         </TableCell>
                         <TableCell>
                           {(m.source === "manual" ||
-                            (m.source === "adjustment" && m.categoryName)) &&
-                          m.categoryName ? (
+                            (m.source === "adjustment" && m.category)) &&
+                          m.category &&
+                          isSocietyCategoryKey(m.category) ? (
                             <span className="flex flex-col gap-0.5">
-                              <span>{m.categoryName}</span>
+                              <span>{societyCategoryLabel(m.category, t)}</span>
                               <span className="text-xs text-muted-foreground">
                                 {m.categoryType === "income" ? t("income") : t("expenses")}
                               </span>
@@ -804,7 +705,12 @@ export function SocietyAccountingTab() {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>{t("category")}</Label>
-              <Select value={entryCategoryId} onValueChange={setEntryCategoryId}>
+              <Select
+                value={entryCategory}
+                onValueChange={v =>
+                  setEntryCategory(isSocietyCategoryKey(v) ? v : societyExpenseCategories()[0]!)
+                }
+              >
                 <SelectTrigger data-testid="select-manual-entry-category">
                   <SelectValue placeholder={t("selectPlaceholder")} />
                 </SelectTrigger>
@@ -815,17 +721,17 @@ export function SocietyAccountingTab() {
                   <div className="px-2 py-1 text-xs font-medium text-muted-foreground">
                     {t("expenses")}
                   </div>
-                  {expenseCategories.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {language === "es" && c.nameEs ? c.nameEs : c.name}
+                  {expenseCategories.map(cat => (
+                    <SelectItem key={cat} value={cat}>
+                      {societyCategoryLabel(cat, t)}
                     </SelectItem>
                   ))}
                   <div className="px-2 py-1 text-xs font-medium text-muted-foreground border-t mt-1">
                     {t("income")}
                   </div>
-                  {incomeCategories.map(c => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {language === "es" && c.nameEs ? c.nameEs : c.name}
+                  {incomeCategories.map(cat => (
+                    <SelectItem key={cat} value={cat}>
+                      {societyCategoryLabel(cat, t)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -867,7 +773,7 @@ export function SocietyAccountingTab() {
               type="button"
               data-testid="button-submit-manual-entry"
               disabled={
-                !entryCategoryId ||
+                !entryCategory ||
                 !entryAmount ||
                 !entryDate ||
                 createMutation.isPending ||

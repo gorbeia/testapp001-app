@@ -1,6 +1,10 @@
 import { and, eq, sql, inArray } from "drizzle-orm";
 import { db, type AppDatabase } from "../db";
 import { societyLedger, type SocietyLedgerType } from "@shared/schema";
+import {
+  societyCategoryType,
+  type SocietyCategoryKey,
+} from "@shared/society-categories";
 import { formatLedgerAmount, LedgerAmountError } from "./ledger/ledger-rules";
 
 export const SOCIETY_LEDGER_REF_ACCOUNT_MOVEMENT = "account_movement";
@@ -45,7 +49,7 @@ async function insertLedgerRow(
     description?: string | null;
     referenceId?: string | null;
     referenceType?: string | null;
-    categoryId?: string | null;
+    category?: string | null;
     bookingDate: Date | string;
     isManual: boolean;
     voided: boolean;
@@ -65,7 +69,7 @@ async function insertLedgerRow(
       description: row.description ?? null,
       referenceId: row.referenceId ?? null,
       referenceType: row.referenceType ?? null,
-      categoryId: row.categoryId ?? null,
+      category: row.category ?? null,
       bookingDate: booking,
       isManual: row.isManual,
       voided: row.voided,
@@ -122,7 +126,7 @@ export async function mirrorAccountMovementToSocietyLedger(
       description: movement.description,
       referenceId: movement.id,
       referenceType: SOCIETY_LEDGER_REF_ACCOUNT_MOVEMENT,
-      categoryId: null,
+      category: null,
       bookingDate: booking,
       isManual: false,
       voided: false,
@@ -140,7 +144,7 @@ export async function mirrorAccountMovementToSocietyLedger(
       description: movement.description,
       referenceId: movement.id,
       referenceType: SOCIETY_LEDGER_REF_ACCOUNT_MOVEMENT,
-      categoryId: null,
+      category: null,
       bookingDate: booking,
       isManual: false,
       voided: false,
@@ -158,7 +162,7 @@ export async function mirrorAccountMovementToSocietyLedger(
       description: movement.description,
       referenceId: movement.id,
       referenceType: SOCIETY_LEDGER_REF_ACCOUNT_MOVEMENT,
-      categoryId: null,
+      category: null,
       bookingDate: booking,
       isManual: false,
       voided: false,
@@ -207,8 +211,7 @@ export async function postManualEntry(
   executor: AppDatabase,
   params: {
     societyId: string;
-    categoryId: string;
-    categoryType: "income" | "expense";
+    category: SocietyCategoryKey;
     amount: number;
     description: string | null;
     bookingDate: Date | string;
@@ -218,12 +221,13 @@ export async function postManualEntry(
   if (params.amount <= 0 || !Number.isFinite(params.amount)) {
     throw new LedgerAmountError("Manual entry amount must be positive");
   }
+  const categoryType = societyCategoryType(params.category);
   const signed =
-    params.categoryType === "income"
+    categoryType === "income"
       ? formatLedgerAmount(params.amount)
       : formatLedgerAmount(-params.amount);
   const type: SocietyLedgerType =
-    params.categoryType === "income" ? "manual_income" : "manual_expense";
+      categoryType === "income" ? "manual_income" : "manual_expense";
 
   const row = await insertLedgerRow(executor, {
     societyId: params.societyId,
@@ -232,7 +236,7 @@ export async function postManualEntry(
     description: params.description,
     referenceId: null,
     referenceType: SOCIETY_LEDGER_REF_MANUAL_ENTRY,
-    categoryId: params.categoryId,
+    category: params.category,
     bookingDate: params.bookingDate,
     isManual: true,
     voided: false,
@@ -256,8 +260,7 @@ export async function editManualEntry(
   params: {
     societyId: string;
     entryId: string;
-    categoryId: string;
-    categoryType: "income" | "expense";
+    category: SocietyCategoryKey;
     amount: number;
     description: string | null;
     bookingDate: Date | string;
@@ -280,8 +283,9 @@ export async function editManualEntry(
   }
 
   const oldSigned = parseFloat(String(existing.amount));
+  const categoryType = societyCategoryType(params.category);
   const newSigned =
-    params.categoryType === "income" ? params.amount : -params.amount;
+    categoryType === "income" ? params.amount : -params.amount;
   const delta = newSigned - oldSigned;
 
   if (Math.abs(delta) > 1e-9) {
@@ -292,7 +296,7 @@ export async function editManualEntry(
       description: `Adjustment (entry ${params.entryId})`,
       referenceId: params.entryId,
       referenceType: SOCIETY_LEDGER_REF_MANUAL_ENTRY,
-      categoryId: params.categoryId,
+      category: params.category,
       bookingDate: params.bookingDate,
       isManual: true,
       voided: false,
@@ -301,9 +305,9 @@ export async function editManualEntry(
   }
 
   const type: SocietyLedgerType =
-    params.categoryType === "income" ? "manual_income" : "manual_expense";
+    categoryType === "income" ? "manual_income" : "manual_expense";
   const amountStr =
-    params.categoryType === "income"
+    categoryType === "income"
       ? formatLedgerAmount(params.amount)
       : formatLedgerAmount(-params.amount);
   const booking =
@@ -314,7 +318,7 @@ export async function editManualEntry(
   const [updated] = await executor
     .update(societyLedger)
     .set({
-      categoryId: params.categoryId,
+      category: params.category,
       type,
       amount: amountStr,
       description: params.description ?? null,
@@ -358,7 +362,7 @@ export async function deleteManualEntry(
     description: `Reversal (entry ${params.entryId})`,
     referenceId: params.entryId,
     referenceType: SOCIETY_LEDGER_REF_MANUAL_ENTRY,
-    categoryId: existing.categoryId,
+    category: existing.category,
     bookingDate: existing.bookingDate,
     isManual: true,
     voided: false,
@@ -371,23 +375,4 @@ export async function deleteManualEntry(
     .where(eq(societyLedger.id, params.entryId));
 
   return { ok: true as const };
-}
-
-export async function countManualEntriesForCategory(
-  categoryId: string,
-  societyId: string,
-  executor: AppDatabase = db
-): Promise<number> {
-  const [{ n }] = await executor
-    .select({ n: sql<number>`count(*)::int` })
-    .from(societyLedger)
-    .where(
-      and(
-        eq(societyLedger.societyId, societyId),
-        eq(societyLedger.categoryId, categoryId),
-        inArray(societyLedger.type, [...MANUAL_PRIMARY]),
-        eq(societyLedger.voided, false)
-      )
-    );
-  return Number(n ?? 0);
 }

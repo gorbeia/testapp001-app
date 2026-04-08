@@ -1,10 +1,12 @@
 import type { Express } from "express";
 import { db, pool } from "../db";
+import { societyAccountingSummaryQuerySchema, societyLedger } from "@shared/schema";
 import {
-  societyAccountingSummaryQuerySchema,
-  societyLedger,
-  societyTransactionCategories,
-} from "@shared/schema";
+  isSocietyCategoryKey,
+  societyCategoryType,
+  societyExpenseCategories,
+  societyIncomeCategories,
+} from "@shared/society-categories";
 import { Permission } from "@shared/permissions";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { sessionMiddleware, requirePermission } from "./middleware";
@@ -110,45 +112,38 @@ export function registerSocietyAccountingRoutes(app: Express): void {
           }
         }
 
+        const incomeCatKeys = societyIncomeCategories();
+        const expenseCatKeys = societyExpenseCategories();
+
         const manualIncomeRows = await db
           .select({
-            categoryId: societyTransactionCategories.id,
-            name: societyTransactionCategories.name,
+            category: societyLedger.category,
             total: sql<string>`coalesce(sum(${societyLedger.amount}::numeric), 0)`.as("total"),
           })
           .from(societyLedger)
-          .innerJoin(
-            societyTransactionCategories,
-            eq(societyLedger.categoryId, societyTransactionCategories.id)
-          )
           .where(
             and(
               baseWhere,
               eq(societyLedger.type, "manual_income"),
-              eq(societyTransactionCategories.type, "income")
+              inArray(societyLedger.category, incomeCatKeys)
             )
           )
-          .groupBy(societyTransactionCategories.id, societyTransactionCategories.name);
+          .groupBy(societyLedger.category);
 
         const manualExpenseRows = await db
           .select({
-            categoryId: societyTransactionCategories.id,
-            name: societyTransactionCategories.name,
+            category: societyLedger.category,
             total: sql<string>`coalesce(sum(-(${societyLedger.amount}::numeric)), 0)`.as("total"),
           })
           .from(societyLedger)
-          .innerJoin(
-            societyTransactionCategories,
-            eq(societyLedger.categoryId, societyTransactionCategories.id)
-          )
           .where(
             and(
               baseWhere,
               eq(societyLedger.type, "manual_expense"),
-              eq(societyTransactionCategories.type, "expense")
+              inArray(societyLedger.category, expenseCatKeys)
             )
           )
-          .groupBy(societyTransactionCategories.id, societyTransactionCategories.name);
+          .groupBy(societyLedger.category);
 
         const adjPos = await db
           .select({
@@ -169,18 +164,16 @@ export function registerSocietyAccountingRoutes(app: Express): void {
 
         const manualIncomeByCategory = manualIncomeRows
           .map(r => ({
-            categoryId: r.categoryId,
-            name: r.name,
+            category: r.category!,
             total: num(r.total),
           }))
-          .filter(r => r.total > 0);
+          .filter(r => r.category && isSocietyCategoryKey(r.category) && r.total > 0);
         const manualExpensesByCategory = manualExpenseRows
           .map(r => ({
-            categoryId: r.categoryId,
-            name: r.name,
+            category: r.category!,
             total: num(r.total),
           }))
-          .filter(r => r.total > 0);
+          .filter(r => r.category && isSocietyCategoryKey(r.category) && r.total > 0);
 
         const derivedIncomeTotal = derivedIncomeByType.reduce((s, r) => s + r.total, 0);
         const derivedExpensesTotal = derivedExpensesByType.reduce((s, r) => s + r.total, 0);
@@ -241,15 +234,11 @@ export function registerSocietyAccountingRoutes(app: Express): void {
               sl.booking_date,
               sl.created_at,
               sl.is_manual,
-              sl.category_id,
-              stc.name AS category_name,
-              stc.type AS category_type,
+              sl.category,
               m.user_id,
               u.name AS member_name,
               u.username AS member_username
             FROM society_ledger sl
-            LEFT JOIN society_transaction_categories stc
-              ON sl.category_id = stc.id AND stc.society_id = sl.society_id
             LEFT JOIN account_movements m
               ON sl.reference_type = $4 AND sl.reference_id = m.id AND m.society_id = sl.society_id
             LEFT JOIN users u
@@ -278,9 +267,7 @@ export function registerSocietyAccountingRoutes(app: Express): void {
           booking_date: Date;
           created_at: Date;
           is_manual: boolean;
-          category_id: string | null;
-          category_name: string | null;
-          category_type: string | null;
+          category: string | null;
           user_id: string | null;
           member_name: string | null;
           member_username: string | null;
@@ -304,6 +291,9 @@ export function registerSocietyAccountingRoutes(app: Express): void {
                 : isAdjustment
                   ? ("adjustment" as const)
                   : ("ledger" as const);
+            const cat =
+              m.category && isSocietyCategoryKey(m.category) ? m.category : null;
+            const categoryType = cat ? societyCategoryType(cat) : null;
             return {
               source,
               id: m.id,
@@ -313,9 +303,8 @@ export function registerSocietyAccountingRoutes(app: Express): void {
                   ? "manual_adjustment"
                   : "society_manual"
                 : displayMovementType(m.sl_type),
-              categoryId: m.category_id,
-              categoryName: m.category_name,
-              categoryType: m.category_type as "income" | "expense" | null,
+              category: cat,
+              categoryType,
               amount: formatDisplayAmount(m.amount, m.sl_type),
               description: m.description,
               createdAt: m.created_at.toISOString(),

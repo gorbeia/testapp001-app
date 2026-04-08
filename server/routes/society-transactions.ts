@@ -2,22 +2,21 @@ import type { Express } from "express";
 import { db } from "../db";
 import {
   societyLedger,
-  societyTransactionCategories,
   societyTransactionCategoryTypeSchema,
   societyTransactionBodySchema,
   societyTransactionUpdateBodySchema,
-  societyTransactionCategoryBodySchema,
 } from "@shared/schema";
-import { Permission } from "@shared/permissions";
-import { and, count, eq, sql, desc } from "drizzle-orm";
-import { sessionMiddleware, requirePermission } from "./middleware";
-import { ensureDefaultSocietyTransactionCategories } from "../lib/society-transaction-defaults";
 import {
-  postManualEntry,
-  editManualEntry,
-  deleteManualEntry,
-  countManualEntriesForCategory,
-} from "../lib/society-ledger";
+  isSocietyCategoryKey,
+  societyCategoryType,
+  societyExpenseCategories,
+  societyIncomeCategories,
+  type SocietyCategoryKey,
+} from "@shared/society-categories";
+import { Permission } from "@shared/permissions";
+import { and, count, eq, inArray, sql, desc } from "drizzle-orm";
+import { sessionMiddleware, requirePermission } from "./middleware";
+import { postManualEntry, editManualEntry, deleteManualEntry } from "../lib/society-ledger";
 
 const getUserSocietyId = (user: { societyId: string }): string => {
   if (!user.societyId) throw new Error("User societyId not found in JWT");
@@ -42,22 +41,22 @@ function toYmd(d: Date): string {
 function mapLedgerManualToApiItem(row: {
   id: string;
   societyId: string;
-  categoryId: string | null;
+  category: string | null;
   amount: string;
   description: string | null;
   bookingDate: string;
   createdBy: string | null;
   createdAt: Date;
   updatedAt: Date;
-  categoryName: string;
-  categoryType: string;
 }) {
+  const cat =
+    row.category && isSocietyCategoryKey(row.category) ? row.category : null;
+  const categoryType = cat ? societyCategoryType(cat) : null;
   return {
     id: row.id,
     societyId: row.societyId,
-    categoryId: row.categoryId,
-    categoryName: row.categoryName,
-    categoryType: row.categoryType,
+    category: cat,
+    categoryType,
     date: row.bookingDate,
     amount: formatAmountForDb(Math.abs(parseFloat(String(row.amount)))),
     description: row.description,
@@ -69,198 +68,6 @@ function mapLedgerManualToApiItem(row: {
 
 export function registerSocietyTransactionRoutes(app: Express): void {
   app.get(
-    "/api/society-transaction-categories",
-    sessionMiddleware,
-    requirePermission(Permission.MOVEMENTS_VIEW),
-    async (req, res, next) => {
-      try {
-        const societyId = getUserSocietyId(req.user!);
-        await ensureDefaultSocietyTransactionCategories(societyId);
-
-        const rows = await db
-          .select()
-          .from(societyTransactionCategories)
-          .where(
-            and(
-              eq(societyTransactionCategories.societyId, societyId),
-              eq(societyTransactionCategories.isActive, true)
-            )
-          )
-          .orderBy(
-            societyTransactionCategories.type,
-            societyTransactionCategories.sortOrder,
-            societyTransactionCategories.name
-          );
-
-        return res.json(rows);
-      } catch (err) {
-        next(err);
-      }
-    }
-  );
-
-  app.post(
-    "/api/society-transaction-categories",
-    sessionMiddleware,
-    requirePermission(Permission.SOCIETY_TRANSACTIONS_MANAGE),
-    async (req, res, next) => {
-      try {
-        const parsed = societyTransactionCategoryBodySchema.safeParse(req.body);
-        if (!parsed.success) {
-          return res.status(400).json({
-            message: "Invalid body",
-            issues: parsed.error.flatten(),
-          });
-        }
-        const societyId = getUserSocietyId(req.user!);
-        const { name, nameEs, type, sortOrder } = parsed.data;
-
-        const [created] = await db
-          .insert(societyTransactionCategories)
-          .values({
-            societyId,
-            name,
-            nameEs: nameEs ?? null,
-            type,
-            sortOrder: sortOrder ?? 100,
-          })
-          .returning();
-
-        return res.status(201).json(created);
-      } catch (err) {
-        next(err);
-      }
-    }
-  );
-
-  app.put(
-    "/api/society-transaction-categories/:id",
-    sessionMiddleware,
-    requirePermission(Permission.SOCIETY_TRANSACTIONS_MANAGE),
-    async (req, res, next) => {
-      try {
-        const id = String(req.params.id);
-        const societyId = getUserSocietyId(req.user!);
-
-        const parsed = societyTransactionCategoryBodySchema.partial().safeParse(req.body);
-        if (!parsed.success) {
-          return res.status(400).json({
-            message: "Invalid body",
-            issues: parsed.error.flatten(),
-          });
-        }
-
-        const [existing] = await db
-          .select()
-          .from(societyTransactionCategories)
-          .where(
-            and(
-              eq(societyTransactionCategories.id, id),
-              eq(societyTransactionCategories.societyId, societyId)
-            )
-          );
-
-        if (!existing) {
-          return res.status(404).json({ message: "Category not found" });
-        }
-
-        if (
-          parsed.data.name === undefined &&
-          parsed.data.nameEs === undefined &&
-          parsed.data.sortOrder === undefined &&
-          parsed.data.type === undefined
-        ) {
-          return res.status(400).json({ message: "No fields to update" });
-        }
-
-        let nextType: string | undefined;
-        if (parsed.data.type !== undefined) {
-          const t = societyTransactionCategoryTypeSchema.safeParse(parsed.data.type);
-          if (!t.success) {
-            return res.status(400).json({ message: "Invalid type" });
-          }
-          if (t.data !== existing.type) {
-            const n = await countManualEntriesForCategory(id, societyId);
-            if (n > 0) {
-              return res.status(400).json({
-                message: "Cannot change category type while transactions exist",
-              });
-            }
-          }
-          nextType = t.data;
-        }
-
-        const [updated] = await db
-          .update(societyTransactionCategories)
-          .set({
-            ...(parsed.data.name !== undefined ? { name: parsed.data.name } : {}),
-            ...(parsed.data.nameEs !== undefined ? { nameEs: parsed.data.nameEs ?? null } : {}),
-            ...(parsed.data.sortOrder !== undefined ? { sortOrder: parsed.data.sortOrder } : {}),
-            ...(nextType !== undefined ? { type: nextType } : {}),
-          })
-          .where(
-            and(
-              eq(societyTransactionCategories.id, id),
-              eq(societyTransactionCategories.societyId, societyId)
-            )
-          )
-          .returning();
-
-        return res.json(updated);
-      } catch (err) {
-        next(err);
-      }
-    }
-  );
-
-  app.delete(
-    "/api/society-transaction-categories/:id",
-    sessionMiddleware,
-    requirePermission(Permission.SOCIETY_TRANSACTIONS_MANAGE),
-    async (req, res, next) => {
-      try {
-        const id = String(req.params.id);
-        const societyId = getUserSocietyId(req.user!);
-
-        const [existing] = await db
-          .select()
-          .from(societyTransactionCategories)
-          .where(
-            and(
-              eq(societyTransactionCategories.id, id),
-              eq(societyTransactionCategories.societyId, societyId)
-            )
-          );
-
-        if (!existing) {
-          return res.status(404).json({ message: "Category not found" });
-        }
-
-        const n = await countManualEntriesForCategory(id, societyId);
-        if (n > 0) {
-          return res.status(400).json({
-            message: "Category has transactions; deactivate instead",
-          });
-        }
-
-        await db
-          .update(societyTransactionCategories)
-          .set({ isActive: false })
-          .where(
-            and(
-              eq(societyTransactionCategories.id, id),
-              eq(societyTransactionCategories.societyId, societyId)
-            )
-          );
-
-        return res.json({ ok: true });
-      } catch (err) {
-        next(err);
-      }
-    }
-  );
-
-  app.get(
     "/api/society-transactions",
     sessionMiddleware,
     requirePermission(Permission.MOVEMENTS_VIEW),
@@ -270,7 +77,7 @@ export function registerSocietyTransactionRoutes(app: Express): void {
         const month = String(req.query.month ?? "");
         const fromM = String(req.query.from ?? "");
         const toM = String(req.query.to ?? "");
-        const categoryId = req.query.categoryId ? String(req.query.categoryId) : null;
+        const categoryFilter = req.query.category ? String(req.query.category) : null;
         const typeQ = req.query.type ? String(req.query.type) : null;
         const parsedType = typeQ
           ? societyTransactionCategoryTypeSchema.safeParse(typeQ)
@@ -280,13 +87,12 @@ export function registerSocietyTransactionRoutes(app: Express): void {
           return res.status(400).json({ message: "Invalid type filter" });
         }
 
+        if (categoryFilter && !isSocietyCategoryKey(categoryFilter)) {
+          return res.status(400).json({ message: "Invalid category filter" });
+        }
+
         const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit ?? "50"), 10) || 50));
         const offset = Math.max(0, parseInt(String(req.query.offset ?? "0"), 10) || 0);
-
-        const categoryJoin = and(
-          eq(societyLedger.categoryId, societyTransactionCategories.id),
-          eq(societyTransactionCategories.societyId, societyId)
-        );
 
         const baseManual = and(
           eq(societyLedger.societyId, societyId),
@@ -302,26 +108,27 @@ export function registerSocietyTransactionRoutes(app: Express): void {
           conditions.push(sql`to_char(${societyLedger.bookingDate}, 'YYYY-MM') >= ${fromM}`);
           conditions.push(sql`to_char(${societyLedger.bookingDate}, 'YYYY-MM') <= ${toM}`);
         }
-        if (categoryId) {
-          conditions.push(eq(societyLedger.categoryId, categoryId));
+        if (categoryFilter) {
+          conditions.push(eq(societyLedger.category, categoryFilter));
         }
         if (parsedType.success && parsedType.data) {
-          conditions.push(eq(societyTransactionCategories.type, parsedType.data));
+          const keysOfType =
+            parsedType.data === "income"
+              ? societyIncomeCategories()
+              : societyExpenseCategories();
+          conditions.push(inArray(societyLedger.category, keysOfType));
         }
 
         const [{ total }] = await db
           .select({ total: count() })
           .from(societyLedger)
-          .innerJoin(societyTransactionCategories, categoryJoin)
           .where(and(...conditions));
 
         const rows = await db
           .select({
             id: societyLedger.id,
             societyId: societyLedger.societyId,
-            categoryId: societyLedger.categoryId,
-            categoryName: societyTransactionCategories.name,
-            categoryType: societyTransactionCategories.type,
+            category: societyLedger.category,
             amount: societyLedger.amount,
             description: societyLedger.description,
             bookingDate: societyLedger.bookingDate,
@@ -330,7 +137,6 @@ export function registerSocietyTransactionRoutes(app: Express): void {
             updatedAt: societyLedger.updatedAt,
           })
           .from(societyLedger)
-          .innerJoin(societyTransactionCategories, categoryJoin)
           .where(and(...conditions))
           .orderBy(desc(societyLedger.bookingDate), desc(societyLedger.id))
           .limit(limit)
@@ -362,22 +168,7 @@ export function registerSocietyTransactionRoutes(app: Express): void {
           });
         }
         const societyId = getUserSocietyId(req.user!);
-        const { categoryId, date, amount, description } = parsed.data;
-
-        const [cat] = await db
-          .select()
-          .from(societyTransactionCategories)
-          .where(
-            and(
-              eq(societyTransactionCategories.id, categoryId),
-              eq(societyTransactionCategories.societyId, societyId),
-              eq(societyTransactionCategories.isActive, true)
-            )
-          );
-
-        if (!cat) {
-          return res.status(400).json({ message: "Invalid category" });
-        }
+        const { category, date, amount, description } = parsed.data;
 
         let amtNum: number;
         try {
@@ -394,8 +185,7 @@ export function registerSocietyTransactionRoutes(app: Express): void {
         const created = await db.transaction(async tx => {
           return postManualEntry(tx, {
             societyId,
-            categoryId,
-            categoryType: cat.type as "income" | "expense",
+            category: category as SocietyCategoryKey,
             amount: amtNum,
             description: description ?? null,
             bookingDate: booking,
@@ -407,9 +197,7 @@ export function registerSocietyTransactionRoutes(app: Express): void {
           .select({
             id: societyLedger.id,
             societyId: societyLedger.societyId,
-            categoryId: societyLedger.categoryId,
-            categoryName: societyTransactionCategories.name,
-            categoryType: societyTransactionCategories.type,
+            category: societyLedger.category,
             amount: societyLedger.amount,
             description: societyLedger.description,
             bookingDate: societyLedger.bookingDate,
@@ -418,13 +206,6 @@ export function registerSocietyTransactionRoutes(app: Express): void {
             updatedAt: societyLedger.updatedAt,
           })
           .from(societyLedger)
-          .innerJoin(
-            societyTransactionCategories,
-            and(
-              eq(societyLedger.categoryId, societyTransactionCategories.id),
-              eq(societyTransactionCategories.societyId, societyId)
-            )
-          )
           .where(eq(societyLedger.id, created.id));
 
         return res.status(201).json(mapLedgerManualToApiItem(row!));
@@ -451,19 +232,9 @@ export function registerSocietyTransactionRoutes(app: Express): void {
           });
         }
 
-        const [existingJoin] = await db
-          .select({
-            entry: societyLedger,
-            catType: societyTransactionCategories.type,
-          })
+        const [existing] = await db
+          .select()
           .from(societyLedger)
-          .innerJoin(
-            societyTransactionCategories,
-            and(
-              eq(societyLedger.categoryId, societyTransactionCategories.id),
-              eq(societyTransactionCategories.societyId, societyId)
-            )
-          )
           .where(
             and(
               eq(societyLedger.id, id),
@@ -473,32 +244,20 @@ export function registerSocietyTransactionRoutes(app: Express): void {
             )
           );
 
-        if (!existingJoin) {
+        if (!existing) {
           return res.status(404).json({ message: "Not found" });
         }
 
-        let categoryId = existingJoin.entry.categoryId!;
-        let categoryType = existingJoin.catType as "income" | "expense";
-        if (parsed.data.categoryId !== undefined) {
-          const [c] = await db
-            .select()
-            .from(societyTransactionCategories)
-            .where(
-              and(
-                eq(societyTransactionCategories.id, parsed.data.categoryId),
-                eq(societyTransactionCategories.societyId, societyId),
-                eq(societyTransactionCategories.isActive, true)
-              )
-            );
-          if (!c) {
-            return res.status(400).json({ message: "Invalid category" });
-          }
-          categoryId = parsed.data.categoryId;
-          categoryType = c.type as "income" | "expense";
+        let category = (existing.category &&
+        isSocietyCategoryKey(existing.category)
+          ? existing.category
+          : "other_expense") as SocietyCategoryKey;
+        if (parsed.data.category !== undefined) {
+          category = parsed.data.category as SocietyCategoryKey;
         }
 
         let amountNum =
-          Math.abs(parseFloat(String(existingJoin.entry.amount))) || 0;
+          Math.abs(parseFloat(String(existing.amount))) || 0;
         if (parsed.data.amount !== undefined) {
           try {
             amountNum = parseFloat(formatAmountForDb(parsed.data.amount));
@@ -512,19 +271,18 @@ export function registerSocietyTransactionRoutes(app: Express): void {
             ? typeof parsed.data.date === "string"
               ? toYmd(new Date(parsed.data.date + "T12:00:00"))
               : toYmd(parsed.data.date)
-            : existingJoin.entry.bookingDate;
+            : existing.bookingDate;
 
         const description =
           parsed.data.description !== undefined
             ? parsed.data.description
-            : existingJoin.entry.description;
+            : existing.description;
 
         const result = await db.transaction(async tx =>
           editManualEntry(tx, {
             societyId,
             entryId: id,
-            categoryId,
-            categoryType,
+            category,
             amount: amountNum,
             description: description ?? null,
             bookingDate,
@@ -540,9 +298,7 @@ export function registerSocietyTransactionRoutes(app: Express): void {
           .select({
             id: societyLedger.id,
             societyId: societyLedger.societyId,
-            categoryId: societyLedger.categoryId,
-            categoryName: societyTransactionCategories.name,
-            categoryType: societyTransactionCategories.type,
+            category: societyLedger.category,
             amount: societyLedger.amount,
             description: societyLedger.description,
             bookingDate: societyLedger.bookingDate,
@@ -551,13 +307,6 @@ export function registerSocietyTransactionRoutes(app: Express): void {
             updatedAt: societyLedger.updatedAt,
           })
           .from(societyLedger)
-          .innerJoin(
-            societyTransactionCategories,
-            and(
-              eq(societyLedger.categoryId, societyTransactionCategories.id),
-              eq(societyTransactionCategories.societyId, societyId)
-            )
-          )
           .where(eq(societyLedger.id, id));
 
         return res.json(mapLedgerManualToApiItem(row!));

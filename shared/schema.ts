@@ -13,6 +13,7 @@ import {
   jsonb,
 } from "drizzle-orm/pg-core";
 import { accessRoleSchema, membershipTypeSchema } from "./permissions";
+import { societyCategorySchema } from "./society-categories";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -617,26 +618,11 @@ export const bankTransfers = pgTable("bank_transfers", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-/** Manual society income/expense categories (Kontabilitatea). */
+/** Filter manual society entries by income vs expense (Kontabilitatea). */
 export const societyTransactionCategoryTypeSchema = z.enum(["income", "expense"]);
 export type SocietyTransactionCategoryType = z.infer<
   typeof societyTransactionCategoryTypeSchema
 >;
-
-export const societyTransactionCategories = pgTable("society_transaction_categories", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  societyId: varchar("society_id")
-    .notNull()
-    .references(() => societies.id),
-  name: text("name").notNull(),
-  nameEs: text("name_es"),
-  type: text("type").notNull(),
-  sortOrder: integer("sort_order").notNull().default(0),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
 
 /** Posted society cashbook: derived member-ledger mirror + manual entries + adjustments (append-only). */
 export const societyLedgerTypeSchema = z.enum([
@@ -663,7 +649,8 @@ export const societyLedger = pgTable("society_ledger", {
   description: text("description"),
   referenceId: varchar("reference_id"),
   referenceType: text("reference_type"),
-  categoryId: varchar("category_id").references(() => societyTransactionCategories.id),
+  /** Fixed society accounting category key (`shared/society-categories.ts`); null for mirrored member lines. */
+  category: varchar("category"),
   bookingDate: date("booking_date").notNull(),
   isManual: boolean("is_manual").notNull().default(false),
   voided: boolean("voided").notNull().default(false),
@@ -672,33 +659,15 @@ export const societyLedger = pgTable("society_ledger", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const insertSocietyTransactionCategorySchema = createInsertSchema(
-  societyTransactionCategories
-).pick({
-  societyId: true,
-  name: true,
-  nameEs: true,
-  type: true,
-  sortOrder: true,
-  isActive: true,
-});
-
-export const societyTransactionCategoryBodySchema = z.object({
-  name: z.string().min(1),
-  nameEs: z.string().optional(),
-  type: societyTransactionCategoryTypeSchema,
-  sortOrder: z.number().int().optional(),
-});
-
 export const societyTransactionBodySchema = z.object({
-  categoryId: z.string().min(1),
+  category: societyCategorySchema,
   date: z.coerce.date(),
   amount: z.union([z.coerce.number().positive(), z.string()]),
   description: z.string().optional(),
 });
 
 export const societyTransactionUpdateBodySchema = z.object({
-  categoryId: z.string().min(1).optional(),
+  category: societyCategorySchema.optional(),
   date: z.coerce.date().optional(),
   amount: z.union([z.coerce.number().positive(), z.string()]).optional(),
   description: z.string().optional(),
@@ -709,7 +678,6 @@ export const societyAccountingSummaryQuerySchema = z.object({
   to: z.string().regex(/^\d{4}-\d{2}$/),
 });
 
-export type SocietyTransactionCategory = typeof societyTransactionCategories.$inferSelect;
 export type SocietyLedger = typeof societyLedger.$inferSelect;
 
 export const insertAccountMovementSchema = createInsertSchema(accountMovements).pick({
