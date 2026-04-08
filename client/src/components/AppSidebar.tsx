@@ -41,7 +41,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/lib/i18n";
 import { useAuth, userCan } from "@/lib/auth";
@@ -51,6 +51,7 @@ import { societyAllowsBankTransferPrepayment } from "@shared/schema";
 import { deriveSocietyAcronym } from "@shared/society-acronym";
 import { cn } from "@/lib/utils";
 import { ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT } from "@/lib/society-events";
+import { societyLogoSrc, userAvatarSrc } from "@/lib/image-urls";
 
 type NavItem = { title: string; url: string; icon: LucideIcon };
 
@@ -72,6 +73,8 @@ export function AppSidebar() {
   const [location] = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
   const [societyName, setSocietyName] = useState<string | null>(null);
+  const [societyId, setSocietyId] = useState<string | null>(null);
+  const [societyLogoUrl, setSocietyLogoUrl] = useState<string | null | undefined>(undefined);
   const [societyAcronym, setSocietyAcronym] = useState("?");
   const [societyShortDescription, setSocietyShortDescription] = useState<string | null>(null);
   const [societySepaMode, setSocietySepaMode] = useState<string | null>(null);
@@ -83,6 +86,8 @@ export function AppSidebar() {
         const response = await authFetch("/api/societies/user");
         if (response.ok) {
           const data = await response.json();
+          if (typeof data?.id === "string") setSocietyId(data.id);
+          setSocietyLogoUrl(typeof data?.logoUrl === "string" ? data.logoUrl : null);
           if (data && typeof data.name === "string") {
             setSocietyName(data.name);
             const stored = typeof data.acronym === "string" ? data.acronym.trim() : "";
@@ -282,6 +287,9 @@ export function AppSidebar() {
 
   const navTestId = (url: string) => `link-${url.replace("/", "") || "home"}`;
 
+  const sidebarLogoSrc =
+    societyId && societyLogoUrl ? societyLogoSrc(societyId, societyLogoUrl) : undefined;
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -295,10 +303,14 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0">
-            <span className="text-primary-foreground font-bold text-sm" aria-hidden>
-              {societyAcronym}
-            </span>
+          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0 overflow-hidden">
+            {sidebarLogoSrc ? (
+              <img src={sidebarLogoSrc} alt="" className="h-full w-full object-cover" />
+            ) : (
+              <span className="text-primary-foreground font-bold text-sm" aria-hidden>
+                {societyAcronym}
+              </span>
+            )}
           </div>
           <div className="min-w-0">
             <h1 className="font-semibold text-sm truncate">{societyName || t("appName")}</h1>
@@ -504,6 +516,9 @@ export function AppSidebar() {
               onClick={() => handleNavigation()}
             >
               <Avatar className="h-9 w-9">
+                {user.avatarUrl && user.societyId ? (
+                  <AvatarImage src={userAvatarSrc(user.societyId, user.avatarUrl) ?? undefined} alt="" />
+                ) : null}
                 <AvatarFallback className="text-xs bg-accent">
                   {getInitials(user.name)}
                 </AvatarFallback>

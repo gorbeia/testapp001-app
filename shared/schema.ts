@@ -95,6 +95,10 @@ export const societies = pgTable("societies", {
     precision: 10,
     scale: 2,
   }),
+  /** Stored filename only (e.g. `{nanoid}.webp`); full path: `/api/images/{societyId}/{logoUrl}` */
+  logoUrl: varchar("logo_url"),
+  /** Floor plan / map image for reservations; same filename convention as logoUrl */
+  mapImageUrl: varchar("map_image_url"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -121,6 +125,8 @@ export const users = pgTable("users", {
   societyId: varchar("society_id")
     .notNull()
     .references(() => societies.id),
+  /** Avatar image filename under `/api/images/{societyId}/` */
+  avatarUrl: varchar("avatar_url"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -202,6 +208,8 @@ export const products = pgTable("products", {
   societyId: varchar("society_id")
     .notNull()
     .references(() => societies.id),
+  /** Product photo filename under `/api/images/{societyId}/` */
+  imageUrl: varchar("image_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -276,6 +284,15 @@ export const stockAdjustmentSchema = z
   });
 
 export type StockAdjustmentInput = z.infer<typeof stockAdjustmentSchema>;
+
+/** Target entity for `POST /api/images/upload` (multipart field `entity`). */
+export const imageUploadEntitySchema = z.enum([
+  "society-logo",
+  "society-map",
+  "user-avatar",
+  "product-image",
+]);
+export type ImageUploadEntity = z.infer<typeof imageUploadEntitySchema>;
 
 /** Query params for GET /api/stock-movements */
 export const stockMovementListQuerySchema = z.object({
@@ -835,6 +852,7 @@ export const jwtUserPayloadSchema = z.object({
   linkedMemberName: z.string().nullable(),
   subscriptionTypeId: z.string().nullable(),
   societyId: z.string(),
+  avatarUrl: z.string().nullish(),
   isActive: z.boolean(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),

@@ -25,6 +25,7 @@ function minimalProduct(overrides: Partial<Product> = {}): Product {
     supplier: null,
     isActive: true,
     societyId: "soc-1",
+    imageUrl: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,

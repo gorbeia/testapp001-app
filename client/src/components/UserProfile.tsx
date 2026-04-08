@@ -7,7 +7,9 @@ import type { User } from "@/lib/auth";
 import type { AccessRole, MembershipType } from "@shared/permissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ImageUpload } from "@/components/ImageUpload";
+import { userAvatarSrc } from "@/lib/image-urls";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
@@ -72,6 +74,8 @@ export function UserProfile() {
       </div>
     );
   }
+
+  const avatarDisplaySrc = userAvatarSrc(user.societyId, user.avatarUrl);
 
   const getInitials = (name: string) => {
     if (!name) return "U";
@@ -143,12 +147,15 @@ export function UserProfile() {
         id: String(u.id),
         email: String(u.username ?? ""),
         name: String(u.name ?? u.username ?? ""),
+        societyId: String(u.societyId ?? user.societyId),
         accessRole: (u.accessRole as AccessRole) ?? "member",
         membershipType: (u.membershipType as MembershipType) ?? "full_member",
         phone: u.phone != null ? String(u.phone) : undefined,
         iban: u.iban != null ? String(u.iban) : undefined,
         linkedMemberId: u.linkedMemberId != null ? String(u.linkedMemberId) : undefined,
         linkedMemberName: u.linkedMemberName != null ? String(u.linkedMemberName) : undefined,
+        avatarUrl:
+          typeof u.avatarUrl === "string" && u.avatarUrl ? u.avatarUrl : undefined,
       };
       setUser(mapped);
       updateUser(mapped);
@@ -238,6 +245,7 @@ export function UserProfile() {
         <CardHeader>
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
+              {avatarDisplaySrc ? <AvatarImage src={avatarDisplaySrc} alt="" /> : null}
               <AvatarFallback className="text-lg">{getInitials(user.name)}</AvatarFallback>
             </Avatar>
             <div className="space-y-1">
@@ -252,6 +260,25 @@ export function UserProfile() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
+          <ImageUpload
+            societyId={user.societyId}
+            entity="user-avatar"
+            entityId={user.id}
+            label={t("profile")}
+            description={t("userAvatarHint")}
+            currentFilename={user.avatarUrl}
+            previewSize={120}
+            onUploaded={filename => {
+              const next = { ...user, avatarUrl: filename };
+              setUser(next);
+              updateUser(next);
+            }}
+            onRemoved={() => {
+              const next = { ...user, avatarUrl: undefined };
+              setUser(next);
+              updateUser(next);
+            }}
+          />
           {/* Contact Information */}
           <div className="space-y-4">
             <h3 className="text-lg font-medium flex items-center gap-2">

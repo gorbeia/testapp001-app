@@ -65,6 +65,7 @@ export function registerUserRoutes(app: Express) {
             membershipType: users.membershipType,
             phone: users.phone,
             iban: users.iban,
+            avatarUrl: users.avatarUrl,
             linkedMemberId: users.linkedMemberId,
             linkedMemberName: users.linkedMemberName,
             subscriptionTypeId: users.subscriptionTypeId,
@@ -242,6 +243,7 @@ export function registerUserRoutes(app: Express) {
         const responseUser = {
           ...toPublicUser(updatedUser),
           email: updatedUser.username,
+          avatarUrl: updatedUser.avatarUrl ?? undefined,
         };
 
         return res.status(200).json(responseUser);

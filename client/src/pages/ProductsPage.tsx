@@ -60,6 +60,9 @@ function normalizeStockMode(product: Pick<Product, "stockMode">): StockModeUi {
 }
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
+import { useAuth } from "@/lib/auth";
+import { ImageUpload } from "@/components/ImageUpload";
+import { productImageSrc, thumbFilenameFromImageUrl } from "@/lib/image-urls";
 
 // Define Category type for frontend
 type Category = {
@@ -87,6 +90,7 @@ const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
 export function ProductsPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -720,13 +724,22 @@ export function ProductsPage() {
                     const stock = parseInt(product.stock);
                     const minStock = parseInt(product.minStock);
                     const isLowStock = mode !== "none" && stock <= minStock;
+                    const productThumb =
+                      user?.societyId && product.imageUrl
+                        ? productImageSrc(user.societyId, thumbFilenameFromImageUrl(product.imageUrl)) ??
+                          productImageSrc(user.societyId, product.imageUrl)
+                        : undefined;
 
                     return (
                       <TableRow key={product.id} data-testid={`row-product-${product.id}`}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center">
-                              <Package className="h-4 w-4 text-muted-foreground" />
+                            <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center overflow-hidden shrink-0">
+                              {productThumb ? (
+                                <img src={productThumb} alt="" className="h-full w-full object-cover" />
+                              ) : (
+                                <Package className="h-4 w-4 text-muted-foreground" />
+                              )}
                             </div>
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
@@ -853,6 +866,31 @@ export function ProductsPage() {
                   onChange={e => setEditProduct({ ...editProduct, description: e.target.value })}
                 />
               </div>
+
+              {editDialog.product && user?.societyId ? (
+                <ImageUpload
+                  societyId={user.societyId}
+                  entity="product-image"
+                  entityId={editDialog.product.id}
+                  label={t("productImageLabel")}
+                  description={t("productImageHint")}
+                  currentFilename={editDialog.product.imageUrl}
+                  thumbFilename={thumbFilenameFromImageUrl(editDialog.product.imageUrl)}
+                  disabled={!user.societyId}
+                  onUploaded={filename => {
+                    const p = editDialog.product!;
+                    const updated = { ...p, imageUrl: filename };
+                    setEditDialog({ ...editDialog, product: updated });
+                    setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
+                  }}
+                  onRemoved={() => {
+                    const p = editDialog.product!;
+                    const updated = { ...p, imageUrl: null };
+                    setEditDialog({ ...editDialog, product: updated });
+                    setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
+                  }}
+                />
+              ) : null}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">

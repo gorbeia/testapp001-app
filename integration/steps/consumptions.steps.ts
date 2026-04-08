@@ -3,8 +3,6 @@ import { Given, When, Then } from "@cucumber/cucumber";
 
 import type { IntegrationWorld } from "./world";
 
-const DEMO_BAZKIDEA_ID = "550e8400-e29b-41d4-a716-446655440004";
-
 Given("I have loaded the first catalog product id", async function (this: IntegrationWorld) {
   const res = await this.agent.get("/api/products");
   assert.strictEqual(res.status, 200);

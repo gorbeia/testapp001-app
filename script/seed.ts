@@ -6,6 +6,7 @@ import { seedUsers } from "./seed-users";
 import { seedSuperadmins } from "./seed-superadmins";
 import { seedCategories } from "./seed-categories";
 import { seedProducts } from "./seed-products";
+import { seedImages } from "./seed-images";
 import { seedConsumptions } from "./seed-consumptions";
 import { seedTables } from "./seed-tables";
 import { seedReservations } from "./seed-reservations";
@@ -21,6 +22,7 @@ async function runAllSeeds() {
   await seedSuperadmins(db);
   await seedCategories(db);
   await seedProducts(db);
+  await seedImages(db);
   await seedConsumptions(db);
   await seedTables(db);
   await seedReservations(db);

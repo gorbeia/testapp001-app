@@ -61,6 +61,7 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · *(emp
 | Products CRUD | — | `products.feature` | — |
 | Categories | — | `categories.feature` | — |
 | Society PATCH (incl. payment methods) | — | `societies.feature` | `society-management.feature` |
+| Image uploads (logo, map, avatar, product) | — | — | — |
 | SEPA mode / sidebar | — | — | `sepa-billing-frequency.feature` |
 
 ## 7. Inventory / stock (`inventory.md`)

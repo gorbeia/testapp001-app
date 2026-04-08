@@ -1,4 +1,4 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import express, { type Express, Request, Response, NextFunction } from "express";
 import { type Server } from "http";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -130,6 +130,8 @@ import { registerCategoryRoutes } from "./categories";
 import { registerBackofficeRoutes, backofficeSessionMiddleware } from "./backoffice";
 import { registerCashSettlementRoutes } from "./cash-settlements";
 import { registerPrepaymentLedgerStatusRoutes } from "./prepayment-ledger-status";
+import { registerImageRoutes } from "./images";
+import { getUploadsRoot } from "../lib/image-storage";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
   // Apply session middleware to all routes
@@ -140,6 +142,10 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use(i18nMiddleware);
   // Apply no-cache to all API routes
   app.use("/api", noCache);
+
+  // Uploaded images (GET); upload/delete registered in registerImageRoutes
+  app.use("/api/images", express.static(getUploadsRoot(), { index: false }));
+  registerImageRoutes(app);
 
   // Register table routes
   registerTableRoutes(app);

@@ -198,11 +198,13 @@ Status legend:
 
 1. **Society information & SEPA-related fields**
    - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id` — **administratzailea** + **diruzaina** own-tenant; society **`shortDescription`** + **`acronym`** (1–3 letters; auto-derived from name in the browser until manually edited; sidebar header shows acronym in the circle and description under the name); **`payment_methods`** on societies: SEPA checkbox + cadence, bank prepayment + cash placeholders; **optional `prepaymentMinLedgerBalance`** (prepayment-only UI) for max-debt / minimum-balance enforcement on ledger debits; prepayment gates transfers UI/API; cash methods stored only; E2E: `society-payment-methods.feature` for cash flag persistence)
-2. **Tables (resource config for reservations)**
+2. **Society logo, reservation map, user avatars, product images**
+   - **Status**: ✅ Implemented — DB: `societies.logoUrl`, `societies.mapImageUrl`, `users.avatarUrl`, `products.imageUrl` (stored filenames); disk: `UPLOADS_DIR` (default `./uploads`), WebP + `_thumb` via **sharp**; **`POST /api/images/upload`** + **`DELETE /api/images/:entity/:entityId`** (society-logo / society-map / user-avatar / product-image); **`GET /api/images/:societyId/:file`** via `express.static`; UI: treasurer/admin uploads on **`/elkartea`**, member avatar on **`/profila`**, product image on **`/produktuak`** (edit), map on **`/erreserbak`**, logo in sidebar; demo pipeline: **`script/seed-images.ts`** (after products) + optional files under **`script/seed-assets/images/`**
+3. **Tables (resource config for reservations)**
    - **Status**: ✅ Implemented (`/mahaiak` — see Reservations)
-3. **Subscription types**
+4. **Subscription types**
    - **Status**: ✅ Implemented (`/subscriptions`, `subscription_types` table)
-4. **Rules, policies, role transfers, operating hours, compliance, backup UX**
+5. **Rules, policies, role transfers, operating hours, compliance, backup UX**
    - **Status**: ❌ Not Implemented
 
 ---

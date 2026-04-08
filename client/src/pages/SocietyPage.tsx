@@ -16,11 +16,15 @@ import {
 import type { SepaMode, SocietyPaymentMethod } from "@shared/schema";
 import { normalizeSocietyPaymentMethods } from "@shared/schema";
 import { deriveSocietyAcronym } from "@shared/society-acronym";
+import { Permission } from "@shared/permissions";
+import { useAuth, userCan } from "@/lib/auth";
+import { ImageUpload } from "@/components/ImageUpload";
 import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { ErrorBoundary } from "react-error-boundary";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT } from "@/lib/society-events";
+import { thumbFilenameFromImageUrl } from "@/lib/image-urls";
 
 const SEPA_CADENCE_MODES = ["monthly", "bimonthly", "quarterly", "on_demand"] as const;
 type SepaCadenceMode = (typeof SEPA_CADENCE_MODES)[number];
@@ -30,6 +34,8 @@ interface Society {
   name: string;
   shortDescription?: string | null;
   acronym?: string | null;
+  logoUrl?: string | null;
+  mapImageUrl?: string | null;
   iban: string;
   creditorId: string;
   address: string;
@@ -81,6 +87,7 @@ function togglePaymentMethod(
 export function SocietyPage() {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [society, setSociety] = useState<Society | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const lastSepaCadenceRef = useRef<SepaCadenceMode>("monthly");
@@ -235,6 +242,7 @@ export function SocietyPage() {
   }
 
   const paymentMethods = normalizeSocietyPaymentMethods(society.paymentMethods);
+  const canManageSocietyImages = userCan(user, Permission.SOCIETY_MANAGE);
   const prepaymentEnabled = paymentMethods.includes("bank_transfer_prepayment");
   const sepaEnabled = (society.sepaMode ?? "monthly") !== "disabled";
   const sepaCadenceValue: SepaCadenceMode = sepaEnabled
@@ -315,6 +323,46 @@ export function SocietyPage() {
                 />
                 <p className="text-xs text-muted-foreground">{t("societyShortDescriptionHint")}</p>
               </div>
+              {canManageSocietyImages ? (
+                <div className="space-y-6 pt-2 border-t">
+                  <ImageUpload
+                    societyId={society.id}
+                    entity="society-logo"
+                    entityId={society.id}
+                    label={t("societyLogoLabel")}
+                    description={t("societyLogoHint")}
+                    currentFilename={society.logoUrl}
+                    thumbFilename={thumbFilenameFromImageUrl(society.logoUrl)}
+                    disabled={!user}
+                    onUploaded={filename => {
+                      setSociety({ ...society, logoUrl: filename });
+                      window.dispatchEvent(new Event(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT));
+                    }}
+                    onRemoved={() => {
+                      setSociety({ ...society, logoUrl: null });
+                      window.dispatchEvent(new Event(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT));
+                    }}
+                  />
+                  <ImageUpload
+                    societyId={society.id}
+                    entity="society-map"
+                    entityId={society.id}
+                    label={t("societyMapLabel")}
+                    description={t("societyMapHint")}
+                    currentFilename={society.mapImageUrl}
+                    thumbFilename={thumbFilenameFromImageUrl(society.mapImageUrl)}
+                    disabled={!user}
+                    onUploaded={filename => {
+                      setSociety({ ...society, mapImageUrl: filename });
+                      window.dispatchEvent(new Event(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT));
+                    }}
+                    onRemoved={() => {
+                      setSociety({ ...society, mapImageUrl: null });
+                      window.dispatchEvent(new Event(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT));
+                    }}
+                  />
+                </div>
+              ) : null}
               <div className="space-y-2">
                 <Label>{t("address")}</Label>
                 <Input

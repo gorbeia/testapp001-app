@@ -19,6 +19,7 @@ export interface User {
   name: string;
   accessRole: AccessRole;
   membershipType: MembershipType;
+  societyId: string;
   linkedMemberId?: string;
   linkedMemberName?: string;
   iban?: string;
@@ -53,12 +54,17 @@ export function userFromApiSessionPayload(userData: Record<string, unknown>): Us
     id: typeof userData.id === "string" ? userData.id : "",
     email: username,
     name: (typeof userData.name === "string" && userData.name) || username,
+    societyId: typeof userData.societyId === "string" ? userData.societyId : "",
     accessRole: ar.success ? ar.data : "member",
     membershipType: mt.success ? mt.data : "full_member",
     phone: typeof userData.phone === "string" ? userData.phone : undefined,
     iban: typeof userData.iban === "string" ? userData.iban : undefined,
     linkedMemberId: typeof userData.linkedMemberId === "string" ? userData.linkedMemberId : undefined,
     linkedMemberName: typeof userData.linkedMemberName === "string" ? userData.linkedMemberName : undefined,
+    avatarUrl:
+      typeof userData.avatarUrl === "string" && userData.avatarUrl
+        ? userData.avatarUrl
+        : undefined,
   };
 }
 
@@ -67,18 +73,21 @@ export function parseStoredUser(raw: unknown): User | null {
   if (!raw || typeof raw !== "object") return null;
   const o = raw as Record<string, unknown>;
   if (typeof o.id !== "string" || typeof o.email !== "string") return null;
+  if (typeof o.societyId !== "string" || !o.societyId) return null;
   const ar = accessRoleSchema.safeParse(o.accessRole);
   const mt = membershipTypeSchema.safeParse(o.membershipType);
   return {
     id: o.id,
     email: o.email,
     name: (typeof o.name === "string" && o.name) || o.email,
+    societyId: o.societyId,
     accessRole: ar.success ? ar.data : "member",
     membershipType: mt.success ? mt.data : "full_member",
     phone: typeof o.phone === "string" ? o.phone : undefined,
     iban: typeof o.iban === "string" ? o.iban : undefined,
     linkedMemberId: typeof o.linkedMemberId === "string" ? o.linkedMemberId : undefined,
     linkedMemberName: typeof o.linkedMemberName === "string" ? o.linkedMemberName : undefined,
+    avatarUrl: typeof o.avatarUrl === "string" && o.avatarUrl ? o.avatarUrl : undefined,
   };
 }
 
