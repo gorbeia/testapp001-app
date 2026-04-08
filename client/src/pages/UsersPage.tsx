@@ -41,6 +41,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Search, Plus, Edit, Trash2, Link2, UserX, UserCheck } from "lucide-react";
 import { ErrorFallback } from "@/components/ErrorBoundary";
+import { TableFiltersBar } from "@/components/TableFiltersBar";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import type { SubscriptionType as SubscriptionTypeEntity } from "@shared/schema";
 import {
@@ -790,8 +791,8 @@ export function UsersPage() {
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
+        <TableFiltersBar>
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder={`${t("search")}...`}
@@ -813,7 +814,7 @@ export function UsersPage() {
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="Egoera" />
+              <SelectValue placeholder={t("status")} />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("all")}</SelectItem>
@@ -821,7 +822,7 @@ export function UsersPage() {
               <SelectItem value="inactive">{t("inactive")}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </TableFiltersBar>
 
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">

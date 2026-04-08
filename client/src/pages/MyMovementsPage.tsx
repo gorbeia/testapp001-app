@@ -10,6 +10,7 @@ import { useLanguage, type TranslationKey } from "@/lib/i18n";
 import { formatDateTime } from "@/lib/date-locale";
 import { authFetch } from "@/lib/api";
 import MonthGrid from "@/components/MonthGrid";
+import { TableFiltersBar } from "@/components/TableFiltersBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -591,7 +592,7 @@ export function MyMovementsPage() {
         </Card>
       ) : null}
 
-      <div className="flex flex-wrap gap-4">
+      <TableFiltersBar>
         <div className="w-full sm:w-48" data-testid="filter-month-movements">
           <MonthGrid
             selectedMonth={monthFilter.value}
@@ -613,7 +614,7 @@ export function MyMovementsPage() {
             ))}
           </SelectContent>
         </Select>
-      </div>
+      </TableFiltersBar>
 
       <Card>
         <CardHeader>

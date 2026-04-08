@@ -5,6 +5,7 @@ import { useLanguage } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/lib/api";
 import { readJsonOrThrow } from "@/lib/http-error";
+import { TableFiltersBar } from "@/components/TableFiltersBar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -388,43 +389,39 @@ export function SubscriptionsPage() {
         </div>
 
         {/* Filters */}
-        <Card className="p-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder={t("searchSubscriptionTypes")}
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-            <Select value={periodFilter} onValueChange={setPeriodFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder={t("filterByPeriod")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("allPeriods")}</SelectItem>
-                <SelectItem value="monthly">{t("monthly")}</SelectItem>
-                <SelectItem value="quarterly">{t("quarterly")}</SelectItem>
-                <SelectItem value="yearly">{t("yearly")}</SelectItem>
-                <SelectItem value="custom">{t("custom")}</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder={t("filterByStatus")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("allStatuses")}</SelectItem>
-                <SelectItem value="active">{t("active")}</SelectItem>
-                <SelectItem value="inactive">{t("inactive")}</SelectItem>
-              </SelectContent>
-            </Select>
+        <TableFiltersBar>
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t("searchSubscriptionTypes")}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
           </div>
-        </Card>
+          <Select value={periodFilter} onValueChange={setPeriodFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder={t("filterByPeriod")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("allPeriods")}</SelectItem>
+              <SelectItem value="monthly">{t("monthly")}</SelectItem>
+              <SelectItem value="quarterly">{t("quarterly")}</SelectItem>
+              <SelectItem value="yearly">{t("yearly")}</SelectItem>
+              <SelectItem value="custom">{t("custom")}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-[180px]">
+              <SelectValue placeholder={t("filterByStatus")} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t("allStatuses")}</SelectItem>
+              <SelectItem value="active">{t("active")}</SelectItem>
+              <SelectItem value="inactive">{t("inactive")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </TableFiltersBar>
 
         {/* Table */}
         <Card>

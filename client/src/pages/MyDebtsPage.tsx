@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import MonthGrid from "@/components/MonthGrid";
+import { TableFiltersBar } from "@/components/TableFiltersBar";
 import { DebtDetailModal } from "@/components/DebtDetailModal";
 import { useLanguage } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
@@ -202,8 +203,7 @@ export function MyDebtsPage() {
           </Card>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Month Grid Selector */}
+        <TableFiltersBar>
           <div className="w-full sm:w-48">
             <MonthGrid
               selectedMonth={monthFilter.value}
@@ -214,7 +214,6 @@ export function MyDebtsPage() {
             />
           </div>
 
-          {/* Status Filter */}
           <Select value={statusFilter.value} onValueChange={statusFilter.setValue}>
             <SelectTrigger className="w-full sm:w-40" data-testid="select-status">
               <SelectValue />
@@ -225,7 +224,7 @@ export function MyDebtsPage() {
               <SelectItem value="paid">{t("paid")}</SelectItem>
             </SelectContent>
           </Select>
-        </div>
+        </TableFiltersBar>
 
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">

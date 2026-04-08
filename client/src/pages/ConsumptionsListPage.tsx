@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import MonthGrid from "@/components/MonthGrid";
+import { TableFiltersBar } from "@/components/TableFiltersBar";
 import { useLanguage } from "@/lib/i18n";
 import { useFormattedDates } from "@/lib/date-locale";
 import { useToast } from "@/hooks/use-toast";
@@ -174,15 +175,15 @@ export function ConsumptionsListPage() {
     } catch (error) {
       console.error("Error fetching consumption details:", error);
       toast({
-        title: "Error",
-        description: "Kontsumoaren xehetasunak ezin izan dira kargatu",
+        title: t("error"),
+        description: t("consumptionDetailsLoadError"),
         variant: "destructive",
       });
     }
   };
 
   const getUserName = (consumption: ConsumptionWithUser) => {
-    return consumption.userName || consumption.userUsername || "Ezezaguna";
+    return consumption.userName || consumption.userUsername || t("unknownDisplayName");
   };
 
   const formatConsumptionTimestamp = (dateString: string | null | Date) => {
@@ -198,68 +199,62 @@ export function ConsumptionsListPage() {
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <div className="p-4 sm:p-6 space-y-6">
         <div>
-          <h2 className="text-2xl font-bold">Kontsumo Zerrenda</h2>
-          <p className="text-muted-foreground">Kudeatu kontsumo guztiak</p>
+          <h2 className="text-2xl font-bold">{t("consumptionList")}</h2>
+          <p className="text-muted-foreground">{t("consumptionListSubtitle")}</p>
         </div>
 
-        <div className="space-y-4">
-          {/* Filters Section */}
-          <div className="flex flex-col lg:flex-row gap-4 p-4 bg-muted/50 rounded-lg">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Bilatu kontsumoak..."
-                  value={searchTerm}
-                  onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
+        <TableFiltersBar className="flex-col gap-4 lg:flex-row lg:flex-wrap lg:items-end">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder={t("searchConsumptions")}
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
 
-            {/* User Filter - Always show since page is admin-only */}
-            <div className="w-full lg:w-48">
-              <div className="relative">
-                <Select value={userFilter.value} onValueChange={userFilter.setValue}>
-                  <SelectTrigger>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      <SelectValue placeholder="Erabiltzailea" />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Erabiltzaile guztiak</SelectItem>
-                    {users.map(user => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name || user.username}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {userFilter.value !== "all" && (
-                  <button
-                    onClick={() => userFilter.setValue("all")}
-                    className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                    title="Garbitu"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Month Filter - Using standard MonthGrid */}
-            <div className="w-full lg:w-64">
-              <MonthGrid
-                selectedMonth={monthFilter.value}
-                onMonthChange={monthFilter.setValue}
-                className="w-full"
-                mode="past"
-                yearRange={{ past: 3, future: 0 }}
-              />
+          <div className="w-full lg:w-48">
+            <div className="relative">
+              <Select value={userFilter.value} onValueChange={userFilter.setValue}>
+                <SelectTrigger>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <SelectValue placeholder={t("user")} />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("allUsers")}</SelectItem>
+                  {users.map(user => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name || user.username}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {userFilter.value !== "all" && (
+                <button
+                  type="button"
+                  onClick={() => userFilter.setValue("all")}
+                  className="absolute right-8 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground hover:bg-muted rounded transition-colors"
+                  title={t("clearSelection")}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
             </div>
           </div>
-        </div>
+
+          <div className="w-full lg:w-64">
+            <MonthGrid
+              selectedMonth={monthFilter.value}
+              onMonthChange={monthFilter.setValue}
+              className="w-full"
+              mode="past"
+              yearRange={{ past: 3, future: 0 }}
+            />
+          </div>
+        </TableFiltersBar>
 
         <Card>
           <CardContent>

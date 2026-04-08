@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import MonthGrid from "@/components/MonthGrid";
+import { TableFiltersBar } from "@/components/TableFiltersBar";
 import { useLanguage } from "@/lib/i18n";
 import { useFormattedDates } from "@/lib/date-locale";
 import { useToast } from "@/hooks/use-toast";
@@ -223,8 +224,8 @@ export function MyConsumptionsPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
+        <TableFiltersBar>
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
             <Input
               placeholder={t("searchConsumptions")}
@@ -241,7 +242,7 @@ export function MyConsumptionsPage() {
             mode="past"
             yearRange={{ past: 3, future: 0 }}
           />
-        </div>
+        </TableFiltersBar>
 
         {/* Consumptions Table */}
         <Card className="overflow-hidden">

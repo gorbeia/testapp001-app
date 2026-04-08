@@ -11,7 +11,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -29,6 +28,7 @@ import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { getErrorMessage } from "@/lib/errors";
 import { cn } from "@/lib/utils";
 import PaginationControls from "@/components/PaginationControls";
+import { TableFiltersBar, TableFilterField } from "@/components/TableFiltersBar";
 import { usePagination } from "@/hooks/use-pagination";
 
 const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
@@ -191,80 +191,78 @@ export function StockChangesPage() {
           </Button>
         </div>
 
-        <Card className="p-4 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label>{t("filterByType")}</Label>
-              <Select
-                value={typeFilter}
-                onValueChange={v => {
-                  setTypeFilter(v);
-                  pagination.setPage(1);
-                }}
-              >
-                <SelectTrigger data-testid="select-stock-type-filter">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("allTypes")}</SelectItem>
-                  <SelectItem value="consumption">{t("stockTypeConsumption")}</SelectItem>
-                  <SelectItem value="purchase">{t("stockTypePurchase")}</SelectItem>
-                  <SelectItem value="adjustment">{t("stockTypeAdjustment")}</SelectItem>
-                  <SelectItem value="damage">{t("stockTypeDamage")}</SelectItem>
-                </SelectContent>
-              </Select>
+        <div className="space-y-2">
+          <TableFiltersBar className="w-full flex-col items-stretch sm:flex-col">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+              <TableFilterField label={t("filterByType")}>
+                <Select
+                  value={typeFilter}
+                  onValueChange={v => {
+                    setTypeFilter(v);
+                    pagination.setPage(1);
+                  }}
+                >
+                  <SelectTrigger data-testid="select-stock-type-filter">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("allTypes")}</SelectItem>
+                    <SelectItem value="consumption">{t("stockTypeConsumption")}</SelectItem>
+                    <SelectItem value="purchase">{t("stockTypePurchase")}</SelectItem>
+                    <SelectItem value="adjustment">{t("stockTypeAdjustment")}</SelectItem>
+                    <SelectItem value="damage">{t("stockTypeDamage")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableFilterField>
+              <TableFilterField label={t("filterByProduct")}>
+                <Select
+                  value={productIdFilter}
+                  onValueChange={v => {
+                    setProductIdFilter(v);
+                    pagination.setPage(1);
+                  }}
+                >
+                  <SelectTrigger data-testid="select-stock-product-filter">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t("all")}</SelectItem>
+                    {products.map(p => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableFilterField>
+              <TableFilterField label={t("dateFrom")}>
+                <Input
+                  type="date"
+                  value={fromDate}
+                  onChange={e => {
+                    setFromDate(e.target.value);
+                    pagination.setPage(1);
+                  }}
+                  data-testid="input-stock-from-date"
+                />
+              </TableFilterField>
+              <TableFilterField label={t("dateTo")}>
+                <Input
+                  type="date"
+                  value={toDate}
+                  onChange={e => {
+                    setToDate(e.target.value);
+                    pagination.setPage(1);
+                  }}
+                  data-testid="input-stock-to-date"
+                />
+              </TableFilterField>
             </div>
-            <div className="space-y-2">
-              <Label>{t("filterByProduct")}</Label>
-              <Select
-                value={productIdFilter}
-                onValueChange={v => {
-                  setProductIdFilter(v);
-                  pagination.setPage(1);
-                }}
-              >
-                <SelectTrigger data-testid="select-stock-product-filter">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t("all")}</SelectItem>
-                  {products.map(p => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>{t("dateFrom")}</Label>
-              <Input
-                type="date"
-                value={fromDate}
-                onChange={e => {
-                  setFromDate(e.target.value);
-                  pagination.setPage(1);
-                }}
-                data-testid="input-stock-from-date"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>{t("dateTo")}</Label>
-              <Input
-                type="date"
-                value={toDate}
-                onChange={e => {
-                  setToDate(e.target.value);
-                  pagination.setPage(1);
-                }}
-                data-testid="input-stock-to-date"
-              />
-            </div>
-          </div>
+          </TableFiltersBar>
           <p className="text-xs text-muted-foreground">
             {t("stockChangesTotal", { count: String(total) })}
           </p>
-        </Card>
+        </div>
 
         {error && <p className="text-sm text-destructive">{getErrorMessage(error)}</p>}
 

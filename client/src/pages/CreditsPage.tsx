@@ -25,6 +25,7 @@ import { Search, CreditCard, TrendingUp, CheckCircle, Check } from "lucide-react
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import MonthGrid from "@/components/MonthGrid";
+import { TableFiltersBar } from "@/components/TableFiltersBar";
 import { useLanguage } from "@/lib/i18n";
 import { useFormattedDates } from "@/lib/date-locale";
 import { useAuth, userCan } from "@/lib/auth";
@@ -348,8 +349,8 @@ export function CreditsPage() {
         </Card>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
+      <TableFiltersBar>
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder={`${t("search")}...`}
@@ -360,7 +361,6 @@ export function CreditsPage() {
           />
         </div>
 
-        {/* Month Grid Selector - Inline with other filters */}
         <div className="w-full sm:w-48">
           <MonthGrid
             selectedMonth={monthFilter.value}
@@ -371,7 +371,6 @@ export function CreditsPage() {
           />
         </div>
 
-        {/* Status Filter */}
         <Select value={statusFilter.value} onValueChange={statusFilter.setValue}>
           <SelectTrigger className="w-full sm:w-40" data-testid="select-status">
             <SelectValue />
@@ -382,7 +381,7 @@ export function CreditsPage() {
             <SelectItem value="paid">{t("paid")}</SelectItem>
           </SelectContent>
         </Select>
-      </div>
+      </TableFiltersBar>
 
       <Card className="overflow-hidden">
         <div className="overflow-x-auto">

@@ -31,6 +31,7 @@ import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { getErrorMessage } from "@/lib/errors";
 import MonthGrid from "@/components/MonthGrid";
+import { TableFiltersBar, TableFilterField } from "@/components/TableFiltersBar";
 import PaginationControls from "@/components/PaginationControls";
 import { usePagination } from "@/hooks/use-pagination";
 
@@ -442,9 +443,8 @@ export function StockReceiptsPage() {
           </Dialog>
         </div>
 
-        <div className="flex flex-col gap-4 rounded-lg border border-border/60 bg-muted/30 p-4 sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="min-w-[12rem] space-y-1.5">
-            <Label className="text-xs text-muted-foreground">{t("month")}</Label>
+        <TableFiltersBar>
+          <TableFilterField label={t("month")} className="min-w-[12rem]">
             <MonthGrid
               selectedMonth={monthFilter || undefined}
               onMonthChange={setMonthFilter}
@@ -452,11 +452,12 @@ export function StockReceiptsPage() {
               mode="past"
               yearRange={{ past: 8, future: 0 }}
             />
-          </div>
-          <div className="min-w-0 flex-1 space-y-1.5 sm:min-w-[12rem]">
-            <Label className="text-xs text-muted-foreground" htmlFor="filter-receipt-supplier">
-              {t("supplier")}
-            </Label>
+          </TableFilterField>
+          <TableFilterField
+            label={t("supplier")}
+            htmlFor="filter-receipt-supplier"
+            className="min-w-0 flex-1 sm:min-w-[12rem]"
+          >
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -468,11 +469,12 @@ export function StockReceiptsPage() {
                 data-testid="filter-receipt-supplier"
               />
             </div>
-          </div>
-          <div className="min-w-0 flex-1 space-y-1.5 sm:min-w-[12rem]">
-            <Label className="text-xs text-muted-foreground" htmlFor="filter-receipt-reference">
-              {t("invoiceReference")}
-            </Label>
+          </TableFilterField>
+          <TableFilterField
+            label={t("invoiceReference")}
+            htmlFor="filter-receipt-reference"
+            className="min-w-0 flex-1 sm:min-w-[12rem]"
+          >
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
@@ -484,8 +486,8 @@ export function StockReceiptsPage() {
                 data-testid="filter-receipt-reference"
               />
             </div>
-          </div>
-        </div>
+          </TableFilterField>
+        </TableFiltersBar>
 
         <Card className="overflow-hidden">
           <Table data-testid="table-stock-receipts">

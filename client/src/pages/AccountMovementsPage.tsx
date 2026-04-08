@@ -17,6 +17,7 @@ import {
 
 const STATEMENT_ALL_MEMBERS = "__all__";
 import MonthGrid from "@/components/MonthGrid";
+import { TableFiltersBar, TableFilterField } from "@/components/TableFiltersBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -411,21 +412,19 @@ export function AccountMovementsPage() {
         </Card>
       </div>
 
-      <div className="flex flex-wrap gap-4 items-end">
-        <div className="w-full sm:w-48">
-          <Label className="text-xs">{t("month")}</Label>
+      <TableFiltersBar>
+        <TableFilterField label={t("month")} className="w-full sm:w-48">
           <div data-testid="admin-filter-month">
             <MonthGrid
               selectedMonth={monthFilter.value}
               onMonthChange={monthFilter.setValue}
-              className="w-full mt-1"
+              className="w-full"
               mode="past"
               yearRange={{ past: 3, future: 0 }}
             />
           </div>
-        </div>
-        <div>
-          <Label className="text-xs">{t("movementType")}</Label>
+        </TableFilterField>
+        <TableFilterField label={t("movementType")}>
           <Select value={type} onValueChange={setType}>
             <SelectTrigger className="w-48" data-testid="admin-filter-type">
               <SelectValue />
@@ -438,9 +437,8 @@ export function AccountMovementsPage() {
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <div>
-          <Label className="text-xs">{t("filterByMember")}</Label>
+        </TableFilterField>
+        <TableFilterField label={t("filterByMember")}>
           <Select value={userId} onValueChange={setUserId}>
             <SelectTrigger className="w-56" data-testid="admin-filter-user">
               <SelectValue />
@@ -454,8 +452,8 @@ export function AccountMovementsPage() {
               ))}
             </SelectContent>
           </Select>
-        </div>
-      </div>
+        </TableFilterField>
+      </TableFiltersBar>
 
       <Card>
         <CardHeader>

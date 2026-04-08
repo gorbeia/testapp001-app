@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import MonthGrid from "@/components/MonthGrid";
+import { TableFiltersBar } from "@/components/TableFiltersBar";
 import PaginationControls from "@/components/PaginationControls";
 import { useLanguage } from "@/lib/i18n";
 import { useFormattedDates } from "@/lib/date-locale";
@@ -272,8 +273,8 @@ export function MyReservationsPage() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
+        <TableFiltersBar>
+          <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
             <Input
               placeholder={`${t("search")}...`}
@@ -316,7 +317,7 @@ export function MyReservationsPage() {
             mode="all"
             yearRange={{ past: 3, future: 3 }}
           />
-        </div>
+        </TableFiltersBar>
 
         {/* Reservations Table */}
         <Card className="overflow-hidden">

@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import MonthGrid from "@/components/MonthGrid";
+import { TableFiltersBar } from "@/components/TableFiltersBar";
 import PaginationControls from "@/components/PaginationControls";
 import { useLanguage } from "@/lib/i18n";
 import { formatDateShort, dateFnsLocale } from "@/lib/date-locale";
@@ -314,13 +315,14 @@ export function AdminReservationsPage() {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+          <TableFiltersBar>
+            <div className="relative flex-1 min-w-0">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder={t("searchReservation")}
                 value={searchTerm}
                 onChange={e => handleSearch(e.target.value)}
+                className="pl-10"
               />
             </div>
 
@@ -373,7 +375,7 @@ export function AdminReservationsPage() {
               mode="all"
               yearRange={{ past: 3, future: 3 }}
             />
-          </div>
+          </TableFiltersBar>
 
           {/* Reservations Table */}
           <Card className="overflow-hidden">
