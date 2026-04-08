@@ -571,10 +571,6 @@ export function SocietyAccountingTab() {
               )}
                 </TableBody>
               </Table>
-              <PaginationControls
-                pagination={pagination}
-                itemType="societyAccountingDerivedForPagination"
-              />
             </CardContent>
           </Card>
 
