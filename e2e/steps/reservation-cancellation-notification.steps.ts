@@ -9,10 +9,14 @@ Then("I should see the reservation in my reservations list", async function () {
   // Navigate to my reservations
   await page.click('[data-testid="link-nire-erreserbak"]');
 
-  // Look for the reservation by text content
   const uniqueReservationName = this.testReservationName || "Test Erreserba Notifikazioa";
-  const reservationText = page.locator(`text=${uniqueReservationName}`);
-  await reservationText.waitFor({ state: "visible", timeout: 5000 });
+  const searchInput = page.getByPlaceholder(/Bilatu|Buscar|Search/i);
+  await searchInput.fill(uniqueReservationName);
+  await page
+    .locator("table tbody tr")
+    .filter({ hasText: uniqueReservationName })
+    .first()
+    .waitFor({ state: "visible", timeout: 15000 });
 });
 
 When("I find the user's reservation", async function () {
@@ -21,55 +25,25 @@ When("I find the user's reservation", async function () {
 
   const uniqueReservationName = this.testReservationName || "Test Erreserba Notifikazioa";
 
-  // Wait for admin page to load
-  await page.waitForTimeout(2000);
+  await page.waitForSelector("table", { timeout: 15000 });
 
-  // First try to use the search to find the reservation
-  const searchInput = page.locator('input[placeholder*="Bilatu"]');
-  if (await searchInput.isVisible()) {
-    await searchInput.fill(uniqueReservationName);
-    await page.waitForTimeout(1000);
-  }
+  // Admin search placeholder is t("searchReservation") (e.g. "Erreserba bilatu..." — lowercase "bilatu");
+  // attribute *= "Bilatu" never matched, so search was skipped and the row was missed on later pages.
+  const searchInput = page.getByPlaceholder(/bilatu|buscar|search/i);
+  await searchInput.fill(uniqueReservationName);
 
-  // Look for the reservation in the admin table (check first page)
-  let reservationRow = page.locator("table tr").filter({ hasText: uniqueReservationName }).first();
+  await page.waitForFunction(
+    (name: string) => {
+      const rows = Array.from(document.querySelectorAll("table tbody tr"));
+      return rows.some(r => r.textContent?.includes(name));
+    },
+    uniqueReservationName,
+    { timeout: 15000 }
+  );
 
-  // If not found on first page, check if there are pagination controls and search through pages
-  let found = false;
-  let currentPage = 1;
-  const maxPages = 10; // Safety limit to prevent infinite loop
+  const reservationRow = page.locator("table tbody tr").filter({ hasText: uniqueReservationName }).first();
+  await reservationRow.waitFor({ state: "visible", timeout: 5000 });
 
-  while (!found && currentPage <= maxPages) {
-    try {
-      await reservationRow.waitFor({ state: "visible", timeout: 3000 });
-      found = true;
-    } catch {
-      // Reservation not found on current page, try next page
-      const nextButton = page.locator('button[aria-label="Next page"]');
-      if ((await nextButton.isVisible()) && (await nextButton.isEnabled())) {
-        await nextButton.click();
-        await page.waitForTimeout(1000);
-        currentPage++;
-
-        // Re-locate the reservation row on the new page
-        reservationRow = page
-          .locator("table tr")
-          .filter({ hasText: uniqueReservationName })
-          .first();
-      } else {
-        // No more pages or next button disabled
-        break;
-      }
-    }
-  }
-
-  if (!found) {
-    throw new Error(
-      `Reservation "${uniqueReservationName}" not found in admin table after searching ${currentPage} pages`
-    );
-  }
-
-  // Store the reservation row for later use
   this.testReservationRow = reservationRow;
 });
 

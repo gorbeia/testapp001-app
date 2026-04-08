@@ -426,6 +426,19 @@ Then("the reservation should appear in my reservations table", async function ()
 
   const uniqueReservationName = this.testReservationName;
 
+  // List is ordered by start date (desc), not creation time; a random booking date can land
+  // beyond page 1. Narrow via search so the row is always addressable.
+  const searchInput = page.getByPlaceholder(/Bilatu|Buscar|Search/i);
+  await searchInput.fill(uniqueReservationName);
+  await page.waitForFunction(
+    (name: string) => {
+      const rows = Array.from(document.querySelectorAll("table tbody tr"));
+      return rows.some(r => r.textContent?.includes(name));
+    },
+    uniqueReservationName,
+    { timeout: 15000 }
+  );
+
   const row = page.locator("table tbody tr").filter({ hasText: uniqueReservationName }).first();
 
   await row.waitFor({ state: "visible", timeout: 10000 });
