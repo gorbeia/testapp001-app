@@ -35,7 +35,7 @@ Most domain rows are scoped by **`societyId`**. On the server, derive it from **
 
 ## Product / i18n
 
-**Euskara (eu)** is primary UI language; **Castellano (es)** secondary. Routes often use Basque slugs (e.g. `/erreserbak`, `/kontsumoak`).
+**Euskara (eu)** is primary UI language; **Castellano (es)** secondary. Routes often use Basque slugs (e.g. `/egutegia`, `/kontsumoak`).
 
 ## When unsure
 

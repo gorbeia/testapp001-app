@@ -16,12 +16,12 @@ import { AppHeader } from "@/components/AppHeader";
 import { PrepaymentLedgerBanner } from "@/components/PrepaymentLedgerBanner";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Dashboard } from "@/pages/dashboard";
-import { ReservationsPage } from "@/pages/ReservationsPage";
 import { AdminReservationsPage } from "@/pages/AdminReservationsPage";
 import { ConsumptionsPage } from "@/pages/ConsumptionsPage";
 import { ConsumptionsListPage } from "@/pages/ConsumptionsListPage";
 import { MyConsumptionsPage } from "@/pages/MyConsumptionsPage";
 import { MyReservationsPage } from "@/pages/MyReservationsPage";
+import { CalendarPage } from "@/pages/CalendarPage";
 import { CreditsPage } from "@/pages/CreditsPage";
 import { MyDebtsPage } from "@/pages/MyDebtsPage";
 import { UsersPage } from "@/pages/UsersPage";
@@ -49,7 +49,7 @@ function AppRoutes() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
-      <Route path="/erreserbak" component={ReservationsPage} />
+      <Route path="/egutegia" component={CalendarPage} />
       <Route path="/admin-erreserbak">
         {() => (
           <ProtectedRoute requires={Permission.RESERVATIONS_REGISTRY}>

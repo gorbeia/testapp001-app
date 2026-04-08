@@ -7,7 +7,7 @@ export default async function () {
       require: ["integration/steps/**/*.ts"],
       requireModule: ["ts-node/register"],
       publishQuiet: true,
-      format: ["progress-bar"],
+      format: ["progress"],
     },
   });
 }

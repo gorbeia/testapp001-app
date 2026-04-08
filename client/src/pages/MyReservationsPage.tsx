@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { Search, Calendar, Users, MapPin, Eye, X, ChefHat, Calculator, Plus } from "lucide-react";
+import { Search, Calendar, Users, MapPin, Eye, X, ChefHat, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -30,7 +30,6 @@ import { readJsonOrThrow } from "@/lib/http-error";
 import type { Reservation, Society } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
-import { ReservationDialog } from "@/components/ReservationDialog";
 import { usePagination } from "@/hooks/use-pagination";
 
 export function MyReservationsPage() {
@@ -38,8 +37,6 @@ export function MyReservationsPage() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
   // Pagination state
   const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
 
@@ -180,10 +177,6 @@ export function MyReservationsPage() {
     return dateObj.toLocaleTimeString("eu-ES", { hour: "2-digit", minute: "2-digit" });
   };
 
-  const handleReservationSuccess = () => {
-    fetchReservations();
-  };
-
   const handleCancelReservation = async (reservationId: string) => {
     const confirmed = window.confirm(t("confirmCancelReservation"));
     if (!confirmed) return;
@@ -284,10 +277,6 @@ export function MyReservationsPage() {
             <h2 className="text-2xl font-bold">{t("myReservations")}</h2>
             <p className="text-muted-foreground">{t("viewAllReservations")}</p>
           </div>
-          <Button data-testid="button-new-reservation" onClick={() => setIsDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t("newReservation")}
-          </Button>
         </div>
 
         {/* Filters */}
@@ -538,11 +527,6 @@ export function MyReservationsPage() {
           </DialogContent>
         </Dialog>
 
-        <ReservationDialog
-          open={isDialogOpen}
-          onOpenChange={setIsDialogOpen}
-          onSuccess={handleReservationSuccess}
-        />
       </div>
     </ErrorBoundary>
   );

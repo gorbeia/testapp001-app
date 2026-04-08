@@ -11,7 +11,7 @@ export class IntegrationWorld extends World {
   agent!: SuperTest<Test>;
   lastResponse: LastResponse | null = null;
   authToken?: string;
-  /** IDs captured during scenario (e.g. last created reservation). */
+  /** IDs and scratch strings captured during scenario (e.g. last reservation, calendar test ISO dates). */
   createdIds: Record<string, string> = {};
 
   constructor(options: IWorldOptions) {

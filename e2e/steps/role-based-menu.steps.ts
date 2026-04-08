@@ -9,7 +9,7 @@ const ACCESS_DENIED_SNIPPET = "Ez duzu baimenik orri hau ikusteko";
 /** Dashboard + member-facing nav (demo society has SEPA enabled → personal credits link). */
 const COMMON_MAIN_MENU = [
   "link-home",
-  "link-erreserbak",
+  "link-egutegia",
   "link-nire-erreserbak",
   "link-kontsumoak",
   "link-nire-konsumoak",

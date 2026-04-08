@@ -58,7 +58,7 @@ Status legend:
 2. **View My Reservations** – list & filters
    - **Status**: ✅ Implemented (`/nire-erreserbak`, `GET /api/reservations/user`)
 3. **Society reservation list** – upcoming/filter for all members
-   - **Status**: ✅ Implemented (`/erreserbak`, `GET /api/reservations` with upcoming filter)
+   - **Status**: ✅ Implemented — **no dedicated `/erreserbak` page**; society-wide bookings visible on **`/egutegia`** (month + agenda) and dashboard snippet; **`GET /api/reservations`** still supports `upcoming=true` / `forCalendar=true` for clients
 4. **Manage All Reservations (Admin UI)** – global management
    - **Status**: 🟡 Partial (`/admin-erreserbak`: list/cancel/detail; no in-place edit; administratzailea-only UI; API treats diruzaina as admin for some list queries)
 5. **Resource configuration (tables)** – capacity & availability metadata
@@ -69,6 +69,8 @@ Status legend:
    - **Status**: 🟡 Partial (client-computed `totalAmount`; stored as sent; no server-side recomputation)
 8. **Cost integration with credits (Zorrak)** – monthly debt rows
    - **Status**: ✅ Implemented (`DebtCalculationService` / cron aggregates reservations whose **`startDate` has passed** (in-month) + consumptions into `credits`; ledger **`reservation`** charge deferred until after **`startDate`**, not at booking)
+9. **Society calendar (Egutegia)** – closures, parties, assemblies; optional hard blocks on reservations
+   - **Status**: ✅ Implemented ([`society-calendar.md`](./society-calendar.md): `/egutegia`; `society_events` table; `GET/POST/PUT/DELETE /api/society-events`; **`Permission.CALENDAR_MANAGE`** for mutations — admin + diruzaina; **`POST /api/reservations`** overlap checks with localized **409**; member calendar month reservations via **`GET /api/reservations?forCalendar=true&month=YYYY-MM`** max **`limit` 500**; warnings in **`ReservationDialog`**)
 
 ---
 
@@ -199,7 +201,7 @@ Status legend:
 1. **Society information & SEPA-related fields**
    - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id` — **administratzailea** + **diruzaina** own-tenant; society **`shortDescription`** + **`acronym`** (1–3 letters; auto-derived from name in the browser until manually edited; sidebar header shows acronym in the circle and description under the name); **`payment_methods`** on societies: SEPA checkbox + cadence, bank prepayment + cash placeholders; **optional `prepaymentMinLedgerBalance`** (prepayment-only UI) for max-debt / minimum-balance enforcement on ledger debits; prepayment gates transfers UI/API; cash methods stored only; E2E: `society-payment-methods.feature` for cash flag persistence)
 2. **Society logo, reservation map, user avatars, product images**
-   - **Status**: ✅ Implemented — DB: `societies.logoUrl`, `societies.mapImageUrl`, `users.avatarUrl`, `products.imageUrl` (stored filenames); disk: `UPLOADS_DIR` (default `./uploads`), WebP + `_thumb` via **sharp**; **`POST /api/images/upload`** + **`DELETE /api/images/:entity/:entityId`** (society-logo / society-map / user-avatar / product-image); **`GET /api/images/:societyId/:file`** via `express.static`; UI: treasurer/admin uploads on **`/elkartea`**, member avatar on **`/profila`**, product image on **`/produktuak`** (edit), map on **`/erreserbak`**, logo in sidebar; demo pipeline: **`script/seed-images.ts`** (after products) + optional files under **`script/seed-assets/images/`**
+   - **Status**: ✅ Implemented — DB: `societies.logoUrl`, `societies.mapImageUrl`, `users.avatarUrl`, `products.imageUrl` (stored filenames); disk: `UPLOADS_DIR` (default `./uploads`), WebP + `_thumb` via **sharp**; **`POST /api/images/upload`** + **`DELETE /api/images/:entity/:entityId`** (society-logo / society-map / user-avatar / product-image); **`GET /api/images/:societyId/:file`** via `express.static`; UI: treasurer/admin uploads on **`/elkartea`** (incl. society map), member avatar on **`/profila`**, product image on **`/produktuak`** (edit), logo in sidebar; demo pipeline: **`script/seed-images.ts`** (after products) + optional files under **`script/seed-assets/images/`**
 3. **Tables (resource config for reservations)**
    - **Status**: ✅ Implemented (`/mahaiak` — see Reservations)
 4. **Subscription types**

@@ -9,7 +9,7 @@
 
 ## Permission catalog
 
-Permissions are defined in code in [`shared/permissions.ts`](../../shared/permissions.ts) (`Permission` constants). Each permission maps to specific routes or behaviors.
+Permissions are defined in code in [`shared/permissions.ts`](../../shared/permissions.ts) (`Permission` constants). Each permission maps to specific routes or behaviors. **Calendar:** `calendar.manage` — create/update/delete society calendar events (`/api/society-events` mutations); all authenticated members can read events for their society.
 
 ## Role → permission mapping
 

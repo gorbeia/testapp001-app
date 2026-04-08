@@ -12,7 +12,7 @@
 
 **Acceptance Criteria:**
 
-- List view of upcoming society reservations at `/erreserbak` (table/card style); **no full-page calendar grid** of bookings
+- **Society-wide bookings** visible on **`/egutegia`** (month grid + agenda list + create flow); see [`society-calendar.md`](./society-calendar.md)
 - Button/dialog to create a new reservation
 - **One table** selected from **`/api/tables/available`** (options may be disabled when guest count is outside min/max capacity)
 - **Event types** stored as `type` string: `bazkaria`, `afaria`, `askaria`, `hamaiketakako` (UI labels from i18n)
@@ -50,12 +50,9 @@
 **I want to** see a calendar of all reservations  
 **So that** I can plan around existing bookings
 
-**Reality / scope:**
+**Status:**
 
-- **No** month-grid calendar of all society bookings exists
-- **`MonthGrid`** on `/erreserbak` is a **month filter** control, not a schedule view
-- Treat this story as **future work** unless product adds a true shared calendar
-
+- **Shipped:** society calendar at **`/egutegia`** — month grid with **society events** + **reservations** (see [`society-calendar.md`](./society-calendar.md)); data via **`GET /api/society-events?month=`** and **`GET /api/reservations?forCalendar=true&month=`**
 ---
 
 ## Epic: Reservation Management (Administratzailea)
@@ -125,7 +122,7 @@
 
 | Path                | Purpose                                      |
 | ------------------- | -------------------------------------------- |
-| `/erreserbak`       | Society upcoming list + create               |
+| `/egutegia`         | Society calendar + reservations + create      |
 | `/nire-erreserbak`  | Own reservations                             |
 | `/admin-erreserbak` | Admin management UI                          |
 | `/mahaiak`          | Tables CRUD                                  |

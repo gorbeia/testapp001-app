@@ -19,6 +19,7 @@ import {
   maybePostSubscriptionCharge,
 } from "./lib/ledger/ledger-service";
 import { notifyFinancialEvent } from "./lib/financial-notifications";
+import { devLog } from "./lib/dev-log";
 
 class DebtCalculationService {
   private static instance: DebtCalculationService;
@@ -55,7 +56,7 @@ class DebtCalculationService {
     month: number
   ): Promise<void> {
     if (!this.acquireLock(societyId)) {
-      console.log(
+      devLog(
         `[${new Date().toISOString()}] Debt calculation already in progress for society ${societyId}, skipping...`
       );
       return;
@@ -64,7 +65,7 @@ class DebtCalculationService {
     const monthString = month.toString().padStart(2, "0");
     const monthLabel = `${year}-${monthString}`;
 
-    console.log(
+    devLog(
       `[${new Date().toISOString()}] Starting debt calculation for society ${societyId}, ${monthLabel}...`
     );
 
@@ -76,13 +77,13 @@ class DebtCalculationService {
         .limit(1);
 
       if (!society?.isActive) {
-        console.log(`[${new Date().toISOString()}] Society ${societyId} not active, skipping`);
+        devLog(`[${new Date().toISOString()}] Society ${societyId} not active, skipping`);
         return;
       }
 
       await this.runMemberDebtLoop(society, year, month, monthLabel);
 
-      console.log(
+      devLog(
         `[${new Date().toISOString()}] Debt calculation completed for society ${societyId}, ${monthLabel}`
       );
     } catch (error) {
@@ -104,7 +105,7 @@ class DebtCalculationService {
       .where(eq(societies.isActive, true));
 
     if (active.length === 0) {
-      console.log(`[${new Date().toISOString()}] No active societies for debt calculation`);
+      devLog(`[${new Date().toISOString()}] No active societies for debt calculation`);
       return;
     }
 
@@ -130,7 +131,7 @@ class DebtCalculationService {
       .select()
       .from(users)
       .where(and(eq(users.societyId, activeSociety.id), eq(users.isActive, true)));
-    console.log(`Society ${activeSociety.id}: ${members.length} members to process`);
+    devLog(`Society ${activeSociety.id}: ${members.length} members to process`);
 
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0, 23, 59, 59, 999);
@@ -242,7 +243,7 @@ class DebtCalculationService {
             });
           }
 
-          console.log(
+          devLog(
             `[${activeSociety.id}] ${member.name}: ${totalAmount.toFixed(2)}€ (consumption: ${consumptionAmount.toFixed(2)}€, reservation: ${reservationAmount.toFixed(2)}€, subscription: ${effectiveSubscription.toFixed(2)}€)`
           );
         } else if (existingCredit) {
@@ -349,7 +350,7 @@ class DebtCalculationService {
       }
     }
 
-    console.log(
+    devLog(
       `Society ${activeSociety.id} totals for ${monthLabel}: ${totalDebts.toFixed(2)}€, members ${processedCount}/${members.length}`
     );
   }
@@ -390,12 +391,12 @@ class DebtCalculationService {
       const periodMonths = subscription.periodMonths || 12;
 
       if (subscription.period === "yearly" && month === 1) {
-        console.log(`Adding yearly subscription charge for user ${userId}: €${subscriptionAmount}`);
+        devLog(`Adding yearly subscription charge for user ${userId}: €${subscriptionAmount}`);
         return subscriptionAmount;
       }
 
       if (subscription.period === "monthly") {
-        console.log(
+        devLog(
           `Adding monthly subscription charge for user ${userId}: €${subscriptionAmount}`
         );
         return subscriptionAmount;
@@ -404,7 +405,7 @@ class DebtCalculationService {
       if (subscription.period === "quarterly") {
         const quarterStartMonths = [1, 4, 7, 10];
         if (quarterStartMonths.includes(month)) {
-          console.log(
+          devLog(
             `Adding quarterly subscription charge for user ${userId}: €${subscriptionAmount}`
           );
           return subscriptionAmount;
@@ -413,7 +414,7 @@ class DebtCalculationService {
 
       if (subscription.period === "custom") {
         if ((month - 1) % periodMonths === 0) {
-          console.log(
+          devLog(
             `Adding custom subscription charge for user ${userId}: €${subscriptionAmount}`
           );
           return subscriptionAmount;
@@ -433,7 +434,7 @@ class DebtCalculationService {
     const currentYear = now.getFullYear();
     const currentMonth = now.getMonth() + 1;
 
-    console.log(
+    devLog(
       `[${now.toISOString()}] Real-time debt calculation for society ${societyId}: ${currentYear}-${String(currentMonth).padStart(2, "0")}`
     );
 
@@ -455,7 +456,7 @@ class DebtCalculationService {
   startMonthlyCalculationCron(): void {
     const cronExpression = "0 2 1 * *";
 
-    console.log(
+    devLog(
       `[${new Date().toISOString()}] Starting monthly debt calculation cron job (schedule: ${cronExpression})`
     );
 
@@ -464,7 +465,7 @@ class DebtCalculationService {
       const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth();
       const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
 
-      console.log(
+      devLog(
         `[${now.toISOString()}] Scheduled debt calculation for previous month: ${previousYear}-${String(previousMonth).padStart(2, "0")}`
       );
 
@@ -478,7 +479,7 @@ class DebtCalculationService {
     if (process.env.NODE_ENV === "development") {
       setTimeout(async () => {
         const now = new Date();
-        console.log(
+        devLog(
           `[${now.toISOString()}] Dev: debt calculation for all societies, current month...`
         );
         try {
@@ -500,7 +501,7 @@ class DebtCalculationService {
 
     const previousMonthString = `${previousYear}-${String(previousMonth).padStart(2, "0")}`;
 
-    console.log(
+    devLog(
       `[${now.toISOString()}] Catch-up check for month ${previousMonthString} (all active societies)`
     );
 
@@ -524,7 +525,7 @@ class DebtCalculationService {
           .limit(1);
 
         if (existingCalculation.length === 0) {
-          console.log(
+          devLog(
             `[${now.toISOString()}] Catch-up: society ${societyId} missing ${previousMonthString}, calculating`
           );
           try {
@@ -540,7 +541,7 @@ class DebtCalculationService {
   }
 
   stopCronJobs(): void {
-    console.log(`[${new Date().toISOString()}] Stopping all cron jobs`);
+    devLog(`[${new Date().toISOString()}] Stopping all cron jobs`);
     cron.getTasks().forEach(task => task.stop());
   }
 }

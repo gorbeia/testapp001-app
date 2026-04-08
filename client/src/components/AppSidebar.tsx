@@ -23,6 +23,7 @@ import {
   ClipboardCheck,
   ChevronRight,
   Calculator,
+  CalendarDays,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -156,7 +157,7 @@ export function AppSidebar() {
   const menuItems: NavItem[] = [
     { title: t("dashboard"), url: "/", icon: Home },
     { title: t("consumptions"), url: "/kontsumoak", icon: ShoppingCart },
-    { title: t("reservations"), url: "/erreserbak", icon: Calendar },
+    { title: t("calendar"), url: "/egutegia", icon: CalendarDays },
     { title: t("myReservations"), url: "/nire-erreserbak", icon: Calendar },
     { title: t("myConsumptions"), url: "/nire-konsumoak", icon: Receipt },
     ...(societySepaMode !== "disabled"

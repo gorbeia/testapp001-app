@@ -8,7 +8,7 @@ Feature: Reservation Cancellation Notifications
     And I open the login page
     And I log in as a bazkide user
     And I should see the dashboard instead of the login form
-    And I navigate to the reservations page
+    And I navigate to the calendar page
 
   Scenario: User receives notification when admin cancels their reservation
     When I click the new reservation button
@@ -21,7 +21,8 @@ Feature: Reservation Cancellation Notifications
     Then I should see the correct cost calculation without kitchen
     When I save the reservation
     Then I should see a reservation success message
-    And the reservation should appear in the list
+    And I navigate to my reservations page
+    And the reservation should appear in my reservations table
     And I should see the reservation in my reservations list
 
     When I re-login as a admin user

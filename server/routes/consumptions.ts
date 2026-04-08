@@ -24,6 +24,7 @@ import {
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canModerateConsumptions } from "@shared/permissions";
 import { debtCalculationService } from "../cron-jobs";
+import { devLog } from "../lib/dev-log";
 import { postConsumptionDebit } from "../lib/ledger/ledger-service";
 import {
   assertPrepaymentDebitAllowed,
@@ -90,7 +91,7 @@ export function registerConsumptionRoutes(app: Express) {
         const [newConsumption] = await db.insert(consumptions).values(consumptionData).returning();
 
         // Trigger real-time debt calculation for current month
-        console.log(`[CONSUMPTION-CREATED] Triggering debt calculation for user ${user.id}`);
+        devLog(`[CONSUMPTION-CREATED] Triggering debt calculation for user ${user.id}`);
         await debtCalculationService.calculateCurrentMonthDebtsForSociety(societyId);
 
         return res.status(201).json(newConsumption);
@@ -631,7 +632,7 @@ export function registerConsumptionRoutes(app: Express) {
           .where(eq(consumptions.id, id));
 
         // Trigger real-time debt calculation for current month
-        console.log(
+        devLog(
           `[CONSUMPTION-ITEMS-ADDED] Triggering debt calculation for user ${user.id}, total: ${totalAmount}`
         );
         await debtCalculationService.calculateCurrentMonthDebtsForSociety(societyId);

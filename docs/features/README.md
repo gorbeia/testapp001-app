@@ -13,7 +13,8 @@ This directory contains user stories organized by feature area for the Elkartear
 - **[Authentication](authentication.md)** — Login, tokens (httpOnly cookies + Bearer), access control
 - **[User Management](user-management.md)** — Members and companions (`/erabiltzaileak`)
 - **[User Profile](user-profile.md)** — Self-service profile (`/profila`)
-- **[Reservations](reservations.md)** — Erreserbak (`/erreserbak`, `/nire-erreserbak`, `/admin-erreserbak`)
+- **[Reservations](reservations.md)** — Erreserbak (`/egutegia`, `/nire-erreserbak`, `/admin-erreserbak`)
+- **[Society calendar](society-calendar.md)** — Egutegia (`/egutegia`; closures, parties, reservation blocks)
 - **[Consumptions](consumptions.md)** — Kontsumoak POS and history
 - **[Credits](credits.md)** — Zorrak, monthly debts, SEPA export (`/zorrak`, `/nire-zorrak`, `/sepa`; monthly-debt UIs off when SEPA disabled — see `credits.md`)
 - **[Account movements](account-movements.md)** — Ledger, transfers, refunds (on transfers page), SEPA bounce (`/nire-mugimenduak`, `/mugimenduak`, `/transferentziak`)

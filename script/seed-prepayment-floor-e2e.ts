@@ -3,6 +3,7 @@ import { and, eq, sql } from "drizzle-orm";
 import { fileURLToPath } from "node:url";
 import { accountMovements, societies } from "../shared/schema";
 import { db, pool } from "../server/db";
+import { devLog } from "../server/lib/dev-log";
 import { DEMO_SOCIETY_ALPHABETIC_ID } from "./seed-demo-society";
 import type { SeedDb } from "./seed-db-type";
 
@@ -26,7 +27,7 @@ export async function seedPrepaymentFloorE2EFixtures(dbConn: SeedDb) {
     .where(eq(societies.alphabeticId, DEMO_SOCIETY_ALPHABETIC_ID))
     .limit(1);
   if (!society) {
-    console.log("seedPrepaymentFloorE2EFixtures: demo society not found, skipping");
+    devLog("seedPrepaymentFloorE2EFixtures: demo society not found, skipping");
     return;
   }
 
@@ -59,7 +60,7 @@ export async function seedPrepaymentFloorE2EFixtures(dbConn: SeedDb) {
   const current = parseFloat(sumRow?.total ?? "0");
   const delta = TARGET_LEDGER_BALANCE - current;
   if (Math.abs(delta) < 1e-6) {
-    console.log(
+    devLog(
       "seedPrepaymentFloorE2EFixtures: bazkidea already at target balance, no adjustment"
     );
     return;
@@ -75,7 +76,7 @@ export async function seedPrepaymentFloorE2EFixtures(dbConn: SeedDb) {
     referenceType: E2E_PREPAYMENT_FLOOR_REF_TYPE,
   });
 
-  console.log(
+  devLog(
     `seedPrepaymentFloorE2EFixtures: floor ${PREPAYMENT_FLOOR}€, bazkidea balance normalized toward ${TARGET_LEDGER_BALANCE} (delta ${delta.toFixed(2)})`
   );
 }
@@ -88,7 +89,7 @@ export async function undoPrepaymentFloorE2EFixtures(dbConn: SeedDb = db): Promi
     .where(eq(societies.alphabeticId, DEMO_SOCIETY_ALPHABETIC_ID))
     .limit(1);
   if (!society) {
-    console.log("undoPrepaymentFloorE2EFixtures: demo society not found, skipping");
+    devLog("undoPrepaymentFloorE2EFixtures: demo society not found, skipping");
     return;
   }
 
@@ -109,7 +110,7 @@ export async function undoPrepaymentFloorE2EFixtures(dbConn: SeedDb = db): Promi
     })
     .where(eq(societies.id, society.id));
 
-  console.log(
+  devLog(
     "undoPrepaymentFloorE2EFixtures: fixture movements removed, prepayment floor cleared"
   );
 }

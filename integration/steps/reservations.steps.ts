@@ -7,7 +7,14 @@ import type { IntegrationWorld } from "./world";
 function buildUniqueStartDateIso(): string {
   const d = new Date();
   d.setUTCDate(d.getUTCDate() + 10 + Math.floor(Math.random() * 200));
-  d.setUTCHours(18, 30, 0, 0);
+  // Sub-day jitter: duplicate check is exact on startDate + table + type; a fixed 18:30Z
+  // collides across runs on a persistent DB or when two scenarios pick the same day.
+  d.setUTCHours(
+    18,
+    Math.floor(Math.random() * 60),
+    Math.floor(Math.random() * 60),
+    Math.floor(Math.random() * 1000)
+  );
   return d.toISOString();
 }
 
@@ -96,11 +103,27 @@ Then(
   async function (this: IntegrationWorld) {
     const id = this.createdIds.reservation;
     assert.ok(id);
-    const res = await this.agent.get("/api/reservations/user");
-    assert.strictEqual(res.status, 200);
-    const body = res.body as { data?: Array<{ id: string }> };
-    assert.ok(Array.isArray(body.data));
-    assert.ok(body.data.some(r => r.id === id), "Reservation not found in /api/reservations/user data");
+    // List is ordered by startDate desc with default limit 25; many future-dated rows
+    // (seed + other integration scenarios) can push a new booking off page 1.
+    let page = 1;
+    let found = false;
+    const limit = 50;
+    while (!found && page <= 20) {
+      const res = await this.agent.get(`/api/reservations/user?page=${page}&limit=${limit}`);
+      assert.strictEqual(res.status, 200);
+      const body = res.body as {
+        data?: Array<{ id: string }>;
+        pagination?: { hasNext?: boolean };
+      };
+      assert.ok(Array.isArray(body.data));
+      if (body.data.some(r => r.id === id)) {
+        found = true;
+        break;
+      }
+      if (!body.pagination?.hasNext) break;
+      page += 1;
+    }
+    assert.ok(found, "Reservation not found in /api/reservations/user data (paged)");
   }
 );
 

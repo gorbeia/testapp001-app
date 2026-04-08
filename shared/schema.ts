@@ -509,6 +509,91 @@ export const reservations = pgTable("reservations", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+/** Society-wide calendar entries: closures, parties, assemblies, etc. */
+export const societyEventTypeSchema = z.enum([
+  "closure",
+  "party",
+  "assembly",
+  "maintenance",
+  "other",
+]);
+export type SocietyEventType = z.infer<typeof societyEventTypeSchema>;
+
+export const societyEvents = pgTable("society_events", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  societyId: varchar("society_id")
+    .notNull()
+    .references(() => societies.id, { onDelete: "cascade" }),
+  createdBy: varchar("created_by")
+    .notNull()
+    .references(() => users.id),
+  title: text("title").notNull(),
+  type: text("type").notNull().default("other"),
+  isFullDay: boolean("is_full_day").notNull().default(true),
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  blocksAllReservations: boolean("blocks_all_reservations").notNull().default(false),
+  blocksKitchen: boolean("blocks_kitchen").notNull().default(false),
+  blockedTableIds: jsonb("blocked_table_ids")
+    .$type<string[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertSocietyEventSchema = createInsertSchema(societyEvents).pick({
+  title: true,
+  type: true,
+  isFullDay: true,
+  startDate: true,
+  endDate: true,
+  blocksAllReservations: true,
+  blocksKitchen: true,
+  blockedTableIds: true,
+  notes: true,
+});
+
+export const createSocietyEventBodySchema = insertSocietyEventSchema
+  .extend({
+    type: societyEventTypeSchema,
+    startDate: z.coerce.date(),
+    endDate: z.coerce.date(),
+    blockedTableIds: z.array(z.string().min(1)).optional(),
+    notes: z.string().max(5000).nullable().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.endDate < data.startDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "endDate must be on or after startDate",
+        path: ["endDate"],
+      });
+    }
+  });
+
+export const updateSocietyEventBodySchema = insertSocietyEventSchema
+  .partial()
+  .extend({
+    type: societyEventTypeSchema.optional(),
+    startDate: z.coerce.date().optional(),
+    endDate: z.coerce.date().optional(),
+    blockedTableIds: z.array(z.string().min(1)).optional(),
+    notes: z.string().max(5000).nullable().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.startDate !== undefined && data.endDate !== undefined && data.endDate < data.startDate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "endDate must be on or after startDate",
+        path: ["endDate"],
+      });
+    }
+  });
+
 export const insertConsumptionSchema = createInsertSchema(consumptions).pick({
   userId: true,
   societyId: true,
@@ -870,6 +955,7 @@ export type InsertStockMovement = z.infer<typeof insertStockMovementSchema>;
 export type StockMovement = typeof stockMovements.$inferSelect;
 export type InsertReservation = z.infer<typeof insertReservationSchema>;
 export type Reservation = typeof reservations.$inferSelect;
+export type SocietyEvent = typeof societyEvents.$inferSelect;
 export type Credit = typeof credits.$inferSelect;
 export type InsertCredit = typeof credits.$inferSelect;
 export type AccountMovement = typeof accountMovements.$inferSelect;

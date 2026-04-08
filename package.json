@@ -26,10 +26,10 @@
     "test:e2e:only": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js e2e/features/**/*.feature --import e2e/steps/**/*.ts --format progress-bar --tags '@only'",
     "test:e2e:feature": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js --import e2e/steps/**/*.ts --format progress-bar",
     "test:e2e:feature:verbose": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js --import e2e/steps/**/*.ts --format @cucumber/pretty-formatter",
-    "test:integration": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js integration/features/**/*.feature --import integration/steps/**/*.ts --format progress-bar",
+    "test:integration": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js integration/features/**/*.feature --import integration/steps/**/*.ts --format progress",
     "test:integration:verbose": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js integration/features/**/*.feature --import integration/steps/**/*.ts --format @cucumber/pretty-formatter",
-    "test:integration:only": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js integration/features/**/*.feature --import integration/steps/**/*.ts --format progress-bar --tags '@only'",
-    "test:integration:feature": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js --import integration/steps/**/*.ts --format progress-bar",
+    "test:integration:only": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js integration/features/**/*.feature --import integration/steps/**/*.ts --format progress --tags '@only'",
+    "test:integration:feature": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js --import integration/steps/**/*.ts --format progress",
     "test:integration:feature:verbose": "NODE_ENV=test NODE_OPTIONS='--import tsx' cucumber-js --import integration/steps/**/*.ts --format @cucumber/pretty-formatter",
     "docker:db:up": "docker-compose up -d db",
     "docker:db:down": "docker-compose down",
@@ -100,6 +100,7 @@
     "passport-local": "^1.0.0",
     "pg": "^8.16.3",
     "react": "^18.3.1",
+    "react-big-calendar": "^1.19.4",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-error-boundary": "^6.0.0",
@@ -136,6 +137,7 @@
     "@types/passport-local": "^1.0.38",
     "@types/pg": "^8.15.6",
     "@types/react": "^18.3.28",
+    "@types/react-big-calendar": "^1.16.3",
     "@types/react-dom": "^18.3.7",
     "@types/supertest": "^7.2.0",
     "@types/ws": "^8.5.13",
@@ -174,6 +176,8 @@
     "overrides": {
       "express>path-to-regexp": "0.1.13"
     },
-    "onlyBuiltDependencies": ["sharp"]
+    "onlyBuiltDependencies": [
+      "sharp"
+    ]
   }
 }

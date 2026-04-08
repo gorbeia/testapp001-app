@@ -8,7 +8,7 @@ Feature: Prepayment minimum ledger balance (E2E)
     When I open the login page
     And I log in as a bazkide user
     Then I should see the prepayment ledger floor banner
-    When I navigate to the reservations page
+    When I navigate to the calendar page
     And I click the new reservation button
     Then I should see the reservation dialog
     When I fill in the reservation details

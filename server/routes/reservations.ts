@@ -12,7 +12,8 @@ import {
 } from "@shared/schema";
 import { eq, and, or, like, gte, between, ne, count, desc, asc, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
-import { translateWithParams, formatDate, translations } from "../lib/i18n";
+import { translateWithParams, formatDate, translations, getLanguageFromRequest } from "../lib/i18n";
+import { getReservationBlockBySocietyEvents } from "../lib/reservation-society-events";
 import { debtCalculationService } from "../cron-jobs";
 import { reverseReservationLedgerOnCancel } from "../lib/ledger/ledger-service";
 import {
@@ -148,20 +149,36 @@ export function registerReservationRoutes(app: Express) {
         const user = req.user!;
         const societyId = getUserSocietyId(user);
         const { limit, month, user: userId, page = 1, search, type, status } = req.query;
+        const forCalendar = req.query.forCalendar === "true" || req.query.forCalendar === "1";
 
         // Full registry view (admin + treasurer; cellarman keeps member-style filters)
         const isAdmin = canViewReservationRegistry(user.accessRole);
 
+        if (
+          forCalendar &&
+          (!month || typeof month !== "string" || month === "all" || !month.includes("-"))
+        ) {
+          return res.status(400).json({ message: "forCalendar requires month=YYYY-MM" });
+        }
+
         // Parse pagination parameters
         const pageNum = parseInt(page as string, 10);
-        const limitNum = limit ? parseInt(limit as string, 10) : 25;
+        const limitNum = forCalendar
+          ? Math.min(limit ? parseInt(limit as string, 10) : 500, 500)
+          : limit
+            ? parseInt(limit as string, 10)
+            : 25;
         const offset = (pageNum - 1) * limitNum;
 
         // Validate pagination parameters
         if (isNaN(pageNum) || pageNum < 1) {
           return res.status(400).json({ message: "Invalid page parameter" });
         }
-        if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
+        if (forCalendar) {
+          if (isNaN(limitNum) || limitNum < 1) {
+            return res.status(400).json({ message: "Invalid limit parameter" });
+          }
+        } else if (isNaN(limitNum) || limitNum < 1 || limitNum > 100) {
           return res
             .status(400)
             .json({ message: "Invalid limit parameter (must be between 1 and 100)" });
@@ -199,8 +216,9 @@ export function registerReservationRoutes(app: Express) {
         const upcomingOnly = req.query.upcoming === "true";
 
         // For admin page or when not upcoming only: show all reservations (if admin)
-        // For upcoming reservations page: only show future and confirmed reservations
-        if (upcomingOnly || !isAdmin) {
+        // For upcoming=true (member/calendar clients): only future and confirmed reservations
+        // forCalendar: month grid for any member — all statuses in that month, past included
+        if ((upcomingOnly || !isAdmin) && !forCalendar) {
           const now = new Date();
           conditions.push(gte(reservations.startDate, now));
           conditions.push(eq(reservations.status, "confirmed"));
@@ -619,6 +637,20 @@ export function registerReservationRoutes(app: Express) {
           return res.status(400).json({
             message: `Table ${rest.table} is already reserved for this date and event type`,
           });
+        }
+
+        const lang = getLanguageFromRequest(req);
+        const societyEventBlock = await getReservationBlockBySocietyEvents(
+          societyId,
+          {
+            startDate,
+            useKitchen: Boolean(rest.useKitchen),
+            table: rest.table,
+          },
+          lang
+        );
+        if (societyEventBlock) {
+          return res.status(409).json({ message: societyEventBlock.message });
         }
 
         const resTotalPreview = Math.max(0, parseFloat(String(rest.totalAmount ?? "0")));

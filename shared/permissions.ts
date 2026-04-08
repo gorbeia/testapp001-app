@@ -13,6 +13,8 @@ export const Permission = {
   /** View or cancel another member’s reservation (admin, treasurer, cellarman). */
   RESERVATIONS_MODERATE: "reservations.moderate",
   RESERVATIONS_ADMIN: "reservations.admin",
+  /** Create/edit/delete society calendar events (closures, parties, assemblies). */
+  CALENDAR_MANAGE: "calendar.manage",
   CONSUMPTIONS_ADMIN: "consumptions.admin",
   CREDITS_VIEW: "credits.view",
   CREDITS_MANAGE: "credits.manage",
@@ -55,6 +57,7 @@ const treasurerPermissions: AppPermission[] = [
   Permission.NOTIFICATIONS_BROADCAST,
   Permission.RESERVATIONS_REGISTRY,
   Permission.RESERVATIONS_MODERATE,
+  Permission.CALENDAR_MANAGE,
 ];
 
 const cellarmanPermissions: AppPermission[] = [

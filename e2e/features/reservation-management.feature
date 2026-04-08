@@ -9,7 +9,7 @@ Feature: Reservation Management
     And I open the login page
     And I log in as a bazkide user
     And I should see the dashboard instead of the login form
-    And I navigate to the reservations page
+    And I navigate to the calendar page
 
   Scenario: Create a new reservation
     When I click the new reservation button
@@ -22,7 +22,8 @@ Feature: Reservation Management
     Then I should see the correct cost calculation
     And I save the reservation
     Then I should see a reservation success message
-    And the reservation should appear in the list
+    And I navigate to my reservations page
+    And the reservation should appear in my reservations table
 
   Scenario: Validate cost calculation updates
     When I click the new reservation button

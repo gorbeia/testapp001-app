@@ -264,6 +264,7 @@ export function UsersPage() {
     "notes.manage": "permNotesManage",
     "society.manage": "permSocietyManage",
     "notifications.broadcast": "permNotificationsBroadcast",
+    "calendar.manage": "permCalendarManage",
   };
 
   const handleOpenEditUser = (user: UsersPageUser) => {

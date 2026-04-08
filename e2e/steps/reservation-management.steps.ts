@@ -8,11 +8,20 @@ function reservationCostCard(page: Page) {
   return page.locator('[data-testid="dialog-content"] [data-testid="reservation-cost-card"]');
 }
 
-Given("I navigate to the reservations page", async function () {
+Given("I navigate to my reservations page", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  await page.click('[data-testid="link-erreserbak"]');
+  await page.click('[data-testid="link-nire-erreserbak"]');
+  await page.waitForSelector("table tbody tr", { timeout: 15000 });
+});
+
+Given("I navigate to the calendar page", async function () {
+  const page = getPage();
+  if (!page) throw new Error("Page not available");
+
+  await page.click('[data-testid="link-egutegia"]');
+  await page.waitForSelector('[data-testid="calendar-big-calendar"]', { timeout: 15000 });
   await page.waitForSelector('[data-testid="button-new-reservation"]', { timeout: 15000 });
 });
 
@@ -411,54 +420,21 @@ Then("I should see a reservation success message", async function () {
   );
 });
 
-Then("the reservation should appear in the list", async function () {
+Then("the reservation should appear in my reservations table", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  // Look for the reservation card with our unique name
   const uniqueReservationName = this.testReservationName;
 
-  // Simple approach: wait for the specific reservation card to appear
-  const reservationCard = page
-    .locator('[data-testid^="card-reservation-"]')
-    .filter({ hasText: uniqueReservationName })
-    .first();
+  const row = page.locator("table tbody tr").filter({ hasText: uniqueReservationName }).first();
 
-  // Wait up to 10 seconds for the reservation to appear
-  await reservationCard.waitFor({ state: "visible", timeout: 10000 });
+  await row.waitFor({ state: "visible", timeout: 10000 });
 
-  // Verify the reservation is actually visible
-  const isVisible = await reservationCard.isVisible();
-  assert.ok(isVisible, `Reservation "${uniqueReservationName}" should be visible in the list`);
-
-  // Check that our unique reservation name is present
-  const cardText = await reservationCard.textContent();
-
+  const rowText = await row.textContent();
   assert.ok(
-    cardText?.includes(uniqueReservationName),
-    `Unique reservation name "${uniqueReservationName}" should be present`
+    rowText?.includes(uniqueReservationName),
+    `Unique reservation name "${uniqueReservationName}" should be present in the table`
   );
-
-  // Check that a user name is present (using the actual user from test data)
-  // const hasUserName = cardText?.includes("Miren Urrutia");
-
-  // Try alternative user names if Miren Urrutia is not found
-  const alternativeNames = ["Miren Urrutia", "bazkidea@txokoa.eus", "bazkidea"];
-  let foundUserName = false;
-  for (const name of alternativeNames) {
-    if (cardText?.includes(name)) {
-      foundUserName = true;
-      break;
-    }
-  }
-
-  assert.ok(foundUserName, `User name should be present in reservation. Card text: "${cardText}"`);
-
-  // Check that the correct amount is present (should be 75.00€ for 15 guests with kitchen)
-  const amountMatch = cardText?.match(/(\d+\.?\d*)€/);
-  const actualAmount = amountMatch ? amountMatch[1] : "No amount found";
-
-  // For now, let's check that the amount is greater than 0 to ensure calculation is working
-  const amount = parseFloat(actualAmount);
-  assert.ok(amount > 0, `Amount should be greater than 0, got ${amount}€`);
+  // My Reservations is scoped to the logged-in user: no owner column. Row has no € total (see detail dialog).
+  assert.ok((rowText?.length ?? 0) > uniqueReservationName.length, `Row should include columns beyond name; row: "${rowText}"`);
 });

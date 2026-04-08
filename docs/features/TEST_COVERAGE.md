@@ -38,6 +38,12 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · *(emp
 | Prepayment ledger floor (UI) | — | — | `prepayment-ledger-floor.feature` |
 | Cancellation + notification | — | — | `reservation-cancellation-notification.feature` |
 
+## 3a. Society calendar (`society-calendar.md`)
+
+| Story area | Unit | Integration | E2E |
+|------------|------|-------------|-----|
+| Events CRUD + reservation blocks | — | `society-calendar.feature` (`@story:cal-1`, `@story:cal-3`) | — |
+
 ## 4. Consumptions (`consumptions.md`)
 
 | Story area | Unit | Integration | E2E |

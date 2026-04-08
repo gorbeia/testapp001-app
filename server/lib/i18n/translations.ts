@@ -34,6 +34,12 @@ export const translations = {
     financialSubscriptionChargeMessage: "{month} hilabeteko harpidetza: {amount} €.",
     stockLowAlertTitle: "Stock baxua",
     stockLowAlertMessage: "{productName}: {newStock} {unit} geratzen dira (minimoa: {minStock}).",
+    reservationBlockedBySocietyEvent:
+      'Ezin da erreserba egin epe horretan: "{title}" gertaerak blokeatzen du.',
+    reservationBlockedKitchenByEvent:
+      'Ezin da sukaldea erabili erreserba honetan: "{title}" gertaerak blokeatzen du.',
+    reservationBlockedTableByEvent:
+      'Ezin da mahaia erreserbatu: "{title}" gertaerak mahaia blokeatzen du.',
   },
 
   es: {
@@ -69,6 +75,12 @@ export const translations = {
     financialSubscriptionChargeMessage: "Cuota de suscripción {month}: {amount} €.",
     stockLowAlertTitle: "Stock bajo",
     stockLowAlertMessage: "{productName}: quedan {newStock} {unit} (mínimo: {minStock}).",
+    reservationBlockedBySocietyEvent:
+      'No se puede reservar en esa franja: el evento "{title}" lo impide.',
+    reservationBlockedKitchenByEvent:
+      'No se puede usar la cocina en esta reserva: el evento "{title}" lo impide.',
+    reservationBlockedTableByEvent:
+      'No se puede reservar la mesa: el evento "{title}" bloquea esa mesa.',
   },
 
   en: {
@@ -103,6 +115,12 @@ export const translations = {
     financialSubscriptionChargeMessage: "Subscription charge for {month}: {amount} €.",
     stockLowAlertTitle: "Low stock",
     stockLowAlertMessage: "{productName}: {newStock} {unit} remaining (minimum: {minStock}).",
+    reservationBlockedBySocietyEvent:
+      'Cannot reserve in that period: the event "{title}" blocks reservations.',
+    reservationBlockedKitchenByEvent:
+      'Kitchen use is blocked for this reservation: the event "{title}" blocks kitchen use.',
+    reservationBlockedTableByEvent:
+      'Cannot reserve this table: the event "{title}" blocks that table.',
   },
 };
 

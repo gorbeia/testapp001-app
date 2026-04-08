@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Calendar as CalendarIcon, Utensils } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,12 +27,17 @@ import { usePrepaymentLedgerStatus } from "@/hooks/usePrepaymentLedgerStatus";
 import { useLanguage } from "@/lib/i18n";
 import { format } from "date-fns";
 import { eu, es } from "date-fns/locale";
-import type { Society, Table } from "@shared/schema";
+import type { Society, SocietyEvent, Table } from "@shared/schema";
+import { startOfDay, endOfDay } from "date-fns";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertTriangle } from "lucide-react";
 
 interface ReservationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  /** When set while the dialog opens, prefills the reservation date/time (e.g. from a calendar day). */
+  defaultStartDate?: Date | null;
 }
 
 interface FormData {
@@ -57,7 +62,12 @@ const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
   return fetch(url, { ...options, headers });
 };
 
-export function ReservationDialog({ open, onOpenChange, onSuccess }: ReservationDialogProps) {
+export function ReservationDialog({
+  open,
+  onOpenChange,
+  onSuccess,
+  defaultStartDate,
+}: ReservationDialogProps) {
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const { data: ledgerStatus } = usePrepaymentLedgerStatus();
@@ -65,6 +75,7 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
   const [society, setSociety] = useState<Society | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(false);
+  const [calendarBlockNotes, setCalendarBlockNotes] = useState<string[]>([]);
 
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -150,6 +161,57 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
       loadTables();
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || defaultStartDate == null) return;
+    setFormData(prev => ({
+      ...prev,
+      startDate: new Date(defaultStartDate),
+    }));
+  }, [open, defaultStartDate]);
+
+  const reservationInstant = useMemo(() => {
+    const d = formData.startDate instanceof Date ? formData.startDate : new Date(formData.startDate);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }, [formData.startDate]);
+
+  useEffect(() => {
+    if (!open || !reservationInstant) {
+      setCalendarBlockNotes([]);
+      return;
+    }
+    let cancelled = false;
+    const from = startOfDay(reservationInstant).toISOString();
+    const to = endOfDay(reservationInstant).toISOString();
+    void (async () => {
+      try {
+        const res = await authFetch(
+          `/api/society-events?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`
+        );
+        if (!res.ok) return;
+        const events = (await res.json()) as SocietyEvent[];
+        if (cancelled) return;
+        const tableId = tables.find(x => x.name === formData.table)?.id;
+        const msgs: string[] = [];
+        for (const ev of events) {
+          const evS = new Date(ev.startDate);
+          const evE = new Date(ev.endDate);
+          if (reservationInstant < evS || reservationInstant > evE) continue;
+          if (ev.blocksAllReservations) msgs.push(t("societyClosedOnDate"));
+          if (formData.useKitchen && ev.blocksKitchen) msgs.push(t("kitchenBlockedOnDate"));
+          if (tableId && (ev.blockedTableIds ?? []).includes(tableId)) {
+            msgs.push(t("tableBlockedOnDate"));
+          }
+        }
+        setCalendarBlockNotes([...new Set(msgs)]);
+      } catch {
+        if (!cancelled) setCalendarBlockNotes([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, reservationInstant, formData.table, formData.useKitchen, tables]);
 
   const handleCreateReservation = async () => {
     if (prepaymentBlocks) {
@@ -258,6 +320,19 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
           <DialogDescription>{t("fillReservationDetails")}</DialogDescription>
         </DialogHeader>
         <div className="space-y-6">
+          {calendarBlockNotes.length > 0 && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>{t("calendarWarningBlockedTitle")}</AlertTitle>
+              <AlertDescription>
+                <ul className="list-disc pl-4 mt-2 space-y-1">
+                  {calendarBlockNotes.map((line, i) => (
+                    <li key={i}>{line}</li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="space-y-2">
             <Label>{t("name")}</Label>
             <Input
