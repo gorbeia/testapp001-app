@@ -1,6 +1,6 @@
 # Ubuntu 24.04 Installation Guide
 
-This guide provides step-by-step instructions for installing and setting up **Elkartearen App** on Ubuntu 24.04 LTS (the app UI is branded *Gure Txokoa* in the client).
+This guide provides step-by-step instructions for installing and setting up **Elkartearen App** on Ubuntu 24.04 LTS (the app UI is branded _Gure Txokoa_ in the client).
 
 ## Prerequisites
 
@@ -177,7 +177,6 @@ Replace `YOUR_SERVER_IP` with your server's IP address or domain name. If you co
 
 After seeding (`pnpm db:seed`), you can use these demo accounts:
 
-
 | Email                  | Password | Function          | Role     |
 | ---------------------- | -------- | ----------------- | -------- |
 | `admin@txokoa.eus`     | demo     | Administratzailea | Bazkidea |
@@ -185,7 +184,6 @@ After seeding (`pnpm db:seed`), you can use these demo accounts:
 | `sotolaria@txokoa.eus` | demo     | Sotolaria         | Bazkidea |
 | `bazkidea@txokoa.eus`  | demo     | Arrunta           | Bazkidea |
 | `laguna@txokoa.eus`    | demo     | Arrunta           | Laguna   |
-
 
 **Society ID**: Use `GT001` in the login form.
 
@@ -501,34 +499,41 @@ After SSL setup, your Nginx configuration will automatically handle:
 ### Common Issues
 
 1. **Database Connection Error**
-  ```bash
-   # Check PostgreSQL status
-   sudo systemctl status postgresql
 
-   # Check if database exists
-   sudo -u postgres psql -l
-  ```
+```bash
+ # Check PostgreSQL status
+ sudo systemctl status postgresql
+
+ # Check if database exists
+ sudo -u postgres psql -l
+```
+
 2. **Permission Denied**
-  ```bash
-   # Fix file permissions
-   sudo chown -R $USER:$USER /path/to/testapp001-app
-   chmod +x /path/to/testapp001-app/script/*.ts
-  ```
+
+```bash
+ # Fix file permissions
+ sudo chown -R $USER:$USER /path/to/testapp001-app
+ chmod +x /path/to/testapp001-app/script/*.ts
+```
+
 3. **Port Already in Use**
-  ```bash
-   # Check what's using the default port (5000)
-   sudo lsof -i :5000
 
-   # Kill the process if needed
-   sudo kill -9 <PID>
-  ```
+```bash
+ # Check what's using the default port (5000)
+ sudo lsof -i :5000
+
+ # Kill the process if needed
+ sudo kill -9 <PID>
+```
+
 4. **Node.js Version Issues**
-  ```bash
-   # Check Node.js version
-   node --version
 
-   # Must be v24.x or higher (project requires >=24.0.0)
-  ```
+```bash
+ # Check Node.js version
+ node --version
+
+ # Must be v24.x or higher (project requires >=24.0.0)
+```
 
 ### Logs
 
@@ -608,7 +613,6 @@ curl -s http://localhost:5000/api | head -c 200
 
 The project uses **Drizzle ORM** for schema management. There are two approaches:
 
-
 | Command              | Use case                                                                   | Destructive?                |
 | -------------------- | -------------------------------------------------------------------------- | --------------------------- |
 | `pnpm db:push`       | Apply schema from code to DB (adds columns/tables, does **not** drop data) | No                          |
@@ -616,8 +620,7 @@ The project uses **Drizzle ORM** for schema management. There are two approaches
 | `pnpm db:reset`      | **Drops all tables** and re-creates from schema                            | **Yes — destroys all data** |
 | `pnpm db:reset:seed` | Reset + insert demo data                                                   | **Yes — destroys all data** |
 
-
-For production updates, use `**pnpm db:push`** or `**pnpm db:migrate**`. Never use `db:reset` on a production database.
+For production updates, use `**pnpm db:push`** or `**pnpm db:migrate\*\*`. Never use `db:reset` on a production database.
 
 If a release includes migration files, prefer `pnpm db:migrate`. Otherwise `pnpm db:push` is safe for additive changes.
 

@@ -372,7 +372,9 @@ export function ConsumptionsPage() {
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const productLines = cart.filter((l): l is Extract<CartLine, { kind: "product" }> => l.kind === "product");
+  const productLines = cart.filter(
+    (l): l is Extract<CartLine, { kind: "product" }> => l.kind === "product"
+  );
   const reservationLines = cart.filter(
     (l): l is Extract<CartLine, { kind: "reservation" }> => l.kind === "reservation"
   );
@@ -567,10 +569,9 @@ export function ConsumptionsPage() {
                     borderColor:
                       categoryFilter === PENDING_PAYMENTS_FILTER ? undefined : pendingCategoryColor,
                     backgroundColor:
-                      categoryFilter === PENDING_PAYMENTS_FILTER
-                        ? pendingCategoryColor
-                        : undefined,
-                    color: categoryFilter === PENDING_PAYMENTS_FILTER ? "white" : pendingCategoryColor,
+                      categoryFilter === PENDING_PAYMENTS_FILTER ? pendingCategoryColor : undefined,
+                    color:
+                      categoryFilter === PENDING_PAYMENTS_FILTER ? "white" : pendingCategoryColor,
                   }}
                 >
                   <Wallet className="mr-1 h-3 w-3" />
@@ -867,7 +868,9 @@ export function ConsumptionsPage() {
                         size="icon"
                         className="h-7 w-7"
                         onClick={() => updateQuantity(item.lineId, 1)}
-                        disabled={item.kind !== "product" || (prepaymentBlocks && item.kind === "product")}
+                        disabled={
+                          item.kind !== "product" || (prepaymentBlocks && item.kind === "product")
+                        }
                         data-testid={`button-increase-quantity-${item.lineId}`}
                       >
                         <Plus className="h-3 w-3" />

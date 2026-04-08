@@ -81,12 +81,18 @@ When("I re-login as a {word} user", async function (role: string) {
 
   await page.goto(e2eUrl("/"), { waitUntil: "networkidle" });
 
-  const loginVisible = await page.locator('[data-testid="input-email"]').isVisible().catch(() => false);
+  const loginVisible = await page
+    .locator('[data-testid="input-email"]')
+    .isVisible()
+    .catch(() => false);
 
   if (!loginVisible) {
     let logout = page.locator('[data-testid="button-logout"]');
     if (!(await logout.isVisible().catch(() => false))) {
-      await page.locator('[data-testid="button-sidebar-toggle"]').click().catch(() => {});
+      await page
+        .locator('[data-testid="button-sidebar-toggle"]')
+        .click()
+        .catch(() => {});
       logout = page.locator('[data-testid="button-logout"]');
     }
     await logout.waitFor({ state: "visible", timeout: 5000 }).catch(() => {});

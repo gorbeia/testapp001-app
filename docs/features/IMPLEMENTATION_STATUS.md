@@ -136,7 +136,8 @@ Status legend:
    - **Status**: ✅ Implemented (multi-tenant cron + per-society real-time triggers; see `server/cron-jobs.ts`)
 9. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
 10. **Prepayment minimum ledger balance** – optional `prepaymentMinLedgerBalance` on `societies` when `bank_transfer_prepayment` is enabled; `GET /api/me/prepayment-ledger-status`; server enforcement on reservation create + consumption create/items; `notifyFinancialEvent` when a debit crosses from at/above floor to below; member `PrepaymentLedgerBanner` + treasurer field on **`/elkartea`**
-   - **Status**: ✅ Implemented (see `prepayment-ledger-floor.md`; E2E: `prepayment-ledger-floor.feature`, scripts `db:seed:prepayment-floor-e2e` / `db:undo:prepayment-floor-e2e`)
+
+- **Status**: ✅ Implemented (see `prepayment-ledger-floor.md`; E2E: `prepayment-ledger-floor.feature`, scripts `db:seed:prepayment-floor-e2e` / `db:undo:prepayment-floor-e2e`)
 
 ---
 

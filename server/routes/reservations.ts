@@ -684,7 +684,11 @@ export function registerReservationRoutes(app: Express) {
         }
 
         const resTotalPreview = Math.max(0, parseFloat(String(rest.totalAmount ?? "0")));
-        const prepaymentCheck = await assertPrepaymentDebitAllowed(societyId, user.id, resTotalPreview);
+        const prepaymentCheck = await assertPrepaymentDebitAllowed(
+          societyId,
+          user.id,
+          resTotalPreview
+        );
         if (!prepaymentCheck.allowed) {
           return res.status(403).json(prepaymentFloorHttpBody(prepaymentCheck));
         }

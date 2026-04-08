@@ -298,7 +298,9 @@ export function SocietyPage() {
                         placeholder="ES00 0000 0000 0000 0000 0000"
                         data-testid="input-society-iban"
                       />
-                      <p className="text-xs text-muted-foreground">{t("accountForReceivingPayments")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("accountForReceivingPayments")}
+                      </p>
                     </div>
                     <div className="space-y-2">
                       <Label>{t("creditorId")}</Label>
@@ -362,7 +364,8 @@ export function SocietyPage() {
                           onChange={e =>
                             setSociety({
                               ...society,
-                              prepaymentMinLedgerBalance: e.target.value === "" ? null : e.target.value,
+                              prepaymentMinLedgerBalance:
+                                e.target.value === "" ? null : e.target.value,
                             })
                           }
                           data-testid="input-prepayment-min-ledger-balance"

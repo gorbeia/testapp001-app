@@ -41,7 +41,9 @@ Then("I should see the admin movements page", async function () {
 Then("I should see a prepayment line on my movements", async function () {
   const page = getPage();
   assert.ok(page);
-  const cell = page.locator('[data-testid^="movement-type-"]').filter({ hasText: /Aurreordainketa|Anticipo/ });
+  const cell = page
+    .locator('[data-testid^="movement-type-"]')
+    .filter({ hasText: /Aurreordainketa|Anticipo/ });
   await cell.first().waitFor({ state: "visible", timeout: 10000 });
 });
 

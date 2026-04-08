@@ -84,8 +84,7 @@ export const translations = {
     financialBankTransferValidatedMessage:
       "Your prepayment of {amount} € has been validated and recorded on your account.",
     financialBankTransferRejectedTitle: "Prepayment rejected",
-    financialBankTransferRejectedMessage:
-      "Your prepayment proposal was rejected. Reason: {reason}",
+    financialBankTransferRejectedMessage: "Your prepayment proposal was rejected. Reason: {reason}",
     financialRefundIssuedTitle: "Refund",
     financialRefundIssuedMessage: "A refund of {amount} € has been recorded on your account.",
     financialSepaBounceTitle: "SEPA direct debit failed",

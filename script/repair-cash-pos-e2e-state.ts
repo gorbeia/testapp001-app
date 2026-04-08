@@ -48,21 +48,23 @@ export async function repairCashPosE2eState(dbConn: SeedDb = db): Promise<void> 
   }
   const societyId = byAlpha[0].id;
 
-  await dbConn.delete(accountMovements).where(
-    and(
-      eq(accountMovements.societyId, societyId),
-      or(
-        and(
-          eq(accountMovements.referenceType, ACCOUNT_MOVEMENT_REF_RESERVATION_CASH),
-          eq(accountMovements.referenceId, CASH_POS_E2E_RESERVATION_ID)
-        ),
-        and(
-          eq(accountMovements.referenceType, ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH),
-          eq(accountMovements.referenceId, SUB_REF)
+  await dbConn
+    .delete(accountMovements)
+    .where(
+      and(
+        eq(accountMovements.societyId, societyId),
+        or(
+          and(
+            eq(accountMovements.referenceType, ACCOUNT_MOVEMENT_REF_RESERVATION_CASH),
+            eq(accountMovements.referenceId, CASH_POS_E2E_RESERVATION_ID)
+          ),
+          and(
+            eq(accountMovements.referenceType, ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH),
+            eq(accountMovements.referenceId, SUB_REF)
+          )
         )
       )
-    )
-  );
+    );
 
   const cashE2eTables = await dbConn
     .select()

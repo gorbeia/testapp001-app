@@ -60,7 +60,10 @@ When("I create a pending prepayment for Miren Urrutia", async function () {
   await page.fill('[data-testid="input-transfer-date"]', today);
   await page.fill('[data-testid="input-transfer-reference"]', "E2E-REF");
   await page.click('[data-testid="button-save-transfer"]');
-  await page.waitForSelector('[data-testid^="button-validate-"]', { state: "visible", timeout: 15000 });
+  await page.waitForSelector('[data-testid^="button-validate-"]', {
+    state: "visible",
+    timeout: 15000,
+  });
 });
 
 When("I validate the first pending prepayment", { timeout: 30 * 1000 }, async function () {

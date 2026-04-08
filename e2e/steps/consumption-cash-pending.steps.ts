@@ -15,7 +15,8 @@ Before({ tags: "@consumption-cash-pending" }, function () {
   });
 });
 
-const SEEDED_PENDING_RESERVATION_TESTID = "pending-card-reservation-b2c3d4e5-f6a7-4890-bcde-f10000000001";
+const SEEDED_PENDING_RESERVATION_TESTID =
+  "pending-card-reservation-b2c3d4e5-f6a7-4890-bcde-f10000000001";
 
 When(
   "I open the pending payments category on the consumptions page",
@@ -58,7 +59,11 @@ Then(
     const page = getPage();
     assert.ok(page, "Page not available");
     const card = page.getByTestId(SEEDED_PENDING_RESERVATION_TESTID);
-    assert.equal(await card.count(), 0, "Reservation should be removed from pending list after cash pay");
+    assert.equal(
+      await card.count(),
+      0,
+      "Reservation should be removed from pending list after cash pay"
+    );
   }
 );
 
@@ -73,19 +78,15 @@ When(
   }
 );
 
-Then(
-  "I should see consumptions save success",
-  { timeout: 6_000 },
-  async function () {
-    const page = getPage();
-    assert.ok(page, "Page not available");
-    await page.waitForTimeout(400);
-    const err = page.locator('[data-testid="toast-destructive"]');
-    if (await err.isVisible()) {
-      const msg = await err.textContent();
-      throw new Error(`Expected success toast but got error: ${msg}`);
-    }
-    const ok = page.locator('[data-testid="toast-default"]');
-    await ok.waitFor({ state: "visible", timeout: 5_000 });
+Then("I should see consumptions save success", { timeout: 6_000 }, async function () {
+  const page = getPage();
+  assert.ok(page, "Page not available");
+  await page.waitForTimeout(400);
+  const err = page.locator('[data-testid="toast-destructive"]');
+  if (await err.isVisible()) {
+    const msg = await err.textContent();
+    throw new Error(`Expected success toast but got error: ${msg}`);
   }
-);
+  const ok = page.locator('[data-testid="toast-default"]');
+  await ok.waitFor({ state: "visible", timeout: 5_000 });
+});

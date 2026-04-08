@@ -485,7 +485,8 @@ export async function seedReservations(dbConn: SeedDb) {
         const kp = parseFloat(demoForPricing?.kitchenPricePerMember ?? "3");
         const guests = cashPosE2eReservation.guests ?? 0;
         const totalAmountStr = (
-          guests * rp + (cashPosE2eReservation.useKitchen ? guests * kp : 0)
+          guests * rp +
+          (cashPosE2eReservation.useKitchen ? guests * kp : 0)
         ).toString();
 
         let assignedTable = cashPosE2eReservation.table;

@@ -49,9 +49,7 @@ export function registerBankTransferRoutes(app: Express) {
     try {
       const societyId = getUserSocietyId(req.user!);
       if (!(await prepaymentEnabledForSociety(societyId))) {
-        return res
-          .status(403)
-          .json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
+        return res.status(403).json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
       }
       const userId = req.user!.id;
       const statusRaw = req.query.status as string | undefined;
@@ -80,9 +78,7 @@ export function registerBankTransferRoutes(app: Express) {
     try {
       const societyIdEarly = getUserSocietyId(req.user!);
       if (!(await prepaymentEnabledForSociety(societyIdEarly))) {
-        return res
-          .status(403)
-          .json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
+        return res.status(403).json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
       }
       const parsed = bankTransferMemberProposalBodySchema.safeParse(req.body);
       if (!parsed.success) {
@@ -132,9 +128,7 @@ export function registerBankTransferRoutes(app: Express) {
     try {
       const societyIdEarly = getUserSocietyId(req.user!);
       if (!(await prepaymentEnabledForSociety(societyIdEarly))) {
-        return res
-          .status(403)
-          .json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
+        return res.status(403).json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
       }
       const parsed = bankTransferCreateBodySchema.safeParse(req.body);
       if (!parsed.success) {
@@ -183,9 +177,7 @@ export function registerBankTransferRoutes(app: Express) {
     try {
       const societyId = getUserSocietyId(req.user!);
       if (!(await prepaymentEnabledForSociety(societyId))) {
-        return res
-          .status(403)
-          .json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
+        return res.status(403).json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
       }
       const status = req.query.status as string | undefined;
       const userId = req.query.userId as string | undefined;
@@ -230,9 +222,7 @@ export function registerBankTransferRoutes(app: Express) {
       try {
         const societyId = getUserSocietyId(req.user!);
         if (!(await prepaymentEnabledForSociety(societyId))) {
-          return res
-            .status(403)
-            .json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
+          return res.status(403).json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
         }
         const { id } = req.params;
 
@@ -301,9 +291,7 @@ export function registerBankTransferRoutes(app: Express) {
         }
         const societyId = getUserSocietyId(req.user!);
         if (!(await prepaymentEnabledForSociety(societyId))) {
-          return res
-            .status(403)
-            .json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
+          return res.status(403).json({ message: PREPAYMENT_PROPOSALS_DISABLED_MESSAGE });
         }
         const { id } = req.params;
 

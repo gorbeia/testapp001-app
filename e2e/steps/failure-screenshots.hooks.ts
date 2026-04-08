@@ -7,16 +7,15 @@ const SCREENSHOT_DIR = path.join(process.cwd(), "e2e/artifacts/screenshots");
 
 function shouldCaptureFailure(status: string | undefined, hookError: unknown): boolean {
   if (hookError) return true;
-  return (
-    status === Status.FAILED ||
-    status === Status.UNDEFINED ||
-    status === Status.AMBIGUOUS
-  );
+  return status === Status.FAILED || status === Status.UNDEFINED || status === Status.AMBIGUOUS;
 }
 
 function screenshotPath(pickleName: string, featureUri: string): string {
   const ts = new Date().toISOString().replace(/[:.]/g, "-");
-  const featureBase = path.basename(featureUri || "feature", path.extname(featureUri || ".feature"));
+  const featureBase = path.basename(
+    featureUri || "feature",
+    path.extname(featureUri || ".feature")
+  );
   const safeFeature = featureBase.replace(/[^\w.-]+/g, "_");
   const safeScenario = pickleName.replace(/[^\w\u00C0-\u024f.-]+/gi, "_").slice(0, 96);
   return path.join(SCREENSHOT_DIR, `${ts}__${safeFeature}__${safeScenario}.png`);

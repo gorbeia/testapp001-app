@@ -298,8 +298,7 @@ export const translations = {
     pendingPaymentSubscriptionBadge: "Harpidetza",
     noPendingCashItems: "Ez dago ordaindu beharreko erreserbarik edo harpidetzarik",
     cashSettlementSaved: "Diruzko ordainketak gordeta ({amount}€)",
-    cashAndConsumptionSaved:
-      "Kontsumoa eta diruzko ordainketak gordeta (guztira {amount}€)",
+    cashAndConsumptionSaved: "Kontsumoa eta diruzko ordainketak gordeta (guztira {amount}€)",
     confirmationProductsAndPayments: "Produktuak eta ordainketak",
     cashSaving: "Gordetzen...",
     yourAccumulatedDebts: "Zure zor metatuak",

@@ -61,8 +61,7 @@ export function ReservationDialog({ open, onOpenChange, onSuccess }: Reservation
   const { t, language } = useLanguage();
   const { toast } = useToast();
   const { data: ledgerStatus } = usePrepaymentLedgerStatus();
-  const prepaymentBlocks =
-    Boolean(ledgerStatus?.enforced && ledgerStatus?.belowFloor);
+  const prepaymentBlocks = Boolean(ledgerStatus?.enforced && ledgerStatus?.belowFloor);
   const [society, setSociety] = useState<Society | null>(null);
   const [tables, setTables] = useState<Table[]>([]);
   const [loading, setLoading] = useState(false);

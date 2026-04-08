@@ -33,13 +33,20 @@ Then("I should see the prepayment ledger floor banner", async function () {
     .waitFor({ state: "visible", timeout: 15000 });
 });
 
-Then("the reservation save button should be disabled for prepayment ledger floor", async function () {
-  const page = getPage();
-  assert.ok(page, "Page not available");
-  const btn = page.getByTestId("button-save-reservation");
-  await btn.waitFor({ state: "visible", timeout: 10000 });
-  assert.strictEqual(await btn.isDisabled(), true, "Save should be disabled when below prepayment floor");
-});
+Then(
+  "the reservation save button should be disabled for prepayment ledger floor",
+  async function () {
+    const page = getPage();
+    assert.ok(page, "Page not available");
+    const btn = page.getByTestId("button-save-reservation");
+    await btn.waitFor({ state: "visible", timeout: 10000 });
+    assert.strictEqual(
+      await btn.isDisabled(),
+      true,
+      "Save should be disabled when below prepayment floor"
+    );
+  }
+);
 
 When("I request creating a reservation via the API from the browser session", async function () {
   const page = getPage();
@@ -72,8 +79,9 @@ When("I request creating a reservation via the API from the browser session", as
     }
     return { status: res.status, body };
   });
-  (this as { prepaymentFloorApiResult?: { status: number; body: unknown } }).prepaymentFloorApiResult =
-    result;
+  (
+    this as { prepaymentFloorApiResult?: { status: number; body: unknown } }
+  ).prepaymentFloorApiResult = result;
 });
 
 Then("the response should be prepayment ledger floor denied", async function () {

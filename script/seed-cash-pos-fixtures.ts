@@ -1,6 +1,11 @@
 import "dotenv/config";
 import { and, eq } from "drizzle-orm";
-import { credits, normalizeSocietyPaymentMethods, societies, type SocietyPaymentMethod } from "../shared/schema";
+import {
+  credits,
+  normalizeSocietyPaymentMethods,
+  societies,
+  type SocietyPaymentMethod,
+} from "../shared/schema";
 import { DEMO_SOCIETY_ALPHABETIC_ID } from "./seed-demo-society";
 import type { SeedDb } from "./seed-db-type";
 

@@ -38,12 +38,14 @@ export async function seedPrepaymentFloorE2EFixtures(dbConn: SeedDb) {
     })
     .where(eq(societies.id, society.id));
 
-  await dbConn.delete(accountMovements).where(
-    and(
-      eq(accountMovements.userId, BAZKIDEA_USER_ID),
-      eq(accountMovements.referenceType, E2E_PREPAYMENT_FLOOR_REF_TYPE)
-    )
-  );
+  await dbConn
+    .delete(accountMovements)
+    .where(
+      and(
+        eq(accountMovements.userId, BAZKIDEA_USER_ID),
+        eq(accountMovements.referenceType, E2E_PREPAYMENT_FLOOR_REF_TYPE)
+      )
+    );
 
   const [sumRow] = await dbConn
     .select({
@@ -57,7 +59,9 @@ export async function seedPrepaymentFloorE2EFixtures(dbConn: SeedDb) {
   const current = parseFloat(sumRow?.total ?? "0");
   const delta = TARGET_LEDGER_BALANCE - current;
   if (Math.abs(delta) < 1e-6) {
-    console.log("seedPrepaymentFloorE2EFixtures: bazkidea already at target balance, no adjustment");
+    console.log(
+      "seedPrepaymentFloorE2EFixtures: bazkidea already at target balance, no adjustment"
+    );
     return;
   }
 
@@ -88,12 +92,14 @@ export async function undoPrepaymentFloorE2EFixtures(dbConn: SeedDb = db): Promi
     return;
   }
 
-  await dbConn.delete(accountMovements).where(
-    and(
-      eq(accountMovements.userId, BAZKIDEA_USER_ID),
-      eq(accountMovements.referenceType, E2E_PREPAYMENT_FLOOR_REF_TYPE)
-    )
-  );
+  await dbConn
+    .delete(accountMovements)
+    .where(
+      and(
+        eq(accountMovements.userId, BAZKIDEA_USER_ID),
+        eq(accountMovements.referenceType, E2E_PREPAYMENT_FLOOR_REF_TYPE)
+      )
+    );
 
   await dbConn
     .update(societies)
@@ -103,7 +109,9 @@ export async function undoPrepaymentFloorE2EFixtures(dbConn: SeedDb = db): Promi
     })
     .where(eq(societies.id, society.id));
 
-  console.log("undoPrepaymentFloorE2EFixtures: fixture movements removed, prepayment floor cleared");
+  console.log(
+    "undoPrepaymentFloorE2EFixtures: fixture movements removed, prepayment floor cleared"
+  );
 }
 
 function isMainModule(): boolean {

@@ -48,10 +48,9 @@ Then("each debt should show the user name and amount", async function () {
   const page = getPage();
   assert(page, "Page should be initialized");
 
-  await page.waitForSelector(
-    '[data-testid="no-results-message"], [data-testid^="row-credit-"]',
-    { timeout: 15000 }
-  );
+  await page.waitForSelector('[data-testid="no-results-message"], [data-testid^="row-credit-"]', {
+    timeout: 15000,
+  });
 
   const noResults = await page.$('[data-testid="no-results-message"]');
   if (noResults) {
@@ -101,10 +100,9 @@ When("I calculate the sum of all individual debts", async function () {
   assert(page, "Page should be initialized");
   this.calculatedSum = 0;
 
-  await page.waitForSelector(
-    '[data-testid="no-results-message"], [data-testid^="row-credit-"]',
-    { timeout: 15000 }
-  );
+  await page.waitForSelector('[data-testid="no-results-message"], [data-testid^="row-credit-"]', {
+    timeout: 15000,
+  });
 
   const creditRows = await page.$$('[data-testid^="row-credit-"]');
 

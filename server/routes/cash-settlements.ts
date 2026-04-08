@@ -66,11 +66,7 @@ export function registerCashSettlementRoutes(app: Express) {
         const unpaidReservations: typeof candidateReservations = [];
         for (const r of candidateReservations) {
           if (
-            await movementExistsForReference(
-              societyId,
-              ACCOUNT_MOVEMENT_REF_RESERVATION_CASH,
-              r.id
-            )
+            await movementExistsForReference(societyId, ACCOUNT_MOVEMENT_REF_RESERVATION_CASH, r.id)
           ) {
             continue;
           }
@@ -97,7 +93,13 @@ export function registerCashSettlementRoutes(app: Express) {
         const dueSubscriptions: { creditId: string; month: string; amount: string }[] = [];
         for (const c of creditRows) {
           const subRef = `${user.id}:${c.month}`;
-          if (await movementExistsForReference(societyId, ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH, subRef)) {
+          if (
+            await movementExistsForReference(
+              societyId,
+              ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH,
+              subRef
+            )
+          ) {
             continue;
           }
           dueSubscriptions.push({
@@ -136,8 +138,12 @@ export function registerCashSettlementRoutes(app: Express) {
         }
 
         const { reservationIds = [], subscriptionMonths = [] } = parsed.data;
-        const movements: { id: string; referenceType: string; referenceId: string; amount: string }[] =
-          [];
+        const movements: {
+          id: string;
+          referenceType: string;
+          referenceId: string;
+          amount: string;
+        }[] = [];
 
         for (const reservationId of reservationIds) {
           const [resRow] = await db
@@ -170,7 +176,9 @@ export function registerCashSettlementRoutes(app: Express) {
 
           const amt = parseFloat(String(resRow.totalAmount));
           if (!Number.isFinite(amt) || amt <= 0) {
-            return res.status(400).json({ message: `Reservation ${reservationId} has invalid amount` });
+            return res
+              .status(400)
+              .json({ message: `Reservation ${reservationId} has invalid amount` });
           }
 
           if (!(await movementExistsForReference(societyId, "reservation", reservationId))) {
@@ -206,7 +214,13 @@ export function registerCashSettlementRoutes(app: Express) {
 
         for (const month of subscriptionMonths) {
           const subRef = `${user.id}:${month}`;
-          if (await movementExistsForReference(societyId, ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH, subRef)) {
+          if (
+            await movementExistsForReference(
+              societyId,
+              ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH,
+              subRef
+            )
+          ) {
             continue;
           }
 
