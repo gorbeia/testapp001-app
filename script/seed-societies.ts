@@ -1,6 +1,10 @@
 import "dotenv/config";
 import { societies, type SocietyPaymentMethod } from "../shared/schema";
-import { DEMO_SOCIETY_ALPHABETIC_ID, DEMO_SOCIETY_ID } from "./seed-demo-society";
+import {
+  DEMO_SOCIETY_ALPHABETIC_ID,
+  DEMO_SOCIETY_ID,
+  DEMO_SOCIETY_SUBDOMAIN,
+} from "./seed-demo-society";
 import type { SeedDb } from "./seed-db-type";
 import { db, pool } from "../server/db";
 import { fileURLToPath } from "node:url";
@@ -20,6 +24,7 @@ export async function seedSocieties(dbConn: SeedDb) {
     {
       id: SOCIETY_UUID,
       alphabeticId: DEMO_SOCIETY_ALPHABETIC_ID,
+      subdomain: DEMO_SOCIETY_SUBDOMAIN,
       name: "Gure Txokoa",
       acronym: "GT",
       shortDescription: "Gastronomia elkartea",
