@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { AuthContext, type User } from "@/lib/auth";
+import { AuthContext, parseStoredUser, userFromApiSessionPayload, type User } from "@/lib/auth";
 
 // Helper function to parse expiration time (e.g., "1h" -> 3600 seconds)
 const parseExpirationTime = (expiresIn: string): number => {
@@ -46,7 +46,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return null;
       }
 
-      return JSON.parse(stored) as User;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(stored);
+      } catch {
+        return null;
+      }
+      const user = parseStoredUser(parsed);
+      if (!user?.id) return null;
+      return user;
     } catch {
       return null;
     }
@@ -73,17 +81,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       const { user: userData, token, expiresIn } = await response.json();
 
-      const updatedUser: User = {
-        id: userData.id,
-        email: userData.username,
-        name: userData.name || userData.username,
-        accessRole: userData.accessRole ?? "member",
-        membershipType: userData.membershipType ?? "full_member",
-        phone: userData.phone,
-        iban: userData.iban,
-        linkedMemberId: userData.linkedMemberId,
-        linkedMemberName: userData.linkedMemberName,
-      };
+      const updatedUser = userFromApiSessionPayload(
+        userData && typeof userData === "object" ? (userData as Record<string, unknown>) : {},
+      );
 
       setUser(updatedUser);
       if (typeof window !== "undefined") {
@@ -157,18 +157,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const { user: userData, token, expiresIn } = await response.json();
 
-    // Convert backend user format to frontend User format
-    const user: User = {
-      id: userData.id,
-      email: userData.username,
-      name: userData.name || userData.username,
-      accessRole: userData.accessRole ?? "member",
-      membershipType: userData.membershipType ?? "full_member",
-      phone: userData.phone,
-      iban: userData.iban,
-      linkedMemberId: userData.linkedMemberId,
-      linkedMemberName: userData.linkedMemberName,
-    };
+    const user = userFromApiSessionPayload(
+      userData && typeof userData === "object" ? (userData as Record<string, unknown>) : {},
+    );
 
     setUser(user);
     if (typeof window !== "undefined") {

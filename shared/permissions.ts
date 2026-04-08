@@ -71,7 +71,9 @@ export const ROLE_PERMISSIONS: Record<AccessRole, readonly AppPermission[]> = {
 };
 
 export function hasPermission(role: AccessRole, permission: AppPermission): boolean {
-  return ROLE_PERMISSIONS[role].includes(permission);
+  const parsed = accessRoleSchema.safeParse(role);
+  if (!parsed.success) return false;
+  return ROLE_PERMISSIONS[parsed.data].includes(permission);
 }
 
 export function hasAnyPermission(role: AccessRole, permissions: readonly AppPermission[]): boolean {
