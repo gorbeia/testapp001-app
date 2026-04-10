@@ -14,6 +14,8 @@ const { mockInsert, mockMovementExists, mockTx, mockUpdateChain } = vi.hoisted((
 
   const mockTx = {
     update: vi.fn().mockImplementation(() => mockUpdateChain()),
+    select: vi.fn(),
+    insert: vi.fn(),
   };
 
   return { mockInsert, mockMovementExists, mockTx, mockUpdateChain };
@@ -46,9 +48,39 @@ import {
 describe("ledger-service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockInsert.mockResolvedValue({ id: "mov-new" });
+    mockInsert.mockImplementation(
+      (input: {
+        societyId: string;
+        type: string;
+        amount: string;
+        description?: string | null;
+        createdBy: string | null;
+        createdAt?: Date;
+      }) =>
+        Promise.resolve({
+          id: "mov-new",
+          societyId: input.societyId,
+          type: input.type,
+          amount: input.amount,
+          description: input.description ?? null,
+          createdAt: input.createdAt ?? new Date("2024-01-15T12:00:00.000Z"),
+          createdBy: input.createdBy,
+        })
+    );
     mockMovementExists.mockResolvedValue(false);
     mockTx.update.mockImplementation(() => mockUpdateChain());
+    mockTx.select.mockImplementation(() => ({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    }));
+    mockTx.insert.mockImplementation(() => ({
+      values: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([{ id: "sl-mock" }]),
+      }),
+    }));
   });
 
   it("postLedgerRefund inserts positive refund amount", async () => {
