@@ -6,15 +6,20 @@ Then("I should see the reservation in my reservations list", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  // Navigate to my reservations
-  await page.click('[data-testid="link-nire-erreserbak"]');
+  // Same identifiers as "the reservation should appear in my reservations table": the UI shows
+  // meal type · date (not a free-text title like "Test Erreserba Notifikazioa").
+  const table = String(this.testReservationTable ?? "");
+  const guests = Number(this.testReservationGuests ?? 0);
+  assert.ok(table.length > 0, "Expected testReservationTable from table selection step");
+  assert.ok(guests > 0, "Expected testReservationGuests from guests step");
 
-  const uniqueReservationName = this.testReservationName || "Test Erreserba Notifikazioa";
-  const searchInput = page.getByPlaceholder(/Bilatu|Buscar|Search/i);
-  await searchInput.fill(uniqueReservationName);
+  await page.click('[data-testid="link-nire-erreserbak"]');
+  const searchInput = page.getByPlaceholder(/bilatu|buscar|search/i);
+  await searchInput.fill(table);
   await page
     .locator("table tbody tr")
-    .filter({ hasText: uniqueReservationName })
+    .filter({ hasText: table })
+    .filter({ hasText: String(guests) })
     .first()
     .waitFor({ state: "visible", timeout: 15000 });
 });
@@ -23,27 +28,33 @@ When("I find the user's reservation", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  const uniqueReservationName = this.testReservationName || "Test Erreserba Notifikazioa";
+  const table = String(this.testReservationTable ?? "");
+  const guests = Number(this.testReservationGuests ?? 0);
+  assert.ok(table.length > 0, "Expected testReservationTable from table selection step");
+  assert.ok(guests > 0, "Expected testReservationGuests from guests step");
 
   await page.waitForSelector("table", { timeout: 15000 });
 
-  // Admin search placeholder is t("searchReservation") (e.g. "Erreserba bilatu..." — lowercase "bilatu");
-  // attribute *= "Bilatu" never matched, so search was skipped and the row was missed on later pages.
+  // Admin search placeholder is t("searchReservation") (e.g. "Erreserba bilatu...").
   const searchInput = page.getByPlaceholder(/bilatu|buscar|search/i);
-  await searchInput.fill(uniqueReservationName);
+  await searchInput.fill(table);
 
   await page.waitForFunction(
-    (name: string) => {
+    ([tbl, g]: [string, number]) => {
       const rows = Array.from(document.querySelectorAll("table tbody tr"));
-      return rows.some(r => r.textContent?.includes(name));
+      return rows.some(r => {
+        const t = r.textContent ?? "";
+        return t.includes(tbl) && t.includes(String(g));
+      });
     },
-    uniqueReservationName,
+    [table, guests] as [string, number],
     { timeout: 15000 }
   );
 
   const reservationRow = page
     .locator("table tbody tr")
-    .filter({ hasText: uniqueReservationName })
+    .filter({ hasText: table })
+    .filter({ hasText: String(guests) })
     .first();
   await reservationRow.waitFor({ state: "visible", timeout: 5000 });
 
@@ -54,12 +65,17 @@ When("I cancel the user's reservation", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  const uniqueReservationName = this.testReservationName || "Test Erreserba Notifikazioa";
+  const table = String(this.testReservationTable ?? "");
+  const guests = Number(this.testReservationGuests ?? 0);
 
   // Use the stored reservation row or find it again
   const reservationRow =
     this.testReservationRow ||
-    page.locator("table tr").filter({ hasText: uniqueReservationName }).first();
+    page
+      .locator("table tbody tr")
+      .filter({ hasText: table })
+      .filter({ hasText: String(guests) })
+      .first();
   await reservationRow.waitFor({ state: "visible", timeout: 5000 });
 
   // Find the cancel button (button containing X icon) in the table row
@@ -147,14 +163,18 @@ Then("the reservation should be marked as cancelled", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  const uniqueReservationName = this.testReservationName || "Test Erreserba Notifikazioa";
+  const table = String(this.testReservationTable ?? "");
+  const guests = Number(this.testReservationGuests ?? 0);
+  assert.ok(table.length > 0, "Expected testReservationTable from table selection step");
+  assert.ok(guests > 0, "Expected testReservationGuests from guests step");
 
   await page.reload({ waitUntil: "domcontentloaded" });
 
   // Try to find the reservation again
   const reservationRow = page
     .locator("table tr")
-    .filter({ hasText: uniqueReservationName })
+    .filter({ hasText: table })
+    .filter({ hasText: String(guests) })
     .first();
 
   if (await reservationRow.isVisible()) {
@@ -175,7 +195,7 @@ Then("the reservation should be marked as cancelled", async function () {
 
     // Debug logging
     e2eDebug("Reservation cancellation debug:");
-    e2eDebug("Reservation name:", uniqueReservationName);
+    e2eDebug("Reservation table label:", table, "guests:", guests);
     e2eDebug("Is visible:", await reservationRow.isVisible());
     e2eDebug("Badge visible:", isCancelled);
     e2eDebug("Cancelled text visible:", cancelledText);

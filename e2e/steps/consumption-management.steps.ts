@@ -15,6 +15,16 @@ When("I add {string} to the cart", async function (productName: string) {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
+  // POS grid may be on "pending payments" or a narrowed search from a prior scenario — reset.
+  const filterAll = page.locator('[data-testid="button-filter-all"]');
+  if (await filterAll.isVisible().catch(() => false)) {
+    await filterAll.click();
+  }
+  const searchProducts = page.locator('[data-testid="input-search-products"]');
+  if (await searchProducts.isVisible().catch(() => false)) {
+    await searchProducts.fill("");
+  }
+
   // Wait for products to load with increased timeout and better error handling
   try {
     await page.waitForSelector('[data-testid="product-card"]', { timeout: 15000 });
@@ -28,11 +38,12 @@ When("I add {string} to the cart", async function (productName: string) {
     .locator(`[data-testid="product-card"]:has-text("${productName}")`)
     .first();
 
-  // Wait for the product card to be visible with increased timeout
-  await productCard.waitFor({ state: "visible", timeout: 10000 });
+  await productCard.scrollIntoViewIfNeeded();
+  await productCard.waitFor({ state: "visible", timeout: 15000 });
 
-  // Click the add button
-  await productCard.locator('[data-testid="button-add-to-cart"]').click();
+  const addBtn = productCard.locator('[data-testid="button-add-to-cart"]');
+  await addBtn.waitFor({ state: "visible", timeout: 5000 });
+  await addBtn.click({ timeout: 5000 });
 
   // Wait a moment for the cart to update
   await page.waitForTimeout(1000);

@@ -44,6 +44,8 @@ export async function expandAllSidebarSubmenus(page: Page): Promise<void> {
 export async function clickSidebarNavLink(page: Page, linkTestId: string): Promise<void> {
   await expandAllSidebarSubmenus(page);
   const link = page.locator(`[data-testid="${linkTestId}"]`).first();
+  // Nested Configuration links can sit below the fold in scrollable sidebars; visibility waits fail until scrolled.
+  await link.scrollIntoViewIfNeeded();
   await link.waitFor({ state: "visible", timeout: 15_000 });
   await link.click();
 }
