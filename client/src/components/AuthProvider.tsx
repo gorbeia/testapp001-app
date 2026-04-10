@@ -82,7 +82,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const { user: userData, token, expiresIn } = await response.json();
 
       const updatedUser = userFromApiSessionPayload(
-        userData && typeof userData === "object" ? (userData as Record<string, unknown>) : {},
+        userData && typeof userData === "object" ? (userData as Record<string, unknown>) : {}
       );
 
       setUser(updatedUser);
@@ -158,7 +158,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const { user: userData, token, expiresIn } = await response.json();
 
     const user = userFromApiSessionPayload(
-      userData && typeof userData === "object" ? (userData as Record<string, unknown>) : {},
+      userData && typeof userData === "object" ? (userData as Record<string, unknown>) : {}
     );
 
     setUser(user);

@@ -59,7 +59,11 @@ When(
     const app = getTestApp();
     const bare = request(app);
     const m = method.toUpperCase();
-    let res: { status: number; headers: Record<string, string | string[] | undefined>; body: unknown };
+    let res: {
+      status: number;
+      headers: Record<string, string | string[] | undefined>;
+      body: unknown;
+    };
     if (m === "GET") res = await bare.get(path);
     else if (m === "POST") res = await bare.post(path).send({});
     else if (m === "PUT") res = await bare.put(path).send({});
@@ -70,19 +74,25 @@ When(
   }
 );
 
-When("I POST to {string} with stored cookies", async function (this: IntegrationWorld, path: string) {
-  const res = await this.agent.post(path).send({});
-  recordResponse(this, res.status, res.headers, res.body);
-});
+When(
+  "I POST to {string} with stored cookies",
+  async function (this: IntegrationWorld, path: string) {
+    const res = await this.agent.post(path).send({});
+    recordResponse(this, res.status, res.headers, res.body);
+  }
+);
 
-Then("the response status should be {int}", async function (this: IntegrationWorld, expected: number) {
-  assert.ok(this.lastResponse, "No response captured");
-  assert.strictEqual(
-    this.lastResponse.status,
-    expected,
-    `Expected status ${expected}, got ${this.lastResponse.status}: ${JSON.stringify(this.lastResponse.body)}`
-  );
-});
+Then(
+  "the response status should be {int}",
+  async function (this: IntegrationWorld, expected: number) {
+    assert.ok(this.lastResponse, "No response captured");
+    assert.strictEqual(
+      this.lastResponse.status,
+      expected,
+      `Expected status ${expected}, got ${this.lastResponse.status}: ${JSON.stringify(this.lastResponse.body)}`
+    );
+  }
+);
 
 Then(
   "the response body should include property {string}",

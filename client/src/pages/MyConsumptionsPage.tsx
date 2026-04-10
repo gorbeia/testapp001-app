@@ -352,10 +352,7 @@ export function MyConsumptionsPage() {
               </TableBody>
             </Table>
           </div>
-          <PaginationControls
-            pagination={pagination}
-            itemType="consumptionsForPagination"
-          />
+          <PaginationControls pagination={pagination} itemType="consumptionsForPagination" />
         </Card>
       </div>
     </ErrorBoundary>

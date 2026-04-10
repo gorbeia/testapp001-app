@@ -163,16 +163,12 @@ export function DebtDetailModal({ credit, trigger }: DebtDetailModalProps) {
           <div className="border-t pt-4">
             <div className="flex justify-between items-center text-sm">
               <span className="text-gray-600">{t("calculatedOn") || "Calculated on"}</span>
-              <span className="text-gray-900">
-                {formatDateShort(credit.calculatedAt)}
-              </span>
+              <span className="text-gray-900">{formatDateShort(credit.calculatedAt)}</span>
             </div>
             {credit.markedAsPaidAt && (
               <div className="flex justify-between items-center text-sm mt-2">
                 <span className="text-gray-600">{t("markedAsPaidOn") || "Marked as paid on"}</span>
-                <span className="text-gray-900">
-                  {formatDateShort(credit.markedAsPaidAt)}
-                </span>
+                <span className="text-gray-900">{formatDateShort(credit.markedAsPaidAt)}</span>
               </div>
             )}
           </div>

@@ -2,16 +2,10 @@ import * as React from "react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
-export function TableFiltersBar({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
+export function TableFiltersBar({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        "flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end",
-        className
-      )}
+      className={cn("flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end", className)}
       {...props}
     />
   );

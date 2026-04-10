@@ -1,10 +1,7 @@
 import { and, eq, sql, inArray } from "drizzle-orm";
 import { db, type AppDatabase } from "../db";
 import { societyLedger, type SocietyLedgerType } from "@shared/schema";
-import {
-  societyCategoryType,
-  type SocietyCategoryKey,
-} from "@shared/society-categories";
+import { societyCategoryType, type SocietyCategoryKey } from "@shared/society-categories";
 import { formatLedgerAmount, LedgerAmountError } from "./ledger/ledger-rules";
 
 export const SOCIETY_LEDGER_REF_ACCOUNT_MOVEMENT = "account_movement";
@@ -57,8 +54,7 @@ async function insertLedgerRow(
     createdAt?: Date;
   }
 ) {
-  const booking =
-    typeof row.bookingDate === "string" ? row.bookingDate : ymd(row.bookingDate);
+  const booking = typeof row.bookingDate === "string" ? row.bookingDate : ymd(row.bookingDate);
   const [r] = await executor
     .insert(societyLedger)
     .values({
@@ -181,9 +177,7 @@ export async function getSocietyBalance(
       bal: sql<string>`coalesce(sum(cast(${societyLedger.amount} as decimal)), 0)`.mapWith(Number),
     })
     .from(societyLedger)
-    .where(
-      and(eq(societyLedger.societyId, societyId), eq(societyLedger.voided, false))
-    );
+    .where(and(eq(societyLedger.societyId, societyId), eq(societyLedger.voided, false)));
   return row?.bal ?? 0;
 }
 
@@ -226,8 +220,7 @@ export async function postManualEntry(
     categoryType === "income"
       ? formatLedgerAmount(params.amount)
       : formatLedgerAmount(-params.amount);
-  const type: SocietyLedgerType =
-      categoryType === "income" ? "manual_income" : "manual_expense";
+  const type: SocietyLedgerType = categoryType === "income" ? "manual_income" : "manual_expense";
 
   const row = await insertLedgerRow(executor, {
     societyId: params.societyId,
@@ -248,10 +241,7 @@ export async function postManualEntry(
     .set({ referenceId: row.id, updatedAt: new Date() })
     .where(eq(societyLedger.id, row.id));
 
-  const [updated] = await executor
-    .select()
-    .from(societyLedger)
-    .where(eq(societyLedger.id, row.id));
+  const [updated] = await executor.select().from(societyLedger).where(eq(societyLedger.id, row.id));
   return updated!;
 }
 
@@ -284,8 +274,7 @@ export async function editManualEntry(
 
   const oldSigned = parseFloat(String(existing.amount));
   const categoryType = societyCategoryType(params.category);
-  const newSigned =
-    categoryType === "income" ? params.amount : -params.amount;
+  const newSigned = categoryType === "income" ? params.amount : -params.amount;
   const delta = newSigned - oldSigned;
 
   if (Math.abs(delta) > 1e-9) {
@@ -304,16 +293,13 @@ export async function editManualEntry(
     });
   }
 
-  const type: SocietyLedgerType =
-    categoryType === "income" ? "manual_income" : "manual_expense";
+  const type: SocietyLedgerType = categoryType === "income" ? "manual_income" : "manual_expense";
   const amountStr =
     categoryType === "income"
       ? formatLedgerAmount(params.amount)
       : formatLedgerAmount(-params.amount);
   const booking =
-    typeof params.bookingDate === "string"
-      ? params.bookingDate
-      : ymd(params.bookingDate);
+    typeof params.bookingDate === "string" ? params.bookingDate : ymd(params.bookingDate);
 
   const [updated] = await executor
     .update(societyLedger)

@@ -3,13 +3,16 @@ import { Given, When } from "@cucumber/cucumber";
 
 import type { IntegrationWorld } from "./world";
 
-Given("I have loaded my society id from the user endpoint", async function (this: IntegrationWorld) {
-  const res = await this.agent.get("/api/societies/user");
-  assert.strictEqual(res.status, 200);
-  const row = res.body as { id?: string };
-  assert.ok(row?.id);
-  this.createdIds.society = row.id;
-});
+Given(
+  "I have loaded my society id from the user endpoint",
+  async function (this: IntegrationWorld) {
+    const res = await this.agent.get("/api/societies/user");
+    assert.strictEqual(res.status, 200);
+    const row = res.body as { id?: string };
+    assert.ok(row?.id);
+    this.createdIds.society = row.id;
+  }
+);
 
 When("I update my society phone via API", async function (this: IntegrationWorld) {
   const id = this.createdIds.society;

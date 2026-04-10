@@ -345,10 +345,7 @@ export function registerAccountMovementRoutes(app: Express) {
       const month = req.query.month as string | undefined;
       const typeRaw = req.query.type as string | undefined;
       const page = Math.max(1, parseInt(String(req.query.page || "1"), 10) || 1);
-      const limit = Math.min(
-        100,
-        Math.max(1, parseInt(String(req.query.limit || "50"), 10) || 50)
-      );
+      const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit || "50"), 10) || 50));
       const offset = (page - 1) * limit;
 
       const params: unknown[] = [societyId, memberId];

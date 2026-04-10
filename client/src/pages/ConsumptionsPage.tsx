@@ -679,10 +679,10 @@ export function ConsumptionsPage() {
                 const isLowStock = !stockUntracked && stock <= minStock;
                 const productThumb =
                   user?.societyId && product.imageUrl
-                    ? productImageSrc(
+                    ? (productImageSrc(
                         user.societyId,
                         thumbFilenameFromImageUrl(product.imageUrl)
-                      ) ?? productImageSrc(user.societyId, product.imageUrl)
+                      ) ?? productImageSrc(user.societyId, product.imageUrl))
                     : undefined;
 
                 return (

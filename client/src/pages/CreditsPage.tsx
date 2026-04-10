@@ -146,7 +146,11 @@ export function CreditsPage() {
   });
 
   // Fetch all credits (admin only; monthly-credit UI unused when SEPA is disabled)
-  const { data: creditsResponse, isLoading, error } = useQuery({
+  const {
+    data: creditsResponse,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: [
       "credits",
       monthFilter.value,

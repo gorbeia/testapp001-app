@@ -180,10 +180,8 @@ export function registerSocietyAccountingRoutes(app: Express): void {
         const manualIncomeTotal = manualIncomeByCategory.reduce((s, r) => s + r.total, 0);
         const manualExpensesTotal = manualExpensesByCategory.reduce((s, r) => s + r.total, 0);
 
-        const grandTotalIncome =
-          derivedIncomeTotal + manualIncomeTotal + adjustmentIncome;
-        const grandTotalExpenses =
-          derivedExpensesTotal + manualExpensesTotal + adjustmentExpense;
+        const grandTotalIncome = derivedIncomeTotal + manualIncomeTotal + adjustmentIncome;
+        const grandTotalExpenses = derivedExpensesTotal + manualExpensesTotal + adjustmentExpense;
         const net = grandTotalIncome - grandTotalExpenses;
 
         return res.json({
@@ -229,12 +227,7 @@ export function registerSocietyAccountingRoutes(app: Express): void {
         );
         const offset = (page - 1) * limit;
 
-        const baseParams = [
-          societyId,
-          from,
-          to,
-          SOCIETY_LEDGER_REF_ACCOUNT_MOVEMENT,
-        ] as const;
+        const baseParams = [societyId, from, to, SOCIETY_LEDGER_REF_ACCOUNT_MOVEMENT] as const;
 
         const derivedCte = `
           WITH lines AS (
@@ -293,11 +286,7 @@ export function registerSocietyAccountingRoutes(app: Express): void {
           SELECT * FROM ordered
           ORDER BY booking_date DESC, created_at DESC, id DESC
           LIMIT $5 OFFSET $6`;
-        const dataRes = await pool.query<PgRow>(dataSql, [
-          ...baseParams,
-          limit,
-          offset,
-        ]);
+        const dataRes = await pool.query<PgRow>(dataSql, [...baseParams, limit, offset]);
 
         return res.json({
           movements: (dataRes.rows as PgRow[]).map(m => {
@@ -309,8 +298,7 @@ export function registerSocietyAccountingRoutes(app: Express): void {
                 : isAdjustment
                   ? ("adjustment" as const)
                   : ("ledger" as const);
-            const cat =
-              m.category && isSocietyCategoryKey(m.category) ? m.category : null;
+            const cat = m.category && isSocietyCategoryKey(m.category) ? m.category : null;
             const categoryType = cat ? societyCategoryType(cat) : null;
             return {
               source,

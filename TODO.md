@@ -1,8 +1,11 @@
-images in reservation dialog
+images in society
 
-calendar instead of next reservations
-    * society calendar
-        the calendar may block tables
+images in product
+
+calendar instead of next reservations \* society calendar
+the calendar may block tables
+
+images in reservation dialog
 
 reservation of tables by chair count
 
@@ -17,11 +20,10 @@ Additional services in reservations: cleaning, heating, etc.
 remove demo login data
 
 email support
-    * password recovery
-    * notifications
+_ password recovery
+_ notifications
 
 domain and subdomains
-    preload login page based on subdomain (image, society name)
-
+preload login page based on subdomain (image, society name)
 
 sample images for common products

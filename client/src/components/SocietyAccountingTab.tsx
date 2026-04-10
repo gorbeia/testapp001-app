@@ -48,10 +48,7 @@ import {
   type SocietyCategoryKey,
 } from "@shared/society-categories";
 
-function societyCategoryLabel(
-  cat: string,
-  t: (key: TranslationKey) => string
-): string {
+function societyCategoryLabel(cat: string, t: (key: TranslationKey) => string): string {
   if (!isSocietyCategoryKey(cat)) return cat;
   return t(SOCIETY_CATEGORY_I18N_KEY[cat] as TranslationKey);
 }
@@ -126,13 +123,7 @@ export function SocietyAccountingTab() {
   }, [from, to]);
 
   const derivedMovementsQuery = useQuery({
-    queryKey: [
-      "society-accounting-derived-movements",
-      from,
-      to,
-      pagination.page,
-      pagination.limit,
-    ],
+    queryKey: ["society-accounting-derived-movements", from, to, pagination.page, pagination.limit],
     queryFn: async () => {
       const params = new URLSearchParams({
         from,
@@ -283,12 +274,7 @@ export function SocietyAccountingTab() {
     bookingDate: string | null;
     description: string | null;
   }) => {
-    if (
-      !row.category ||
-      !isSocietyCategoryKey(row.category) ||
-      !row.bookingDate
-    )
-      return;
+    if (!row.category || !isSocietyCategoryKey(row.category) || !row.bookingDate) return;
     setEditingId(row.id);
     setEntryCategory(row.category);
     setEntryAmount(parseFloat(row.amount).toFixed(2));
@@ -405,176 +391,175 @@ export function SocietyAccountingTab() {
         </TabsList>
 
         <TabsContent value="summary" className="space-y-4 mt-0">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground max-w-xl">{t("derivedFromMembersHint")}</p>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          data-testid="accounting-download-csv"
-          onClick={() => downloadSummaryCsv()}
-          disabled={!s}
-        >
-          <Download className="h-4 w-4 mr-2" />
-          {t("downloadCsv")}
-        </Button>
-      </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground max-w-xl">{t("derivedFromMembersHint")}</p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              data-testid="accounting-download-csv"
+              onClick={() => downloadSummaryCsv()}
+              disabled={!s}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              {t("downloadCsv")}
+            </Button>
+          </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t("income")}</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div
-              className="text-2xl font-bold text-green-600"
-              data-testid="accounting-stat-income"
-            >
-              {summaryQuery.isLoading ? "…" : formatMoney(s?.grandTotalIncome ?? 0)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">{t("expenses")}</CardTitle>
-            <TrendingDown className="h-4 w-4 text-destructive" />
-          </CardHeader>
-          <CardContent>
-            <div
-              className="text-2xl font-bold text-destructive"
-              data-testid="accounting-stat-expenses"
-            >
-              {summaryQuery.isLoading ? "…" : formatMoney(s?.grandTotalExpenses ?? 0)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">{t("netBalance")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`text-2xl font-bold ${(s?.net ?? 0) >= 0 ? "text-green-600" : "text-destructive"}`}
-              data-testid="accounting-stat-net"
-            >
-              {summaryQuery.isLoading ? "…" : formatMoney(s?.net ?? 0)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{t("income")}</CardTitle>
+                <TrendingUp className="h-4 w-4 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div
+                  className="text-2xl font-bold text-green-600"
+                  data-testid="accounting-stat-income"
+                >
+                  {summaryQuery.isLoading ? "…" : formatMoney(s?.grandTotalIncome ?? 0)}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{t("expenses")}</CardTitle>
+                <TrendingDown className="h-4 w-4 text-destructive" />
+              </CardHeader>
+              <CardContent>
+                <div
+                  className="text-2xl font-bold text-destructive"
+                  data-testid="accounting-stat-expenses"
+                >
+                  {summaryQuery.isLoading ? "…" : formatMoney(s?.grandTotalExpenses ?? 0)}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">{t("netBalance")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div
+                  className={`text-2xl font-bold ${(s?.net ?? 0) >= 0 ? "text-green-600" : "text-destructive"}`}
+                  data-testid="accounting-stat-net"
+                >
+                  {summaryQuery.isLoading ? "…" : formatMoney(s?.net ?? 0)}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t("annualSummary")}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table data-testid="accounting-summary-table">
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t("type")}</TableHead>
-                <TableHead>{t("category")}</TableHead>
-                <TableHead className="text-right">{t("amount")}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {!s || summaryQuery.isLoading ? (
-                <TableRow>
-                  <TableCell colSpan={3} className="text-center text-muted-foreground">
-                    …
-                  </TableCell>
-                </TableRow>
-              ) : (
-                <>
-                  {s.derivedIncome.byType.map(r => (
-                    <TableRow key={`d-i-${r.type}`}>
-                      <TableCell>
-                        <span className="text-xs rounded bg-green-100 text-green-800 px-2 py-0.5 dark:bg-green-900/40 dark:text-green-300">
-                          {t("income")}
-                        </span>
-                      </TableCell>
-                      <TableCell>{t(r.labelKey as never)}</TableCell>
-                      <TableCell className="text-right">{formatMoney(r.total)}</TableCell>
-                    </TableRow>
-                  ))}
-                  {s.manualIncome.byCategory.map(r => (
-                    <TableRow key={`m-i-${r.category}`}>
-                      <TableCell>
-                        <span className="text-xs rounded bg-green-100 text-green-800 px-2 py-0.5 dark:bg-green-900/40 dark:text-green-300">
-                          {t("income")}
-                        </span>
-                      </TableCell>
-                      <TableCell>{societyCategoryLabel(r.category, t)}</TableCell>
-                      <TableCell className="text-right">{formatMoney(r.total)}</TableCell>
-                    </TableRow>
-                  ))}
-                  {s.derivedExpenses.byType.map(r => (
-                    <TableRow key={`d-e-${r.type}`}>
-                      <TableCell>
-                        <span className="text-xs rounded bg-red-100 text-red-800 px-2 py-0.5 dark:bg-red-900/40 dark:text-red-300">
-                          {t("expenses")}
-                        </span>
-                      </TableCell>
-                      <TableCell>{t(r.labelKey as never)}</TableCell>
-                      <TableCell className="text-right">{formatMoney(r.total)}</TableCell>
-                    </TableRow>
-                  ))}
-                  {s.manualExpenses.byCategory.map(r => (
-                    <TableRow key={`m-e-${r.category}`}>
-                      <TableCell>
-                        <span className="text-xs rounded bg-red-100 text-red-800 px-2 py-0.5 dark:bg-red-900/40 dark:text-red-300">
-                          {t("expenses")}
-                        </span>
-                      </TableCell>
-                      <TableCell>{societyCategoryLabel(r.category, t)}</TableCell>
-                      <TableCell className="text-right">{formatMoney(r.total)}</TableCell>
-                    </TableRow>
-                  ))}
-                  {(s.adjustmentIncome ?? 0) > 0 && (
-                    <TableRow key="adj-income">
-                      <TableCell>
-                        <span className="text-xs rounded bg-green-100 text-green-800 px-2 py-0.5 dark:bg-green-900/40 dark:text-green-300">
-                          {t("income")}
-                        </span>
-                      </TableCell>
-                      <TableCell>{t("societyAccountingAdjustmentIncome")}</TableCell>
-                      <TableCell className="text-right">
-                        {formatMoney(s.adjustmentIncome)}
+          <Card>
+            <CardHeader>
+              <CardTitle>{t("annualSummary")}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table data-testid="accounting-summary-table">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("type")}</TableHead>
+                    <TableHead>{t("category")}</TableHead>
+                    <TableHead className="text-right">{t("amount")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {!s || summaryQuery.isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center text-muted-foreground">
+                        …
                       </TableCell>
                     </TableRow>
+                  ) : (
+                    <>
+                      {s.derivedIncome.byType.map(r => (
+                        <TableRow key={`d-i-${r.type}`}>
+                          <TableCell>
+                            <span className="text-xs rounded bg-green-100 text-green-800 px-2 py-0.5 dark:bg-green-900/40 dark:text-green-300">
+                              {t("income")}
+                            </span>
+                          </TableCell>
+                          <TableCell>{t(r.labelKey as never)}</TableCell>
+                          <TableCell className="text-right">{formatMoney(r.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                      {s.manualIncome.byCategory.map(r => (
+                        <TableRow key={`m-i-${r.category}`}>
+                          <TableCell>
+                            <span className="text-xs rounded bg-green-100 text-green-800 px-2 py-0.5 dark:bg-green-900/40 dark:text-green-300">
+                              {t("income")}
+                            </span>
+                          </TableCell>
+                          <TableCell>{societyCategoryLabel(r.category, t)}</TableCell>
+                          <TableCell className="text-right">{formatMoney(r.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                      {s.derivedExpenses.byType.map(r => (
+                        <TableRow key={`d-e-${r.type}`}>
+                          <TableCell>
+                            <span className="text-xs rounded bg-red-100 text-red-800 px-2 py-0.5 dark:bg-red-900/40 dark:text-red-300">
+                              {t("expenses")}
+                            </span>
+                          </TableCell>
+                          <TableCell>{t(r.labelKey as never)}</TableCell>
+                          <TableCell className="text-right">{formatMoney(r.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                      {s.manualExpenses.byCategory.map(r => (
+                        <TableRow key={`m-e-${r.category}`}>
+                          <TableCell>
+                            <span className="text-xs rounded bg-red-100 text-red-800 px-2 py-0.5 dark:bg-red-900/40 dark:text-red-300">
+                              {t("expenses")}
+                            </span>
+                          </TableCell>
+                          <TableCell>{societyCategoryLabel(r.category, t)}</TableCell>
+                          <TableCell className="text-right">{formatMoney(r.total)}</TableCell>
+                        </TableRow>
+                      ))}
+                      {(s.adjustmentIncome ?? 0) > 0 && (
+                        <TableRow key="adj-income">
+                          <TableCell>
+                            <span className="text-xs rounded bg-green-100 text-green-800 px-2 py-0.5 dark:bg-green-900/40 dark:text-green-300">
+                              {t("income")}
+                            </span>
+                          </TableCell>
+                          <TableCell>{t("societyAccountingAdjustmentIncome")}</TableCell>
+                          <TableCell className="text-right">
+                            {formatMoney(s.adjustmentIncome)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {(s.adjustmentExpense ?? 0) > 0 && (
+                        <TableRow key="adj-expense">
+                          <TableCell>
+                            <span className="text-xs rounded bg-red-100 text-red-800 px-2 py-0.5 dark:bg-red-900/40 dark:text-red-300">
+                              {t("expenses")}
+                            </span>
+                          </TableCell>
+                          <TableCell>{t("societyAccountingAdjustmentExpense")}</TableCell>
+                          <TableCell className="text-right">
+                            {formatMoney(s.adjustmentExpense)}
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {s.derivedIncome.byType.length === 0 &&
+                        s.manualIncome.byCategory.length === 0 &&
+                        s.derivedExpenses.byType.length === 0 &&
+                        s.manualExpenses.byCategory.length === 0 &&
+                        (s.adjustmentIncome ?? 0) <= 0 &&
+                        (s.adjustmentExpense ?? 0) <= 0 && (
+                          <TableRow>
+                            <TableCell colSpan={3} className="text-center text-muted-foreground">
+                              {t("noResults")}
+                            </TableCell>
+                          </TableRow>
+                        )}
+                    </>
                   )}
-                  {(s.adjustmentExpense ?? 0) > 0 && (
-                    <TableRow key="adj-expense">
-                      <TableCell>
-                        <span className="text-xs rounded bg-red-100 text-red-800 px-2 py-0.5 dark:bg-red-900/40 dark:text-red-300">
-                          {t("expenses")}
-                        </span>
-                      </TableCell>
-                      <TableCell>{t("societyAccountingAdjustmentExpense")}</TableCell>
-                      <TableCell className="text-right">
-                        {formatMoney(s.adjustmentExpense)}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {s.derivedIncome.byType.length === 0 &&
-                    s.manualIncome.byCategory.length === 0 &&
-                    s.derivedExpenses.byType.length === 0 &&
-                    s.manualExpenses.byCategory.length === 0 &&
-                    (s.adjustmentIncome ?? 0) <= 0 &&
-                    (s.adjustmentExpense ?? 0) <= 0 && (
-                      <TableRow>
-                        <TableCell colSpan={3} className="text-center text-muted-foreground">
-                          {t("noResults")}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                </>
-              )}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
-
         </TabsContent>
 
         <TabsContent value="derived-movements" className="space-y-4 mt-0">
@@ -647,8 +632,7 @@ export function SocietyAccountingTab() {
                               : (m.memberName ?? m.memberUsername ?? m.userId ?? "—")}
                         </TableCell>
                         <TableCell>
-                          {(m.source === "manual" ||
-                            (m.source === "adjustment" && m.category)) &&
+                          {(m.source === "manual" || (m.source === "adjustment" && m.category)) &&
                           m.category &&
                           isSocietyCategoryKey(m.category) ? (
                             <span className="flex flex-col gap-0.5">

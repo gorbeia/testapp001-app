@@ -41,7 +41,10 @@ When("I find the user's reservation", async function () {
     { timeout: 15000 }
   );
 
-  const reservationRow = page.locator("table tbody tr").filter({ hasText: uniqueReservationName }).first();
+  const reservationRow = page
+    .locator("table tbody tr")
+    .filter({ hasText: uniqueReservationName })
+    .first();
   await reservationRow.waitFor({ state: "visible", timeout: 5000 });
 
   this.testReservationRow = reservationRow;

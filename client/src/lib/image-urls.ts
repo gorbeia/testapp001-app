@@ -1,5 +1,8 @@
 /** Build public URL for an uploaded image stored as `{societyId}/{filename}`. */
-export function tenantImageSrc(societyId: string | undefined, filename: string | null | undefined): string | undefined {
+export function tenantImageSrc(
+  societyId: string | undefined,
+  filename: string | null | undefined
+): string | undefined {
   if (!societyId || !filename?.trim()) return undefined;
   const safe = filename.trim();
   if (safe.includes("..") || safe.includes("/") || safe.includes("\\")) return undefined;

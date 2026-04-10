@@ -1791,8 +1791,7 @@ export const translations = {
     loginTenantNotFound: "No se encontró la sociedad para este sitio.",
     loginTenantNotFoundGoToMain: "Ir a la página principal",
     societySubdomainLabel: "Subdominio",
-    societySubdomainHint:
-      "Ejemplo: mitxoko — mitxoko.tu-dominio.es. Déjelo vacío si no aplica.",
+    societySubdomainHint: "Ejemplo: mitxoko — mitxoko.tu-dominio.es. Déjelo vacío si no aplica.",
     subdomainInvalid: "Formato de subdominio no válido",
     subdomainTaken: "Este subdominio ya está en uso",
     subdomainReserved: "Este subdominio está reservado",
@@ -1843,8 +1842,7 @@ export const translations = {
     societyName: "Society Name",
     societyNameRequired: "Society name is required",
     societyShortDescription: "Short description",
-    societyShortDescriptionHint:
-      "Shown under the society name in the sidebar header (optional).",
+    societyShortDescriptionHint: "Shown under the society name in the sidebar header (optional).",
     societyAcronym: "Acronym (max 3 letters)",
     societyAcronymHint: "Shown in the sidebar header circle.",
     societyAcronymRequired: "Acronym is required (1–3 letters)",
@@ -1901,8 +1899,7 @@ export const translations = {
     loginTenantNotFound: "No society was found for this site.",
     loginTenantNotFoundGoToMain: "Go to the main site",
     societySubdomainLabel: "Subdomain",
-    societySubdomainHint:
-      "Example: myclub — myclub.your-domain.com. Leave empty if not used.",
+    societySubdomainHint: "Example: myclub — myclub.your-domain.com. Leave empty if not used.",
     subdomainInvalid: "Invalid subdomain format",
     subdomainTaken: "This subdomain is already in use",
     subdomainReserved: "This subdomain is reserved",

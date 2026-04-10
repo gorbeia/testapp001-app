@@ -466,9 +466,7 @@ export function BackofficeSocietiesPage() {
                 data-testid="backoffice-input-society-subdomain"
               />
               <p className="text-xs text-muted-foreground">{t("societySubdomainHint")}</p>
-              {subdomainChecking && (
-                <p className="text-xs text-muted-foreground">{t("loading")}</p>
-              )}
+              {subdomainChecking && <p className="text-xs text-muted-foreground">{t("loading")}</p>}
               {subdomainCheckMessage && (
                 <p className="text-xs text-destructive">{subdomainCheckMessage}</p>
               )}

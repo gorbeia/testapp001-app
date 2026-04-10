@@ -9,18 +9,7 @@ import {
   apiConsumptionCreateBodySchema,
   type JwtSessionUser,
 } from "@shared/schema";
-import {
-  eq,
-  and,
-  gte,
-  desc,
-  count,
-  sql,
-  or,
-  between,
-  ilike,
-  isNull,
-} from "drizzle-orm";
+import { eq, and, gte, desc, count, sql, or, between, ilike, isNull } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canModerateConsumptions } from "@shared/permissions";
 import { debtCalculationService } from "../cron-jobs";
@@ -51,10 +40,7 @@ function parseConsumptionListPagination(req: Request): {
   offset: number;
 } {
   const page = Math.max(1, parseInt(String(req.query.page ?? "1"), 10) || 1);
-  const limit = Math.min(
-    100,
-    Math.max(1, parseInt(String(req.query.limit ?? "25"), 10) || 25)
-  );
+  const limit = Math.min(100, Math.max(1, parseInt(String(req.query.limit ?? "25"), 10) || 25));
   return { page, limit, offset: (page - 1) * limit };
 }
 
@@ -139,10 +125,7 @@ export function registerConsumptionRoutes(app: Express) {
 
         const whereClause = and(...conditions);
 
-        const [totalRow] = await db
-          .select({ c: count() })
-          .from(consumptions)
-          .where(whereClause);
+        const [totalRow] = await db.select({ c: count() }).from(consumptions).where(whereClause);
         const total = Number(totalRow?.c ?? 0);
 
         const [sumRow] = await db
@@ -235,10 +218,7 @@ export function registerConsumptionRoutes(app: Express) {
         const whereClause = and(...baseConditions);
         const { limit, offset } = parseConsumptionListPagination(req);
 
-        const [totalRow] = await db
-          .select({ c: count() })
-          .from(consumptions)
-          .where(whereClause);
+        const [totalRow] = await db.select({ c: count() }).from(consumptions).where(whereClause);
         const total = Number(totalRow?.c ?? 0);
 
         const allConsumptions = await db

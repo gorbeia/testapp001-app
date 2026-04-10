@@ -519,7 +519,6 @@ export function MyReservationsPage() {
             )}
           </DialogContent>
         </Dialog>
-
       </div>
     </ErrorBoundary>
   );

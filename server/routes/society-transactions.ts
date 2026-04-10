@@ -49,8 +49,7 @@ function mapLedgerManualToApiItem(row: {
   createdAt: Date;
   updatedAt: Date;
 }) {
-  const cat =
-    row.category && isSocietyCategoryKey(row.category) ? row.category : null;
+  const cat = row.category && isSocietyCategoryKey(row.category) ? row.category : null;
   const categoryType = cat ? societyCategoryType(cat) : null;
   return {
     id: row.id,
@@ -91,7 +90,10 @@ export function registerSocietyTransactionRoutes(app: Express): void {
           return res.status(400).json({ message: "Invalid category filter" });
         }
 
-        const limit = Math.min(200, Math.max(1, parseInt(String(req.query.limit ?? "50"), 10) || 50));
+        const limit = Math.min(
+          200,
+          Math.max(1, parseInt(String(req.query.limit ?? "50"), 10) || 50)
+        );
         const offset = Math.max(0, parseInt(String(req.query.offset ?? "0"), 10) || 0);
 
         const baseManual = and(
@@ -113,9 +115,7 @@ export function registerSocietyTransactionRoutes(app: Express): void {
         }
         if (parsedType.success && parsedType.data) {
           const keysOfType =
-            parsedType.data === "income"
-              ? societyIncomeCategories()
-              : societyExpenseCategories();
+            parsedType.data === "income" ? societyIncomeCategories() : societyExpenseCategories();
           conditions.push(inArray(societyLedger.category, keysOfType));
         }
 
@@ -248,16 +248,16 @@ export function registerSocietyTransactionRoutes(app: Express): void {
           return res.status(404).json({ message: "Not found" });
         }
 
-        let category = (existing.category &&
-        isSocietyCategoryKey(existing.category)
-          ? existing.category
-          : "other_expense") as SocietyCategoryKey;
+        let category = (
+          existing.category && isSocietyCategoryKey(existing.category)
+            ? existing.category
+            : "other_expense"
+        ) as SocietyCategoryKey;
         if (parsed.data.category !== undefined) {
           category = parsed.data.category as SocietyCategoryKey;
         }
 
-        let amountNum =
-          Math.abs(parseFloat(String(existing.amount))) || 0;
+        let amountNum = Math.abs(parseFloat(String(existing.amount))) || 0;
         if (parsed.data.amount !== undefined) {
           try {
             amountNum = parseFloat(formatAmountForDb(parsed.data.amount));
@@ -274,9 +274,7 @@ export function registerSocietyTransactionRoutes(app: Express): void {
             : existing.bookingDate;
 
         const description =
-          parsed.data.description !== undefined
-            ? parsed.data.description
-            : existing.description;
+          parsed.data.description !== undefined ? parsed.data.description : existing.description;
 
         const result = await db.transaction(async tx =>
           editManualEntry(tx, {

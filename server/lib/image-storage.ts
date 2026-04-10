@@ -55,7 +55,10 @@ export async function writeImageVariants(
 }
 
 /** Remove `{stem}.webp` and `{stem}_thumb.webp` if they exist. */
-export async function removeImageVariants(societyId: string, storedFilename: string | null | undefined) {
+export async function removeImageVariants(
+  societyId: string,
+  storedFilename: string | null | undefined
+) {
   if (!storedFilename || !storedFilename.endsWith(".webp") || storedFilename.includes("..")) {
     return;
   }

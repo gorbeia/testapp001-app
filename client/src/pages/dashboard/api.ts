@@ -98,10 +98,7 @@ export const fetchNotes = async (language?: string): Promise<Note[]> => {
             : "eu")) as Language;
 
         // Use shared utility for language fallback logic
-        const message = findMessageByLanguage(
-          note.messages as MultilingualMessage[],
-          userLanguage
-        );
+        const message = findMessageByLanguage(note.messages as MultilingualMessage[], userLanguage);
 
         return {
           ...note,
@@ -329,8 +326,7 @@ const fetchUserTotalPendingDebt = async (): Promise<number> => {
     await throwIfResNotOk(response);
     const data = (await response.json()) as MemberPendingCreditRow[];
     return data.reduce(
-      (sum: number, credit: MemberPendingCreditRow) =>
-        sum + (parseFloat(credit.totalAmount) || 0),
+      (sum: number, credit: MemberPendingCreditRow) => sum + (parseFloat(credit.totalAmount) || 0),
       0
     );
   } catch (error) {

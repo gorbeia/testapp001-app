@@ -102,9 +102,7 @@ export function getMailTransport(): MailTransport {
 
   if (!process.env.SMTP_HOST || !process.env.MAIL_FROM) {
     if (process.env.NODE_ENV === "production") {
-      console.warn(
-        "[mail] SMTP_HOST or MAIL_FROM unset in production; outbound email is disabled"
-      );
+      console.warn("[mail] SMTP_HOST or MAIL_FROM unset in production; outbound email is disabled");
     }
     cached = createNoopTransport();
     return cached;

@@ -51,8 +51,7 @@ interface Society {
   updatedAt: string;
 }
 
-const ACRONYM_LETTERS_RE =
-  /^[A-Za-z\xC0-\xFF\u0100-\u017F\u0180-\u024F]+$/;
+const ACRONYM_LETTERS_RE = /^[A-Za-z\xC0-\xFF\u0100-\u017F\u0180-\u024F]+$/;
 const ACRONYM_INPUT_FILTER = /[^A-Za-z\xC0-\xFF\u0100-\u017F\u0180-\u024F]/g;
 
 function isAcronymCustomized(name: string, storedAcronym: string): boolean {

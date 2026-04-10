@@ -25,19 +25,22 @@ Given("I have an open consumption session", async function (this: IntegrationWor
   };
 });
 
-When("I add one unit of the catalog product to the open consumption", async function (this: IntegrationWorld) {
-  const cid = this.createdIds.consumption;
-  const pid = this.createdIds.product;
-  assert.ok(cid && pid);
-  const res = await this.agent.post(`/api/consumptions/${cid}/items`).send({
-    items: [{ productId: pid, quantity: 1 }],
-  });
-  this.lastResponse = {
-    status: res.status,
-    headers: res.headers as Record<string, string | string[] | undefined>,
-    body: res.body,
-  };
-});
+When(
+  "I add one unit of the catalog product to the open consumption",
+  async function (this: IntegrationWorld) {
+    const cid = this.createdIds.consumption;
+    const pid = this.createdIds.product;
+    assert.ok(cid && pid);
+    const res = await this.agent.post(`/api/consumptions/${cid}/items`).send({
+      items: [{ productId: pid, quantity: 1 }],
+    });
+    this.lastResponse = {
+      status: res.status,
+      headers: res.headers as Record<string, string | string[] | undefined>,
+      body: res.body,
+    };
+  }
+);
 
 When("I close the open consumption", async function (this: IntegrationWorld) {
   const cid = this.createdIds.consumption;

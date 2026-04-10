@@ -13,7 +13,12 @@ const EMAIL_BY_ROLE: Record<string, string> = {
   laguna: "laguna@txokoa.eus",
 };
 
-function recordLoginResponse(world: IntegrationWorld, status: number, headers: unknown, body: unknown): void {
+function recordLoginResponse(
+  world: IntegrationWorld,
+  status: number,
+  headers: unknown,
+  body: unknown
+): void {
   world.lastResponse = {
     status,
     headers: headers as Record<string, string | string[] | undefined>,

@@ -98,9 +98,7 @@ export function AppSidebar() {
             setSocietyAcronym(circle);
           }
           const sd = data?.shortDescription;
-          setSocietyShortDescription(
-            typeof sd === "string" && sd.trim() !== "" ? sd.trim() : null
-          );
+          setSocietyShortDescription(typeof sd === "string" && sd.trim() !== "" ? sd.trim() : null);
           if (data && typeof data.sepaMode === "string") {
             setSocietySepaMode(data.sepaMode);
           } else {
@@ -116,7 +114,8 @@ export function AppSidebar() {
     void loadSociety();
     const onProfileUpdated = () => void loadSociety();
     window.addEventListener(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT, onProfileUpdated);
-    return () => window.removeEventListener(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT, onProfileUpdated);
+    return () =>
+      window.removeEventListener(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT, onProfileUpdated);
   }, []);
 
   const handleNavigation = () => {
@@ -318,7 +317,9 @@ export function AppSidebar() {
           <div className="min-w-0">
             <h1 className="font-semibold text-sm truncate">{societyName || t("appName")}</h1>
             {societyShortDescription ? (
-              <p className="text-xs text-muted-foreground line-clamp-2">{societyShortDescription}</p>
+              <p className="text-xs text-muted-foreground line-clamp-2">
+                {societyShortDescription}
+              </p>
             ) : null}
           </div>
         </div>
@@ -520,7 +521,10 @@ export function AppSidebar() {
             >
               <Avatar className="h-9 w-9">
                 {user.avatarUrl && user.societyId ? (
-                  <AvatarImage src={userAvatarSrc(user.societyId, user.avatarUrl) ?? undefined} alt="" />
+                  <AvatarImage
+                    src={userAvatarSrc(user.societyId, user.avatarUrl) ?? undefined}
+                    alt=""
+                  />
                 ) : null}
                 <AvatarFallback className="text-xs bg-accent">
                   {getInitials(user.name)}

@@ -138,9 +138,7 @@ export const users = pgTable("users", {
   /** When true, user-targeted notifications are also sent to `username` (login email). */
   notifyEmail: boolean("notify_email").notNull().default(true),
   /** Preferred language for emails and future off-app messages. */
-  communicationLanguage: varchar("communication_language", { length: 8 })
-    .notNull()
-    .default("eu"),
+  communicationLanguage: varchar("communication_language", { length: 8 }).notNull().default("eu"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -599,7 +597,11 @@ export const updateSocietyEventBodySchema = insertSocietyEventSchema
     notes: z.string().max(5000).nullable().optional(),
   })
   .superRefine((data, ctx) => {
-    if (data.startDate !== undefined && data.endDate !== undefined && data.endDate < data.startDate) {
+    if (
+      data.startDate !== undefined &&
+      data.endDate !== undefined &&
+      data.endDate < data.startDate
+    ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "endDate must be on or after startDate",
@@ -755,9 +757,7 @@ export const bankTransfers = pgTable("bank_transfers", {
 
 /** Filter manual society entries by income vs expense (Kontabilitatea). */
 export const societyTransactionCategoryTypeSchema = z.enum(["income", "expense"]);
-export type SocietyTransactionCategoryType = z.infer<
-  typeof societyTransactionCategoryTypeSchema
->;
+export type SocietyTransactionCategoryType = z.infer<typeof societyTransactionCategoryTypeSchema>;
 
 /** Posted society cashbook: derived member-ledger mirror + manual entries + adjustments (append-only). */
 export const societyLedgerTypeSchema = z.enum([
@@ -1241,8 +1241,7 @@ export const updateUserProfileBodySchema = z
       data.notifyEmail !== undefined ||
       data.communicationLanguage !== undefined,
     {
-      message:
-        "At least one of name, phone, iban, notifyEmail, communicationLanguage is required",
+      message: "At least one of name, phone, iban, notifyEmail, communicationLanguage is required",
     }
   );
 

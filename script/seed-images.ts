@@ -18,7 +18,13 @@ const DEMO_ADMIN_USER_ID = "550e8400-e29b-41d4-a716-446655440001";
 
 const DEMO_PRODUCT_NAMES = ["Kalea Garagardoa", "Txakoli Getariako", "Kafea"] as const;
 
-async function rgbaBuffer(width: number, height: number, r: number, g: number, b: number): Promise<Buffer> {
+async function rgbaBuffer(
+  width: number,
+  height: number,
+  r: number,
+  g: number,
+  b: number
+): Promise<Buffer> {
   return sharp({
     create: { width, height, channels: 3, background: { r, g, b } },
   })
@@ -36,9 +42,15 @@ async function tryReadOptionalAsset(name: string): Promise<Buffer | null> {
 }
 
 export async function seedImages(dbConn: SeedDb) {
-  const [soc] = await dbConn.select().from(societies).where(eq(societies.id, DEMO_SOCIETY_ID)).limit(1);
+  const [soc] = await dbConn
+    .select()
+    .from(societies)
+    .where(eq(societies.id, DEMO_SOCIETY_ID))
+    .limit(1);
   if (!soc) {
-    console.log("Demo society not found — skipping seed-images (expected after seed-societies with GT001).");
+    console.log(
+      "Demo society not found — skipping seed-images (expected after seed-societies with GT001)."
+    );
     return;
   }
 

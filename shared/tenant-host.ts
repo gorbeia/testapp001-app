@@ -40,7 +40,10 @@ export type TenantHostParseResult =
 /**
  * Classifies Host for multitenancy when TENANT_APEX_DOMAIN is set (e.g. example.com).
  * Single-level tenant hosts only: {sub}.example.com */
-export function parseHostForTenant(hostHeader: string | undefined | null, apexDomain: string | null): TenantHostParseResult {
+export function parseHostForTenant(
+  hostHeader: string | undefined | null,
+  apexDomain: string | null
+): TenantHostParseResult {
   if (!apexDomain) {
     return { kind: "no_apex_config" };
   }

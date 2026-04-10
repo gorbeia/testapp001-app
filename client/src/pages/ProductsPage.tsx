@@ -726,8 +726,10 @@ export function ProductsPage() {
                     const isLowStock = mode !== "none" && stock <= minStock;
                     const productThumb =
                       user?.societyId && product.imageUrl
-                        ? productImageSrc(user.societyId, thumbFilenameFromImageUrl(product.imageUrl)) ??
-                          productImageSrc(user.societyId, product.imageUrl)
+                        ? (productImageSrc(
+                            user.societyId,
+                            thumbFilenameFromImageUrl(product.imageUrl)
+                          ) ?? productImageSrc(user.societyId, product.imageUrl))
                         : undefined;
 
                     return (
@@ -736,7 +738,11 @@ export function ProductsPage() {
                           <div className="flex items-center gap-3">
                             <div className="h-8 w-8 rounded-md bg-muted flex items-center justify-center overflow-hidden shrink-0">
                               {productThumb ? (
-                                <img src={productThumb} alt="" className="h-full w-full object-cover" />
+                                <img
+                                  src={productThumb}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
                               ) : (
                                 <Package className="h-4 w-4 text-muted-foreground" />
                               )}

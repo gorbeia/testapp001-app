@@ -216,11 +216,7 @@ export function SocietyEventDialog({
               name="isFullDay"
               control={form.control}
               render={({ field }) => (
-                <Switch
-                  id="ev-fullday"
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
+                <Switch id="ev-fullday" checked={field.value} onCheckedChange={field.onChange} />
               )}
             />
           </div>
@@ -233,9 +229,11 @@ export function SocietyEventDialog({
                   id="ev-start"
                   type="datetime-local"
                   value={toDatetimeLocalValue(form.watch("startDate"))}
-                  onChange={e => form.setValue("startDate", parseInputDate(e.target.value), {
-                    shouldValidate: true,
-                  })}
+                  onChange={e =>
+                    form.setValue("startDate", parseInputDate(e.target.value), {
+                      shouldValidate: true,
+                    })
+                  }
                 />
               </div>
               <div className="space-y-2">
@@ -244,9 +242,11 @@ export function SocietyEventDialog({
                   id="ev-end"
                   type="datetime-local"
                   value={toDatetimeLocalValue(form.watch("endDate"))}
-                  onChange={e => form.setValue("endDate", parseInputDate(e.target.value), {
-                    shouldValidate: true,
-                  })}
+                  onChange={e =>
+                    form.setValue("endDate", parseInputDate(e.target.value), {
+                      shouldValidate: true,
+                    })
+                  }
                 />
               </div>
             </div>
@@ -259,7 +259,10 @@ export function SocietyEventDialog({
                   type="date"
                   value={toDateInputValue(form.watch("startDate"))}
                   onChange={e => {
-                    const next = parseDateInputPreserveTime(e.target.value, form.getValues("startDate"));
+                    const next = parseDateInputPreserveTime(
+                      e.target.value,
+                      form.getValues("startDate")
+                    );
                     form.setValue("startDate", next, { shouldValidate: true });
                   }}
                 />
@@ -271,7 +274,10 @@ export function SocietyEventDialog({
                   type="date"
                   value={toDateInputValue(form.watch("endDate"))}
                   onChange={e => {
-                    const next = parseDateInputPreserveTime(e.target.value, form.getValues("endDate"));
+                    const next = parseDateInputPreserveTime(
+                      e.target.value,
+                      form.getValues("endDate")
+                    );
                     form.setValue("endDate", next, { shouldValidate: true });
                   }}
                 />

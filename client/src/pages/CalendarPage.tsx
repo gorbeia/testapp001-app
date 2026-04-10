@@ -41,7 +41,10 @@ import { authFetch } from "@/lib/api";
 import { readJsonOrThrow } from "@/lib/http-error";
 import { useAuth, userCan } from "@/lib/auth";
 import { Permission } from "@shared/permissions";
-import { SocietyEventDialog, CALENDAR_SOCIETY_EVENTS_QUERY_KEY } from "@/components/SocietyEventDialog";
+import {
+  SocietyEventDialog,
+  CALENDAR_SOCIETY_EVENTS_QUERY_KEY,
+} from "@/components/SocietyEventDialog";
 import { ReservationDialog } from "@/components/ReservationDialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -68,9 +71,7 @@ const localizer = dateFnsLocalizer({
   locales: { eu, es },
 });
 
-function toolbarViewNames(
-  views: ToolbarProps<GridCalendarEvent>["views"]
-): View[] {
+function toolbarViewNames(views: ToolbarProps<GridCalendarEvent>["views"]): View[] {
   if (Array.isArray(views)) {
     return views as View[];
   }
@@ -221,9 +222,7 @@ export function CalendarPage() {
   const { data: societyEvents = [], isLoading: eventsLoading } = useQuery({
     queryKey: [CALENDAR_SOCIETY_EVENTS_QUERY_KEY, monthParam],
     queryFn: async () => {
-      const res = await authFetch(
-        `/api/society-events?month=${encodeURIComponent(monthParam)}`
-      );
+      const res = await authFetch(`/api/society-events?month=${encodeURIComponent(monthParam)}`);
       return readJsonOrThrow<SocietyEvent[]>(res);
     },
   });
@@ -261,9 +260,7 @@ export function CalendarPage() {
         kind: "society-event",
         societyType: ev.type,
         blocks:
-          ev.blocksAllReservations ||
-          ev.blocksKitchen ||
-          (ev.blockedTableIds?.length ?? 0) > 0,
+          ev.blocksAllReservations || ev.blocksKitchen || (ev.blockedTableIds?.length ?? 0) > 0,
         original: ev,
       });
     }
@@ -517,9 +514,7 @@ export function CalendarPage() {
         <SheetContent className="w-full sm:max-w-md overflow-y-auto">
           <SheetHeader>
             <SheetTitle>
-              {sheetDate
-                ? format(sheetDate, "PPP", { locale: dateLocale })
-                : t("calendar")}
+              {sheetDate ? format(sheetDate, "PPP", { locale: dateLocale }) : t("calendar")}
             </SheetTitle>
             <SheetDescription>
               {t("calendarDaySocietyEvents")} / {t("calendarDayReservations")}
@@ -624,7 +619,9 @@ export function CalendarPage() {
             <div>
               <h3 className="text-sm font-medium mb-2">{t("calendarDayReservations")}</h3>
               {dayReservations.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t("calendarNoReservationsThisDay")}</p>
+                <p className="text-sm text-muted-foreground">
+                  {t("calendarNoReservationsThisDay")}
+                </p>
               ) : (
                 <ul className="space-y-2">
                   {dayReservations.map(res => (

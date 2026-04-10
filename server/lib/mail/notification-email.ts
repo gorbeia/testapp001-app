@@ -76,9 +76,7 @@ export async function sendUserNotificationEmail(opts: {
     const [notification] = await db
       .select()
       .from(notifications)
-      .where(
-        and(eq(notifications.id, opts.notificationId), eq(notifications.userId, opts.userId))
-      )
+      .where(and(eq(notifications.id, opts.notificationId), eq(notifications.userId, opts.userId)))
       .limit(1);
 
     if (!notification) return;

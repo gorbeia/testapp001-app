@@ -146,9 +146,7 @@ export function LoginForm() {
                   />
                 ) : (
                   <span className="text-2xl font-bold text-primary-foreground">
-                    {isTenant
-                      ? (tenantData.acronym || "?").slice(0, 3).toUpperCase()
-                      : "GT"}
+                    {isTenant ? (tenantData.acronym || "?").slice(0, 3).toUpperCase() : "GT"}
                   </span>
                 )}
               </div>
@@ -156,9 +154,7 @@ export function LoginForm() {
                 {isTenant ? tenantData.name : t("appName")}
               </CardTitle>
               <CardDescription>
-                {isTenant
-                  ? tenantData.shortDescription?.trim() || ""
-                  : t("loginDefaultTagline")}
+                {isTenant ? tenantData.shortDescription?.trim() || "" : t("loginDefaultTagline")}
               </CardDescription>
             </>
           )}

@@ -38,7 +38,10 @@ function normalizeFullDayRange(isFullDay: boolean, startDate: Date, endDate: Dat
   return { startDate: s, endDate: e };
 }
 
-async function assertBlockedTableIdsBelongToSociety(societyId: string, ids: string[]): Promise<boolean> {
+async function assertBlockedTableIdsBelongToSociety(
+  societyId: string,
+  ids: string[]
+): Promise<boolean> {
   if (ids.length === 0) return true;
   const rows = await db
     .select({ id: tables.id })
@@ -77,7 +80,9 @@ export function registerSocietyEventRoutes(app: Express) {
             return res.status(400).json({ message: "to must be on or after from" });
           }
         } else {
-          return res.status(400).json({ message: "Provide month=YYYY-MM or from and to (ISO dates)" });
+          return res
+            .status(400)
+            .json({ message: "Provide month=YYYY-MM or from and to (ISO dates)" });
         }
 
         const rows = await db
@@ -138,7 +143,9 @@ export function registerSocietyEventRoutes(app: Express) {
         const blockedIds = parsed.data.blockedTableIds ?? [];
         const okTables = await assertBlockedTableIdsBelongToSociety(societyId, blockedIds);
         if (!okTables) {
-          return res.status(400).json({ message: "One or more table ids are invalid for this society" });
+          return res
+            .status(400)
+            .json({ message: "One or more table ids are invalid for this society" });
         }
 
         const { startDate, endDate } = normalizeFullDayRange(
@@ -204,7 +211,9 @@ export function registerSocietyEventRoutes(app: Express) {
             parsed.data.blockedTableIds
           );
           if (!okTables) {
-            return res.status(400).json({ message: "One or more table ids are invalid for this society" });
+            return res
+              .status(400)
+              .json({ message: "One or more table ids are invalid for this society" });
           }
         }
 

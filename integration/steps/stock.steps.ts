@@ -12,17 +12,20 @@ Given("I have a manual stock product id from the catalog", async function (this:
   this.createdIds.product = manual.id;
 });
 
-When("I post a stock adjustment of {int} for the catalog product", async function (this: IntegrationWorld, qty: number) {
-  const id = this.createdIds.product;
-  assert.ok(id);
-  const res = await this.agent.post(`/api/products/${id}/adjust`).send({
-    type: "adjustment",
-    quantity: qty,
-    reason: "integration test adjustment",
-  });
-  this.lastResponse = {
-    status: res.status,
-    headers: res.headers as Record<string, string | string[] | undefined>,
-    body: res.body,
-  };
-});
+When(
+  "I post a stock adjustment of {int} for the catalog product",
+  async function (this: IntegrationWorld, qty: number) {
+    const id = this.createdIds.product;
+    assert.ok(id);
+    const res = await this.agent.post(`/api/products/${id}/adjust`).send({
+      type: "adjustment",
+      quantity: qty,
+      reason: "integration test adjustment",
+    });
+    this.lastResponse = {
+      status: res.status,
+      headers: res.headers as Record<string, string | string[] | undefined>,
+      body: res.body,
+    };
+  }
+);

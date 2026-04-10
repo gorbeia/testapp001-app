@@ -3,7 +3,11 @@ import { eq } from "drizzle-orm";
 
 import { db } from "../../server/db";
 import { DEMO_SOCIETY_ID } from "../../script/seed-demo-society";
-import { normalizeSocietyPaymentMethods, societies, type SocietyPaymentMethod } from "@shared/schema";
+import {
+  normalizeSocietyPaymentMethods,
+  societies,
+  type SocietyPaymentMethod,
+} from "@shared/schema";
 
 /**
  * Ensures demo society accepts cash settlement (idempotent).

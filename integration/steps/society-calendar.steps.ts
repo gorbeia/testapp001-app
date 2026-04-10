@@ -19,7 +19,11 @@ function getCalendarTestDaySalt(): number {
 }
 
 /** UTC day at offset + midday ISO for reservation instant (stable across TZ for CI). */
-function integrationTestCalendarDay(dayOffset: number): { startIso: string; endIso: string; middayIso: string } {
+function integrationTestCalendarDay(dayOffset: number): {
+  startIso: string;
+  endIso: string;
+  middayIso: string;
+} {
   const start = new Date();
   start.setUTCDate(start.getUTCDate() + dayOffset + getCalendarTestDaySalt());
   start.setUTCHours(0, 0, 0, 0);
@@ -115,7 +119,10 @@ When(
     const res = await this.agent.get("/api/tables/available");
     assert.strictEqual(res.status, 200, JSON.stringify(res.body));
     const list = res.body as Array<{ id: string; name: string }>;
-    assert.ok(Array.isArray(list) && list.length >= 2, "Need at least two tables for calendar tests");
+    assert.ok(
+      Array.isArray(list) && list.length >= 2,
+      "Need at least two tables for calendar tests"
+    );
     const row = list.find(t => t.name === tableName);
     assert.ok(row, `Table ${tableName} not found in /api/tables/available`);
     this.createdIds.calendarBlockedTableId = row.id;

@@ -170,8 +170,7 @@ export function UserProfile() {
         iban: u.iban != null ? String(u.iban) : undefined,
         linkedMemberId: u.linkedMemberId != null ? String(u.linkedMemberId) : undefined,
         linkedMemberName: u.linkedMemberName != null ? String(u.linkedMemberName) : undefined,
-        avatarUrl:
-          typeof u.avatarUrl === "string" && u.avatarUrl ? u.avatarUrl : undefined,
+        avatarUrl: typeof u.avatarUrl === "string" && u.avatarUrl ? u.avatarUrl : undefined,
         notifyEmail: typeof u.notifyEmail === "boolean" ? u.notifyEmail : true,
         communicationLanguage:
           u.communicationLanguage === "es" || u.communicationLanguage === "en"
@@ -388,9 +387,7 @@ export function UserProfile() {
                   <Switch
                     id="notify-email"
                     checked={editForm.notifyEmail}
-                    onCheckedChange={checked =>
-                      setEditForm({ ...editForm, notifyEmail: checked })
-                    }
+                    onCheckedChange={checked => setEditForm({ ...editForm, notifyEmail: checked })}
                   />
                 </div>
                 <div className="space-y-2">

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { parseHostForTenant, RESERVED_SOCIETY_SUBDOMAIN_LABELS, societySubdomainFieldSchema } from "./tenant-host";
+import {
+  parseHostForTenant,
+  RESERVED_SOCIETY_SUBDOMAIN_LABELS,
+  societySubdomainFieldSchema,
+} from "./tenant-host";
 
 describe("parseHostForTenant", () => {
   it("returns apex for exact apex host", () => {

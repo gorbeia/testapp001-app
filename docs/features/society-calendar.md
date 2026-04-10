@@ -52,12 +52,12 @@
 
 ## Related routes
 
-| Path | Purpose |
-|------|---------|
-| `/egutegia` | Calendar page |
-| `GET /api/society-events` | List events (`month=YYYY-MM` or `from` + `to` ISO) |
-| `GET /api/society-events/:id` | Detail |
-| `POST /api/society-events` | Create (`CALENDAR_MANAGE`) |
-| `PUT /api/society-events/:id` | Update (`CALENDAR_MANAGE`) |
-| `DELETE /api/society-events/:id` | Delete (`CALENDAR_MANAGE`) |
-| `GET /api/reservations?forCalendar=true&month=YYYY-MM` | Month reservations for calendar (max `limit` 500) |
+| Path                                                   | Purpose                                            |
+| ------------------------------------------------------ | -------------------------------------------------- |
+| `/egutegia`                                            | Calendar page                                      |
+| `GET /api/society-events`                              | List events (`month=YYYY-MM` or `from` + `to` ISO) |
+| `GET /api/society-events/:id`                          | Detail                                             |
+| `POST /api/society-events`                             | Create (`CALENDAR_MANAGE`)                         |
+| `PUT /api/society-events/:id`                          | Update (`CALENDAR_MANAGE`)                         |
+| `DELETE /api/society-events/:id`                       | Delete (`CALENDAR_MANAGE`)                         |
+| `GET /api/reservations?forCalendar=true&month=YYYY-MM` | Month reservations for calendar (max `limit` 500)  |

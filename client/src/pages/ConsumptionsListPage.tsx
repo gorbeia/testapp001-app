@@ -155,13 +155,7 @@ export function ConsumptionsListPage() {
     };
 
     fetchConsumptions();
-  }, [
-    userFilter.value,
-    monthFilter.value,
-    debouncedSearch,
-    pagination.page,
-    pagination.limit,
-  ]);
+  }, [userFilter.value, monthFilter.value, debouncedSearch, pagination.page, pagination.limit]);
 
   const fetchConsumptionDetails = async (consumptionId: string) => {
     try {
@@ -328,11 +322,19 @@ export function ConsumptionsListPage() {
                                   </div>
                                   <div>
                                     <p className="text-sm font-medium">Sorrera</p>
-                                    <p>{formatConsumptionTimestamp(selectedConsumption.consumption.createdAt)}</p>
+                                    <p>
+                                      {formatConsumptionTimestamp(
+                                        selectedConsumption.consumption.createdAt
+                                      )}
+                                    </p>
                                   </div>
                                   <div>
                                     <p className="text-sm font-medium">Itxiera</p>
-                                    <p>{formatConsumptionTimestamp(selectedConsumption.consumption.closedAt)}</p>
+                                    <p>
+                                      {formatConsumptionTimestamp(
+                                        selectedConsumption.consumption.closedAt
+                                      )}
+                                    </p>
                                   </div>
                                 </div>
 
@@ -379,10 +381,7 @@ export function ConsumptionsListPage() {
                 )}
               </TableBody>
             </Table>
-            <PaginationControls
-              pagination={pagination}
-              itemType="consumptionsForPagination"
-            />
+            <PaginationControls pagination={pagination} itemType="consumptionsForPagination" />
           </CardContent>
         </Card>
       </div>

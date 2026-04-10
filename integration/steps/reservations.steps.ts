@@ -38,30 +38,33 @@ After({ tags: "@prepayment-ledger-floor" }, function () {
   }
 });
 
-When("I POST to {string} with a valid reservation body", async function (this: IntegrationWorld, path: string) {
-  assert.strictEqual(path, "/api/reservations");
-  const tag = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const body = {
-    name: `Integration reservation ${tag}`,
-    type: "bazkaria",
-    startDate: buildUniqueStartDateIso(),
-    guests: 4,
-    useKitchen: false,
-    table: "Mahaia 2",
-    totalAmount: "25.00",
-    notes: "",
-  };
-  const res = await this.agent.post(path).send(body);
-  this.lastResponse = {
-    status: res.status,
-    headers: res.headers as Record<string, string | string[] | undefined>,
-    body: res.body,
-  };
-  const b = res.body as { reservation?: { id?: string } };
-  if (res.status === 201 && b?.reservation?.id) {
-    this.createdIds.reservation = b.reservation.id;
+When(
+  "I POST to {string} with a valid reservation body",
+  async function (this: IntegrationWorld, path: string) {
+    assert.strictEqual(path, "/api/reservations");
+    const tag = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const body = {
+      name: `Integration reservation ${tag}`,
+      type: "bazkaria",
+      startDate: buildUniqueStartDateIso(),
+      guests: 4,
+      useKitchen: false,
+      table: "Mahaia 2",
+      totalAmount: "25.00",
+      notes: "",
+    };
+    const res = await this.agent.post(path).send(body);
+    this.lastResponse = {
+      status: res.status,
+      headers: res.headers as Record<string, string | string[] | undefined>,
+      body: res.body,
+    };
+    const b = res.body as { reservation?: { id?: string } };
+    if (res.status === 201 && b?.reservation?.id) {
+      this.createdIds.reservation = b.reservation.id;
+    }
   }
-});
+);
 
 Given("I have created a reservation", async function (this: IntegrationWorld) {
   const tag = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -127,11 +130,14 @@ Then(
   }
 );
 
-Then("the created reservation type should be {string}", async function (this: IntegrationWorld, t: string) {
-  assert.ok(this.lastResponse?.body && typeof this.lastResponse.body === "object");
-  const b = this.lastResponse.body as { reservation?: { type?: string } };
-  assert.strictEqual(b.reservation?.type, t);
-});
+Then(
+  "the created reservation type should be {string}",
+  async function (this: IntegrationWorld, t: string) {
+    assert.ok(this.lastResponse?.body && typeof this.lastResponse.body === "object");
+    const b = this.lastResponse.body as { reservation?: { type?: string } };
+    assert.strictEqual(b.reservation?.type, t);
+  }
+);
 
 Given("the member balance is below the society floor", async function (this: IntegrationWorld) {
   // DB state from @prepayment-ledger-floor Before hook; bazkide login must match seed fixture user.

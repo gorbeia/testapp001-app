@@ -113,14 +113,7 @@ export function AccountMovementsPage() {
   });
 
   const query = useQuery({
-    queryKey: [
-      "account-movements-admin",
-      month,
-      type,
-      userId,
-      pagination.page,
-      pagination.limit,
-    ],
+    queryKey: ["account-movements-admin", month, type, userId, pagination.page, pagination.limit],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (month) params.set("month", month);
@@ -500,10 +493,7 @@ export function AccountMovementsPage() {
               )}
             </TableBody>
           </Table>
-          <PaginationControls
-            pagination={pagination}
-            itemType="movementsForPagination"
-          />
+          <PaginationControls pagination={pagination} itemType="movementsForPagination" />
         </CardContent>
       </Card>
     </div>

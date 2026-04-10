@@ -79,7 +79,9 @@ export function RecentNotes({ notes, loading, error }: RecentNotesProps) {
                         </TooltipContent>
                       </Tooltip>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {format(new Date(note.createdAt), "PPP", { locale: dateFnsLocale(language) })}
+                        {format(new Date(note.createdAt), "PPP", {
+                          locale: dateFnsLocale(language),
+                        })}
                       </p>
                     </div>
                   </div>

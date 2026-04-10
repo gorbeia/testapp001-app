@@ -1,14 +1,14 @@
 # Test coverage matrix
 
-Status legend: **✓** = covered · **—** = not applicable / deferred · *(empty)* = gap to fill later.
+Status legend: **✓** = covered · **—** = not applicable / deferred · _(empty)_ = gap to fill later.
 
 **Tiers**
 
-| Tier | Command / location | Purpose |
-|------|-------------------|---------|
-| **Unit** | `pnpm test:unit` — `server/**/*.test.ts`, `shared/**/*.test.ts` (Vitest) | Pure logic, mocked DB |
+| Tier            | Command / location                                                                | Purpose                                         |
+| --------------- | --------------------------------------------------------------------------------- | ----------------------------------------------- |
+| **Unit**        | `pnpm test:unit` — `server/**/*.test.ts`, `shared/**/*.test.ts` (Vitest)          | Pure logic, mocked DB                           |
 | **Integration** | `pnpm test:integration` — `integration/features/*.feature` (Cucumber + Supertest) | API contracts, RBAC, business rules (seeded DB) |
-| **E2E** | `pnpm test:e2e` — `e2e/features/*.feature` (Cucumber + Playwright) | Critical UI journeys |
+| **E2E**         | `pnpm test:e2e` — `e2e/features/*.feature` (Cucumber + Playwright)                | Critical UI journeys                            |
 
 **Maintenance:** When you add or change a behavioral test, update this file and keep `IMPLEMENTATION_STATUS.md` aligned. Integration scenarios may use `@story:…` tags for traceability (`grep -r '@story:' integration/features/`).
 
@@ -16,91 +16,91 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · *(emp
 
 ## 1. Authentication (`authentication.md`)
 
-| Story area | Unit | Integration | E2E |
-|------------|------|-------------|-----|
-| Login / tokens / cookies / tenant-by-host | `shared/tenant-host.test.ts` | `auth.feature` (incl. public tenant-by-host) | `login.feature` (UI) |
-| Refresh / logout | — | `auth.feature` | — |
-| RBAC (API) | — | `rbac.feature` | — |
-| RBAC (sidebar / URL) | — | — | `role-based-menu.feature` |
+| Story area                                | Unit                         | Integration                                  | E2E                       |
+| ----------------------------------------- | ---------------------------- | -------------------------------------------- | ------------------------- |
+| Login / tokens / cookies / tenant-by-host | `shared/tenant-host.test.ts` | `auth.feature` (incl. public tenant-by-host) | `login.feature` (UI)      |
+| Refresh / logout                          | —                            | `auth.feature`                               | —                         |
+| RBAC (API)                                | —                            | `rbac.feature`                               | —                         |
+| RBAC (sidebar / URL)                      | —                            | —                                            | `role-based-menu.feature` |
 
 ## 2. User management (`user-management.md`)
 
-| Story area | Unit | Integration | E2E |
-|------------|------|-------------|-----|
-| List / create / permissions | — | `users.feature`, `rbac.feature` | `users.feature` (create flow UI) |
+| Story area                  | Unit | Integration                     | E2E                              |
+| --------------------------- | ---- | ------------------------------- | -------------------------------- |
+| List / create / permissions | —    | `users.feature`, `rbac.feature` | `users.feature` (create flow UI) |
 
 ## 3. Reservations (`reservations.md`)
 
-| Story area | Unit | Integration | E2E |
-|------------|------|-------------|-----|
-| CRUD / list | — | `reservations.feature` | `reservation-management.feature` |
-| Prepayment ledger floor (API) | — | `reservations.feature` (`@prepayment-ledger-floor`) | — |
-| Prepayment ledger floor (UI) | — | — | `prepayment-ledger-floor.feature` |
-| Cancellation + notification | — | — | `reservation-cancellation-notification.feature` |
+| Story area                    | Unit | Integration                                         | E2E                                             |
+| ----------------------------- | ---- | --------------------------------------------------- | ----------------------------------------------- |
+| CRUD / list                   | —    | `reservations.feature`                              | `reservation-management.feature`                |
+| Prepayment ledger floor (API) | —    | `reservations.feature` (`@prepayment-ledger-floor`) | —                                               |
+| Prepayment ledger floor (UI)  | —    | —                                                   | `prepayment-ledger-floor.feature`               |
+| Cancellation + notification   | —    | —                                                   | `reservation-cancellation-notification.feature` |
 
 ## 3a. Society calendar (`society-calendar.md`)
 
-| Story area | Unit | Integration | E2E |
-|------------|------|-------------|-----|
-| Events CRUD + reservation blocks | — | `society-calendar.feature` (`@story:cal-1`, `@story:cal-3`) | — |
+| Story area                       | Unit | Integration                                                 | E2E |
+| -------------------------------- | ---- | ----------------------------------------------------------- | --- |
+| Events CRUD + reservation blocks | —    | `society-calendar.feature` (`@story:cal-1`, `@story:cal-3`) | —   |
 
 ## 4. Consumptions (`consumptions.md`)
 
-| Story area | Unit | Integration | E2E |
-|------------|------|-------------|-----|
-| Session / items / close | — | `consumptions.feature` | `consumption-management.feature` |
-| Cash pending / settlements (API) | — | `cash-settlements.feature` | — |
+| Story area                       | Unit | Integration                | E2E                              |
+| -------------------------------- | ---- | -------------------------- | -------------------------------- |
+| Session / items / close          | —    | `consumptions.feature`     | `consumption-management.feature` |
+| Cash pending / settlements (API) | —    | `cash-settlements.feature` | —                                |
 
 ## 5. Ledger & prepayments (`account-movements.md`, credits)
 
-| Story area | Unit | Integration | E2E |
-|------------|------|-------------|-----|
-| My movements / refund (API) | ✓ (ledger math, select helpers) | `account-movements.feature` | — |
-| Bank transfers / validate / reject | — | `bank-transfers.feature` | `bank-transfers.feature` (ledger line UI) |
-| SEPA bounce (unknown credit) | — | `account-movements.feature` | — |
-| Debts / credits listing (API) | — | `debts.feature` | — |
+| Story area                         | Unit                            | Integration                 | E2E                                       |
+| ---------------------------------- | ------------------------------- | --------------------------- | ----------------------------------------- |
+| My movements / refund (API)        | ✓ (ledger math, select helpers) | `account-movements.feature` | —                                         |
+| Bank transfers / validate / reject | —                               | `bank-transfers.feature`    | `bank-transfers.feature` (ledger line UI) |
+| SEPA bounce (unknown credit)       | —                               | `account-movements.feature` | —                                         |
+| Debts / credits listing (API)      | —                               | `debts.feature`             | —                                         |
 
 ## 6. Catalog & society settings
 
-| Story area | Unit | Integration | E2E |
-|------------|------|-------------|-----|
-| Products CRUD | — | `products.feature` | — |
-| Categories | — | `categories.feature` | — |
-| Society PATCH (incl. payment methods) | — | `societies.feature` | `society-management.feature` |
-| Image uploads (logo, map, avatar, product) | — | — | — |
-| SEPA mode / sidebar | — | — | `sepa-billing-frequency.feature` |
+| Story area                                 | Unit | Integration          | E2E                              |
+| ------------------------------------------ | ---- | -------------------- | -------------------------------- |
+| Products CRUD                              | —    | `products.feature`   | —                                |
+| Categories                                 | —    | `categories.feature` | —                                |
+| Society PATCH (incl. payment methods)      | —    | `societies.feature`  | `society-management.feature`     |
+| Image uploads (logo, map, avatar, product) | —    | —                    | —                                |
+| SEPA mode / sidebar                        | —    | —                    | `sepa-billing-frequency.feature` |
 
 ## 7. Inventory / stock (`inventory.md`)
 
-| Story area | Unit | Integration | E2E |
-|------------|------|-------------|-----|
-| Movements list / adjust | ✓ (inventory helpers) | `stock.feature` | — |
+| Story area              | Unit                  | Integration     | E2E |
+| ----------------------- | --------------------- | --------------- | --- |
+| Movements list / adjust | ✓ (inventory helpers) | `stock.feature` | —   |
 
 ## 8. Communication (`communication.md`)
 
-| Story area | Unit | Integration | E2E |
-|------------|------|-------------|-----|
-| Notifications | — | `notifications.feature` | — |
-| Email content locale resolution | `server/lib/mail/notification-email.test.ts` | — | — |
-| Notes | — | `notes.feature` | — |
+| Story area                      | Unit                                         | Integration             | E2E |
+| ------------------------------- | -------------------------------------------- | ----------------------- | --- |
+| Notifications                   | —                                            | `notifications.feature` | —   |
+| Email content locale resolution | `server/lib/mail/notification-email.test.ts` | —                       | —   |
+| Notes                           | —                                            | `notes.feature`         | —   |
 
 ## 9. Subscriptions
 
-| Story area | Unit | Integration | E2E |
-|------------|------|-------------|-----|
-| Subscription types CRUD | — | `subscriptions.feature` | — |
+| Story area              | Unit | Integration             | E2E |
+| ----------------------- | ---- | ----------------------- | --- |
+| Subscription types CRUD | —    | `subscriptions.feature` | —   |
 
 ## 10. Real-time debt UI
 
-| Story area | Unit | Integration | E2E |
-|------------|------|-------------|-----|
-| Zorrak grid updates after consumption | — | — | `real-time-debt-calculation.feature` |
+| Story area                            | Unit | Integration | E2E                                  |
+| ------------------------------------- | ---- | ----------- | ------------------------------------ |
+| Zorrak grid updates after consumption | —    | —           | `real-time-debt-calculation.feature` |
 
 ## 11. User profile (`user-profile.md`)
 
-| Story area | Unit | Integration | E2E |
-|------------|------|-------------|-----|
-| IBAN edit UX | — | — | `user-profile.feature` |
+| Story area   | Unit | Integration | E2E                    |
+| ------------ | ---- | ----------- | ---------------------- |
+| IBAN edit UX | —    | —           | `user-profile.feature` |
 
 ---
 

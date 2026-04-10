@@ -15,7 +15,13 @@ When("I create a unique integration test user via API", async function (this: In
     headers: res.headers as Record<string, string | string[] | undefined>,
     body: res.body,
   };
-  if (res.status === 201 && res.body && typeof res.body === "object" && res.body !== null && "id" in res.body) {
+  if (
+    res.status === 201 &&
+    res.body &&
+    typeof res.body === "object" &&
+    res.body !== null &&
+    "id" in res.body
+  ) {
     this.createdIds.user = (res.body as { id: string }).id;
   }
 });

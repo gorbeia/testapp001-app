@@ -66,10 +66,10 @@ const eu = {
   tableR9Area: "Komunikazioa",
   tableR9Funcs: "Oharrak (eu/es), jakinarazpenak",
   tableR10Area: "Kuotak, elkartea, segurtasuna",
-  tableR10Funcs:
-    "Kuota-motak; elkartea (logoa, mapa, ordainketa-hautua); JWT eta rol-baimenak",
+  tableR10Funcs: "Kuota-motak; elkartea (logoa, mapa, ordainketa-hautua); JWT eta rol-baimenak",
   closingTitle: "Prest zure elkartearen digitalizaziorako?",
-  closingBody: "Sartu, eta bazkideek, diruzainek eta talde operatiboak eguneroko erabilerarako prest egon.",
+  closingBody:
+    "Sartu, eta bazkideek, diruzainek eta talde operatiboak eguneroko erabilerarako prest egon.",
 } as const;
 
 const es = {
@@ -99,8 +99,7 @@ const es = {
   card5Body:
     "Productos, stock, albaranes de compra, inventario físico, movimientos por consumos y alertas de stock bajo — herramientas del bodeguero.",
   card6Title: "Comunicación",
-  card6Body:
-    "Notas en dos idiomas y notificaciones en la app: finanzas, stock y otros avisos.",
+  card6Body: "Notas en dos idiomas y notificaciones en la app: finanzas, stock y otros avisos.",
   card7Title: "Tipos de cuota",
   card7Body:
     "Define cuotas distintas y asígnalas a socios; los importes entran automáticamente en el cálculo de deuda.",
@@ -133,8 +132,7 @@ const es = {
   tableR9Area: "Comunicación",
   tableR9Funcs: "Notas (eu/es), notificaciones",
   tableR10Area: "Cuotas, sociedad, seguridad",
-  tableR10Funcs:
-    "Tipos de cuota; sociedad (logo, mapa, métodos de pago); JWT y permisos",
+  tableR10Funcs: "Tipos de cuota; sociedad (logo, mapa, métodos de pago); JWT y permisos",
   closingTitle: "¿Listo para digitalizar tu sociedad?",
   closingBody: "Entra: socios, tesorería y operación diaria, en un solo lugar.",
 } as const;

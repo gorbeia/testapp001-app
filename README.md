@@ -23,11 +23,11 @@ Primary UI languages: **Euskara (eu)** and **Castellano (es)**. Many routes use 
 
 ## Who uses which area
 
-| Audience | Purpose |
-|----------|---------|
-| **Bazkidea / Laguna** | Day-to-day: reservations, consumptions, profile, notifications, own movements/debts as allowed. |
-| **Administratzailea, Diruzaina, Sotolaria** | Same app, extra menus: users, society settings, inventory, credits, movements, notes, etc., per permissions. |
-| **Platform superadmin** | **Separate** session: create/manage **all societies** on the platform, superadmin accounts, subdomain DNS labels, and **SMTP test / email status** (no society member login). |
+| Audience                                    | Purpose                                                                                                                                                                       |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Bazkidea / Laguna**                       | Day-to-day: reservations, consumptions, profile, notifications, own movements/debts as allowed.                                                                               |
+| **Administratzailea, Diruzaina, Sotolaria** | Same app, extra menus: users, society settings, inventory, credits, movements, notes, etc., per permissions.                                                                  |
+| **Platform superadmin**                     | **Separate** session: create/manage **all societies** on the platform, superadmin accounts, subdomain DNS labels, and **SMTP test / email status** (no society member login). |
 
 ---
 
@@ -43,13 +43,13 @@ Primary UI languages: **Euskara (eu)** and **Castellano (es)**. Many routes use 
 
 Use this only for **hosting operators** who manage the whole installation, not for a single society’s day-to-day admins.
 
-| Route | What it is |
-|-------|------------|
-| **`/elkarteapp/kudeaketa/login`** | Superadmin login (credentials in the `superadmins` table; **httpOnly** cookie, separate from member JWT). |
-| **`/elkarteapp/kudeaketa`** | Redirects into the backoffice (societies list). |
-| **`/elkarteapp/kudeaketa/societies`** | List/create societies, assign **subdomain** for tenant hosts. |
-| **`/elkarteapp/kudeaketa/superadmins`** | Manage superadmin accounts. |
-| **`/elkarteapp/kudeaketa/email`** | View outbound mail env flags (no secrets) and send an **SMTP test** message. |
+| Route                                   | What it is                                                                                                |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **`/elkarteapp/kudeaketa/login`**       | Superadmin login (credentials in the `superadmins` table; **httpOnly** cookie, separate from member JWT). |
+| **`/elkarteapp/kudeaketa`**             | Redirects into the backoffice (societies list).                                                           |
+| **`/elkarteapp/kudeaketa/societies`**   | List/create societies, assign **subdomain** for tenant hosts.                                             |
+| **`/elkarteapp/kudeaketa/superadmins`** | Manage superadmin accounts.                                                                               |
+| **`/elkarteapp/kudeaketa/email`**       | View outbound mail env flags (no secrets) and send an **SMTP test** message.                              |
 
 > **Security:** Restrict who can reach `/elkarteapp/kudeaketa*` in production (path-based rules, VPN, or separate admin hostname) in addition to strong `BACKOFFICE_JWT_SECRET` and superadmin passwords.
 
@@ -57,14 +57,14 @@ Use this only for **hosting operators** who manage the whole installation, not f
 
 ## Documentation
 
-| Document | Contents |
-|----------|----------|
-| **[docs/features/](docs/features/)** | User stories, acceptance criteria, **implementation status**, test coverage matrix. |
-| **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)** | Local dev: Node/pnpm, `.env`, Docker Postgres, `db:push` / seed, `pnpm dev`, tests, scripts, CI. |
-| **[docs/INSTALLATION_UBUNTU_24.md](docs/INSTALLATION_UBUNTU_24.md)** | Production-style install on Ubuntu (PostgreSQL, env, TLS, SMTP, etc.). |
-| **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)** | Stack, folders, auth model, architecture notes. |
-| **[docs/features/subdomain-tenancy.md](docs/features/subdomain-tenancy.md)** | Tenant apex domain and `societies.subdomain`. |
-| **[docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)** | Gaps and technical debt. |
+| Document                                                                     | Contents                                                                                         |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **[docs/features/](docs/features/)**                                         | User stories, acceptance criteria, **implementation status**, test coverage matrix.              |
+| **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**                               | Local dev: Node/pnpm, `.env`, Docker Postgres, `db:push` / seed, `pnpm dev`, tests, scripts, CI. |
+| **[docs/INSTALLATION_UBUNTU_24.md](docs/INSTALLATION_UBUNTU_24.md)**         | Production-style install on Ubuntu (PostgreSQL, env, TLS, SMTP, etc.).                           |
+| **[TECHNICAL_DOCUMENTATION.md](TECHNICAL_DOCUMENTATION.md)**                 | Stack, folders, auth model, architecture notes.                                                  |
+| **[docs/features/subdomain-tenancy.md](docs/features/subdomain-tenancy.md)** | Tenant apex domain and `societies.subdomain`.                                                    |
+| **[docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md)**                             | Gaps and technical debt.                                                                         |
 
 ---
 

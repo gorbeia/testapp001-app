@@ -171,7 +171,8 @@ export function ReservationDialog({
   }, [open, defaultStartDate]);
 
   const reservationInstant = useMemo(() => {
-    const d = formData.startDate instanceof Date ? formData.startDate : new Date(formData.startDate);
+    const d =
+      formData.startDate instanceof Date ? formData.startDate : new Date(formData.startDate);
     return Number.isNaN(d.getTime()) ? null : d;
   }, [formData.startDate]);
 

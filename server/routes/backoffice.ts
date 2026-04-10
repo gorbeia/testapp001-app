@@ -240,7 +240,9 @@ export function registerBackofficeRoutes(app: Express) {
         const excludeId = parsed.data.excludeId;
         const available = !existing || (excludeId !== undefined && existing.id === excludeId);
 
-        return res.status(200).json({ available, reason: available ? undefined : ("taken" as const) });
+        return res
+          .status(200)
+          .json({ available, reason: available ? undefined : ("taken" as const) });
       } catch (err) {
         next(err);
       }

@@ -10,10 +10,10 @@ All society cashbook lines (member-ledger mirror + manual entries + manual adjus
 
 Manual supplier/misc lines are **`manual_income` / `manual_expense`** rows. Editing an entry may post a **`manual_adjustment`** delta; deleting posts a reversal and marks the original **`voided`**.
 
-| Source | Ledger `type` | Convention in `society_ledger` |
-|--------|---------------|--------------------------------|
-| Income | `prepayment`, `sepa_collection`, `cash_payment` | Positive `amount` |
-| Expenses | `refund`, `sepa_bounce` | Negative `amount` |
+| Source   | Ledger `type`                                   | Convention in `society_ledger` |
+| -------- | ----------------------------------------------- | ------------------------------ |
+| Income   | `prepayment`, `sepa_collection`, `cash_payment` | Positive `amount`              |
+| Expenses | `refund`, `sepa_bounce`                         | Negative `amount`              |
 
 Month bucket for summary/movements: **`booking_date`** as `YYYY-MM` (derived lines use the movement booking date; manual lines use the treasurer-chosen date).
 

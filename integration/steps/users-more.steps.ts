@@ -12,8 +12,11 @@ When("I fetch the users count", async function (this: IntegrationWorld) {
   };
 });
 
-Then("the response body should include count at least {int}", async function (this: IntegrationWorld, min: number) {
-  assert.ok(this.lastResponse?.body && typeof this.lastResponse.body === "object");
-  const c = (this.lastResponse.body as { count?: number }).count;
-  assert.ok(typeof c === "number" && c >= min);
-});
+Then(
+  "the response body should include count at least {int}",
+  async function (this: IntegrationWorld, min: number) {
+    assert.ok(this.lastResponse?.body && typeof this.lastResponse.body === "object");
+    const c = (this.lastResponse.body as { count?: number }).count;
+    assert.ok(typeof c === "number" && c >= min);
+  }
+);

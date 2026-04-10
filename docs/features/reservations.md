@@ -53,6 +53,7 @@
 **Status:**
 
 - **Shipped:** society calendar at **`/egutegia`** — month grid with **society events** + **reservations** (see [`society-calendar.md`](./society-calendar.md)); data via **`GET /api/society-events?month=`** and **`GET /api/reservations?forCalendar=true&month=`**
+
 ---
 
 ## Epic: Reservation Management (Administratzailea)
@@ -122,7 +123,7 @@
 
 | Path                | Purpose                                      |
 | ------------------- | -------------------------------------------- |
-| `/egutegia`         | Society calendar + reservations + create      |
+| `/egutegia`         | Society calendar + reservations + create     |
 | `/nire-erreserbak`  | Own reservations                             |
 | `/admin-erreserbak` | Admin management UI                          |
 | `/mahaiak`          | Tables CRUD                                  |

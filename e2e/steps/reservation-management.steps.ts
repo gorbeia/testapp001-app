@@ -486,5 +486,8 @@ Then("the reservation should appear in my reservations table", async function ()
     `Unique reservation name "${uniqueReservationName}" should be present in the table`
   );
   // My Reservations is scoped to the logged-in user: no owner column. Row has no € total (see detail dialog).
-  assert.ok((rowText?.length ?? 0) > uniqueReservationName.length, `Row should include columns beyond name; row: "${rowText}"`);
+  assert.ok(
+    (rowText?.length ?? 0) > uniqueReservationName.length,
+    `Row should include columns beyond name; row: "${rowText}"`
+  );
 });

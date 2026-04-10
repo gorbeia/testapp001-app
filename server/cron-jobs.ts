@@ -396,27 +396,21 @@ class DebtCalculationService {
       }
 
       if (subscription.period === "monthly") {
-        devLog(
-          `Adding monthly subscription charge for user ${userId}: €${subscriptionAmount}`
-        );
+        devLog(`Adding monthly subscription charge for user ${userId}: €${subscriptionAmount}`);
         return subscriptionAmount;
       }
 
       if (subscription.period === "quarterly") {
         const quarterStartMonths = [1, 4, 7, 10];
         if (quarterStartMonths.includes(month)) {
-          devLog(
-            `Adding quarterly subscription charge for user ${userId}: €${subscriptionAmount}`
-          );
+          devLog(`Adding quarterly subscription charge for user ${userId}: €${subscriptionAmount}`);
           return subscriptionAmount;
         }
       }
 
       if (subscription.period === "custom") {
         if ((month - 1) % periodMonths === 0) {
-          devLog(
-            `Adding custom subscription charge for user ${userId}: €${subscriptionAmount}`
-          );
+          devLog(`Adding custom subscription charge for user ${userId}: €${subscriptionAmount}`);
           return subscriptionAmount;
         }
       }
@@ -479,9 +473,7 @@ class DebtCalculationService {
     if (process.env.NODE_ENV === "development") {
       setTimeout(async () => {
         const now = new Date();
-        devLog(
-          `[${now.toISOString()}] Dev: debt calculation for all societies, current month...`
-        );
+        devLog(`[${now.toISOString()}] Dev: debt calculation for all societies, current month...`);
         try {
           await this.calculateMonthlyDebtsAllSocieties(now.getFullYear(), now.getMonth() + 1);
         } catch (error) {

@@ -67,12 +67,12 @@ export function userFromApiSessionPayload(userData: Record<string, unknown>): Us
     membershipType: mt.success ? mt.data : "full_member",
     phone: typeof userData.phone === "string" ? userData.phone : undefined,
     iban: typeof userData.iban === "string" ? userData.iban : undefined,
-    linkedMemberId: typeof userData.linkedMemberId === "string" ? userData.linkedMemberId : undefined,
-    linkedMemberName: typeof userData.linkedMemberName === "string" ? userData.linkedMemberName : undefined,
+    linkedMemberId:
+      typeof userData.linkedMemberId === "string" ? userData.linkedMemberId : undefined,
+    linkedMemberName:
+      typeof userData.linkedMemberName === "string" ? userData.linkedMemberName : undefined,
     avatarUrl:
-      typeof userData.avatarUrl === "string" && userData.avatarUrl
-        ? userData.avatarUrl
-        : undefined,
+      typeof userData.avatarUrl === "string" && userData.avatarUrl ? userData.avatarUrl : undefined,
     notifyEmail: typeof userData.notifyEmail === "boolean" ? userData.notifyEmail : true,
     communicationLanguage: comm.success ? comm.data : "eu",
   };

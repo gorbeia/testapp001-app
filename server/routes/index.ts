@@ -216,7 +216,9 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       const { email, password, societyId } = parsed.data;
 
       const apex = getTenantApexDomainFromEnv();
-      const hostParsed = apex ? parseHostForTenant(req.get("host"), apex) : { kind: "apex" as const };
+      const hostParsed = apex
+        ? parseHostForTenant(req.get("host"), apex)
+        : { kind: "apex" as const };
 
       let society: Awaited<ReturnType<typeof db.query.societies.findFirst>> | undefined;
 

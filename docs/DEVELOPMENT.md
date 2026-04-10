@@ -71,17 +71,17 @@ pnpm db:reset:seed
 
 ### Database commands (quick reference)
 
-| Command | When to use |
-|--------|-------------|
-| `pnpm docker:db:up` | Start local Postgres (Docker). |
-| `pnpm db:push` | Sync `shared/schema.ts` to the DB (typical **local dev**). |
-| `pnpm db:seed` | Load demo data via `script/seed.ts`. |
-| `pnpm db:reset` | Wipe `public` + `db:push` (destructive). |
-| `pnpm db:reset:seed` | `db:reset` then `db:seed`. |
-| `pnpm db:generate` | Generate SQL migrations from schema (review/commit for deploy). |
-| `pnpm db:migrate` | Apply pending migrations from `./migrations`. |
-| `pnpm db:studio` | Drizzle Studio (browse data). |
-| `pnpm docker:db:reset` | Recreate Postgres volume; then `db:push` / `db:reset:seed`. |
+| Command                | When to use                                                     |
+| ---------------------- | --------------------------------------------------------------- |
+| `pnpm docker:db:up`    | Start local Postgres (Docker).                                  |
+| `pnpm db:push`         | Sync `shared/schema.ts` to the DB (typical **local dev**).      |
+| `pnpm db:seed`         | Load demo data via `script/seed.ts`.                            |
+| `pnpm db:reset`        | Wipe `public` + `db:push` (destructive).                        |
+| `pnpm db:reset:seed`   | `db:reset` then `db:seed`.                                      |
+| `pnpm db:generate`     | Generate SQL migrations from schema (review/commit for deploy). |
+| `pnpm db:migrate`      | Apply pending migrations from `./migrations`.                   |
+| `pnpm db:studio`       | Drizzle Studio (browse data).                                   |
+| `pnpm docker:db:reset` | Recreate Postgres volume; then `db:push` / `db:reset:seed`.     |
 
 ## Running the application
 
@@ -150,21 +150,21 @@ Vitest (`server/**/*.test.ts`, `shared/**/*.test.ts`).
 
 ## Scripts reference
 
-| Script | Purpose |
-|--------|---------|
-| `pnpm dev` | Dev server (Express + Vite middleware) |
-| `pnpm build` / `pnpm start` | Production build / run |
-| `pnpm check` | TypeScript (`tsc`) |
-| `pnpm lint` / `pnpm lint:fix` | ESLint |
-| `pnpm lint:ci` | ESLint errors only (CI) |
-| `pnpm format` / `pnpm format:check` | Prettier |
-| `pnpm db:*` | See table above |
-| `pnpm docker:db:*` | Postgres via Docker Compose |
-| `pnpm test:unit` | Vitest |
-| `pnpm test:integration` | Cucumber API tests |
-| `pnpm test:e2e` | Cucumber browser tests |
-| `pnpm audit:security` | Dependency audit ([`script/security-audit.mjs`](../script/security-audit.mjs): `pnpm audit` + Retire.js) |
-| `pnpm audit:security:prod` | Audit production deps only |
+| Script                              | Purpose                                                                                                  |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `pnpm dev`                          | Dev server (Express + Vite middleware)                                                                   |
+| `pnpm build` / `pnpm start`         | Production build / run                                                                                   |
+| `pnpm check`                        | TypeScript (`tsc`)                                                                                       |
+| `pnpm lint` / `pnpm lint:fix`       | ESLint                                                                                                   |
+| `pnpm lint:ci`                      | ESLint errors only (CI)                                                                                  |
+| `pnpm format` / `pnpm format:check` | Prettier                                                                                                 |
+| `pnpm db:*`                         | See table above                                                                                          |
+| `pnpm docker:db:*`                  | Postgres via Docker Compose                                                                              |
+| `pnpm test:unit`                    | Vitest                                                                                                   |
+| `pnpm test:integration`             | Cucumber API tests                                                                                       |
+| `pnpm test:e2e`                     | Cucumber browser tests                                                                                   |
+| `pnpm audit:security`               | Dependency audit ([`script/security-audit.mjs`](../script/security-audit.mjs): `pnpm audit` + Retire.js) |
+| `pnpm audit:security:prod`          | Audit production deps only                                                                               |
 
 Override audit registry with **`PNPM_AUDIT_REGISTRY`** if needed.
 

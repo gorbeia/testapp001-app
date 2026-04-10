@@ -195,7 +195,11 @@ function AppRoutes() {
 function AuthenticatedApp() {
   const [location] = useLocation();
   const { isAuthenticated } = useAuth();
-  const { data: tenantHostData, isPending: tenantHostLoading, likelyTenantHost } = useTenantByHost();
+  const {
+    data: tenantHostData,
+    isPending: tenantHostLoading,
+    likelyTenantHost,
+  } = useTenantByHost();
 
   // Multisociety management area (superadmin), independent of society-based layout
   // All pages under /elkarteapp/kudeaketa* use their own UI with the backoffice sidebar.
