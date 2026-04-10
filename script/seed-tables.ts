@@ -82,9 +82,10 @@ export async function seedTables(dbConn: SeedDb) {
     {
       societyId,
       name: "Mahaia 5",
-      minCapacity: 6,
+      minCapacity: 2,
       maxCapacity: 10,
-      description: "Terrazako mahaia handiena, talde handientzat",
+      description: "Terrazako mahaia handiena, talde handientzat (erreserba partzialak)",
+      allowsPartialReservation: true,
       isActive: true,
     },
     {

@@ -30,17 +30,23 @@ import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/lib/api";
 import { readJsonOrThrow } from "@/lib/http-error";
 import type { Reservation, Society } from "@shared/schema";
-import { getReservationMealTypeLabel, normalizeSocietyReservationMealTypes } from "@shared/schema";
+import {
+  formatReservationDisplayTitle,
+  getReservationMealTypeLabel,
+  normalizeSocietyReservationMealTypes,
+} from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { usePagination } from "@/hooks/use-pagination";
+
+type MyReservationRow = Reservation & { userName?: string | null };
 
 export function MyReservationsPage() {
   const { t, language } = useLanguage();
   const { formatDateShort, formatTimeShort } = useFormattedDates();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
+  const [selectedReservation, setSelectedReservation] = useState<MyReservationRow | null>(null);
   // Pagination state
   const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
 
@@ -68,7 +74,7 @@ export function MyReservationsPage() {
   });
 
   // Fetch user's reservations
-  const [reservations, setReservations] = useState<Reservation[]>([]);
+  const [reservations, setReservations] = useState<MyReservationRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<Error | null>(null);
@@ -126,7 +132,7 @@ export function MyReservationsPage() {
 
       const response = await authFetch(`/api/reservations/user?${params}`);
       const data = await readJsonOrThrow<{
-        data?: Reservation[];
+        data?: MyReservationRow[];
         pagination?: { total: number };
       }>(response);
       setReservations(data.data || []);
@@ -161,6 +167,16 @@ export function MyReservationsPage() {
   };
 
   const mealTypes = normalizeSocietyReservationMealTypes(society?.reservationMealTypes);
+
+  const reservationTitle = (r: MyReservationRow) =>
+    formatReservationDisplayTitle({
+      legacyName: r.name,
+      userName: undefined,
+      type: r.type,
+      startDate: r.startDate,
+      mealTypes,
+      language,
+    });
 
   const getTypeBadge = (type: string) => {
     const label = getReservationMealTypeLabel(mealTypes, type, language);
@@ -323,7 +339,7 @@ export function MyReservationsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t("name")}</TableHead>
+                  <TableHead>{t("reservationListTitle")}</TableHead>
                   <TableHead>{t("date")}</TableHead>
                   <TableHead>{t("time")}</TableHead>
                   <TableHead>{t("table")}</TableHead>
@@ -349,7 +365,7 @@ export function MyReservationsPage() {
                 ) : (
                   reservations.map(reservation => (
                     <TableRow key={reservation.id}>
-                      <TableCell className="font-medium">{reservation.name}</TableCell>
+                      <TableCell className="font-medium">{reservationTitle(reservation)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Calendar className="h-4 w-4 text-gray-500" />
@@ -415,8 +431,8 @@ export function MyReservationsPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-medium">{t("name")}</p>
-                    <p>{selectedReservation.name}</p>
+                    <p className="text-sm font-medium">{t("reservationListTitle")}</p>
+                    <p>{reservationTitle(selectedReservation)}</p>
                   </div>
                   <div>
                     <p className="text-sm font-medium">{t("type")}</p>

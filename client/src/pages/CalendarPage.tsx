@@ -14,7 +14,11 @@ import { format, getDay, startOfDay, startOfWeek, endOfDay, addHours } from "dat
 import { eu, es } from "date-fns/locale";
 import { CalendarDays, Lock, Pencil, Plus, Trash2 } from "lucide-react";
 import type { Reservation, Society, SocietyEvent, Table } from "@shared/schema";
-import { getReservationMealTypeLabel, normalizeSocietyReservationMealTypes } from "@shared/schema";
+import {
+  formatReservationDisplayTitle,
+  getReservationMealTypeLabel,
+  normalizeSocietyReservationMealTypes,
+} from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -280,9 +284,17 @@ export function CalendarPage() {
     }
     for (const res of reservations) {
       const start = new Date(res.startDate);
+      const title = formatReservationDisplayTitle({
+        legacyName: res.name,
+        userName: res.userName,
+        type: res.type,
+        startDate: res.startDate,
+        mealTypes: reservationMealTypes,
+        language,
+      });
       out.push({
         id: `res-${res.id}`,
-        title: res.name,
+        title,
         start,
         end: addHours(start, 1),
         kind: "reservation",
@@ -290,7 +302,7 @@ export function CalendarPage() {
       });
     }
     return out;
-  }, [societyEvents, reservations]);
+  }, [societyEvents, reservations, reservationMealTypes, language]);
 
   const eventTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
@@ -305,6 +317,16 @@ export function CalendarPage() {
 
   const reservationTypeLabel = (type: string) =>
     getReservationMealTypeLabel(reservationMealTypes, type, language);
+
+  const reservationListTitle = (res: ReservationRow) =>
+    formatReservationDisplayTitle({
+      legacyName: res.name,
+      userName: res.userName,
+      type: res.type,
+      startDate: res.startDate,
+      mealTypes: reservationMealTypes,
+      language,
+    });
 
   const dayEvents = useMemo(() => {
     if (!sheetDate) return [];
@@ -633,7 +655,7 @@ export function CalendarPage() {
                 <ul className="space-y-2">
                   {dayReservations.map(res => (
                     <li key={res.id} className="rounded-md border p-3 text-sm">
-                      <p className="font-medium">{res.name}</p>
+                      <p className="font-medium">{reservationListTitle(res)}</p>
                       <p className="text-muted-foreground text-xs mt-1">
                         {reservationTypeLabel(res.type)} · {res.table} ·{" "}
                         {format(new Date(res.startDate), "p", { locale: dateLocale })}

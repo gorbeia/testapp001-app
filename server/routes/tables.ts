@@ -7,7 +7,7 @@ import {
   updateTableSchema,
   type JwtSessionUser,
 } from "@shared/schema";
-import { eq, and, gte, ne, count } from "drizzle-orm";
+import { eq, and, gte, ne, count, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
 import { Permission } from "@shared/permissions";
 
@@ -53,7 +53,58 @@ export function registerTableRoutes(app: Express) {
           .from(tables)
           .where(and(eq(tables.societyId, societyId), eq(tables.isActive, true)))
           .orderBy(tables.name);
-        return res.status(200).json(availableTables);
+
+        const startRaw = req.query.startDate;
+        const typeRaw = req.query.type;
+        const withOccupancy =
+          typeof startRaw === "string" &&
+          startRaw.length > 0 &&
+          typeof typeRaw === "string" &&
+          typeRaw.length > 0;
+
+        if (!withOccupancy) {
+          return res.status(200).json(availableTables);
+        }
+
+        const startDate = new Date(startRaw);
+        if (Number.isNaN(startDate.getTime())) {
+          return res.status(400).json({ message: "Invalid startDate" });
+        }
+
+        const bookedByTable = await db
+          .select({
+            table: reservations.table,
+            bookedSeats: sql<number>`coalesce(sum(${reservations.guests}), 0)`.mapWith(Number),
+          })
+          .from(reservations)
+          .where(
+            and(
+              eq(reservations.societyId, societyId),
+              eq(reservations.startDate, startDate),
+              eq(reservations.type, typeRaw),
+              ne(reservations.status, "cancelled")
+            )
+          )
+          .groupBy(reservations.table);
+
+        const bookedMap = new Map(bookedByTable.map(r => [r.table, r.bookedSeats]));
+
+        const enriched = availableTables.map(t => {
+          const bookedSeats = bookedMap.get(t.name) ?? 0;
+          const allowsPartial = Boolean(t.allowsPartialReservation);
+          const seatsRemaining = allowsPartial
+            ? Math.max(0, t.maxCapacity - bookedSeats)
+            : bookedSeats > 0
+              ? 0
+              : t.maxCapacity;
+          return {
+            ...t,
+            bookedSeats,
+            seatsRemaining,
+          };
+        });
+
+        return res.status(200).json(enriched);
       } catch (err) {
         next(err);
       }

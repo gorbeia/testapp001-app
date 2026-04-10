@@ -52,6 +52,7 @@ export function registerCashSettlementRoutes(app: Express) {
           .select({
             id: reservations.id,
             name: reservations.name,
+            type: reservations.type,
             status: reservations.status,
             startDate: reservations.startDate,
             totalAmount: reservations.totalAmount,

@@ -56,7 +56,7 @@ Status legend:
 ## 3. Reservations (Erreserbak) (`reservations.md`)
 
 1. **Create Reservation** – date/time, meal type, table, guests, kitchen flag, cost
-   - **Status**: ✅ Implemented (`POST /api/reservations`; **`type`** must match a **`id`** in **`societies.reservation_meal_types`**; defaults preserve legacy ids `bazkaria`, `afaria`, `askaria`, `hamaiketakako`; **prepayment ledger floor** enforced when society has optional minimum balance + prepayment method — see §5b.10 / `prepayment-ledger-floor.md`)
+   - **Status**: ✅ Implemented (`POST /api/reservations`; **`type`** must match a **`id`** in **`societies.reservation_meal_types`**; defaults preserve legacy ids `bazkaria`, `afaria`, `askaria`, `hamaiketakako`; **optional `name`** (empty when omitted); **exclusive vs partial table** capacity rules; **`GET /api/tables/available?startDate=&type=`** returns occupancy hints; create dialog **map** link when **`mapImageUrl`** set; **prepayment ledger floor** enforced when society has optional minimum balance + prepayment method — see §5b.10 / `prepayment-ledger-floor.md`)
 2. **View My Reservations** – list & filters
    - **Status**: ✅ Implemented (`/nire-erreserbak`, `GET /api/reservations/user`)
 3. **Society reservation list** – upcoming/filter for all members
@@ -64,7 +64,7 @@ Status legend:
 4. **Manage All Reservations (Admin UI)** – global management
    - **Status**: 🟡 Partial (`/admin-erreserbak`: list/cancel/detail; no in-place edit; administratzailea-only UI; API treats diruzaina as admin for some list queries)
 5. **Resource configuration (tables)** – capacity & availability metadata
-   - **Status**: ✅ Implemented (`/mahaiak`, `tables` CRUD; not tenant-scoped in schema — see tech debt)
+   - **Status**: ✅ Implemented (`/mahaiak`, `tables` CRUD, tenant-scoped; **`allowsPartialReservation`** for shared-capacity tables)
 6. **Per-society reservation pricing** – guest & kitchen rates
    - **Status**: ✅ Implemented (fields on `societies`, editable via `/elkartea` where allowed)
 7. **Cost calculation** – guest × rates + optional kitchen

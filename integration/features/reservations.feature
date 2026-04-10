@@ -43,3 +43,13 @@ Feature: Reservation API
     Given I have created a reservation
     When I DELETE the last created reservation
     Then the response status should be 204
+
+  @story:res-1 @partial-mahaia5
+  Scenario: Partial table allows multiple bookings in the same slot
+    When I POST two partial reservations on the same table and slot
+    Then the response status should be 201
+
+  @story:res-1 @partial-mahaia5
+  Scenario: Partial table rejects when total guests exceed capacity
+    When I POST partial reservations that exceed table capacity
+    Then the response status should be 400

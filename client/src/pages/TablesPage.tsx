@@ -28,6 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Table as TableIcon, Plus, Edit, Trash2, Users, FileText } from "lucide-react";
+import type { Table } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { readJsonOrThrow } from "@/lib/http-error";
@@ -47,17 +48,6 @@ const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
   });
 };
 
-interface Table {
-  id: string;
-  name: string;
-  minCapacity: number;
-  maxCapacity: number;
-  description?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export function TablesPage() {
   const { t } = useLanguage();
   const [tables, setTables] = useState<Table[]>([]);
@@ -71,6 +61,7 @@ export function TablesPage() {
   const [minCapacity, setMinCapacity] = useState(1);
   const [maxCapacity, setMaxCapacity] = useState(4);
   const [description, setDescription] = useState("");
+  const [allowsPartialReservation, setAllowsPartialReservation] = useState(false);
   const [isActive, setIsActive] = useState(true);
 
   useEffect(() => {
@@ -95,6 +86,7 @@ export function TablesPage() {
     setMinCapacity(1);
     setMaxCapacity(4);
     setDescription("");
+    setAllowsPartialReservation(false);
     setIsActive(true);
     setEditingTable(null);
   };
@@ -103,10 +95,11 @@ export function TablesPage() {
     if (table) {
       setEditingTable(table);
       setName(table.name);
-      setMinCapacity(table.minCapacity);
+      setMinCapacity(table.minCapacity ?? 1);
       setMaxCapacity(table.maxCapacity);
       setDescription(table.description || "");
-      setIsActive(table.isActive);
+      setAllowsPartialReservation(Boolean(table.allowsPartialReservation));
+      setIsActive(Boolean(table.isActive));
     } else {
       resetForm();
     }
@@ -143,6 +136,7 @@ export function TablesPage() {
         minCapacity,
         maxCapacity,
         description: description.trim() || null,
+        allowsPartialReservation,
         isActive,
       };
 
@@ -292,6 +286,19 @@ export function TablesPage() {
                   />
                 </div>
                 <div className="flex items-center space-x-2">
+                  <Switch
+                    id="allowsPartial"
+                    checked={allowsPartialReservation}
+                    onCheckedChange={setAllowsPartialReservation}
+                  />
+                  <div className="space-y-0.5">
+                    <Label htmlFor="allowsPartial">{t("tablePartialReservation")}</Label>
+                    <p className="text-xs text-muted-foreground">
+                      {t("tablePartialReservationHint")}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-2">
                   <Switch id="isActive" checked={isActive} onCheckedChange={setIsActive} />
                   <Label htmlFor="isActive">{t("active")}</Label>
                 </div>
@@ -356,6 +363,9 @@ export function TablesPage() {
                       <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
                       <span className="text-muted-foreground">{table.description}</span>
                     </div>
+                  )}
+                  {table.allowsPartialReservation && (
+                    <p className="text-xs text-muted-foreground">{t("tablePartialReservation")}</p>
                   )}
                   <div className="flex items-center space-x-2">
                     <div

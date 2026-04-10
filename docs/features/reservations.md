@@ -14,12 +14,12 @@
 
 - **Society-wide bookings** visible on **`/egutegia`** (month grid + agenda list + create flow); see [`society-calendar.md`](./society-calendar.md)
 - Button/dialog to create a new reservation
-- **One table** selected from **`/api/tables/available`** (options may be disabled when guest count is outside min/max capacity)
+- **One table** selected from **`/api/tables/available`**; with optional query **`startDate`** + **`type`**, each row includes **`bookedSeats`** / **`seatsRemaining`** for the slot. Options may be disabled when guest count is outside **min/max capacity** or above **remaining seats** (partial tables).
 - **Meal / event type** stored as `type` string; it must match an **`id`** from the society’s **`reservation_meal_types`** list (JSON on **`societies`**: `id`, `labelEu`, `labelEs`). Treasurers configure the list on **`/elkartea`**. Defaults match the legacy set (`bazkaria`, `afaria`, `askaria`, `hamaiketakako`). Unknown types are rejected by **`POST /api/reservations`**. Labels in the app follow the member’s UI language (EU/ES).
 - **Kitchen use** is a single boolean **`useKitchen`** (not separate equipment: griddle, ovens, etc.)
-- **Guests** count (integer); **Name/title** for the reservation (`name` field)
+- **Guests** count (integer). **`name`** is optional in the API (stored empty when omitted); **lists and calendar** show **member + meal + date** (and legacy **`name`** when present).
 - **Date**: single `startDate` timestamp (date picker in UI; time follows browser/local Date handling)
-- **Conflict rule (server)**: same table **name**, same `startDate` (exact instant), same `type`, among non-cancelled rows — server does not implement broader overlap ranges
+- **Conflict rule (server)**: same table **name**, same `startDate` (exact instant), same `type`, among non-cancelled rows. **Exclusive tables** (default): at most one such row. **Partial tables** (`tables.allowsPartialReservation`): multiple rows allowed if **sum(`guests`) ≤ `maxCapacity`**; each booking must satisfy **minCapacity** and not exceed remaining seats. No broader time-overlap rules.
 - **Cost (client-calculated, stored as sent):**  
   `totalAmount = guests × reservationPricePerMember + (useKitchen ? guests × kitchenPricePerMember : 0)`  
   Rates come from the **`societies`** row (`reservationPricePerMember`, `kitchenPricePerMember`), editable under `/elkartea` where API allows
@@ -81,7 +81,7 @@
 
 **Acceptance Criteria:**
 
-- **Tables**: **`/mahaiak`** — CRUD for table **name**, **minCapacity**, **maxCapacity**, **isActive** (`/api/tables`, admin middleware). **Note:** `tables` are **not** `societyId`-scoped in schema today — multi-tenant hardening may be required
+- **Tables**: **`/mahaiak`** — CRUD for table **name**, **minCapacity**, **maxCapacity**, **`allowsPartialReservation`**, **isActive** (`/api/tables`, tenant-scoped by **`societyId`**). **Society map** for the reservation dialog: image on **`societies.mapImageUrl`** (`/elkartea`); link in create dialog when set.
 - **Pricing**: per-guest and per-guest-kitchen **decimals on `societies`**, edited via **`/elkartea`**
 - ❌ Separate inventory for “ovens / grills” etc. — **not implemented** (only `useKitchen` flag)
 - ❌ Time-slot rules engine — **not implemented**

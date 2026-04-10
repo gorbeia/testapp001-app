@@ -126,6 +126,41 @@ export function getReservationMealTypeLabel(
   return row.labelEu;
 }
 
+/** Single-line label for lists, calendar, notifications. Legacy `name` wins when non-empty. */
+export function formatReservationDisplayTitle(opts: {
+  legacyName: string | null | undefined;
+  userName: string | null | undefined;
+  type: string;
+  startDate: Date | string;
+  mealTypes: SocietyReservationMealType[];
+  language: ReservationMealTypeLabelLanguage;
+}): string {
+  if (opts.legacyName?.trim()) return opts.legacyName.trim();
+  const meal = getReservationMealTypeLabel(opts.mealTypes, opts.type, opts.language);
+  const d = opts.startDate instanceof Date ? opts.startDate : new Date(opts.startDate);
+  const day =
+    opts.language === "es"
+      ? d.toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })
+      : d.toLocaleDateString("eu-ES", { day: "numeric", month: "short", year: "numeric" });
+  const member = opts.userName?.trim() || "";
+  if (member) return `${member} · ${meal} · ${day}`;
+  return `${meal} · ${day}`;
+}
+
+/** Notification body line when legacy name is empty (per UI language). */
+export function reservationNotificationLabel(opts: {
+  legacyName: string | null | undefined;
+  type: string;
+  table: string;
+  mealTypes: SocietyReservationMealType[];
+  language: "eu" | "es" | "en";
+}): string {
+  if (opts.legacyName?.trim()) return opts.legacyName.trim();
+  const lang: ReservationMealTypeLabelLanguage = opts.language === "es" ? "es" : "eu";
+  const meal = getReservationMealTypeLabel(opts.mealTypes, opts.type, lang);
+  return `${meal} · ${opts.table}`;
+}
+
 export const societies = pgTable("societies", {
   id: varchar("id")
     .primaryKey()
@@ -1112,6 +1147,8 @@ export const tables = pgTable(
     minCapacity: integer("min_capacity").default(1),
     maxCapacity: integer("max_capacity").notNull(),
     description: text("description"), // Optional description of the table
+    /** When true, multiple reservations can share capacity up to maxCapacity for the same slot. */
+    allowsPartialReservation: boolean("allows_partial_reservation").notNull().default(false),
     isActive: boolean("is_active").default(true),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1124,6 +1161,7 @@ export const insertTableSchema = createInsertSchema(tables).pick({
   minCapacity: true,
   maxCapacity: true,
   description: true,
+  allowsPartialReservation: true,
   isActive: true,
 });
 
@@ -1441,7 +1479,11 @@ export const createReservationBodySchema = insertReservationSchema
   .omit({ userId: true, societyId: true })
   .extend({
     startDate: z.coerce.date(),
-    name: z.string().min(1),
+    /** Optional; UI no longer collects it — stored empty when omitted. */
+    name: z
+      .string()
+      .optional()
+      .transform(s => (s == null ? "" : String(s).trim())),
     type: z.string().min(1),
     table: z.string().min(1),
   });

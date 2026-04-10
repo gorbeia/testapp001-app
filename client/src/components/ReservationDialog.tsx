@@ -36,6 +36,7 @@ import {
 import { startOfDay, endOfDay } from "date-fns";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
+import { societyMapSrc } from "@/lib/image-urls";
 
 interface ReservationDialogProps {
   open: boolean;
@@ -45,8 +46,12 @@ interface ReservationDialogProps {
   defaultStartDate?: Date | null;
 }
 
+type TableWithOccupancy = Table & {
+  bookedSeats?: number;
+  seatsRemaining?: number;
+};
+
 interface FormData {
-  name: string;
   type: string;
   startDate: Date;
   guests: number;
@@ -67,6 +72,18 @@ const authFetch = async (url: string, options: globalThis.RequestInit = {}) => {
   return fetch(url, { ...options, headers });
 };
 
+function isTableSuitableForGuests(table: TableWithOccupancy, guests: number): boolean {
+  const minC = table.minCapacity ?? 1;
+  const maxC = table.maxCapacity;
+  if (guests < minC || guests > maxC) return false;
+  const rem = table.seatsRemaining;
+  if (rem !== undefined && rem !== null) {
+    if (guests > rem) return false;
+    if (rem < minC) return false;
+  }
+  return true;
+}
+
 export function ReservationDialog({
   open,
   onOpenChange,
@@ -78,12 +95,13 @@ export function ReservationDialog({
   const { data: ledgerStatus } = usePrepaymentLedgerStatus();
   const prepaymentBlocks = Boolean(ledgerStatus?.enforced && ledgerStatus?.belowFloor);
   const [society, setSociety] = useState<Society | null>(null);
-  const [tables, setTables] = useState<Table[]>([]);
+  const [tables, setTables] = useState<TableWithOccupancy[]>([]);
+  const [tablesLoading, setTablesLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [calendarBlockNotes, setCalendarBlockNotes] = useState<string[]>([]);
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
 
   const [formData, setFormData] = useState<FormData>({
-    name: "",
     type: DEFAULT_RESERVATION_MEAL_TYPES[0].id,
     startDate: new Date(),
     guests: 10,
@@ -101,18 +119,6 @@ export function ReservationDialog({
     [society]
   );
 
-  // Get all active tables
-  const getAllTables = () => {
-    return tables.filter(table => table.isActive);
-  };
-
-  // Check if selected table can accommodate guests
-  const isTableSuitable = (tableName: string) => {
-    const table = tables.find(t => t.name === tableName);
-    if (!table || table.minCapacity === null || table.maxCapacity === null) return false;
-    return formData.guests >= table.minCapacity && formData.guests <= table.maxCapacity;
-  };
-
   const calculateTotal = (guests: number, kitchen: boolean) => {
     if (!society) return "0";
 
@@ -124,7 +130,6 @@ export function ReservationDialog({
     return (guestCharge + kitchenCharge).toString();
   };
 
-  // Load society data
   const loadSociety = async () => {
     try {
       const response = await authFetch("/api/societies/user");
@@ -137,20 +142,6 @@ export function ReservationDialog({
     }
   };
 
-  // Load tables
-  const loadTables = async () => {
-    try {
-      const response = await authFetch("/api/tables/available");
-      if (response.ok) {
-        const data = await response.json();
-        setTables(data);
-      }
-    } catch (error) {
-      console.error("Error loading tables:", error);
-    }
-  };
-
-  // Keep totalAmount in sync with society pricing when society loads (guests/kitchen update inline to avoid one-frame stale footer totals)
   useEffect(() => {
     if (!society) return;
     setFormData(prev => ({
@@ -159,11 +150,9 @@ export function ReservationDialog({
     }));
   }, [society]);
 
-  // Load data when dialog opens
   useEffect(() => {
     if (open) {
-      loadSociety();
-      loadTables();
+      void loadSociety();
     }
   }, [open]);
 
@@ -192,6 +181,43 @@ export function ReservationDialog({
       formData.startDate instanceof Date ? formData.startDate : new Date(formData.startDate);
     return Number.isNaN(d.getTime()) ? null : d;
   }, [formData.startDate]);
+
+  useEffect(() => {
+    if (!open || !reservationInstant) {
+      setTables([]);
+      return;
+    }
+    let cancelled = false;
+    setTablesLoading(true);
+    const params = new URLSearchParams({
+      startDate: reservationInstant.toISOString(),
+      type: formData.type,
+    });
+    void (async () => {
+      try {
+        const response = await authFetch(`/api/tables/available?${params.toString()}`);
+        if (!response.ok || cancelled) return;
+        const data = (await response.json()) as TableWithOccupancy[];
+        if (!cancelled) setTables(Array.isArray(data) ? data : []);
+      } catch (e) {
+        console.error("Error loading tables:", e);
+        if (!cancelled) setTables([]);
+      } finally {
+        if (!cancelled) setTablesLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, reservationInstant, formData.type]);
+
+  useEffect(() => {
+    if (!formData.table) return;
+    const tbl = tables.find(x => x.name === formData.table);
+    if (tbl && !isTableSuitableForGuests(tbl, formData.guests)) {
+      setFormData(prev => ({ ...prev, table: "" }));
+    }
+  }, [tables, formData.guests, formData.table]);
 
   useEffect(() => {
     if (!open || !reservationInstant) {
@@ -229,21 +255,15 @@ export function ReservationDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, reservationInstant, formData.table, formData.useKitchen, tables]);
+  }, [open, reservationInstant, formData.table, formData.useKitchen, tables, t]);
+
+  const mapSrc = society ? societyMapSrc(society.id, society.mapImageUrl) : undefined;
 
   const handleCreateReservation = async () => {
     if (prepaymentBlocks) {
       toast({
         title: t("error"),
         description: t("prepaymentLedgerBannerDescription"),
-        variant: "destructive",
-      });
-      return;
-    }
-    if (!formData.name) {
-      toast({
-        title: t("error"),
-        description: t("nameRequired"),
         variant: "destructive",
       });
       return;
@@ -261,14 +281,11 @@ export function ReservationDialog({
     try {
       setLoading(true);
 
-      // Validate table capacity
-      if (formData.table && !isTableSuitable(formData.table)) {
-        throw new Error(
-          `Hautatutako mahaiak ez ditu ${formData.guests} pertsona hartzeko kapazitaterik. Mesedez, hautatu mahaia egoki bat.`
-        );
+      const selected = tables.find(x => x.name === formData.table);
+      if (!selected || !isTableSuitableForGuests(selected, formData.guests)) {
+        throw new Error(t("tableGuestsExceedCapacity", { guests: String(formData.guests) }));
       }
 
-      // Ensure we have a valid Date object
       let startDate: Date;
       if (formData.startDate instanceof Date) {
         startDate = formData.startDate;
@@ -276,15 +293,18 @@ export function ReservationDialog({
         startDate = new Date(formData.startDate);
       }
 
-      // Check if the date is valid
       if (isNaN(startDate.getTime())) {
         throw new Error(t("invalidDate"));
       }
 
       const reservationData = {
-        ...formData,
+        type: formData.type,
+        guests: formData.guests,
+        useKitchen: formData.useKitchen,
+        table: formData.table,
         totalAmount: calculateTotal(formData.guests, formData.useKitchen),
         startDate: startDate.toISOString(),
+        notes: formData.notes.trim() || undefined,
       };
 
       const response = await authFetch("/api/reservations", {
@@ -300,9 +320,7 @@ export function ReservationDialog({
           description: t("reservationCreated"),
         });
 
-        // Reset form
         setFormData({
-          name: "",
           type:
             mealTypes[0]?.id ??
             normalizeSocietyReservationMealTypes(society?.reservationMealTypes)[0]?.id ??
@@ -333,237 +351,274 @@ export function ReservationDialog({
     }
   };
 
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg" data-testid="dialog-content">
-        <DialogHeader>
-          <DialogTitle>{t("newReservation")}</DialogTitle>
-          <DialogDescription>{t("fillReservationDetails")}</DialogDescription>
-        </DialogHeader>
-        <div className="space-y-6">
-          {calendarBlockNotes.length > 0 && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>{t("calendarWarningBlockedTitle")}</AlertTitle>
-              <AlertDescription>
-                <ul className="list-disc pl-4 mt-2 space-y-1">
-                  {calendarBlockNotes.map((line, i) => (
-                    <li key={i}>{line}</li>
-                  ))}
-                </ul>
-              </AlertDescription>
-            </Alert>
-          )}
-          <div className="space-y-2">
-            <Label>{t("name")}</Label>
-            <Input
-              value={formData.name}
-              onChange={e => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Erreserbaren izena"
-              data-testid="input-reservation-name"
-            />
-          </div>
+  const selectedTableRow = formData.table
+    ? tables.find(x => x.name === formData.table)
+    : undefined;
+  const selectedTableInvalid =
+    Boolean(formData.table && selectedTableRow) &&
+    !isTableSuitableForGuests(selectedTableRow!, formData.guests);
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+  return (
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent
+          className="max-w-lg max-h-[85vh] flex flex-col gap-0 p-0"
+          data-testid="dialog-content"
+        >
+          <DialogHeader className="px-6 pt-6 pb-2 shrink-0 space-y-1.5">
+            <DialogTitle>{t("newReservation")}</DialogTitle>
+            <DialogDescription>{t("fillReservationDetails")}</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-4 space-y-5">
+            {calendarBlockNotes.length > 0 && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>{t("calendarWarningBlockedTitle")}</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc pl-4 mt-2 space-y-1">
+                    {calendarBlockNotes.map((line, i) => (
+                      <li key={i}>{line}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+
             <div className="space-y-2">
-              <Label>{t("type")}</Label>
+              <Label>{t("date")}</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                    data-testid="date-picker-button"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.startDate
+                      ? format(formData.startDate, "PPP", { locale: dateFnsLocale(language) })
+                      : t("selectDate")}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={formData.startDate}
+                    onSelect={date => date && setFormData(prev => ({ ...prev, startDate: date }))}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>{t("type")}</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={value => setFormData(prev => ({ ...prev, type: value }))}
+                >
+                  <SelectTrigger data-testid="select-reservation-type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {mealTypes.map(m => (
+                      <SelectItem key={m.id} value={m.id}>
+                        {getReservationMealTypeLabel(mealTypes, m.id, language)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t("guests")}</Label>
+                <Input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={formData.guests}
+                  onChange={e => {
+                    const g = parseInt(e.target.value, 10) || 1;
+                    setFormData(prev => ({
+                      ...prev,
+                      guests: g,
+                      totalAmount: calculateTotal(g, prev.useKitchen),
+                    }));
+                  }}
+                  data-testid="input-guests"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label className="mb-0">{t("table")}</Label>
+                {mapSrc ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="h-auto p-0 text-sm text-primary underline-offset-4 hover:underline"
+                    onClick={() => setMapDialogOpen(true)}
+                  >
+                    {t("viewReservationMapLink")}
+                  </Button>
+                ) : null}
+              </div>
               <Select
-                value={formData.type}
-                onValueChange={value => setFormData({ ...formData, type: value })}
+                value={formData.table}
+                onValueChange={value => setFormData(prev => ({ ...prev, table: value }))}
+                disabled={tablesLoading}
               >
-                <SelectTrigger data-testid="select-reservation-type">
-                  <SelectValue />
+                <SelectTrigger data-testid="select-table">
+                  <SelectValue
+                    placeholder={
+                      tablesLoading ? t("loading") : t("selectTable")
+                    }
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {mealTypes.map(m => (
-                    <SelectItem key={m.id} value={m.id}>
-                      {getReservationMealTypeLabel(mealTypes, m.id, language)}
-                    </SelectItem>
-                  ))}
+                  {tables.length > 0 ? (
+                    tables.map(table => {
+                      const suitable = isTableSuitableForGuests(table, formData.guests);
+                      const rem = table.seatsRemaining;
+                      const capHint =
+                        rem !== undefined && table.allowsPartialReservation
+                          ? t("tableSeatsRemainingShort", {
+                              remaining: String(rem),
+                              max: String(table.maxCapacity),
+                            })
+                          : `${table.minCapacity ?? "?"}–${table.maxCapacity ?? "?"} ${t("persons")}`;
+
+                      return (
+                        <SelectItem key={table.id} value={table.name} disabled={!suitable}>
+                          <div className="flex flex-col">
+                            <span>{table.name}</span>
+                            <span className="text-xs text-muted-foreground">{capHint}</span>
+                          </div>
+                        </SelectItem>
+                      );
+                    })
+                  ) : (
+                    <div className="p-2 text-sm text-muted-foreground text-center">
+                      {tablesLoading ? t("loading") : t("tableNoTablesAvailable")}
+                    </div>
+                  )}
                 </SelectContent>
               </Select>
+              {selectedTableInvalid && (
+                <p className="text-sm text-amber-600">
+                  {t("tableGuestsExceedCapacity", { guests: String(formData.guests) })}
+                </p>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label>{t("guests")}</Label>
-              <Input
-                type="number"
-                min="1"
-                max="100"
-                value={formData.guests}
-                onChange={e => {
-                  const g = parseInt(e.target.value) || 1;
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="kitchen"
+                checked={formData.useKitchen}
+                onCheckedChange={checked => {
+                  const useKitchen = checked === true;
                   setFormData(prev => ({
                     ...prev,
-                    guests: g,
-                    totalAmount: calculateTotal(g, prev.useKitchen),
+                    useKitchen,
+                    totalAmount: calculateTotal(prev.guests, useKitchen),
                   }));
                 }}
-                data-testid="input-guests"
+                data-testid="checkbox-kitchen"
               />
+              <Label htmlFor="kitchen" className="flex items-center gap-2">
+                <Utensils className="h-4 w-4" />
+                {t("kitchenEquipment")}
+              </Label>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label>{t("date")}</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-left font-normal"
-                  data-testid="date-picker-button"
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {formData.startDate
-                    ? format(formData.startDate, "PPP", { locale: dateFnsLocale(language) })
-                    : t("selectDate")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={formData.startDate}
-                  onSelect={date => date && setFormData(prev => ({ ...prev, startDate: date }))}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          <div className="space-y-2">
-            <Label>{t("table")}</Label>
-            <Select
-              value={formData.table}
-              onValueChange={value => setFormData(prev => ({ ...prev, table: value }))}
-            >
-              <SelectTrigger data-testid="select-table">
-                <SelectValue placeholder={t("selectTable")} />
-              </SelectTrigger>
-              <SelectContent>
-                {getAllTables().length > 0 ? (
-                  getAllTables().map(table => {
-                    const isSuitable =
-                      table.minCapacity !== null &&
-                      table.maxCapacity !== null &&
-                      formData.guests >= table.minCapacity &&
-                      formData.guests <= table.maxCapacity;
-
-                    return (
-                      <SelectItem key={table.id} value={table.name} disabled={!isSuitable}>
-                        <div className="flex flex-col">
-                          <span>{table.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            {table.minCapacity ?? "?"}-{table.maxCapacity ?? "?"} pertsona
-                            {!isSuitable && ` (Ez egokia ${formData.guests} pertsonentzat)`}
-                          </span>
-                        </div>
-                      </SelectItem>
-                    );
-                  })
-                ) : (
-                  <div className="p-2 text-sm text-muted-foreground text-center">
-                    Ez dago mahairik eskuragarri
-                  </div>
-                )}
-              </SelectContent>
-            </Select>
-            {formData.table && !isTableSuitable(formData.table) && (
-              <p className="text-sm text-amber-600">
-                {formData.table} mahaiak ez ditu {formData.guests} pertsona hartzeko kapazitaterik.
-                Mahaiaren kapazitatea:{" "}
-                {tables.find(t => t.name === formData.table)?.minCapacity ?? "?"}-
-                {tables.find(t => t.name === formData.table)?.maxCapacity ?? "?"} pertsona.
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="kitchen"
-              checked={formData.useKitchen}
-              onCheckedChange={checked => {
-                const useKitchen = checked === true;
-                setFormData(prev => ({
-                  ...prev,
-                  useKitchen,
-                  totalAmount: calculateTotal(prev.guests, useKitchen),
-                }));
-              }}
-              data-testid="checkbox-kitchen"
-            />
-            <Label htmlFor="kitchen" className="flex items-center gap-2">
-              <Utensils className="h-4 w-4" />
-              {t("kitchenEquipment")}
-            </Label>
-          </div>
-
-          <Card className="bg-muted/50" data-testid="reservation-cost-card">
-            <CardContent className="pt-4">
-              {society ? (
-                <>
-                  <div className="flex justify-between text-sm">
-                    <span>
-                      {t("guests")} ({formData.guests} × {society.reservationPricePerMember ?? "0"}
-                      €):
-                    </span>
-                    <span>
-                      {(
-                        formData.guests * parseFloat(society.reservationPricePerMember ?? "0")
-                      ).toFixed(2)}
-                      €
-                    </span>
-                  </div>
-                  {formData.useKitchen && (
-                    <div className="flex justify-between text-sm mt-1">
+            <Card className="bg-muted/50" data-testid="reservation-cost-card">
+              <CardContent className="pt-4">
+                {society ? (
+                  <>
+                    <div className="flex justify-between text-sm">
                       <span>
-                        {t("kitchenCost")} ({formData.guests} ×{" "}
-                        {society.kitchenPricePerMember ?? "0"}€):
+                        {t("guests")} ({formData.guests} × {society.reservationPricePerMember ?? "0"}
+                        €):
                       </span>
                       <span>
                         {(
-                          formData.guests * parseFloat(society.kitchenPricePerMember ?? "0")
+                          formData.guests * parseFloat(society.reservationPricePerMember ?? "0")
                         ).toFixed(2)}
                         €
                       </span>
                     </div>
-                  )}
-                </>
-              ) : (
-                <div className="flex justify-between text-sm">
-                  <span>{t("loading")}...</span>
+                    {formData.useKitchen && (
+                      <div className="flex justify-between text-sm mt-1">
+                        <span>
+                          {t("kitchenCost")} ({formData.guests} ×{" "}
+                          {society.kitchenPricePerMember ?? "0"}€):
+                        </span>
+                        <span>
+                          {(
+                            formData.guests * parseFloat(society.kitchenPricePerMember ?? "0")
+                          ).toFixed(2)}
+                          €
+                        </span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="flex justify-between text-sm">
+                    <span>{t("loading")}...</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-medium mt-2 pt-2 border-t">
+                  <span>{t("totalCost")}:</span>
+                  <span>{formData.totalAmount}€</span>
                 </div>
-              )}
-              <div className="flex justify-between font-medium mt-2 pt-2 border-t">
-                <span>{t("totalCost")}:</span>
-                <span>{formData.totalAmount}€</span>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <div className="space-y-2">
-            <Label>{t("notes")}</Label>
-            <Textarea
-              value={formData.notes}
-              onChange={e => setFormData({ ...formData, notes: e.target.value })}
-              placeholder={t("notesPlaceholder")}
-              rows={3}
-            />
+            <div className="space-y-2">
+              <Label>{t("notes")}</Label>
+              <Textarea
+                value={formData.notes}
+                onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                placeholder={t("notesPlaceholder")}
+                rows={3}
+              />
+            </div>
           </div>
 
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="shrink-0 flex justify-end gap-2 border-t px-6 py-4 bg-background">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               {t("cancel")}
             </Button>
             <Button
               onClick={handleCreateReservation}
               data-testid="button-save-reservation"
-              disabled={!formData.name || !formData.table || loading || prepaymentBlocks}
+              disabled={
+                !formData.table || loading || prepaymentBlocks || selectedTableInvalid || tablesLoading
+              }
             >
               {loading ? t("loading") : t("reserve")}
             </Button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={mapDialogOpen} onOpenChange={setMapDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("reservationFloorPlan")}</DialogTitle>
+            <DialogDescription>{t("societyMapHint")}</DialogDescription>
+          </DialogHeader>
+          {mapSrc ? (
+            <img
+              src={mapSrc}
+              alt={t("reservationFloorPlanAlt")}
+              className="w-full h-auto rounded-md border object-contain max-h-[70vh]"
+            />
+          ) : null}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

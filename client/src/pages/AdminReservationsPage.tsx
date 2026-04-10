@@ -40,7 +40,11 @@ import { formatDateShort, dateFnsLocale } from "@/lib/date-locale";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Reservation, Society, User } from "@shared/schema";
-import { getReservationMealTypeLabel, normalizeSocietyReservationMealTypes } from "@shared/schema";
+import {
+  formatReservationDisplayTitle,
+  getReservationMealTypeLabel,
+  normalizeSocietyReservationMealTypes,
+} from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { authFetch } from "@/lib/api";
@@ -213,6 +217,16 @@ export function AdminReservationsPage() {
   ];
 
   const mealTypes = normalizeSocietyReservationMealTypes(society?.reservationMealTypes);
+
+  const adminReservationTitle = (r: ReservationWithUser) =>
+    formatReservationDisplayTitle({
+      legacyName: r.name,
+      userName: r.userName,
+      type: r.type,
+      startDate: r.startDate,
+      mealTypes,
+      language,
+    });
 
   // Handle filter changes
   const handleSearch = (value: string) => {
@@ -397,7 +411,7 @@ export function AdminReservationsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>{t("tableHeaderName")}</TableHead>
+                      <TableHead>{t("reservationListTitleAdmin")}</TableHead>
                       <TableHead>{t("tableHeaderUser")}</TableHead>
                       <TableHead>{t("tableHeaderDate")}</TableHead>
                       <TableHead>{t("tableHeaderTime")}</TableHead>
@@ -424,7 +438,9 @@ export function AdminReservationsPage() {
                     ) : (
                       reservations.map(reservation => (
                         <TableRow key={reservation.id}>
-                          <TableCell className="font-medium">{reservation.name}</TableCell>
+                          <TableCell className="font-medium">
+                            {adminReservationTitle(reservation)}
+                          </TableCell>
                           <TableCell>{reservation.userName || t("unknownUser")}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-2">
@@ -488,8 +504,8 @@ export function AdminReservationsPage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <p className="text-sm font-medium">{t("tableHeaderName")}</p>
-                      <p>{selectedReservation.name}</p>
+                      <p className="text-sm font-medium">{t("reservationListTitleAdmin")}</p>
+                      <p>{adminReservationTitle(selectedReservation)}</p>
                     </div>
                     <div>
                       <p className="text-sm font-medium">{t("tableHeaderUser")}</p>
@@ -632,7 +648,7 @@ export function AdminReservationsPage() {
                       cancelReservation(
                         reservationToCancel.id,
                         cancellationReason,
-                        reservationToCancel.name
+                        adminReservationTitle(reservationToCancel)
                       );
                       setCancelDialogOpen(false);
                       setReservationToCancel(null);

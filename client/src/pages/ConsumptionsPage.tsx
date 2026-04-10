@@ -47,8 +47,12 @@ import { getErrorMessage } from "@/lib/errors";
 import { useAuth } from "@/lib/auth";
 import { authFetch } from "@/lib/api";
 import { productImageSrc, thumbFilenameFromImageUrl } from "@/lib/image-urls";
-import type { Product } from "@shared/schema";
-import { societyAllowsCashPayment } from "@shared/schema";
+import type { Product, SocietyReservationMealType } from "@shared/schema";
+import {
+  formatReservationDisplayTitle,
+  normalizeSocietyReservationMealTypes,
+  societyAllowsCashPayment,
+} from "@shared/schema";
 
 const PENDING_PAYMENTS_FILTER = "pending_payments";
 
@@ -80,6 +84,7 @@ type Category = {
 type PendingReservation = {
   id: string;
   name: string;
+  type: string;
   status: string;
   startDate: string;
   totalAmount: string;
@@ -134,7 +139,7 @@ async function errorMessageFromResponse(res: Response, fallback: string): Promis
 }
 
 export function ConsumptionsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: ledgerStatus } = usePrepaymentLedgerStatus();
@@ -153,6 +158,19 @@ export function ConsumptionsPage() {
   const [isClosingAccount, setIsClosingAccount] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [isCartExpanded, setIsCartExpanded] = useState(false);
+  const [reservationMealTypes, setReservationMealTypes] = useState<SocietyReservationMealType[]>(
+    () => normalizeSocietyReservationMealTypes(null)
+  );
+
+  const pendingReservationTitle = (r: PendingReservation) =>
+    formatReservationDisplayTitle({
+      legacyName: r.name,
+      userName: undefined,
+      type: r.type,
+      startDate: r.startDate,
+      mealTypes: reservationMealTypes,
+      language,
+    });
 
   const loadPendingCashItems = useCallback(async () => {
     setLoadingPending(true);
@@ -201,6 +219,7 @@ export function ConsumptionsPage() {
 
         if (societyResponse.ok) {
           const society = await societyResponse.json();
+          setReservationMealTypes(normalizeSocietyReservationMealTypes(society.reservationMealTypes));
           const allow = societyAllowsCashPayment(society.paymentMethods);
           setCashEnabled(allow);
           if (!allow) {
@@ -244,12 +263,15 @@ export function ConsumptionsPage() {
   });
 
   const q = searchTerm.toLowerCase();
-  const filteredPendingReservations = pendingReservations.filter(
-    r =>
+  const filteredPendingReservations = pendingReservations.filter(r => {
+    const title = pendingReservationTitle(r).toLowerCase();
+    return (
+      title.includes(q) ||
       r.name.toLowerCase().includes(q) ||
       r.id.toLowerCase().includes(q) ||
       parseFloat(r.totalAmount).toFixed(2).includes(q)
-  );
+    );
+  });
   const filteredPendingSubscriptions = pendingSubscriptions.filter(
     s => s.month.includes(q) || s.amount.toString().includes(q)
   );
@@ -307,7 +329,7 @@ export function ConsumptionsPage() {
           kind: "reservation",
           lineId,
           reservationId: r.id,
-          name: r.name,
+          name: pendingReservationTitle(r),
           price,
           quantity: 1,
         },
@@ -606,7 +628,9 @@ export function ConsumptionsPage() {
                     >
                       <CardContent className="p-4">
                         <div className="flex flex-col gap-2">
-                          <span className="font-medium text-sm line-clamp-2">{r.name}</span>
+                          <span className="font-medium text-sm line-clamp-2">
+                            {pendingReservationTitle(r)}
+                          </span>
                           <div className="flex items-center justify-between gap-2">
                             <Badge variant="secondary" className="text-xs">
                               <Calendar className="h-3 w-3 mr-1 inline" />

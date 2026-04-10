@@ -3,13 +3,16 @@ import { db } from "../db";
 import {
   users,
   reservations,
+  tables,
   notifications,
   notificationMessages,
   cancelReservationBodySchema,
   createReservationBodySchema,
   normalizeSocietyReservationMealTypes,
+  reservationNotificationLabel,
   type JwtSessionUser,
   type Reservation,
+  type SocietyReservationMealType,
 } from "@shared/schema";
 import { eq, and, or, like, gte, between, ne, count, desc, asc, sql } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
@@ -49,10 +52,32 @@ type ReservationNotificationSource = Pick<Reservation, "id" | "userId" | "societ
 
 const createReservationNotifications = async (
   reservationData: ReservationNotificationSource,
-  reservationName: string,
-  type: "created" | "cancelled" | "confirmed"
+  type: "created" | "cancelled" | "confirmed",
+  labelSource: Pick<Reservation, "name" | "type" | "table">,
+  mealTypes: SocietyReservationMealType[]
 ) => {
   const reservationDate = new Date(reservationData.startDate);
+  const nameEu = reservationNotificationLabel({
+    legacyName: labelSource.name,
+    type: labelSource.type,
+    table: labelSource.table,
+    mealTypes,
+    language: "eu",
+  });
+  const nameEs = reservationNotificationLabel({
+    legacyName: labelSource.name,
+    type: labelSource.type,
+    table: labelSource.table,
+    mealTypes,
+    language: "es",
+  });
+  const nameEn = reservationNotificationLabel({
+    legacyName: labelSource.name,
+    type: labelSource.type,
+    table: labelSource.table,
+    mealTypes,
+    language: "en",
+  });
 
   // Define message keys based on type
   const messageKey =
@@ -73,7 +98,7 @@ const createReservationNotifications = async (
       message: translateWithParams(
         messageKey,
         {
-          reservationName,
+          reservationName: nameEu,
           date: formatDate(reservationDate, "eu"),
         },
         "eu"
@@ -88,7 +113,7 @@ const createReservationNotifications = async (
   const basqueMessage = translateWithParams(
     messageKey,
     {
-      reservationName,
+      reservationName: nameEu,
       date: formatDate(reservationDate, "eu"),
     },
     "eu"
@@ -105,7 +130,7 @@ const createReservationNotifications = async (
   const spanishMessage = translateWithParams(
     messageKey,
     {
-      reservationName,
+      reservationName: nameEs,
       date: formatDate(reservationDate, "es"),
     },
     "es"
@@ -122,7 +147,7 @@ const createReservationNotifications = async (
   const englishMessage = translateWithParams(
     messageKey,
     {
-      reservationName,
+      reservationName: nameEn,
       date: formatDate(reservationDate, "en"),
     },
     "en"
@@ -364,12 +389,13 @@ export function registerReservationRoutes(app: Express) {
           conditions.push(sql`EXTRACT(MONTH FROM ${reservations.startDate}) = ${month}`);
         }
 
-        // Add search filter (search by name or table)
+        // Add search filter (search by name, table, or member name)
         if (search) {
           const searchTerm = `%${search}%`;
           const searchCondition = or(
             like(reservations.name, searchTerm),
-            like(reservations.table, searchTerm)
+            like(reservations.table, searchTerm),
+            like(users.name, searchTerm)
           );
           if (searchCondition) {
             conditions.push(searchCondition);
@@ -380,6 +406,7 @@ export function registerReservationRoutes(app: Express) {
         const countQuery = db
           .select({ count: count() })
           .from(reservations)
+          .leftJoin(users, eq(reservations.userId, users.id))
           .where(and(...conditions));
 
         const countResult = await countQuery;
@@ -403,8 +430,10 @@ export function registerReservationRoutes(app: Express) {
             notes: reservations.notes,
             createdAt: reservations.createdAt,
             updatedAt: reservations.updatedAt,
+            userName: users.name,
           })
           .from(reservations)
+          .leftJoin(users, eq(reservations.userId, users.id))
           .where(and(...conditions))
           .orderBy(desc(reservations.startDate))
           .limit(limitNum)
@@ -641,9 +670,30 @@ export function registerReservationRoutes(app: Express) {
           return res.status(400).json({ message: "Reservations cannot be created for past dates" });
         }
 
-        // Check if table is already reserved for the same date and event type (excluding cancelled reservations)
-        const existingReservation = await db
-          .select()
+        const tableRow = await db.query.tables.findFirst({
+          where: and(eq(tables.societyId, societyId), eq(tables.name, rest.table)),
+        });
+        if (!tableRow || !tableRow.isActive) {
+          return res.status(400).json({ message: "Invalid or inactive table" });
+        }
+
+        const guests = rest.guests ?? 0;
+        if (!Number.isInteger(guests) || guests < 1) {
+          return res.status(400).json({ message: "Guests must be a positive integer" });
+        }
+
+        const minCap = tableRow.minCapacity ?? 1;
+        if (guests < minCap || guests > tableRow.maxCapacity) {
+          return res.status(400).json({
+            message: `Guest count must be between ${minCap} and ${tableRow.maxCapacity} for this table`,
+          });
+        }
+
+        const [slotAgg] = await db
+          .select({
+            bookedSeats: sql<number>`coalesce(sum(${reservations.guests}), 0)`.mapWith(Number),
+            bookingCount: sql<number>`count(*)::int`.mapWith(Number),
+          })
           .from(reservations)
           .where(
             and(
@@ -653,10 +703,18 @@ export function registerReservationRoutes(app: Express) {
               eq(reservations.type, rest.type),
               ne(reservations.status, "cancelled")
             )
-          )
-          .limit(1);
+          );
 
-        if (existingReservation.length > 0) {
+        const bookedSeats = slotAgg?.bookedSeats ?? 0;
+        const bookingCount = slotAgg?.bookingCount ?? 0;
+
+        if (tableRow.allowsPartialReservation) {
+          if (bookedSeats + guests > tableRow.maxCapacity) {
+            return res.status(400).json({
+              message: `Not enough seats remaining on ${rest.table} for this date and meal type`,
+            });
+          }
+        } else if (bookingCount > 0) {
           return res.status(400).json({
             message: `Table ${rest.table} is already reserved for this date and event type`,
           });
@@ -688,6 +746,7 @@ export function registerReservationRoutes(app: Express) {
 
         const reservationData = {
           ...rest,
+          name: rest.name?.trim() ? rest.name.trim() : "",
           startDate,
           userId: user.id,
           societyId,
@@ -799,11 +858,19 @@ export function registerReservationRoutes(app: Express) {
           cancelDescriptionPrefix: "Reservation cancelled:",
         });
 
+        const societyNotify = await db.query.societies.findFirst({
+          where: (s, { eq: eqS }) => eqS(s.id, societyId),
+        });
+        const mealTypesNotify = normalizeSocietyReservationMealTypes(
+          societyNotify?.reservationMealTypes
+        );
+
         // Create cancellation notification for the user
         await createReservationNotifications(
           updatedReservation[0],
-          reservation[0].name,
-          "cancelled"
+          "cancelled",
+          reservation[0],
+          mealTypesNotify
         );
 
         // Trigger real-time debt calculation for current month
@@ -844,7 +911,18 @@ export function registerReservationRoutes(app: Express) {
 
         // Create notification if admin is cancelling someone else's reservation
         if (reservation[0].userId !== user.id && isAdmin) {
-          await createReservationNotifications(reservation[0], reservation[0].name, "cancelled");
+          const societyNotifyDel = await db.query.societies.findFirst({
+            where: (s, { eq: eqS }) => eqS(s.id, societyId),
+          });
+          const mealTypesDel = normalizeSocietyReservationMealTypes(
+            societyNotifyDel?.reservationMealTypes
+          );
+          await createReservationNotifications(
+            reservation[0],
+            "cancelled",
+            reservation[0],
+            mealTypesDel
+          );
         }
 
         await reverseReservationLedgerOnCancel({

@@ -68,18 +68,7 @@ When("I fill in the reservation details", async function () {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  // Generate a unique reservation name with timestamp and random type
-  const timestamp = Date.now();
-  const randomType = Math.floor(Math.random() * 1000);
-  const uniqueName = `Test Erreserba ${timestamp} T${randomType}`;
-
-  // Store the unique name for later verification
-  this.testReservationName = uniqueName;
-
-  // Fill the name field directly
-  await page.fill('[data-testid="input-reservation-name"]', uniqueName);
-
-  // Select reservation type randomly
+  // Select reservation type randomly (no title field — list shows meal · date)
   await page.click('[data-testid="select-reservation-type"]');
   const options = await page.locator('[role="option"]').all();
   if (options.length > 0) {
@@ -149,6 +138,7 @@ When("I set the number of guests to {int}", async function (guests: number) {
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
+  this.testReservationGuests = guests;
   await page.fill('[data-testid="input-guests"]', guests.toString());
   // Wait for React to re-render table capacity options (SelectItem disabled state depends on guests)
   const costCard = reservationCostCard(page);
@@ -181,6 +171,8 @@ When("I select a table", { timeout: 60 * 1000 }, async function () {
 
   const choice = enabled.last();
   await choice.scrollIntoViewIfNeeded();
+  const label = (await choice.textContent())?.trim().split(/\s+/)[0] ?? "";
+  this.testReservationTable = label;
   await choice.click();
 
   const saveBtn = page.locator('[data-testid="button-save-reservation"]');
@@ -461,33 +453,30 @@ Then("the reservation should appear in my reservations table", async function ()
   const page = getPage();
   if (!page) throw new Error("Page not available");
 
-  const uniqueReservationName = this.testReservationName;
+  const table = String(this.testReservationTable ?? "");
+  const guests = Number(this.testReservationGuests ?? 0);
+  assert.ok(table.length > 0, "Expected testReservationTable from table selection step");
+  assert.ok(guests > 0, "Expected testReservationGuests from guests step");
 
-  // List is ordered by start date (desc), not creation time; a random booking date can land
-  // beyond page 1. Narrow via search so the row is always addressable.
   const searchInput = page.getByPlaceholder(/Bilatu|Buscar|Search/i);
-  await searchInput.fill(uniqueReservationName);
+  await searchInput.fill(table);
   await page.waitForFunction(
-    (name: string) => {
+    ([tbl, g]: [string, number]) => {
       const rows = Array.from(document.querySelectorAll("table tbody tr"));
-      return rows.some(r => r.textContent?.includes(name));
+      return rows.some(r => {
+        const t = r.textContent ?? "";
+        return t.includes(tbl) && t.includes(String(g));
+      });
     },
-    uniqueReservationName,
+    [table, guests] as [string, number],
     { timeout: 15000 }
   );
 
-  const row = page.locator("table tbody tr").filter({ hasText: uniqueReservationName }).first();
+  const row = page
+    .locator("table tbody tr")
+    .filter({ hasText: table })
+    .filter({ hasText: String(guests) })
+    .first();
 
   await row.waitFor({ state: "visible", timeout: 10000 });
-
-  const rowText = await row.textContent();
-  assert.ok(
-    rowText?.includes(uniqueReservationName),
-    `Unique reservation name "${uniqueReservationName}" should be present in the table`
-  );
-  // My Reservations is scoped to the logged-in user: no owner column. Row has no € total (see detail dialog).
-  assert.ok(
-    (rowText?.length ?? 0) > uniqueReservationName.length,
-    `Row should include columns beyond name; row: "${rowText}"`
-  );
 });
