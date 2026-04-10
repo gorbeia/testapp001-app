@@ -93,12 +93,7 @@ export function ProductCatalogImagePicker(props: ProductCatalogImagePickerProps)
                 (disabled || busyPath) && "opacity-60"
               )}
             >
-              <img
-                src={item.path}
-                alt=""
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
+              <img src={item.path} alt="" className="w-full h-full object-cover" loading="lazy" />
               {busyHere ? (
                 <span className="absolute inset-0 flex items-center justify-center bg-background/60">
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />

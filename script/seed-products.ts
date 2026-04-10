@@ -330,9 +330,7 @@ export async function seedProducts(dbConn: SeedDb) {
         .set({
           stockMode: product.stockMode,
           description: product.description,
-          ...(product.catalogImageUrl !== undefined
-            ? { imageUrl: product.catalogImageUrl }
-            : {}),
+          ...(product.catalogImageUrl !== undefined ? { imageUrl: product.catalogImageUrl } : {}),
         })
         .where(and(eq(products.name, product.name), eq(products.societyId, societyId)));
       console.log(`Product already exists (updated stockMode/description): ${product.name}`);

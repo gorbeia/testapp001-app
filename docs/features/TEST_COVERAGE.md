@@ -69,7 +69,7 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 
 | Story area                                                    | Unit | Integration                       | E2E                              |
 | ------------------------------------------------------------- | ---- | --------------------------------- | -------------------------------- |
-| Products CRUD (incl. catalog `imageUrl` on POST/PUT) | —    | `products.feature`                | —                                |
+| Products CRUD (incl. catalog `imageUrl` on POST/PUT)          | —    | `products.feature`                | —                                |
 | Categories                                                    | —    | `categories.feature`              | —                                |
 | Society PATCH (incl. payment methods, reservation meal types) | —    | `societies.feature`               | `society-management.feature`     |
 | Admin go-live setup checklist API                             | —    | `society-setup-checklist.feature` | —                                |
