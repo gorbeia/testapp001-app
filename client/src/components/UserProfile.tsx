@@ -3,7 +3,7 @@ import { useLanguage } from "@/lib/i18n";
 import { useAuth } from "@/lib/auth";
 import { authFetch } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
-import type { User } from "@/lib/auth";
+import type { CommunicationLanguage, User } from "@/lib/auth";
 import type { AccessRole, MembershipType } from "@shared/permissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,14 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Mail, Phone, CreditCard, Users, User as UserIcon, Edit2, Save, X } from "lucide-react";
 import { getErrorMessage } from "@/lib/errors";
 
@@ -29,6 +37,8 @@ export function UserProfile() {
     name: "",
     phone: "",
     iban: "",
+    notifyEmail: true,
+    communicationLanguage: "eu" as CommunicationLanguage,
   });
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
@@ -48,6 +58,8 @@ export function UserProfile() {
           name: authUser.name || "",
           phone: authUser.phone || "",
           iban: authUser.iban || "",
+          notifyEmail: authUser.notifyEmail,
+          communicationLanguage: authUser.communicationLanguage,
         });
       } catch (error) {
         console.error("Failed to fetch user profile:", error);
@@ -115,6 +127,8 @@ export function UserProfile() {
         name: user.name || "",
         phone: user.phone || "",
         iban: user.iban || "",
+        notifyEmail: user.notifyEmail,
+        communicationLanguage: user.communicationLanguage,
       });
     }
   };
@@ -134,6 +148,8 @@ export function UserProfile() {
           name: editForm.name,
           phone: editForm.phone || null,
           iban: editForm.iban || null,
+          notifyEmail: editForm.notifyEmail,
+          communicationLanguage: editForm.communicationLanguage,
         }),
       });
 
@@ -145,7 +161,7 @@ export function UserProfile() {
       const u = (await response.json()) as Record<string, unknown>;
       const mapped: User = {
         id: String(u.id),
-        email: String(u.username ?? ""),
+        email: String(u.email ?? u.username ?? ""),
         name: String(u.name ?? u.username ?? ""),
         societyId: String(u.societyId ?? user.societyId),
         accessRole: (u.accessRole as AccessRole) ?? "member",
@@ -156,6 +172,11 @@ export function UserProfile() {
         linkedMemberName: u.linkedMemberName != null ? String(u.linkedMemberName) : undefined,
         avatarUrl:
           typeof u.avatarUrl === "string" && u.avatarUrl ? u.avatarUrl : undefined,
+        notifyEmail: typeof u.notifyEmail === "boolean" ? u.notifyEmail : true,
+        communicationLanguage:
+          u.communicationLanguage === "es" || u.communicationLanguage === "en"
+            ? u.communicationLanguage
+            : "eu",
       };
       setUser(mapped);
       updateUser(mapped);
@@ -269,12 +290,12 @@ export function UserProfile() {
             currentFilename={user.avatarUrl}
             previewSize={120}
             onUploaded={filename => {
-              const next = { ...user, avatarUrl: filename };
+              const next: User = { ...user, avatarUrl: filename };
               setUser(next);
               updateUser(next);
             }}
             onRemoved={() => {
-              const next = { ...user, avatarUrl: undefined };
+              const next: User = { ...user, avatarUrl: undefined };
               setUser(next);
               updateUser(next);
             }}
@@ -351,6 +372,62 @@ export function UserProfile() {
                 </>
               )}
             </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">{t("communicationPreferences")}</h3>
+            <p className="text-sm text-muted-foreground">{t("communicationPreferencesHint")}</p>
+            {isEditing ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between gap-4 rounded-lg border p-3">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="notify-email">{t("emailNotifications")}</Label>
+                  </div>
+                  <Switch
+                    id="notify-email"
+                    checked={editForm.notifyEmail}
+                    onCheckedChange={checked =>
+                      setEditForm({ ...editForm, notifyEmail: checked })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>{t("communicationLanguageForEmails")}</Label>
+                  <Select
+                    value={editForm.communicationLanguage}
+                    onValueChange={(v: CommunicationLanguage) =>
+                      setEditForm({ ...editForm, communicationLanguage: v })
+                    }
+                  >
+                    <SelectTrigger className="w-full max-w-md">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="eu">{t("commLangEu")}</SelectItem>
+                      <SelectItem value="es">{t("commLangEs")}</SelectItem>
+                      <SelectItem value="en">{t("commLangEn")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2 text-sm">
+                <p>
+                  <span className="font-medium">{t("emailNotifications")}: </span>
+                  {user.notifyEmail ? t("yes") : t("no")}
+                </p>
+                <p>
+                  <span className="font-medium">{t("communicationLanguageForEmails")}: </span>
+                  {user.communicationLanguage === "es"
+                    ? t("commLangEs")
+                    : user.communicationLanguage === "en"
+                      ? t("commLangEn")
+                      : t("commLangEu")}
+                </p>
+              </div>
+            )}
           </div>
 
           <Separator />

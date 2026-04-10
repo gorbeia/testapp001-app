@@ -81,6 +81,7 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · *(emp
 | Story area | Unit | Integration | E2E |
 |------------|------|-------------|-----|
 | Notifications | — | `notifications.feature` | — |
+| Email content locale resolution | `server/lib/mail/notification-email.test.ts` | — | — |
 | Notes | — | `notes.feature` | — |
 
 ## 9. Subscriptions

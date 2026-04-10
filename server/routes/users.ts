@@ -219,12 +219,16 @@ export function registerUserRoutes(app: Express) {
           });
         }
 
-        const { name, phone, iban } = parsed.data;
+        const { name, phone, iban, notifyEmail, communicationLanguage } = parsed.data;
 
         const updateData: Partial<typeof users.$inferInsert> = {};
         if (typeof name !== "undefined") updateData.name = name;
         if (typeof phone !== "undefined") updateData.phone = phone;
         if (typeof iban !== "undefined") updateData.iban = iban;
+        if (typeof notifyEmail !== "undefined") updateData.notifyEmail = notifyEmail;
+        if (typeof communicationLanguage !== "undefined")
+          updateData.communicationLanguage = communicationLanguage;
+        updateData.updatedAt = new Date();
 
         await db.update(users).set(updateData).where(eq(users.id, id));
 

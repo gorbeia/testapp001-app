@@ -65,11 +65,20 @@ This document covers **society notes** (multilingual DB content) and **in-app no
 
 ---
 
-## Epic: Communication Preferences (backlog)
+## Epic: Communication preferences
 
-### Stories 5–6: Notification settings & templates
+### Story: Email channel & language
 
-**Status:** ❌ **Not implemented** (no quiet hours, channel preferences, or template library as specified in the legacy epic).
+**As a** member  
+**I want to** receive jakinarazpenak by email when I choose to  
+**So that** I see important updates without opening the app
+
+**Acceptance Criteria:**
+
+- **Shipped:** transactional SMTP via **`server/lib/mail`** (nodemailer); env **`EMAIL_ENABLED`**, **`SMTP_*`**, **`MAIL_FROM`** (see `.env.example` and installation guide).
+- **Shipped:** after user-targeted notifications are persisted (`notifyFinancialEvent`, reservations, **`POST /api/notifications`**, note fan-out), the app queues an email to **`users.username`** when **`users.notify_email`** is true.
+- **Shipped:** per-user **`communication_language`** (profile + JWT); **`sendRawEmail`** for non-notification mail later.
+- Quiet hours, push/SMS channels, template library — **not implemented** (legacy epic remainder).
 
 ---
 
@@ -83,7 +92,8 @@ This document covers **society notes** (multilingual DB content) and **in-app no
 
 ## Quick reference
 
-| Feature       | Route / API                             | Status  |
-| ------------- | --------------------------------------- | ------- |
-| Notes admin   | `/oharrak`, `/api/notes`                | Shipped |
-| Notifications | `/jakinarazpenak`, `/api/notifications` | Shipped |
+| Feature            | Route / API | Status  |
+| ------------------ | ---------------------------------------------------------- | ------- |
+| Notes admin        | `/oharrak`, `/api/notes`                                   | Shipped |
+| Notifications      | `/jakinarazpenak`, `/api/notifications`                    | Shipped |
+| Email (jakinaraz.) | SMTP env + `server/lib/mail`; prefs `/profila`, profile API | Shipped |

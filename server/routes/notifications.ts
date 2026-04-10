@@ -10,6 +10,7 @@ import {
 import { eq, and, desc, count, isNotNull } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { hasPermission, Permission } from "@shared/permissions";
+import { queueUserNotificationEmail } from "../lib/mail";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -310,13 +311,14 @@ export const createNotification = async (req: Request, res: Response, next: Next
     };
 
     const newNotification = await db.insert(notifications).values(notificationData).returning();
+    const created = newNotification[0];
 
     // Create multilingual messages if provided
     if (messages && typeof messages === "object") {
       const messageEntries = Object.entries(messages).map(([lang, msg]) => {
         const payload = msg as { title?: string; message?: string };
         return {
-          notificationId: newNotification[0].id,
+          notificationId: created.id,
           language: lang,
           title: payload.title ?? title ?? "",
           message: payload.message ?? message ?? "",
@@ -328,7 +330,9 @@ export const createNotification = async (req: Request, res: Response, next: Next
       }
     }
 
-    return res.status(201).json(newNotification[0]);
+    queueUserNotificationEmail({ userId: created.userId, notificationId: created.id });
+
+    return res.status(201).json(created);
   } catch (err) {
     next(err);
   }

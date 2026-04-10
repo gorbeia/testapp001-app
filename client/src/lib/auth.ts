@@ -7,11 +7,14 @@ import {
   type AppPermission,
   type MembershipType,
 } from "@shared/permissions";
+import { communicationLanguageSchema, type CommunicationLanguage } from "@shared/schema";
 
 export type { AccessRole, MembershipType, AppPermission };
 
 /** Alias for permission string literals (see `Permission` constants in `@shared/permissions`). */
 export type Permission = AppPermission;
+
+export type { CommunicationLanguage };
 
 export interface User {
   id: string;
@@ -25,6 +28,10 @@ export interface User {
   iban?: string;
   phone?: string;
   avatarUrl?: string;
+  /** When true, user-targeted jakinarazpenak are also sent to `email` (login address). */
+  notifyEmail: boolean;
+  /** Locale for emails and future off-app messages (not the same as UI language). */
+  communicationLanguage: CommunicationLanguage;
 }
 
 interface AuthContextType {
@@ -50,6 +57,7 @@ export function userFromApiSessionPayload(userData: Record<string, unknown>): Us
   const username = typeof userData.username === "string" ? userData.username : "";
   const ar = accessRoleSchema.safeParse(userData.accessRole);
   const mt = membershipTypeSchema.safeParse(userData.membershipType);
+  const comm = communicationLanguageSchema.safeParse(userData.communicationLanguage);
   return {
     id: typeof userData.id === "string" ? userData.id : "",
     email: username,
@@ -65,6 +73,8 @@ export function userFromApiSessionPayload(userData: Record<string, unknown>): Us
       typeof userData.avatarUrl === "string" && userData.avatarUrl
         ? userData.avatarUrl
         : undefined,
+    notifyEmail: typeof userData.notifyEmail === "boolean" ? userData.notifyEmail : true,
+    communicationLanguage: comm.success ? comm.data : "eu",
   };
 }
 
@@ -76,6 +86,7 @@ export function parseStoredUser(raw: unknown): User | null {
   if (typeof o.societyId !== "string" || !o.societyId) return null;
   const ar = accessRoleSchema.safeParse(o.accessRole);
   const mt = membershipTypeSchema.safeParse(o.membershipType);
+  const comm = communicationLanguageSchema.safeParse(o.communicationLanguage);
   return {
     id: o.id,
     email: o.email,
@@ -88,6 +99,8 @@ export function parseStoredUser(raw: unknown): User | null {
     linkedMemberId: typeof o.linkedMemberId === "string" ? o.linkedMemberId : undefined,
     linkedMemberName: typeof o.linkedMemberName === "string" ? o.linkedMemberName : undefined,
     avatarUrl: typeof o.avatarUrl === "string" && o.avatarUrl ? o.avatarUrl : undefined,
+    notifyEmail: typeof o.notifyEmail === "boolean" ? o.notifyEmail : true,
+    communicationLanguage: comm.success ? comm.data : "eu",
   };
 }
 

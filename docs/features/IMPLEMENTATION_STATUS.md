@@ -170,9 +170,14 @@ Status legend:
 4. **In-app notifications** – list/read DB notifications
    - **Status**: ✅ Implemented (`/jakinarazpenak` in main sidebar for all members, `notifications` + `notification_messages`; bell deep-links note pushes to the inbox unless the user can manage notes)
 
-### Preferences, templates, analytics (backlog)
+### Email & preferences
 
-5. **Notification settings, templates, communication analytics & history (legacy epic)**
+5. **Email notifications & per-user communication preferences**
+   - **Status**: ✅ Implemented — `users.notify_email` (default on), `users.communication_language` (eu/es/en), `PUT /api/users/:id/profile` + `/profila`; `server/lib/mail` (nodemailer, `sendRawEmail`, `queueUserNotificationEmail` after notification inserts); env `EMAIL_ENABLED`, `SMTP_*`, `MAIL_FROM` (see `.env.example`, installation guide)
+
+### Templates, analytics (backlog)
+
+6. **Notification templates, communication analytics & history (legacy epic)**
    - **Status**: ❌ Not Implemented
 
 ---
@@ -228,7 +233,7 @@ Status legend:
 
 ## 10. User profile (`user-profile.md`)
 
-Documented alongside auth; shipped as `/profila` with profile edit + password change — see Authentication §3–4 and `user-profile.md`.
+Documented alongside auth; shipped as `/profila` with profile edit + password change + **communication preferences** (email notifications on/off, communication language for emails) — see Authentication §3–4 and `user-profile.md`.
 
 ---
 

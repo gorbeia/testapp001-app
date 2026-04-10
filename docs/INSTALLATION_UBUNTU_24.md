@@ -148,6 +148,27 @@ VITE_TENANT_APEX_DOMAIN="elkartea.eus"
 
 > **Tip**: Never reuse the same random string for `JWT_SECRET` and `BACKOFFICE_JWT_SECRET`. Society subdomains are configured in the backoffice (`societies.subdomain`); DNS and TLS must cover `*.your-domain.com`. Details: [subdomain-tenancy.md](features/subdomain-tenancy.md).
 
+#### Email (outbound SMTP)
+
+User-targeted jakinarazpenak can be sent to each member’s login email when **`EMAIL_ENABLED`** is not `false` and SMTP is configured. Prefer a **transactional provider** (Mailgun, Postmark, SendGrid, Amazon SES, etc.) instead of running a full mail server on the VPS unless you maintain SPF/DKIM/DMARC yourself.
+
+Add to `.env` (example):
+
+```env
+EMAIL_ENABLED=true
+SMTP_HOST=smtp.your-provider.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-smtp-user
+SMTP_PASS=your-smtp-password
+MAIL_FROM=noreply@your-domain.com
+MAIL_FROM_NAME=Gure Txokoa
+```
+
+- Port **465** often requires **`SMTP_SECURE=true`** (implicit TLS).
+- If **`SMTP_HOST`** or **`MAIL_FROM`** is missing, the app **does not send** mail (a warning is logged in production). In development you still get a short `[mail:noop]` line with To/Subject.
+- **`MAIL_LOG_TO_STDOUT=true`** — prints the full To/Subject/body (and HTML if present) to the server log. Use this to validate copy and flows **without** SMTP (or alongside real SMTP to compare). Disable on production if logs are centralized and messages are sensitive.
+
 ### 6. Database Setup
 
 ```bash

@@ -1,6 +1,7 @@
 import { db } from "../db";
 import { notifications, notificationMessages } from "@shared/schema";
 import { translate, translateWithParams, type Language, type TranslationKey } from "./i18n";
+import { queueUserNotificationEmail } from "./mail";
 
 export async function notifyFinancialEvent(opts: {
   userId: string;
@@ -36,5 +37,6 @@ export async function notifyFinancialEvent(opts: {
   }));
 
   await db.insert(notificationMessages).values(messages);
+  queueUserNotificationEmail({ userId: opts.userId, notificationId: notification.id });
   return notification;
 }

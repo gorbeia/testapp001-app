@@ -29,9 +29,23 @@
 
 **Acceptance Criteria:**
 
-- Editable fields sent with **`PUT /api/users/:id/profile`** (self-only: path id must match session user): **`name`**, **`phone`**, **`iban`**.
+- Editable fields sent with **`PUT /api/users/:id/profile`** (self-only: path id must match session user): **`name`**, **`phone`**, **`iban`**, **`notifyEmail`**, **`communicationLanguage`** (`eu` | `es` | `en`).
 - Successful save updates **`AuthContext`** / local user cache and shows feedback (toast).
 - **Note:** server re-issues JWT cookie on profile update so claims match DB.
+
+---
+
+### Story: Communication preferences
+
+**As a** logged-in user  
+**I want to** choose whether I receive notifications by email and in which language  
+**So that** messages match how I want to be contacted
+
+**Acceptance Criteria:**
+
+- **`notifyEmail`**: default **on** (stored on **`users.notify_email`**); when off, in-app notifications are still created but **no** email is sent to the login address.
+- **`communicationLanguage`**: default **`eu`** (**`users.communication_language`**); used to pick **`notification_messages`** when sending email (fallback to notification default, then **`eu`**).
+- Configured on **`/profila`** (distinct from UI language in the app header).
 
 ---
 

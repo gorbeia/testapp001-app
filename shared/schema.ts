@@ -112,6 +112,10 @@ export const accessRoleEnum = pgEnum("access_role", ["admin", "treasurer", "cell
 
 export const membershipTypeEnum = pgEnum("membership_type", ["full_member", "companion"]);
 
+/** Locale for outbound email and future communication channels (matches notification message languages). */
+export const communicationLanguageSchema = z.enum(["eu", "es", "en"]);
+export type CommunicationLanguage = z.infer<typeof communicationLanguageSchema>;
+
 export const users = pgTable("users", {
   id: varchar("id")
     .primaryKey()
@@ -131,6 +135,12 @@ export const users = pgTable("users", {
     .references(() => societies.id),
   /** Avatar image filename under `/api/images/{societyId}/` */
   avatarUrl: varchar("avatar_url"),
+  /** When true, user-targeted notifications are also sent to `username` (login email). */
+  notifyEmail: boolean("notify_email").notNull().default(true),
+  /** Preferred language for emails and future off-app messages. */
+  communicationLanguage: varchar("communication_language", { length: 8 })
+    .notNull()
+    .default("eu"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -942,6 +952,8 @@ export const jwtUserPayloadSchema = z.object({
   subscriptionTypeId: z.string().nullable(),
   societyId: z.string(),
   avatarUrl: z.string().nullish(),
+  notifyEmail: z.boolean().default(true),
+  communicationLanguage: communicationLanguageSchema.default("eu"),
   isActive: z.boolean(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
@@ -1214,10 +1226,21 @@ export const updateUserProfileBodySchema = z
     name: z.string().optional(),
     phone: z.string().nullable().optional(),
     iban: z.string().nullable().optional(),
+    notifyEmail: z.boolean().optional(),
+    communicationLanguage: communicationLanguageSchema.optional(),
   })
-  .refine(data => data.name !== undefined || data.phone !== undefined || data.iban !== undefined, {
-    message: "At least one of name, phone, iban is required",
-  });
+  .refine(
+    data =>
+      data.name !== undefined ||
+      data.phone !== undefined ||
+      data.iban !== undefined ||
+      data.notifyEmail !== undefined ||
+      data.communicationLanguage !== undefined,
+    {
+      message:
+        "At least one of name, phone, iban, notifyEmail, communicationLanguage is required",
+    }
+  );
 
 export const changePasswordBodySchema = z.object({
   currentPassword: z.string().min(1),

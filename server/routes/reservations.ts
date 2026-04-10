@@ -21,6 +21,7 @@ import {
   prepaymentFloorHttpBody,
 } from "../lib/prepayment-ledger-floor";
 import { canModerateReservations, canViewReservationRegistry } from "@shared/permissions";
+import { queueUserNotificationEmail } from "../lib/mail";
 
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
@@ -134,6 +135,11 @@ const createReservationNotifications = async (
   });
 
   await db.insert(notificationMessages).values(messages);
+
+  queueUserNotificationEmail({
+    userId: reservationData.userId,
+    notificationId: notification.id,
+  });
 
   return notification;
 };

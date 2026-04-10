@@ -16,6 +16,7 @@ import {
 import { eq, and, desc } from "drizzle-orm";
 import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
 import { Permission } from "@shared/permissions";
+import { queueUserNotificationEmail } from "../lib/mail";
 
 // Helper function to convert a note into notifications for all users in a society
 async function convertNoteToNotifications(noteId: string, societyId: string) {
@@ -47,12 +48,12 @@ async function convertNoteToNotifications(noteId: string, societyId: string) {
     }, {});
 
     // Create a notification for each user using the note content
-    for (const user of societyUsers) {
+    for (const societyUser of societyUsers) {
       // Create the main notification with note content
       const [notification] = await db
         .insert(notifications)
         .values({
-          userId: user.id,
+          userId: societyUser.id,
           societyId,
           referenceId: noteId, // Link back to the original note
           title: messagesByLanguage["eu"]?.title || messagesByLanguage["es"]?.title || "",
@@ -76,6 +77,11 @@ async function convertNoteToNotifications(noteId: string, societyId: string) {
           message: messagesByLanguage["es"]?.content || messagesByLanguage["eu"]?.content || "",
         },
       ]);
+
+      queueUserNotificationEmail({
+        userId: societyUser.id,
+        notificationId: notification.id,
+      });
     }
 
     console.log(`Converted note ${noteId} to notifications for ${societyUsers.length} users`);
