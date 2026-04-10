@@ -699,10 +699,6 @@ export function ConsumptionsPage() {
               </div>
             ) : (
               filteredProducts.map(product => {
-                const stockUntracked = (product.stockMode ?? "auto") === "none";
-                const stock = parseInt(product.stock, 10);
-                const minStock = parseInt(product.minStock, 10);
-                const isLowStock = !stockUntracked && stock <= minStock;
                 const productThumb =
                   user?.societyId && product.imageUrl
                     ? (productImageSrc(
@@ -717,54 +713,53 @@ export function ConsumptionsPage() {
                     className="hover-elevate flex h-full flex-col overflow-hidden"
                     data-testid="product-card"
                   >
-                    <div className="h-24 w-full bg-muted flex items-center justify-center overflow-hidden rounded-t-lg">
+                    <div className="relative isolate flex min-h-[13rem] flex-1 flex-col overflow-hidden rounded-t-lg">
                       {productThumb ? (
                         <img
                           src={productThumb}
-                          alt={product.name}
-                          className="h-full w-full object-cover"
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover"
                           loading="lazy"
                         />
                       ) : (
-                        <Package className="h-8 w-8 text-muted-foreground" />
-                      )}
-                    </div>
-                    <CardContent className="flex flex-1 flex-col p-4">
-                      <div className="flex min-h-0 flex-1 flex-col gap-2">
-                        <span className="font-medium text-sm">{product.name}</span>
-                        <div className="flex items-center justify-between gap-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {categories.find(c => c.id === product.categoryId)?.name ||
-                              t("unknownCategory")}
-                          </Badge>
-                          <span className="font-bold">{parseFloat(product.price).toFixed(2)}€</span>
-                        </div>
-                        {!stockUntracked && (
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs text-muted-foreground">
-                              {t("stock")}: {stock} {product.unit}
-                            </span>
-                            {isLowStock && (
-                              <Badge variant="destructive" className="text-xs">
-                                {t("lowStock")}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                        <Button
-                          size="sm"
-                          disabled={prepaymentBlocks}
-                          onClick={e => {
-                            e.stopPropagation();
-                            addToCartProduct(product);
-                          }}
-                          className="mt-auto w-full"
-                          data-testid="button-add-to-cart"
+                        <div
+                          className="absolute inset-0 flex items-center justify-center bg-muted"
+                          aria-hidden
                         >
-                          <Plus className="h-4 w-4 mr-1" />
-                          {t("addToCart")}
-                        </Button>
+                          <Package className="h-10 w-10 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="relative z-10 flex min-h-[13rem] flex-1 flex-col justify-end">
+                        <div className="space-y-2 border-t border-border/30 bg-background/80 p-3 backdrop-blur-md supports-[backdrop-filter]:bg-background/65">
+                          <span className="line-clamp-2 font-medium text-sm text-foreground">
+                            {product.name}
+                          </span>
+                          <div className="flex items-center justify-between gap-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {categories.find(c => c.id === product.categoryId)?.name ||
+                                t("unknownCategory")}
+                            </Badge>
+                            <span className="font-bold tabular-nums">
+                              {parseFloat(product.price).toFixed(2)}€
+                            </span>
+                          </div>
+                        </div>
                       </div>
+                    </div>
+                    <CardContent className="flex flex-1 flex-col p-3 pt-2">
+                      <Button
+                        size="sm"
+                        disabled={prepaymentBlocks}
+                        onClick={e => {
+                          e.stopPropagation();
+                          addToCartProduct(product);
+                        }}
+                        className="mt-auto w-full"
+                        data-testid="button-add-to-cart"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        {t("addToCart")}
+                      </Button>
                     </CardContent>
                   </Card>
                 );
