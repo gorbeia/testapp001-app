@@ -3,6 +3,7 @@ import { db } from "../../db";
 import {
   notificationMessages,
   notifications,
+  societies,
   users,
   isValidLanguage,
   type Language,
@@ -87,6 +88,14 @@ export async function sendUserNotificationEmail(opts: {
       .from(notificationMessages)
       .where(eq(notificationMessages.notificationId, opts.notificationId));
 
+    const [society] = await db
+      .select({ name: societies.name })
+      .from(societies)
+      .where(eq(societies.id, notification.societyId))
+      .limit(1);
+
+    const fromName = society?.name?.trim() || undefined;
+
     const { title, text } = resolveNotificationEmailContent({
       notification,
       messages,
@@ -97,6 +106,7 @@ export async function sendUserNotificationEmail(opts: {
       to,
       subject: title,
       text,
+      fromName,
     });
   } catch (err) {
     console.error("[mail] sendUserNotificationEmail failed", err);

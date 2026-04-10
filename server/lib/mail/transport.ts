@@ -1,6 +1,19 @@
 import nodemailer from "nodemailer";
 import type { MailPayload, MailTransport } from "./types";
 
+function resolveFromDisplayName(payload: MailPayload): string | undefined {
+  const fromPayload = payload.fromName?.trim();
+  if (fromPayload) return fromPayload;
+  const fromEnv = process.env.MAIL_FROM_NAME?.trim();
+  return fromEnv || undefined;
+}
+
+function formatFromForPreview(payload: MailPayload): string {
+  const addr = process.env.MAIL_FROM ?? "(MAIL_FROM unset)";
+  const name = resolveFromDisplayName(payload);
+  return name ? `"${name.replace(/"/g, "")}" <${addr}>` : addr;
+}
+
 function parseBool(raw: string | undefined, defaultValue: boolean): boolean {
   if (raw == null || raw === "") return defaultValue;
   return raw === "1" || raw.toLowerCase() === "true";
@@ -16,6 +29,7 @@ export function logMailPreviewIfRequested(payload: MailPayload): void {
 
   const lines = [
     "[mail:preview] — message as it would be sent (SMTP may still apply separately)",
+    `From: ${formatFromForPreview(payload)}`,
     `To: ${payload.to}`,
     payload.replyTo ? `Reply-To: ${payload.replyTo}` : null,
     `Subject: ${payload.subject}`,
@@ -72,11 +86,10 @@ function createNodemailerTransport(): MailTransport {
       if (!from) {
         throw new Error("MAIL_FROM is not set");
       }
-      const fromName = process.env.MAIL_FROM_NAME;
-      const fromHeader = fromName ? `"${fromName.replace(/"/g, "")}" <${from}>` : from;
+      const displayName = resolveFromDisplayName(payload);
 
       await transporter.sendMail({
-        from: fromHeader,
+        from: displayName ? { name: displayName, address: from } : from,
         to: payload.to,
         subject: payload.subject,
         text: payload.text,

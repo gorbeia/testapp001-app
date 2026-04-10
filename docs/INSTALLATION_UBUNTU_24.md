@@ -165,6 +165,7 @@ MAIL_FROM=noreply@your-domain.com
 MAIL_FROM_NAME=Gure Txokoa
 ```
 
+- Jakinarazpenak emails use the **society `name`** as the From display name. **`MAIL_FROM_NAME`** is optional and only used as a fallback for other mail (e.g. future `sendRawEmail` calls without `fromName`).
 - Port **465** often requires **`SMTP_SECURE=true`** (implicit TLS).
 - If **`SMTP_HOST`** or **`MAIL_FROM`** is missing, the app **does not send** mail (a warning is logged in production). In development you still get a short `[mail:noop]` line with To/Subject.
 - **`MAIL_LOG_TO_STDOUT=true`** — prints the full To/Subject/body (and HTML if present) to the server log. Use this to validate copy and flows **without** SMTP (or alongside real SMTP to compare). Disable on production if logs are centralized and messages are sensitive.
