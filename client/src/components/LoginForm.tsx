@@ -242,6 +242,18 @@ export function LoginForm() {
                   )}
                 />
 
+                {!isTenantMissing && (
+                  <div className="text-right text-sm">
+                    <Link
+                      href="/pasahitza-ahaztu"
+                      className="text-primary underline-offset-4 hover:underline"
+                      data-testid="link-forgot-password"
+                    >
+                      {t("forgotPasswordLink")}
+                    </Link>
+                  </div>
+                )}
+
                 <Button
                   type="submit"
                   className="w-full"

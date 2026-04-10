@@ -12,6 +12,8 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAuth } from "@/lib/auth";
 import { Permission } from "@shared/permissions";
 import { LoginForm } from "@/components/LoginForm";
+import { ForgotPasswordPage } from "@/components/ForgotPasswordPage";
+import { ResetPasswordPage } from "@/components/ResetPasswordPage";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
 import { SocietySetupGuide } from "@/components/SocietySetupGuide";
@@ -259,6 +261,8 @@ function AuthenticatedApp() {
       return (
         <Switch>
           <Route path="/sartu" component={LoginForm} />
+          <Route path="/pasahitza-ahaztu" component={ForgotPasswordPage} />
+          <Route path="/pasahitza-berrezarri" component={ResetPasswordPage} />
           <Route path="/">{() => <Redirect to="/sartu" />}</Route>
           <Route path="/hasiera">{() => <Redirect to="/sartu" />}</Route>
           <Route>{() => <Redirect to="/sartu" />}</Route>
@@ -270,6 +274,8 @@ function AuthenticatedApp() {
       <Switch>
         <Route path="/sortu-elkartea" component={CreateSocietyLandingPage} />
         <Route path="/egiaztatu-posta" component={VerifyEmailLandingPage} />
+        <Route path="/pasahitza-ahaztu" component={ForgotPasswordPage} />
+        <Route path="/pasahitza-berrezarri" component={ResetPasswordPage} />
         <Route path="/" component={LandingPage} />
         <Route path="/hasiera" component={LandingPage} />
         <Route path="/sartu" component={LoginForm} />

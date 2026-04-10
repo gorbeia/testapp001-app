@@ -19,6 +19,7 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 | Story area                                | Unit                         | Integration                                      | E2E                       |
 | ----------------------------------------- | ---------------------------- | ------------------------------------------------ | ------------------------- |
 | Login / tokens / cookies / tenant-by-host | `shared/tenant-host.test.ts` | `auth.feature` (incl. public tenant-by-host)     | `login.feature` (UI)      |
+| Password reset (public API)               | —                            | `password-reset.feature` (`@story:auth-8`; mock mail transport) | —                         |
 | Email verification gate / public signup   | —                            | `public-signup.feature` (`@story:public-signup`; incl. default category/table provision) | —                         |
 | Refresh / logout                          | —                            | `auth.feature`                                   | —                         |
 | RBAC (API)                                | —                            | `rbac.feature`                                   | —                         |

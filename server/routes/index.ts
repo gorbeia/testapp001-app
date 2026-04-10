@@ -135,6 +135,7 @@ import { registerPrepaymentLedgerStatusRoutes } from "./prepayment-ledger-status
 import { registerImageRoutes } from "./images";
 import { registerPublicTenantRoutes } from "./public-tenant";
 import { registerPublicSignupRoutes } from "./public-signup";
+import { registerPublicPasswordResetRoutes } from "./public-password-reset";
 import { getUploadsRoot } from "../lib/image-storage";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
@@ -149,6 +150,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   registerPublicTenantRoutes(app);
   registerPublicSignupRoutes(app);
+  registerPublicPasswordResetRoutes(app);
 
   // Uploaded images (GET); upload/delete registered in registerImageRoutes
   app.use("/api/images", express.static(getUploadsRoot(), { index: false }));

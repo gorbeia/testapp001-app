@@ -94,3 +94,21 @@ See [user-management.md](./user-management.md) §1. Export — **not implemented
 
 - **Shipped:** profile card calls **`POST /api/change-password`** with `currentPassword` + `newPassword` (min length 6 per implementation)
 - **Engineering note:** server handler should be reviewed for production (hashing, JWT payload vs DB password alignment)
+
+---
+
+### Story 8: Password reset (forgot password)
+
+**As a** society member  
+**I want to** reset my password using a link sent to my login email  
+**So that** I can sign in again if I forgot my password
+
+**Acceptance Criteria:**
+
+- **Request:** `POST /api/public/forgot-password` with **`email`** and **`societyId`** (alphabetic) when not on a tenant host; on a tenant host, society is resolved from **`Host`** (optional body `societyId` must match when sent).
+- **Response:** **`200`** with **`{ ok: true }`** for valid-shaped requests (no enumeration of whether the user or society exists).
+- **Rate limits:** IP- and email-bucket limits return **`429`** when exceeded.
+- **Email:** one-time link to **`/pasahitza-berrezarri?token=…`** (Basque path), TTL **1 hour**, copy in the user’s **`communicationLanguage`** (eu / es / en in mail templates); reset URL uses tenant origin when the society has a subdomain and **`TENANT_APEX_DOMAIN`** is set, otherwise **`APP_PUBLIC_ORIGIN`**.
+- **Complete reset:** `POST /api/public/reset-password` with **`token`** + **`newPassword`** (min 6); stores **bcrypt** hash; invalid/expired token → **`400`**.
+- **UI:** **`/pasahitza-ahaztu`** (forgot) and **`/pasahitza-berrezarri`** (reset) on both apex and tenant unauthenticated routes; link from **`LoginForm`**.
+- **Testing:** integration `password-reset.feature` (`@story:auth-8`).

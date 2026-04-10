@@ -28,7 +28,7 @@ Allow visitors on the **public apex** site to provision a new tenant (`societies
 
 **Acceptance criteria (shipped):**
 
-- Email contains a link to `/egiaztatu-posta?token=…` (base URL from `APP_PUBLIC_ORIGIN`, default `http://localhost:5173`).
+- Email contains a link to `/egiaztatu-posta?token=…` (base URL from `APP_PUBLIC_ORIGIN`, or local default `http://localhost:${PORT}` when unset — same as `pnpm dev`).
 - `GET /api/public/verify-email?token=…` validates a hashed token in `user_email_verifications`, sets `users.email_verified_at`, sends welcome email, returns JSON `ok`.
 - `POST /api/login` returns **403** with `code: "EMAIL_NOT_VERIFIED"` until verified; app login UI shows `emailNotVerified` (`client/src/lib/i18n.ts`).
 

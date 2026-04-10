@@ -41,7 +41,6 @@ export function logMailPreviewIfRequested(payload: MailPayload): void {
 function createNoopTransport(): MailTransport {
   return {
     async send(payload: MailPayload) {
-      logMailPreviewIfRequested(payload);
       const previewOnly = parseBoolEnv(process.env.MAIL_LOG_TO_STDOUT, false);
       if (process.env.NODE_ENV === "development" && !previewOnly) {
         console.info("[mail:noop] no SMTP / MAIL_FROM — not sending", {
@@ -63,8 +62,6 @@ function createNodemailerTransport(): MailTransport {
 
   return {
     async send(payload: MailPayload) {
-      logMailPreviewIfRequested(payload);
-
       const from = process.env.MAIL_FROM;
       if (!from) {
         throw new Error("MAIL_FROM is not set");

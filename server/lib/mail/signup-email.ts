@@ -1,14 +1,9 @@
 import type { CommunicationLanguage } from "@shared/schema";
+import { resolvePublicOriginForMail } from "./resolve-public-origin";
 import { sendRawEmail } from "./send-raw";
 
-function resolvePublicOrigin(): string {
-  const raw = process.env.APP_PUBLIC_ORIGIN?.trim().replace(/\/$/, "");
-  if (raw) return raw;
-  return "http://localhost:5173";
-}
-
 export function buildEmailVerificationUrl(token: string): string {
-  const origin = resolvePublicOrigin();
+  const origin = resolvePublicOriginForMail();
   return `${origin}/egiaztatu-posta?token=${encodeURIComponent(token)}`;
 }
 

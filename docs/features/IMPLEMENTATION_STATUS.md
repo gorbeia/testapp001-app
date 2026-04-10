@@ -27,6 +27,8 @@ Status legend:
    - **Status**: ✅ Implemented (`/profila`, JWT-backed user payload + profile API)
 4. **Update Password** – change password flow
    - **Status**: ✅ Implemented (`POST /api/change-password` + UI; server path may need hardening for production)
+5. **Password reset (forgot password)** – email link + new password for society members
+   - **Status**: ✅ Implemented (`POST /api/public/forgot-password`, `POST /api/public/reset-password`, `user_password_resets`, mail helper, `/pasahitza-ahaztu` + `/pasahitza-berrezarri`, integration `password-reset.feature` — see [`authentication.md`](./authentication.md) Story 8)
 
 ---
 

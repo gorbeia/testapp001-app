@@ -8,7 +8,7 @@ import {
   isValidLanguage,
   type Language,
 } from "@shared/schema";
-import { getMailTransport } from "./transport";
+import { sendRawEmail } from "./send-raw";
 
 function uniqueLangOrder(...candidates: (string | null | undefined)[]): Language[] {
   const seen = new Set<string>();
@@ -100,7 +100,7 @@ export async function sendUserNotificationEmail(opts: {
       preferredLanguage: user.communicationLanguage,
     });
 
-    await getMailTransport().send({
+    await sendRawEmail({
       to,
       subject: title,
       text,

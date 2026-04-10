@@ -239,6 +239,23 @@ export const userEmailVerifications = pgTable(
   t => [index("user_email_verifications_token_hash_idx").on(t.tokenHash)]
 );
 
+/** One-time password reset token (row deleted after successful reset). */
+export const userPasswordResets = pgTable(
+  "user_password_resets",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  t => [index("user_password_resets_token_hash_idx").on(t.tokenHash)]
+);
+
 /** Uppercase Latin letters + common Latin-1 / Latin Extended-A letters (matches deriveSocietyAcronym output). */
 const SOCIETY_ACRONYM_CHARS = /^[A-Za-z\xC0-\xFF\u0100-\u017F\u0180-\u024F]+$/;
 
@@ -1302,6 +1319,17 @@ export const loginBodySchema = z.object({
   email: z.string().min(1),
   password: z.string().min(1),
   societyId: z.string().min(1),
+});
+
+/** Forgot password: societyId required on apex; optional on tenant host (society from Host). */
+export const publicForgotPasswordBodySchema = z.object({
+  email: z.string().email(),
+  societyId: z.string().min(1).optional(),
+});
+
+export const publicResetPasswordBodySchema = z.object({
+  token: z.string().min(1),
+  newPassword: z.string().min(6),
 });
 
 export const backofficeLoginBodySchema = z.object({

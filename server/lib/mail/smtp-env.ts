@@ -2,7 +2,8 @@ import nodemailer from "nodemailer";
 
 export function parseBoolEnv(raw: string | undefined, defaultValue: boolean): boolean {
   if (raw == null || raw === "") return defaultValue;
-  return raw === "1" || raw.toLowerCase() === "true";
+  const v = raw.trim();
+  return v === "1" || v.toLowerCase() === "true";
 }
 
 export function createSmtpTransportFromEnv(): nodemailer.Transporter | null {
