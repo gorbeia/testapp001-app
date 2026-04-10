@@ -288,8 +288,6 @@ export const translations = {
     reservationServices: "Erreserbako zerbitzu gehigarriak",
     reservationServicesDescription:
       "Garbitzea, berogailua, sukaldea, etab. Finkoa eta/edo bazkidako bakoitzeko tarifa. Gutxienez etiketa bat (eu edo es) behar da zerbitzu bakoitzean.",
-    reservationServicesSaveWithPageHint:
-      "Taulako aldaketak orrialdearen beheko «Gorde» botoiarekin gordetzen dira.",
     reservationOptionalServices: "Zerbitzu gehigarriak",
     reservationServiceSaved: "Zerbitzua gordeta",
     reservationServiceDeleted: "Zerbitzua ezabatuta",
@@ -1316,8 +1314,6 @@ export const translations = {
     reservationServices: "Servicios adicionales de reserva",
     reservationServicesDescription:
       "Limpieza, calefacción, cocina, etc. Tarifa fija y/o por comensal. Cada servicio necesita al menos una etiqueta (eu o es).",
-    reservationServicesSaveWithPageHint:
-      "Los cambios de la tabla se guardan con el botón «Guardar» al final de la página.",
     reservationOptionalServices: "Servicios adicionales",
     reservationServiceSaved: "Servicio guardado",
     reservationServiceDeleted: "Servicio eliminado",

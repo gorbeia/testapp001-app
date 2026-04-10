@@ -424,9 +424,7 @@ export function SocietyReservationSettingsPage() {
                   <ClipboardList className="h-5 w-5" />
                   {t("reservationServices")}
                 </CardTitle>
-                <CardDescription>
-                  {t("reservationServicesDescription")} {t("reservationServicesSaveWithPageHint")}
-                </CardDescription>
+                <CardDescription>{t("reservationServicesDescription")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {reservationServicesLoading ? (
