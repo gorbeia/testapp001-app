@@ -3,10 +3,12 @@ import { db } from "../db";
 import {
   users,
   reservations,
+  societies,
   notifications,
   notificationMessages,
   cancelReservationBodySchema,
   createReservationBodySchema,
+  normalizeSocietyReservationMealTypes,
   type JwtSessionUser,
   type Reservation,
 } from "@shared/schema";
@@ -607,6 +609,22 @@ export function registerReservationRoutes(app: Express) {
         }
 
         const { startDate, ...rest } = parsed.data;
+
+        const societyRow = await db.query.societies.findFirst({
+          where: (s, { eq: eqS }) => eqS(s.id, societyId),
+        });
+        if (!societyRow) {
+          return res.status(404).json({ message: "Society not found" });
+        }
+        const allowedMealIds = new Set(
+          normalizeSocietyReservationMealTypes(societyRow.reservationMealTypes).map(m => m.id)
+        );
+        if (!allowedMealIds.has(rest.type)) {
+          return res.status(400).json({
+            message: "Invalid reservation meal type for this society",
+            code: "invalid_reservation_meal_type",
+          });
+        }
 
         // Check if reservation date is in the past (ignoring time)
         const now = new Date();

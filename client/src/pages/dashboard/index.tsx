@@ -1,5 +1,8 @@
 import { useLanguage } from "@/lib/i18n";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
+import { authFetch } from "@/lib/api";
+import type { Society } from "@shared/schema";
+import { getReservationMealTypeLabel, normalizeSocietyReservationMealTypes } from "@shared/schema";
 import {
   Note,
   fetchNotes,
@@ -34,11 +37,22 @@ export function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [society, setSociety] = useState<Society | null>(null);
 
   useEffect(() => {
     fetchNotesData();
     fetchReservationsData();
     fetchStatsData();
+    void (async () => {
+      try {
+        const res = await authFetch("/api/societies/user");
+        if (res.ok) {
+          setSociety((await res.json()) as Society);
+        }
+      } catch {
+        setSociety(null);
+      }
+    })();
   }, [language]);
 
   const fetchNotesData = async () => {
@@ -91,13 +105,17 @@ export function Dashboard() {
     }
   };
 
-  const eventTypeLabels: Record<string, string> = {
-    hamaiketako: t("hamaiketakoa"),
-    bazkaria: t("bazkaria"),
-    askaria: t("askaria"),
-    afaria: t("afaria"),
-    urtebetetzea: t("birthday"),
-  };
+  const mealTypes = normalizeSocietyReservationMealTypes(society?.reservationMealTypes);
+
+  const eventTypeLabels = useMemo((): Record<string, string> => {
+    const fromSociety = Object.fromEntries(
+      mealTypes.map(m => [m.id, getReservationMealTypeLabel(mealTypes, m.id, language)])
+    );
+    return {
+      ...fromSociety,
+      urtebetetzea: t("birthday"),
+    };
+  }, [mealTypes, language, t]);
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">

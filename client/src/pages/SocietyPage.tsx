@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Building2, Save, DollarSign } from "lucide-react";
+import { Building2, Save, DollarSign, UtensilsCrossed } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,8 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { SepaMode, SocietyPaymentMethod } from "@shared/schema";
-import { normalizeSocietyPaymentMethods } from "@shared/schema";
+import type { SepaMode, SocietyPaymentMethod, SocietyReservationMealType } from "@shared/schema";
+import {
+  normalizeSocietyPaymentMethods,
+  normalizeSocietyReservationMealTypes,
+  societyReservationMealTypesSchema,
+} from "@shared/schema";
 import { deriveSocietyAcronym } from "@shared/society-acronym";
 import { Permission } from "@shared/permissions";
 import { useAuth, userCan } from "@/lib/auth";
@@ -46,6 +50,7 @@ interface Society {
   sepaMode?: SepaMode | string;
   paymentMethods?: SocietyPaymentMethod[] | null;
   prepaymentMinLedgerBalance?: string | null;
+  reservationMealTypes?: SocietyReservationMealType[];
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -69,6 +74,7 @@ function societyFromApiPayload(data: Society): Society {
     ...data,
     acronym,
     shortDescription: data.shortDescription ?? "",
+    reservationMealTypes: normalizeSocietyReservationMealTypes(data.reservationMealTypes),
   };
 }
 
@@ -170,6 +176,25 @@ export function SocietyPage() {
       return;
     }
 
+    const mealsDraft = society.reservationMealTypes ?? [];
+    if (mealsDraft.length < 1) {
+      toast({
+        title: t("error"),
+        description: t("reservationMealTypesNeedOne"),
+        variant: "destructive",
+      });
+      return;
+    }
+    const parsedMeals = societyReservationMealTypesSchema.safeParse(mealsDraft);
+    if (!parsedMeals.success) {
+      toast({
+        title: t("error"),
+        description: t("reservationMealTypesInvalid"),
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const token = localStorage.getItem("auth:token");
       const sd = society.shortDescription?.trim() ?? "";
@@ -192,6 +217,7 @@ export function SocietyPage() {
           String(society.prepaymentMinLedgerBalance).trim() === ""
             ? null
             : String(society.prepaymentMinLedgerBalance),
+        reservationMealTypes: parsedMeals.data,
       };
 
       const response = await fetch(`/api/societies/${society.id}`, {
@@ -241,6 +267,7 @@ export function SocietyPage() {
   }
 
   const paymentMethods = normalizeSocietyPaymentMethods(society.paymentMethods);
+  const reservationMealTypesRows = society.reservationMealTypes ?? [];
   const canManageSocietyImages = userCan(user, Permission.SOCIETY_MANAGE);
   const prepaymentEnabled = paymentMethods.includes("bank_transfer_prepayment");
   const sepaEnabled = (society.sepaMode ?? "monthly") !== "disabled";
@@ -611,6 +638,108 @@ export function SocietyPage() {
                   />
                 </div>
               ) : null}
+            </CardContent>
+          </Card>
+
+          <Card className="lg:col-span-2 xl:col-span-3">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UtensilsCrossed className="h-5 w-5" />
+                {t("reservationMealTypesTitle")}
+              </CardTitle>
+              <CardDescription>{t("reservationMealTypesDescription")}</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2 rounded-md border divide-y">
+                <div className="grid grid-cols-12 gap-2 p-2 text-xs font-medium text-muted-foreground bg-muted/40">
+                  <div className="col-span-3">{t("reservationMealTypeId")}</div>
+                  <div className="col-span-4">{t("reservationMealTypeLabelEu")}</div>
+                  <div className="col-span-4">{t("reservationMealTypeLabelEs")}</div>
+                  <div className="col-span-1 text-right" />
+                </div>
+                {reservationMealTypesRows.map((row, index) => (
+                  <div
+                    key={`meal-${index}-${row.id}`}
+                    className="grid grid-cols-12 gap-2 p-2 items-center"
+                  >
+                    <div className="col-span-3">
+                      <Input
+                        className="h-9 font-mono text-sm"
+                        value={row.id}
+                        onChange={e => {
+                          const next = [...reservationMealTypesRows];
+                          next[index] = { ...next[index], id: e.target.value };
+                          setSociety({ ...society, reservationMealTypes: next });
+                        }}
+                        data-testid={`input-reservation-meal-id-${index}`}
+                        spellCheck={false}
+                      />
+                    </div>
+                    <div className="col-span-4">
+                      <Input
+                        className="h-9"
+                        value={row.labelEu}
+                        onChange={e => {
+                          const next = [...reservationMealTypesRows];
+                          next[index] = { ...next[index], labelEu: e.target.value };
+                          setSociety({ ...society, reservationMealTypes: next });
+                        }}
+                        data-testid={`input-reservation-meal-labeu-${index}`}
+                      />
+                    </div>
+                    <div className="col-span-4">
+                      <Input
+                        className="h-9"
+                        value={row.labelEs}
+                        onChange={e => {
+                          const next = [...reservationMealTypesRows];
+                          next[index] = { ...next[index], labelEs: e.target.value };
+                          setSociety({ ...society, reservationMealTypes: next });
+                        }}
+                        data-testid={`input-reservation-meal-labes-${index}`}
+                      />
+                    </div>
+                    <div className="col-span-1 flex justify-end">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        disabled={reservationMealTypesRows.length <= 1}
+                        onClick={() => {
+                          if (reservationMealTypesRows.length <= 1) return;
+                          setSociety({
+                            ...society,
+                            reservationMealTypes: reservationMealTypesRows.filter(
+                              (_, i) => i !== index
+                            ),
+                          });
+                        }}
+                        data-testid={`button-remove-reservation-meal-${index}`}
+                      >
+                        {t("reservationMealTypeRemove")}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setSociety({
+                    ...society,
+                    reservationMealTypes: [
+                      ...reservationMealTypesRows,
+                      { id: "", labelEu: "", labelEs: "" },
+                    ],
+                  })
+                }
+                data-testid="button-add-reservation-meal"
+              >
+                {t("reservationMealTypeAdd")}
+              </Button>
             </CardContent>
           </Card>
         </div>

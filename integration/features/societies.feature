@@ -12,3 +12,9 @@ Feature: Societies API
     When I update my society phone via API
     Then the response status should be 200
     And the response body should include property "phone"
+
+  @society-reservation-meal-types-put @story:soc-1
+  Scenario: Update reservation meal types via API
+    When I update my society reservation meal types to the integration test list via API
+    Then the response status should be 200
+    And my society from the user endpoint should include the integration test meal type ids

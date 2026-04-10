@@ -398,6 +398,16 @@ export const translations = {
     reservationPricing: "Erreserben prezioak",
     reservationPricePerMember: "Prezioa kideko (erreserba)",
     kitchenPricePerMember: "Prezioa kideko (sukaldea)",
+    reservationMealTypesTitle: "Erreserben motak",
+    reservationMealTypesDescription:
+      "Kideek erreserba egiterakoan aukera ditzaketen otorduak (bazkaria, afaria, etab.). IDa finkoa da; etiketak euskaraz eta gaztelaniaz.",
+    reservationMealTypeId: "ID (gordailua)",
+    reservationMealTypeLabelEu: "Etiketa (EU)",
+    reservationMealTypeLabelEs: "Etiketa (ES)",
+    reservationMealTypeAdd: "Gehitu mota",
+    reservationMealTypeRemove: "Kendu",
+    reservationMealTypesInvalid: "Egiaztatu moten zerrenda: gutxienez bat, ID bakartiak (minuskulak, zenbakiak, _ eta -).",
+    reservationMealTypesNeedOne: "Gutxienez erreserba-mota bat behar da.",
     contactInformation: "Kontaktu informazioa",
     communicationPreferences: "Komunikazioaren hobespenak",
     communicationPreferencesHint:
@@ -1358,6 +1368,17 @@ export const translations = {
     reservationPricing: "Precios de reservas",
     reservationPricePerMember: "Precio por socio (reserva)",
     kitchenPricePerMember: "Precio por socio (cocina)",
+    reservationMealTypesTitle: "Tipos de comida para reservas",
+    reservationMealTypesDescription:
+      "Comidas que los socios pueden elegir al reservar (comida, cena, etc.). El ID es estable; las etiquetas son euskera y castellano.",
+    reservationMealTypeId: "ID (almacenado)",
+    reservationMealTypeLabelEu: "Etiqueta (EU)",
+    reservationMealTypeLabelEs: "Etiqueta (ES)",
+    reservationMealTypeAdd: "Añadir tipo",
+    reservationMealTypeRemove: "Quitar",
+    reservationMealTypesInvalid:
+      "Revisa la lista: al menos una fila, IDs únicos (minúsculas, números, _ y -).",
+    reservationMealTypesNeedOne: "Se necesita al menos un tipo de comida.",
     contactInformation: "Información de contacto",
     communicationPreferences: "Preferencias de comunicación",
     communicationPreferencesHint:

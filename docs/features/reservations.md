@@ -15,7 +15,7 @@
 - **Society-wide bookings** visible on **`/egutegia`** (month grid + agenda list + create flow); see [`society-calendar.md`](./society-calendar.md)
 - Button/dialog to create a new reservation
 - **One table** selected from **`/api/tables/available`** (options may be disabled when guest count is outside min/max capacity)
-- **Event types** stored as `type` string: `bazkaria`, `afaria`, `askaria`, `hamaiketakako` (UI labels from i18n)
+- **Meal / event type** stored as `type` string; it must match an **`id`** from the society’s **`reservation_meal_types`** list (JSON on **`societies`**: `id`, `labelEu`, `labelEs`). Treasurers configure the list on **`/elkartea`**. Defaults match the legacy set (`bazkaria`, `afaria`, `askaria`, `hamaiketakako`). Unknown types are rejected by **`POST /api/reservations`**. Labels in the app follow the member’s UI language (EU/ES).
 - **Kitchen use** is a single boolean **`useKitchen`** (not separate equipment: griddle, ovens, etc.)
 - **Guests** count (integer); **Name/title** for the reservation (`name` field)
 - **Date**: single `startDate` timestamp (date picker in UI; time follows browser/local Date handling)

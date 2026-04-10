@@ -28,6 +28,11 @@ import { useLanguage } from "@/lib/i18n";
 import { dateFnsLocale } from "@/lib/date-locale";
 import { format } from "date-fns";
 import type { Society, SocietyEvent, Table } from "@shared/schema";
+import {
+  DEFAULT_RESERVATION_MEAL_TYPES,
+  getReservationMealTypeLabel,
+  normalizeSocietyReservationMealTypes,
+} from "@shared/schema";
 import { startOfDay, endOfDay } from "date-fns";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
@@ -79,7 +84,7 @@ export function ReservationDialog({
 
   const [formData, setFormData] = useState<FormData>({
     name: "",
-    type: "bazkaria",
+    type: DEFAULT_RESERVATION_MEAL_TYPES[0].id,
     startDate: new Date(),
     guests: 10,
     useKitchen: false,
@@ -88,13 +93,13 @@ export function ReservationDialog({
     notes: "",
   });
 
-  // Event type labels
-  const eventTypeLabels: Record<string, string> = {
-    bazkaria: t("bazkaria"),
-    afaria: t("afaria"),
-    askaria: t("askaria"),
-    hamaiketakako: t("hamaiketakoa"),
-  };
+  const mealTypes = useMemo(
+    () =>
+      society
+        ? normalizeSocietyReservationMealTypes(society.reservationMealTypes)
+        : DEFAULT_RESERVATION_MEAL_TYPES,
+    [society]
+  );
 
   // Get all active tables
   const getAllTables = () => {
@@ -161,6 +166,18 @@ export function ReservationDialog({
       loadTables();
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!society) return;
+    const allowed = normalizeSocietyReservationMealTypes(society.reservationMealTypes).map(
+      m => m.id
+    );
+    setFormData(prev =>
+      allowed.includes(prev.type)
+        ? prev
+        : { ...prev, type: allowed[0] ?? DEFAULT_RESERVATION_MEAL_TYPES[0].id }
+    );
+  }, [society]);
 
   useEffect(() => {
     if (!open || defaultStartDate == null) return;
@@ -286,7 +303,10 @@ export function ReservationDialog({
         // Reset form
         setFormData({
           name: "",
-          type: "bazkaria",
+          type:
+            mealTypes[0]?.id ??
+            normalizeSocietyReservationMealTypes(society?.reservationMealTypes)[0]?.id ??
+            DEFAULT_RESERVATION_MEAL_TYPES[0].id,
           startDate: new Date(),
           guests: 10,
           useKitchen: false,
@@ -355,10 +375,11 @@ export function ReservationDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="bazkaria">{eventTypeLabels.bazkaria}</SelectItem>
-                  <SelectItem value="afaria">{eventTypeLabels.afaria}</SelectItem>
-                  <SelectItem value="askaria">{eventTypeLabels.askaria}</SelectItem>
-                  <SelectItem value="hamaiketakako">{eventTypeLabels.hamaiketakako}</SelectItem>
+                  {mealTypes.map(m => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {getReservationMealTypeLabel(mealTypes, m.id, language)}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

@@ -57,6 +57,74 @@ export function societyAllowsCashPayment(raw: unknown): boolean {
   return methods.includes("cash_manual") || methods.includes("cash_change_machine");
 }
 
+const RESERVATION_MEAL_TYPE_ID_RE = /^[a-z0-9_-]+$/;
+
+/** One reservation meal slot (lunch, dinner, …); `id` is stored on `reservations.type`. */
+export const societyReservationMealTypeEntrySchema = z.object({
+  id: z
+    .string()
+    .trim()
+    .min(1, "id required")
+    .max(64)
+    .regex(RESERVATION_MEAL_TYPE_ID_RE, "id must be lowercase letters, digits, _ or -"),
+  labelEu: z.string().trim().min(1).max(80),
+  labelEs: z.string().trim().min(1).max(80),
+});
+
+export type SocietyReservationMealType = z.infer<typeof societyReservationMealTypeEntrySchema>;
+
+export const societyReservationMealTypesSchema = z
+  .array(societyReservationMealTypeEntrySchema)
+  .min(1)
+  .max(20)
+  .superRefine((arr, ctx) => {
+    const seen = new Set<string>();
+    for (let i = 0; i < arr.length; i++) {
+      const id = arr[i].id;
+      if (seen.has(id)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: [i, "id"],
+          message: "Duplicate meal type id",
+        });
+      }
+      seen.add(id);
+    }
+  });
+
+/** Default meal types for new societies and when DB value is missing or invalid. */
+export const DEFAULT_RESERVATION_MEAL_TYPES: SocietyReservationMealType[] = [
+  { id: "bazkaria", labelEu: "Bazkaria", labelEs: "Comida" },
+  { id: "afaria", labelEu: "Afaria", labelEs: "Cena" },
+  { id: "askaria", labelEu: "Askaria", labelEs: "Merienda" },
+  { id: "hamaiketakako", labelEu: "Hamaiketakoa", labelEs: "Hamaiketako" },
+];
+
+const reservationMealTypesJsonbDefault = sql.raw(
+  `'${JSON.stringify(DEFAULT_RESERVATION_MEAL_TYPES)}'::jsonb`
+);
+
+/** Resolves DB/API value; null, invalid, or empty → default list. */
+export function normalizeSocietyReservationMealTypes(raw: unknown): SocietyReservationMealType[] {
+  if (raw == null) return [...DEFAULT_RESERVATION_MEAL_TYPES];
+  const parsed = societyReservationMealTypesSchema.safeParse(raw);
+  if (!parsed.success) return [...DEFAULT_RESERVATION_MEAL_TYPES];
+  return parsed.data;
+}
+
+export type ReservationMealTypeLabelLanguage = "eu" | "es" | "en";
+
+export function getReservationMealTypeLabel(
+  types: SocietyReservationMealType[],
+  id: string,
+  language: ReservationMealTypeLabelLanguage
+): string {
+  const row = types.find(t => t.id === id);
+  if (!row) return id;
+  if (language === "es") return row.labelEs;
+  return row.labelEu;
+}
+
 export const societies = pgTable("societies", {
   id: varchar("id")
     .primaryKey()
@@ -87,6 +155,11 @@ export const societies = pgTable("societies", {
     .$type<SocietyPaymentMethod[]>()
     .notNull()
     .default(sql`'["bank_transfer_prepayment"]'::jsonb`),
+  /** Allowed reservation meal types (`reservations.type` must match an `id`). */
+  reservationMealTypes: jsonb("reservation_meal_types")
+    .$type<SocietyReservationMealType[]>()
+    .notNull()
+    .default(reservationMealTypesJsonbDefault),
   /**
    * When prepayment is enabled: minimum allowed sum of ledger amounts for members (same sign as balance).
    * Null = no floor. Example -50 means balance must stay >= -50€ (max 50€ debt).
@@ -175,6 +248,7 @@ export const insertSocietySchema = createInsertSchema(societies)
   .extend({
     sepaMode: sepaModeSchema.optional(),
     paymentMethods: societyPaymentMethodsSchema.optional(),
+    reservationMealTypes: societyReservationMealTypesSchema.optional(),
     shortDescription: z.string().max(500).nullable().optional(),
     acronym: societyAcronymFieldSchema.optional(),
   });
@@ -1406,6 +1480,7 @@ export const updateSocietySettingsBodySchema = insertSocietySchema
   .extend({
     sepaMode: sepaModeSchema.optional(),
     paymentMethods: societyPaymentMethodsSchema.optional(),
+    reservationMealTypes: societyReservationMealTypesSchema.optional(),
     prepaymentMinLedgerBalance: z.union([z.string(), z.number()]).nullable().optional(),
     shortDescription: z.union([z.string().max(500), z.null()]).optional(),
     acronym: societyAcronymFieldSchema.optional(),

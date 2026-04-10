@@ -39,7 +39,8 @@ import { useLanguage } from "@/lib/i18n";
 import { formatDateShort, dateFnsLocale } from "@/lib/date-locale";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import type { Reservation, User } from "@shared/schema";
+import type { Reservation, Society, User } from "@shared/schema";
+import { getReservationMealTypeLabel, normalizeSocietyReservationMealTypes } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { authFetch } from "@/lib/api";
@@ -83,9 +84,21 @@ export function AdminReservationsPage() {
   const [reservationToCancel, setReservationToCancel] = useState<ReservationWithUser | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<ReservationWithUser | null>(null);
   const [cancellationReason, setCancellationReason] = useState("");
+  const [society, setSociety] = useState<Society | null>(null);
 
   // Pagination state
   const pagination = usePagination({ initialPage: 1, initialLimit: 25 });
+
+  const loadSociety = async () => {
+    try {
+      const response = await authFetch("/api/societies/user");
+      if (response.ok) {
+        setSociety((await response.json()) as Society);
+      }
+    } catch (e) {
+      console.error("Error loading society:", e);
+    }
+  };
 
   // Load reservations
   const loadReservations = async () => {
@@ -199,13 +212,7 @@ export function AdminReservationsPage() {
     { value: "completed", label: t("completed") },
   ];
 
-  // Get event type labels
-  const eventTypeLabels: Record<string, string> = {
-    bazkaria: t("bazkaria"),
-    afaria: t("afaria"),
-    askaria: t("askaria"),
-    hamaiketakako: t("hamaiketakoa"),
-  };
+  const mealTypes = normalizeSocietyReservationMealTypes(society?.reservationMealTypes);
 
   // Handle filter changes
   const handleSearch = (value: string) => {
@@ -262,7 +269,9 @@ export function AdminReservationsPage() {
 
   // Get type badge component
   const getTypeBadge = (type: string) => {
-    return <Badge variant="outline">{eventTypeLabels[type] || type}</Badge>;
+    return (
+      <Badge variant="outline">{getReservationMealTypeLabel(mealTypes, type, language)}</Badge>
+    );
   };
 
   // Get status label
@@ -293,6 +302,10 @@ export function AdminReservationsPage() {
       window.history.replaceState({}, "", newUrl);
     }
   }, [monthFilter, userFilter, statusFilter]);
+
+  useEffect(() => {
+    loadSociety();
+  }, []);
 
   useEffect(() => {
     loadReservations();

@@ -30,12 +30,13 @@ import { useToast } from "@/hooks/use-toast";
 import { authFetch } from "@/lib/api";
 import { readJsonOrThrow } from "@/lib/http-error";
 import type { Reservation, Society } from "@shared/schema";
+import { getReservationMealTypeLabel, normalizeSocietyReservationMealTypes } from "@shared/schema";
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { usePagination } from "@/hooks/use-pagination";
 
 export function MyReservationsPage() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { formatDateShort, formatTimeShort } = useFormattedDates();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
@@ -159,14 +160,10 @@ export function MyReservationsPage() {
     return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
   };
 
+  const mealTypes = normalizeSocietyReservationMealTypes(society?.reservationMealTypes);
+
   const getTypeBadge = (type: string) => {
-    const typeLabels: Record<string, string> = {
-      bazkaria: t("bazkaria"),
-      afaria: t("afaria"),
-      askaria: t("askaria"),
-      hamaiketakako: t("hamaiketakoa"),
-    };
-    const label = typeLabels[type] || type;
+    const label = getReservationMealTypeLabel(mealTypes, type, language);
     return <Badge variant="outline">{label}</Badge>;
   };
 
@@ -303,10 +300,11 @@ export function MyReservationsPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t("allTypes")}</SelectItem>
-              <SelectItem value="bazkaria">{t("bazkaria")}</SelectItem>
-              <SelectItem value="afaria">{t("afaria")}</SelectItem>
-              <SelectItem value="askaria">{t("askaria")}</SelectItem>
-              <SelectItem value="hamaiketakako">{t("hamaiketakoa")}</SelectItem>
+              {mealTypes.map(m => (
+                <SelectItem key={m.id} value={m.id}>
+                  {getReservationMealTypeLabel(mealTypes, m.id, language)}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 

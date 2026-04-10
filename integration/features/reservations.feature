@@ -21,6 +21,12 @@ Feature: Reservation API
       """
     Then the response status should be 400
 
+  @reservation-meal-types-restricted @story:res-1
+  Scenario: Invalid meal type returns 400
+    When I POST to "/api/reservations" with a valid reservation body
+    Then the response status should be 400
+    And the response body "code" should be "invalid_reservation_meal_type"
+
   @prepayment-ledger-floor @story:res-5b-10
   Scenario: Reservation blocked when below prepayment floor
     Given the member balance is below the society floor

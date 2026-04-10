@@ -53,8 +53,8 @@ Status legend:
 
 ## 3. Reservations (Erreserbak) (`reservations.md`)
 
-1. **Create Reservation** – date/time, event type, table, guests, kitchen flag, cost
-   - **Status**: ✅ Implemented (`POST /api/reservations`; types: bazkaria, afaria, askaria, hamaiketakako; **prepayment ledger floor** enforced when society has optional minimum balance + prepayment method — see §5b.10 / `prepayment-ledger-floor.md`)
+1. **Create Reservation** – date/time, meal type, table, guests, kitchen flag, cost
+   - **Status**: ✅ Implemented (`POST /api/reservations`; **`type`** must match a **`id`** in **`societies.reservation_meal_types`**; defaults preserve legacy ids `bazkaria`, `afaria`, `askaria`, `hamaiketakako`; **prepayment ledger floor** enforced when society has optional minimum balance + prepayment method — see §5b.10 / `prepayment-ledger-floor.md`)
 2. **View My Reservations** – list & filters
    - **Status**: ✅ Implemented (`/nire-erreserbak`, `GET /api/reservations/user`)
 3. **Society reservation list** – upcoming/filter for all members
@@ -71,6 +71,8 @@ Status legend:
    - **Status**: ✅ Implemented (`DebtCalculationService` / cron aggregates reservations whose **`startDate` has passed** (in-month) + consumptions into `credits`; ledger **`reservation`** charge deferred until after **`startDate`**, not at booking)
 9. **Society calendar (Egutegia)** – closures, parties, assemblies; optional hard blocks on reservations
    - **Status**: ✅ Implemented ([`society-calendar.md`](./society-calendar.md): `/egutegia`; `society_events` table; `GET/POST/PUT/DELETE /api/society-events`; **`Permission.CALENDAR_MANAGE`** for mutations — admin + diruzaina; **`POST /api/reservations`** overlap checks with localized **409**; member calendar month reservations via **`GET /api/reservations?forCalendar=true&month=YYYY-MM`** max **`limit` 500**; warnings in **`ReservationDialog`**)
+10. **Configurable reservation meal types** – per-society ids + EU/ES labels
+   - **Status**: ✅ Implemented (`societies.reservation_meal_types`; editor on **`/elkartea`**; reservation UIs read from **`GET /api/societies/user`**; integration: **`@reservation-meal-types-restricted`** on **`reservations.feature`**, meal types PUT on **`societies.feature`**)
 
 ---
 
@@ -204,7 +206,7 @@ Status legend:
 ## 8. Society Management (Elkartea) (`society-management.md`)
 
 1. **Society information & SEPA-related fields**
-   - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id` — **administratzailea** + **diruzaina** own-tenant; society **`shortDescription`** + **`acronym`** (1–3 letters; auto-derived from name in the browser until manually edited; sidebar header shows acronym in the circle and description under the name); **`payment_methods`** on societies: SEPA checkbox + cadence, bank prepayment + cash placeholders; **optional `prepaymentMinLedgerBalance`** (prepayment-only UI) for max-debt / minimum-balance enforcement on ledger debits; prepayment gates transfers UI/API; cash methods stored only; E2E: `society-payment-methods.feature` for cash flag persistence)
+   - **Status**: 🟡 Partial (`/elkartea`, `GET /api/societies/user`, `PUT /api/societies/:id` — **administratzailea** + **diruzaina** own-tenant; society **`shortDescription`** + **`acronym`** (1–3 letters; auto-derived from name in the browser until manually edited; sidebar header shows acronym in the circle and description under the name); **`reservation_meal_types`** (meal slot ids + EU/ES labels for reservations); **`payment_methods`** on societies: SEPA checkbox + cadence, bank prepayment + cash placeholders; **optional `prepaymentMinLedgerBalance`** (prepayment-only UI) for max-debt / minimum-balance enforcement on ledger debits; prepayment gates transfers UI/API; cash methods stored only; E2E: `society-payment-methods.feature` for cash flag persistence)
 2. **Society logo, reservation map, user avatars, product images**
    - **Status**: ✅ Implemented — DB: `societies.logoUrl`, `societies.mapImageUrl`, `users.avatarUrl`, `products.imageUrl` (stored filenames); disk: `UPLOADS_DIR` (default `./uploads`), WebP + `_thumb` via **sharp**; **`POST /api/images/upload`** + **`DELETE /api/images/:entity/:entityId`** (society-logo / society-map / user-avatar / product-image); **`GET /api/images/:societyId/:file`** via `express.static`; UI: treasurer/admin uploads on **`/elkartea`** (incl. society map), member avatar on **`/profila`**, product image on **`/produktuak`** (edit), logo in sidebar; demo pipeline: **`script/seed-images.ts`** (after products) + optional files under **`script/seed-assets/images/`**
 3. **Tables (resource config for reservations)**

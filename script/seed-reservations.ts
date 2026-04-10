@@ -121,7 +121,7 @@ export async function seedReservations(dbConn: SeedDb) {
         id: "880c9d40-3e5e-4f9f-9d0f-4f5a0b7c8d3d",
         userId: firstUser.id,
         name: "Batzarra",
-        type: "hamaiketakoa",
+        type: "hamaiketakako",
         status: "confirmed",
         startDate: new Date("2025-12-20T12:00:00Z"),
         guests: 4, // Adjusted for Mahaia 3 capacity
@@ -234,7 +234,7 @@ export async function seedReservations(dbConn: SeedDb) {
     >[] = [];
 
     // Generate reservations for each month from January 2024 to November 2025
-    const eventTypes = ["bazkaria", "afaria", "askaria", "hamaiketakoa"];
+    const eventTypes = ["bazkaria", "afaria", "askaria", "hamaiketakako"];
     const statuses = ["completed", "cancelled", "confirmed"];
     const eventNames = [
       "Bilera Familiarra",

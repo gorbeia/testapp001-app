@@ -13,6 +13,8 @@ export class IntegrationWorld extends World {
   authToken?: string;
   /** IDs and scratch strings captured during scenario (e.g. last reservation, calendar test ISO dates). */
   createdIds: Record<string, string> = {};
+  /** Set by society steps when updating `reservationMealTypes` for assertions. */
+  integrationTestMealTypes?: Array<{ id: string; labelEu: string; labelEs: string }>;
 
   constructor(options: IWorldOptions) {
     super(options);

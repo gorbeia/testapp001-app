@@ -13,7 +13,8 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import { format, getDay, startOfDay, startOfWeek, endOfDay, addHours } from "date-fns";
 import { eu, es } from "date-fns/locale";
 import { CalendarDays, Lock, Pencil, Plus, Trash2 } from "lucide-react";
-import type { Reservation, SocietyEvent, Table } from "@shared/schema";
+import type { Reservation, Society, SocietyEvent, Table } from "@shared/schema";
+import { getReservationMealTypeLabel, normalizeSocietyReservationMealTypes } from "@shared/schema";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -249,6 +250,19 @@ export function CalendarPage() {
     },
   });
 
+  const { data: societyRow } = useQuery({
+    queryKey: ["/api/societies/user", "calendar"],
+    queryFn: async () => {
+      const res = await authFetch("/api/societies/user");
+      return readJsonOrThrow<Society>(res);
+    },
+  });
+
+  const reservationMealTypes = useMemo(
+    () => normalizeSocietyReservationMealTypes(societyRow?.reservationMealTypes),
+    [societyRow?.reservationMealTypes]
+  );
+
   const calendarEvents = useMemo((): GridCalendarEvent[] => {
     const out: GridCalendarEvent[] = [];
     for (const ev of societyEvents) {
@@ -289,15 +303,8 @@ export function CalendarPage() {
     return labels[type] ?? type;
   };
 
-  const reservationTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      bazkaria: t("bazkaria"),
-      afaria: t("afaria"),
-      askaria: t("askaria"),
-      hamaiketakako: t("hamaiketakoa"),
-    };
-    return labels[type] ?? type;
-  };
+  const reservationTypeLabel = (type: string) =>
+    getReservationMealTypeLabel(reservationMealTypes, type, language);
 
   const dayEvents = useMemo(() => {
     if (!sheetDate) return [];
