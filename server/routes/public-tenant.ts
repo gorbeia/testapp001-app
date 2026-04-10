@@ -6,8 +6,6 @@ export function registerPublicTenantRoutes(app: Express) {
   app.get("/api/public/tenant-by-host", async (req: Request, res: Response, next: NextFunction) => {
     try {
       const apex = getTenantApexDomainFromEnv();
-      /** `false` when `TENANT_APEX_DOMAIN` is unset on this Node process (common deploy misconfig). */
-      const multitenancyEnabled = apex != null;
 
       if (!apex) {
         return res.status(200).json({ mode: "apex" as const, multitenancyEnabled: false });

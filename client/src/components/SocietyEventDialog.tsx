@@ -93,7 +93,6 @@ export function SocietyEventDialog({
 
   const isFullDay = form.watch("isFullDay");
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- form.reset is stable for this dialog lifecycle
   useEffect(() => {
     if (!open) return;
     if (editing) {

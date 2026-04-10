@@ -3,7 +3,6 @@ import { db } from "../db";
 import {
   users,
   reservations,
-  societies,
   notifications,
   notificationMessages,
   cancelReservationBodySchema,
