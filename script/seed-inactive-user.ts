@@ -64,7 +64,10 @@ async function main() {
 
   console.log("Seeding inactive demo user...");
 
-  await db.insert(users).values(inactiveUser).onConflictDoNothing({ target: users.username });
+  await db
+    .insert(users)
+    .values(inactiveUser)
+    .onConflictDoNothing({ target: [users.societyId, users.username] });
 
   console.log("Inactive user seeded successfully.");
   console.log("Username: bazkide-ezaktiboa@txokoa.eus");

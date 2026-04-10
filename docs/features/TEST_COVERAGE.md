@@ -16,14 +16,15 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 
 ## 1. Authentication (`authentication.md`)
 
-| Story area                                | Unit                         | Integration                                                                              | E2E                       |
-| ----------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------- | ------------------------- |
-| Login / tokens / cookies / tenant-by-host | `shared/tenant-host.test.ts` | `auth.feature` (incl. public tenant-by-host)                                             | `login.feature` (UI)      |
-| Password reset (public API)               | —                            | `password-reset.feature` (`@story:auth-8`; mock mail transport)                          | —                         |
-| Email verification gate / public signup   | —                            | `public-signup.feature` (`@story:public-signup`; incl. default category/table provision) | —                         |
-| Refresh / logout                          | —                            | `auth.feature`                                                                           | —                         |
-| RBAC (API)                                | —                            | `rbac.feature`                                                                           | —                         |
-| RBAC (sidebar / URL)                      | —                            | —                                                                                        | `role-based-menu.feature` |
+| Story area                                  | Unit                         | Integration                                                                              | E2E                       |
+| ------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------- | ------------------------- |
+| Login / tokens / cookies / tenant-by-host   | `shared/tenant-host.test.ts` | `auth.feature` (incl. public tenant-by-host)                                             | `login.feature` (UI)      |
+| Apex marketing / URL reminder / login block | —                            | `society-access-urls.feature` (`@story:subdomain-tenancy`; mock mail for reminder)       | —                         |
+| Password reset (public API)                 | —                            | `password-reset.feature` (`@story:auth-8`; mock mail transport)                          | —                         |
+| Email verification gate / public signup     | —                            | `public-signup.feature` (`@story:public-signup`; incl. default category/table provision) | —                         |
+| Refresh / logout                            | —                            | `auth.feature`                                                                           | —                         |
+| RBAC (API)                                  | —                            | `rbac.feature`                                                                           | —                         |
+| RBAC (sidebar / URL)                        | —                            | —                                                                                        | `role-based-menu.feature` |
 
 ## 2. User management (`user-management.md`)
 

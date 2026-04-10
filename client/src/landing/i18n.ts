@@ -5,6 +5,9 @@ export type LandingLocale = "eu" | "es";
 
 export const LANDING_LOCALE_STORAGE_KEY = "landing:locale";
 
+/** Public path when subdomain multitenancy: how to reach an existing society. */
+export const LANDING_ACCESS_SOCIETY_PATH = "/elkartea-sartu";
+
 const eu = {
   brandShort: "Gure Txokoa",
   productName: "Elkartearen App",
@@ -71,6 +74,7 @@ const eu = {
   closingBody:
     "Sartu, eta bazkideek, diruzainek eta talde operatiboak eguneroko erabilerarako prest egon.",
   ctaCreateSociety: "Sortu zure elkartea",
+  ctaAccessSociety: "Badut elkartea — sartu",
   signupBackHome: "Hasierara itzuli",
   signupTitle: "Konfiguratu zure elkartea",
   signupSubtitle:
@@ -113,6 +117,18 @@ const eu = {
   verifyEmailSuccess: "Posta egiaztatuta. Orain saioa has dezakezu.",
   verifyEmailError: "Esteka baliogabea edo iraungita.",
   verifyEmailGoLogin: "Saio-hasierara",
+  accessSocietyTitle: "Sartu zure elkartean",
+  accessSocietyIntro:
+    "Saioa elkarteko helbidean bakarrik has daiteke: https://{azpidomeinua}.{domeinua} — ez nagusian.",
+  accessSocietyEmailLabel: "Posta elektronikoa (saio-hasiera)",
+  accessSocietySubmit: "Bidali sarbide-estekak",
+  accessSocietySubmitting: "Bidaltzen…",
+  accessSocietySuccess:
+    "Mezu bat bidali badizugu (sarbidea baduzu), bertan agertuko dira zure elkarteen estekak. Ez baduzu jasotzen, egiaztatu spam-a.",
+  accessSocietyErrorGeneric: "Ezin izan da eskaera prozesatu. Saiatu berriro.",
+  accessSocietyTooManyRequests: "Eskaera gehiegi. Saiatu beranduago.",
+  accessSocietyBackHome: "Hasierara",
+  accessSocietyForgotPassword: "Pasahitza ahaztu",
 } as const;
 
 const es = {
@@ -179,6 +195,7 @@ const es = {
   closingTitle: "¿Listo para digitalizar tu sociedad?",
   closingBody: "Entra: socios, tesorería y operación diaria, en un solo lugar.",
   ctaCreateSociety: "Crea tu sociedad",
+  ctaAccessSociety: "Ya tengo sociedad — acceder",
   signupBackHome: "Volver al inicio",
   signupTitle: "Configura tu sociedad",
   signupSubtitle: "Completa los datos, verifica tu correo y accede a tu espacio de gestión.",
@@ -219,6 +236,18 @@ const es = {
   verifyEmailSuccess: "Correo verificado. Ya puedes iniciar sesión.",
   verifyEmailError: "Enlace no válido o caducado.",
   verifyEmailGoLogin: "Inicio de sesión",
+  accessSocietyTitle: "Acceder a tu sociedad",
+  accessSocietyIntro:
+    "El inicio de sesión solo está disponible en la dirección web de tu sociedad: https://{subdominio}.{dominio} — no en el sitio principal.",
+  accessSocietyEmailLabel: "Correo electrónico (inicio de sesión)",
+  accessSocietySubmit: "Enviar enlaces de acceso",
+  accessSocietySubmitting: "Enviando…",
+  accessSocietySuccess:
+    "Si tu correo tiene acceso, te hemos enviado un mensaje con los enlaces de tus sociedades. Revisa también spam.",
+  accessSocietyErrorGeneric: "No se ha podido procesar la solicitud. Inténtalo de nuevo.",
+  accessSocietyTooManyRequests: "Demasiadas solicitudes. Prueba más tarde.",
+  accessSocietyBackHome: "Inicio",
+  accessSocietyForgotPassword: "Olvidé mi contraseña",
 } as const;
 
 export const landingByLocale = { eu, es } as const;

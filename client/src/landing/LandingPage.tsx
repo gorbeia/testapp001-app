@@ -15,7 +15,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LandingLanguageToggle } from "@/landing/LandingLanguageToggle";
-import { useLandingI18n, type LandingKey } from "@/landing/i18n";
+import { useLandingI18n, LANDING_ACCESS_SOCIETY_PATH, type LandingKey } from "@/landing/i18n";
+import { useTenantByHost } from "@/hooks/useTenantByHost";
 import { cn } from "@/lib/utils";
 
 const FEATURE_ICONS = [
@@ -48,6 +49,9 @@ const TABLE_ROW_KEYS = [
 
 export function LandingPage() {
   const { locale, setLocale, t } = useLandingI18n();
+  const { data: tenantHostData } = useTenantByHost();
+  const apexMarketing =
+    tenantHostData?.mode === "apex" && tenantHostData.multitenancyEnabled === true;
 
   return (
     <div className="min-h-screen bg-background text-foreground" lang={locale}>
@@ -65,12 +69,25 @@ export function LandingPage() {
           <div className="flex shrink-0 items-center gap-2">
             <LandingLanguageToggle locale={locale} onLocaleChange={setLocale} />
             <ThemeToggle />
-            <Button asChild variant="outline" data-testid="landing-cta-create-header">
-              <Link href="/sortu-elkartea">{t("ctaCreateSociety")}</Link>
-            </Button>
-            <Button asChild data-testid="landing-login-header">
-              <Link href="/sartu">{t("ctaLogin")}</Link>
-            </Button>
+            {apexMarketing ? (
+              <>
+                <Button asChild variant="ghost" size="sm" data-testid="landing-cta-access-header">
+                  <Link href={LANDING_ACCESS_SOCIETY_PATH}>{t("ctaAccessSociety")}</Link>
+                </Button>
+                <Button asChild data-testid="landing-cta-create-header">
+                  <Link href="/sortu-elkartea">{t("ctaCreateSociety")}</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button asChild variant="outline" data-testid="landing-cta-create-header">
+                  <Link href="/sortu-elkartea">{t("ctaCreateSociety")}</Link>
+                </Button>
+                <Button asChild data-testid="landing-login-header">
+                  <Link href="/sartu">{t("ctaLogin")}</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -82,12 +99,18 @@ export function LandingPage() {
             <p className="mt-4 text-lg text-muted-foreground md:text-xl">{t("heroSubtitle")}</p>
             <p className="mt-6 leading-relaxed text-muted-foreground">{t("heroLead")}</p>
             <div className="mt-10 flex flex-wrap justify-center gap-3">
-              <Button asChild variant="outline" size="lg" data-testid="landing-cta-create-hero">
+              <Button asChild size="lg" data-testid="landing-cta-create-hero">
                 <Link href="/sortu-elkartea">{t("ctaCreateSociety")}</Link>
               </Button>
-              <Button asChild size="lg" data-testid="landing-login-hero">
-                <Link href="/sartu">{t("ctaLogin")}</Link>
-              </Button>
+              {apexMarketing ? (
+                <Button asChild variant="outline" size="lg" data-testid="landing-cta-access-hero">
+                  <Link href={LANDING_ACCESS_SOCIETY_PATH}>{t("ctaAccessSociety")}</Link>
+                </Button>
+              ) : (
+                <Button asChild variant="outline" size="lg" data-testid="landing-login-hero">
+                  <Link href="/sartu">{t("ctaLogin")}</Link>
+                </Button>
+              )}
             </div>
           </div>
         </section>
@@ -160,12 +183,18 @@ export function LandingPage() {
           <h2 className="mt-4 text-2xl font-semibold">{t("closingTitle")}</h2>
           <p className="mt-3 leading-relaxed text-muted-foreground">{t("closingBody")}</p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button asChild variant="outline" size="lg" data-testid="landing-cta-create-footer">
+            <Button asChild size="lg" data-testid="landing-cta-create-footer">
               <Link href="/sortu-elkartea">{t("ctaCreateSociety")}</Link>
             </Button>
-            <Button asChild size="lg" data-testid="landing-login-footer">
-              <Link href="/sartu">{t("ctaLogin")}</Link>
-            </Button>
+            {apexMarketing ? (
+              <Button asChild variant="outline" size="lg" data-testid="landing-cta-access-footer">
+                <Link href={LANDING_ACCESS_SOCIETY_PATH}>{t("ctaAccessSociety")}</Link>
+              </Button>
+            ) : (
+              <Button asChild variant="outline" size="lg" data-testid="landing-login-footer">
+                <Link href="/sartu">{t("ctaLogin")}</Link>
+              </Button>
+            )}
           </div>
         </section>
       </main>

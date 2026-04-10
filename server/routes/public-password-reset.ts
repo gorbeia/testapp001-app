@@ -95,10 +95,10 @@ export function registerPublicPasswordResetRoutes(app: Express) {
         }
 
         const dbUser = await db.query.users.findFirst({
-          where: (u, { eq: e }) => e(u.username, lowerEmail),
+          where: (u, { eq: e, and: a }) => a(e(u.username, lowerEmail), e(u.societyId, society.id)),
         });
 
-        if (!dbUser || !dbUser.isActive || dbUser.societyId !== society.id) {
+        if (!dbUser || !dbUser.isActive) {
           if (process.env.NODE_ENV !== "test") {
             console.info("[password-reset] skip: no matching active user");
           }

@@ -108,12 +108,6 @@ export function registerPublicSignupRoutes(app: Express) {
         }
 
         const adminEmail = parsed.data.adminEmail.trim().toLowerCase();
-        const existingUser = await db.query.users.findFirst({
-          where: (u, { eq: e }) => e(u.username, adminEmail),
-        });
-        if (existingUser) {
-          return res.status(409).json({ message: "Could not complete signup" });
-        }
 
         if (subdomainLabel) {
           const taken = await db.query.societies.findFirst({

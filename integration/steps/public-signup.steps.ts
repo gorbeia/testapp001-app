@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { Then, When } from "@cucumber/cucumber";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { categoryMessages, productCategories, tables, users } from "@shared/schema";
 import { db } from "../../server/db";
@@ -54,11 +54,17 @@ When(
   "I mark the last signup user as email verified in the database",
   async function (this: IntegrationWorld) {
     const email = this.createdIds.lastSignupEmail;
+    const alphabeticId = this.createdIds.signupAlphabeticId;
     assert.ok(email);
+    assert.ok(alphabeticId);
+    const society = await db.query.societies.findFirst({
+      where: (s, { eq: e }) => e(s.alphabeticId, alphabeticId),
+    });
+    assert.ok(society);
     await db
       .update(users)
       .set({ emailVerifiedAt: new Date(), updatedAt: new Date() })
-      .where(eq(users.username, email));
+      .where(and(eq(users.username, email), eq(users.societyId, society.id)));
   }
 );
 

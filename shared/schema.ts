@@ -260,37 +260,42 @@ export const membershipTypeEnum = pgEnum("membership_type", ["full_member", "com
 export const communicationLanguageSchema = z.enum(["eu", "es", "en"]);
 export type CommunicationLanguage = z.infer<typeof communicationLanguageSchema>;
 
-export const users = pgTable("users", {
-  id: varchar("id")
-    .primaryKey()
-    .default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-  name: text("name"),
-  accessRole: accessRoleEnum("access_role").notNull().default("member"),
-  membershipType: membershipTypeEnum("membership_type").notNull().default("full_member"),
-  phone: text("phone"),
-  iban: text("iban"),
-  linkedMemberId: varchar("linked_member_id"),
-  linkedMemberName: text("linked_member_name"),
-  subscriptionTypeId: varchar("subscription_type_id").references(() => subscriptionTypes.id),
-  societyId: varchar("society_id")
-    .notNull()
-    .references(() => societies.id),
-  /** Avatar image filename under `/api/images/{societyId}/` */
-  avatarUrl: varchar("avatar_url"),
-  /** When true, user-targeted notifications are also sent to `username` (login email). */
-  notifyEmail: boolean("notify_email").notNull().default(true),
-  /** Preferred language for emails and future off-app messages. */
-  communicationLanguage: varchar("communication_language", { length: 8 }).notNull().default("eu"),
-  /** Product news / marketing email opt-in (self-serve and profile). */
-  marketingOptIn: boolean("marketing_opt_in").notNull().default(false),
-  /** Set when the user completes email verification (null = must verify before login). */
-  emailVerifiedAt: timestamp("email_verified_at"),
-  isActive: boolean("is_active").notNull().default(true),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** Login email; unique per society (same person may have one account per society). */
+    username: text("username").notNull(),
+    password: text("password").notNull(),
+    name: text("name"),
+    accessRole: accessRoleEnum("access_role").notNull().default("member"),
+    membershipType: membershipTypeEnum("membership_type").notNull().default("full_member"),
+    phone: text("phone"),
+    iban: text("iban"),
+    linkedMemberId: varchar("linked_member_id"),
+    linkedMemberName: text("linked_member_name"),
+    subscriptionTypeId: varchar("subscription_type_id").references(() => subscriptionTypes.id),
+    societyId: varchar("society_id")
+      .notNull()
+      .references(() => societies.id),
+    /** Avatar image filename under `/api/images/{societyId}/` */
+    avatarUrl: varchar("avatar_url"),
+    /** When true, user-targeted notifications are also sent to `username` (login email). */
+    notifyEmail: boolean("notify_email").notNull().default(true),
+    /** Preferred language for emails and future off-app messages. */
+    communicationLanguage: varchar("communication_language", { length: 8 }).notNull().default("eu"),
+    /** Product news / marketing email opt-in (self-serve and profile). */
+    marketingOptIn: boolean("marketing_opt_in").notNull().default(false),
+    /** Set when the user completes email verification (null = must verify before login). */
+    emailVerifiedAt: timestamp("email_verified_at"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  t => [unique("users_society_id_username_unique").on(t.societyId, t.username)]
+);
 
 /** One-time email verification token for self-serve signup (row deleted after use). */
 export const userEmailVerifications = pgTable(
@@ -1720,6 +1725,11 @@ export const publicForgotPasswordBodySchema = z.object({
 export const publicResetPasswordBodySchema = z.object({
   token: z.string().min(1),
   newPassword: z.string().min(6),
+});
+
+/** Reminder email: societies (subdomain) this login email can access — multitenancy mode only. */
+export const publicSocietyAccessUrlsBodySchema = z.object({
+  email: z.string().email(),
 });
 
 export const backofficeLoginBodySchema = z.object({

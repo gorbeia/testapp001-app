@@ -144,7 +144,7 @@ export async function seedUsers(dbConn: SeedDb) {
       .insert(users)
       .values({ ...user, emailVerifiedAt: verifiedAt })
       .onConflictDoUpdate({
-        target: users.username,
+        target: [users.societyId, users.username],
         set: {
           password: user.password,
           name: user.name,

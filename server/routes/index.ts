@@ -137,6 +137,7 @@ import { registerImageRoutes } from "./images";
 import { registerPublicTenantRoutes } from "./public-tenant";
 import { registerPublicSignupRoutes } from "./public-signup";
 import { registerPublicPasswordResetRoutes } from "./public-password-reset";
+import { registerPublicSocietyAccessUrlsRoutes } from "./public-society-access-urls";
 import { getUploadsRoot } from "../lib/image-storage";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
@@ -152,6 +153,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   registerPublicTenantRoutes(app);
   registerPublicSignupRoutes(app);
   registerPublicPasswordResetRoutes(app);
+  registerPublicSocietyAccessUrlsRoutes(app);
 
   // Uploaded images (GET); upload/delete registered in registerImageRoutes
   app.use("/api/images", express.static(getUploadsRoot(), { index: false }));
@@ -226,6 +228,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         ? parseHostForTenant(req.get("host"), apex)
         : { kind: "apex" as const };
 
+      if (apex && hostParsed.kind === "apex") {
+        return res.status(403).json({
+          message: "Sign in is only available on your society’s web address, not on the main site.",
+          code: "LOGIN_REQUIRES_TENANT_HOST" as const,
+        });
+      }
+
       let society: Awaited<ReturnType<typeof db.query.societies.findFirst>> | undefined;
 
       if (hostParsed.kind === "tenant") {
@@ -249,16 +258,12 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       }
 
       const dbUser = await db.query.users.findFirst({
-        where: (u, { eq }) => eq(u.username, email.toLowerCase()),
+        where: (u, { eq, and: a }) =>
+          a(eq(u.username, email.toLowerCase()), eq(u.societyId, society.id)),
       });
 
       if (!dbUser) {
         return res.status(401).json({ message: "Invalid credentials" });
-      }
-
-      // Verify user belongs to the specified society
-      if (dbUser.societyId !== society.id) {
-        return res.status(401).json({ message: "User does not belong to this society" });
       }
 
       // Check if password is hashed (starts with $2b$) or plain text

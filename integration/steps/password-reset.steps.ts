@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { After, Before, Then, When } from "@cucumber/cucumber";
 import bcrypt from "bcrypt";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 import { userPasswordResets, users } from "@shared/schema";
 import { db } from "../../server/db";
@@ -40,13 +40,18 @@ Before({ tags: "@password-reset-mail" }, function () {
 
 After({ tags: "@password-reset-mail" }, async function () {
   setMailTransportForTests(null);
+  const society = await db.query.societies.findFirst({
+    where: (s, { eq: e }) => e(s.alphabeticId, "GT001"),
+  });
+  if (!society) return;
   const hashed = await bcrypt.hash("demo", 10);
   await db
     .update(users)
     .set({ password: hashed, updatedAt: new Date() })
-    .where(eq(users.username, "admin@txokoa.eus"));
+    .where(and(eq(users.username, "admin@txokoa.eus"), eq(users.societyId, society.id)));
   const admin = await db.query.users.findFirst({
-    where: (u, { eq: e }) => e(u.username, "admin@txokoa.eus"),
+    where: (u, { eq: e, and: a }) =>
+      a(e(u.username, "admin@txokoa.eus"), e(u.societyId, society.id)),
   });
   if (admin) {
     await db.delete(userPasswordResets).where(eq(userPasswordResets.userId, admin.id));

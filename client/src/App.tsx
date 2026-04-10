@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Switch, Route, useLocation, Redirect } from "wouter";
 import { Loader2 } from "lucide-react";
 import { queryClient } from "./lib/queryClient";
@@ -10,6 +10,7 @@ import { LanguageProvider } from "@/components/LanguageProvider";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { useAuth } from "@/lib/auth";
+import { clientTenantHostGuess, getClientTenantApexDomain } from "@/lib/tenant-client";
 import { Permission } from "@shared/permissions";
 import { LoginForm } from "@/components/LoginForm";
 import { ForgotPasswordPage } from "@/components/ForgotPasswordPage";
@@ -57,7 +58,27 @@ import {
 import { LandingPage } from "@/landing/LandingPage";
 import { CreateSocietyLandingPage } from "@/landing/CreateSocietyLandingPage";
 import { VerifyEmailLandingPage } from "@/landing/VerifyEmailLandingPage";
+import { AccessSocietyPage } from "@/landing/AccessSocietyPage";
+import { LANDING_ACCESS_SOCIETY_PATH } from "@/landing/i18n";
 import { useTenantByHost } from "@/hooks/useTenantByHost";
+
+function ApexHostSessionRedirect() {
+  const { logout } = useAuth();
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    void (async () => {
+      await logout();
+      navigate("/");
+    })();
+  }, [logout, navigate]);
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
+    </div>
+  );
+}
 
 function AppRoutes() {
   return (
@@ -214,6 +235,14 @@ function AuthenticatedApp() {
     likelyTenantHost,
   } = useTenantByHost();
 
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const hostGuess = hostname
+    ? clientTenantHostGuess(hostname)
+    : { kind: "no_apex_config" as const };
+  const hostLooksApex = getClientTenantApexDomain() != null && hostGuess.kind === "apex";
+  const apexMarketingOnly =
+    tenantHostData?.mode === "apex" && tenantHostData.multitenancyEnabled === true;
+
   // Multisociety management area (superadmin), independent of society-based layout
   // All pages under /elkarteapp/kudeaketa* use their own UI with the backoffice sidebar.
   if (location.startsWith("/elkarteapp/kudeaketa")) {
@@ -253,8 +282,33 @@ function AuthenticatedApp() {
     );
   }
 
+  if (
+    isAuthenticated &&
+    !location.startsWith("/elkarteapp/kudeaketa") &&
+    hostLooksApex &&
+    tenantHostLoading
+  ) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
+      </div>
+    );
+  }
+
+  if (isAuthenticated && !location.startsWith("/elkarteapp/kudeaketa") && apexMarketingOnly) {
+    return <ApexHostSessionRedirect />;
+  }
+
   if (!isAuthenticated) {
     if (likelyTenantHost && tenantHostLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
+        </div>
+      );
+    }
+
+    if (hostLooksApex && tenantHostLoading) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" aria-hidden />
@@ -274,6 +328,22 @@ function AuthenticatedApp() {
           <Route path="/">{() => <Redirect to="/sartu" />}</Route>
           <Route path="/hasiera">{() => <Redirect to="/sartu" />}</Route>
           <Route>{() => <Redirect to="/sartu" />}</Route>
+        </Switch>
+      );
+    }
+
+    if (apexMarketingOnly) {
+      return (
+        <Switch>
+          <Route path="/sortu-elkartea" component={CreateSocietyLandingPage} />
+          <Route path="/egiaztatu-posta" component={VerifyEmailLandingPage} />
+          <Route path="/pasahitza-ahaztu" component={ForgotPasswordPage} />
+          <Route path="/pasahitza-berrezarri" component={ResetPasswordPage} />
+          <Route path={LANDING_ACCESS_SOCIETY_PATH} component={AccessSocietyPage} />
+          <Route path="/" component={LandingPage} />
+          <Route path="/hasiera" component={LandingPage} />
+          <Route path="/sartu">{() => <Redirect to={LANDING_ACCESS_SOCIETY_PATH} />}</Route>
+          <Route>{() => <Redirect to="/" />}</Route>
         </Switch>
       );
     }
