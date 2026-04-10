@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { Then, When } from "@cucumber/cucumber";
 import { eq } from "drizzle-orm";
 
-import { categoryMessages, productCategories, societies, tables, users } from "@shared/schema";
+import { categoryMessages, productCategories, tables, users } from "@shared/schema";
 import { db } from "../../server/db";
 import type { IntegrationWorld } from "./world";
 

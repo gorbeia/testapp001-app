@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { SepaMode, SocietyPaymentMethod, Society } from "@shared/schema";
+import type { SocietyPaymentMethod, Society } from "@shared/schema";
 import { normalizeSocietyPaymentMethods } from "@shared/schema";
 import { deriveSocietyAcronym } from "@shared/society-acronym";
 import { Permission } from "@shared/permissions";
