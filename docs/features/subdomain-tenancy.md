@@ -13,7 +13,7 @@
 **Acceptance criteria (shipped):**
 
 - Optional env **`TENANT_APEX_DOMAIN`** (e.g. `example.com`) on the API; optional **`VITE_TENANT_APEX_DOMAIN`** (same value) on the SPA build for first-paint routing.
-- **`GET /api/public/tenant-by-host`** returns `{ mode: "apex" }` on apex/`www`, or `{ mode: "tenant", societyId, alphabeticId, name, acronym, shortDescription, logoUrl }` for `{subdomain}.{apex}` when `societies.subdomain` matches.
+- **`GET /api/public/tenant-by-host`** returns `{ mode: "apex", multitenancyEnabled }` on apex/`www` (or when env is off), or `{ mode: "tenant", … }` for `{subdomain}.{apex}` when `societies.subdomain` matches. Use **`multitenancyEnabled`** to see if the server has **`TENANT_APEX_DOMAIN`** set.
 - Unauthenticated users on a valid tenant host are redirected from `/` and `/hasiera` to **`/sartu`** (no landing CTA).
 - **`POST /api/login`** resolves the society from the **`Host`** header when on a tenant host and rejects mismatched `societyId` in the body.
 
@@ -33,3 +33,9 @@
 
 - Nginx: same upstream for apex and **`*.apex`**; TLS wildcard via Let’s Encrypt **DNS-01** (see [INSTALLATION_UBUNTU_24.md](../INSTALLATION_UBUNTU_24.md)).
 - **`TRUST_PROXY=1`** or production enables **`trust proxy`** in Express for correct secure/client IP behavior behind nginx.
+
+### Why does `GET /api/public/tenant-by-host` return `{ "mode": "apex" }`?
+
+- **`multitenancyEnabled: false`** in the JSON means **`TENANT_APEX_DOMAIN` is not set** for the Node process (PM2 / systemd / Docker must load the same env you use locally). Fix: set the variable and restart the app.
+- **`multitenancyEnabled: true`** with **`mode: "apex"`** means multitenancy is on, but the **`Host`** header is not exactly **`{subdomain}.{TENANT_APEX_DOMAIN}`** (e.g. you opened the apex or `www`, the browser host is `localhost`, nginx forwards the wrong host, or `TENANT_APEX_DOMAIN` does not match the real DNS suffix).
+- The Host must be a **single** label plus apex (not `a.b.example.com`); see [`shared/tenant-host.ts`](../../shared/tenant-host.ts) `parseHostForTenant`.

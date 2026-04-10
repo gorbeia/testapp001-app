@@ -1,6 +1,6 @@
 # Ubuntu 24.04 Installation Guide
 
-This guide provides step-by-step instructions for installing and setting up **Elkartearen App** on Ubuntu 24.04 LTS (the app UI is branded _Gure Txokoa_ in the client).
+This guide provides step-by-step instructions for installing and setting up **Elkartearen App** on Ubuntu 24.04 LTS (the app UI is branded *Gure Txokoa* in the client).
 
 ## Prerequisites
 
@@ -224,6 +224,7 @@ If you set a different `PORT` in `.env`, use that port in the direct-to-Node URL
 
 After seeding (`pnpm db:seed`), you can use these demo accounts:
 
+
 | Email                  | Password | Function          | Role     |
 | ---------------------- | -------- | ----------------- | -------- |
 | `admin@txokoa.eus`     | demo     | Administratzailea | Bazkidea |
@@ -231,6 +232,7 @@ After seeding (`pnpm db:seed`), you can use these demo accounts:
 | `sotolaria@txokoa.eus` | demo     | Sotolaria         | Bazkidea |
 | `bazkidea@txokoa.eus`  | demo     | Arrunta           | Bazkidea |
 | `laguna@txokoa.eus`    | demo     | Arrunta           | Laguna   |
+
 
 **Society ID**: Use `GT001` in the login form when you are **not** on that society’s tenant subdomain. On `https://{subdomain}.{TENANT_APEX_DOMAIN}`, the app binds login to the host; set each society’s subdomain in the backoffice to match DNS.
 
@@ -378,15 +380,17 @@ pm2 scale guretxokoa 4
 
 ## Nginx Reverse Proxy (Recommended)
 
-The app resolves **which society** to show from the HTTP **`Host`** header when `TENANT_APEX_DOMAIN` is set (e.g. `txokoa.elkartea.eus` → society subdomain `txokoa`). Nginx must proxy **all** of these names to the same upstream and pass **`Host` unchanged** (`proxy_set_header Host $host;` — as below).
+The app resolves **which society** to show from the HTTP `**Host`** header when `TENANT_APEX_DOMAIN` is set (e.g. `txokoa.elkartea.eus` → society subdomain `txokoa`). Nginx must proxy **all** of these names to the same upstream and pass `**Host` unchanged** (`proxy_set_header Host $host;` — as below).
 
 **DNS (do this before or alongside nginx):** Point your apex and every society hostname at the server. Replace `203.0.113.50` with your server’s public IPv4 (or use your provider’s “flattened” / ALIAS pattern if you use a CNAME on the apex).
 
-| Purpose | Type | Name / host | Value |
-|--------|------|-------------|--------|
-| Apex | `A` | `@` | `203.0.113.50` |
-| `www` | `A` or `CNAME` | `www` | `203.0.113.50` or `@` |
-| All tenant subdomains | `A` or `CNAME` | `*` | `203.0.113.50` or `@` |
+
+| Purpose               | Type           | Name / host | Value                 |
+| --------------------- | -------------- | ----------- | --------------------- |
+| Apex                  | `A`            | `@`         | `203.0.113.50`        |
+| `www`                 | `A` or `CNAME` | `www`       | `203.0.113.50` or `@` |
+| All tenant subdomains | `A` or `CNAME` | `*`         | `203.0.113.50` or `@` |
+
 
 Example checks after DNS propagates:
 
@@ -396,13 +400,13 @@ dig +short www.elkartea.eus A
 dig +short txokoa.elkartea.eus A
 ```
 
-**Important:** Do **not** add `listen 443`, `ssl_certificate`, or `ssl_certificate_key` until certificate files exist under `/etc/letsencrypt/live/`. If nginx references missing certs, `sudo nginx -t` fails and **`certbot --nginx` cannot run** (it runs `nginx -t` internally).
+**Important:** Do **not** add `listen 443`, `ssl_certificate`, or `ssl_certificate_key` until certificate files exist under `/etc/letsencrypt/live/`. If nginx references missing certs, `sudo nginx -t` fails and `**certbot --nginx` cannot run** (it runs `nginx -t` internally).
 
 Order of operations:
 
-1. Install nginx and deploy an **HTTP-only** site on port **80** (below), including **`*.your-domain.com`** in `server_name`.
-2. Run **`sudo nginx -t`** and reload nginx — config must be valid.
-3. Obtain TLS certificates (see [SSL Certificate](#ssl-certificate-required-for-port-443)): for tenant subdomains you need a name set that includes **`*.your-domain.com`** (wildcard via DNS-01, or per-host certificates).
+1. Install nginx and deploy an **HTTP-only** site on port **80** (below), including `***.your-domain.com`** in `server_name`.
+2. Run `**sudo nginx -t**` and reload nginx — config must be valid.
+3. Obtain TLS certificates (see [SSL Certificate](#ssl-certificate-required-for-port-443)): for tenant subdomains you need a name set that includes `***.your-domain.com**` (wildcard via DNS-01, or per-host certificates).
 
 ```bash
 # Install Nginx
@@ -468,7 +472,7 @@ After HTTPS is working (next section), you can edit the generated SSL server blo
 
 ## SSL Certificate (Required for Port 443)
 
-Society URLs use **`https://{subdomain}.{TENANT_APEX_DOMAIN}`**. A single certificate obtained with HTTP-01 for **only** the apex and `www` does **not** cover arbitrary subdomains. For production with tenant hosts, obtain a certificate that includes **`*.your-domain.com`** (wildcard) using Let’s Encrypt **DNS-01**, or use your DNS provider’s **certbot DNS plugin** (fewer manual TXT steps).
+Society URLs use `**https://{subdomain}.{TENANT_APEX_DOMAIN}`**. A single certificate obtained with HTTP-01 for **only** the apex and `www` does **not** cover arbitrary subdomains. For production with tenant hosts, obtain a certificate that includes `***.your-domain.com`** (wildcard) using Let’s Encrypt **DNS-01**, or use your DNS provider’s **certbot DNS plugin** (fewer manual TXT steps).
 
 ```bash
 # Install Certbot and the nginx plugin (plugin used when you choose --nginx below)
@@ -587,7 +591,7 @@ This does **not** issue `*.elkartea.eus`; tenant subdomains would need separate 
 
 Let’s Encrypt **does not keep the same TXT token forever**. On each **renewal**, the CA performs a **new** DNS challenge: you must publish the **new** `_acme-challenge` value(s) again (same hostname, updated content), unless renewal is fully automated.
 
-- **`certbot renew`** with **`--manual`**: not suitable for unattended cron — renewal will stop and wait for you to change DNS, or fail. Use a **DNS plugin** (or auth hook) for your provider so Certbot can set TXT records itself.
+- `**certbot renew`** with `**--manual**`: not suitable for unattended cron — renewal will stop and wait for you to change DNS, or fail. Use a **DNS plugin** (or auth hook) for your provider so Certbot can set TXT records itself.
 - **HTTP-01** (`certbot --nginx`): renewals usually need **no** DNS TXT changes.
 
 ```bash
@@ -620,14 +624,14 @@ After SSL is working, you can add extra **security headers** in the `listen 443`
  sudo -u postgres psql -l
 ```
 
-2. **Permission Denied**
+1. **Permission Denied**
 
 ```bash
 sudo chown -R "$USER:$USER" /home/your_username/testapp001-app
 chmod +x /home/your_username/testapp001-app/script/*.ts
 ```
 
-3. **Port Already in Use**
+1. **Port Already in Use**
 
 ```bash
  # Check what's using the default port (5000)
@@ -637,7 +641,7 @@ chmod +x /home/your_username/testapp001-app/script/*.ts
  sudo kill -9 <PID>
 ```
 
-4. **Node.js Version Issues**
+1. **Node.js Version Issues**
 
 ```bash
  # Check Node.js version
@@ -646,7 +650,7 @@ chmod +x /home/your_username/testapp001-app/script/*.ts
  # Must be v24.x or higher (project requires >=24.0.0)
 ```
 
-5. **Certbot / nginx: `cannot load certificate ... fullchain.pem` / `nginx -t` fails**
+1. **Certbot / nginx: `cannot load certificate ... fullchain.pem` / `nginx -t` fails**
 
 This happens when the site config references `/etc/letsencrypt/live/<domain>/fullchain.pem` (and `privkey.pem`) **before** those files exist. The `certbot --nginx` plugin always runs `nginx -t`, so it cannot recover until nginx config is valid again.
 
@@ -662,7 +666,7 @@ sudo nginx -t && sudo systemctl reload nginx
 sudo certbot --nginx -d elkartea.eus -d www.elkartea.eus
 ```
 
-5. After certbot succeeds, reload nginx if needed: `sudo systemctl reload nginx`.
+1. After certbot succeeds, reload nginx if needed: `sudo systemctl reload nginx`.
 
 ### Logs
 
@@ -713,6 +717,7 @@ curl -s http://localhost:5000/api | head -c 200
 
 The project uses **Drizzle ORM** for schema management. There are two approaches:
 
+
 | Command              | Use case                                                                   | Destructive?                |
 | -------------------- | -------------------------------------------------------------------------- | --------------------------- |
 | `pnpm db:push`       | Apply schema from code to DB (adds columns/tables, does **not** drop data) | No                          |
@@ -720,7 +725,8 @@ The project uses **Drizzle ORM** for schema management. There are two approaches
 | `pnpm db:reset`      | **Drops all tables** and re-creates from schema                            | **Yes — destroys all data** |
 | `pnpm db:reset:seed` | Reset + insert demo data                                                   | **Yes — destroys all data** |
 
-For production updates, use `**pnpm db:push`** or `**pnpm db:migrate\*\*`. Never use `db:reset` on a production database.
+
+For production updates, use `**pnpm db:push`** or `**pnpm db:migrate\*\`*. Never use `db:reset` on a production database.
 
 If a release includes migration files, prefer `pnpm db:migrate`. Otherwise `pnpm db:push` is safe for additive changes.
 

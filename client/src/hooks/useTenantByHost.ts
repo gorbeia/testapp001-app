@@ -2,9 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { clientTenantHostGuess, getClientTenantApexDomain } from "@/lib/tenant-client";
 
 export type TenantByHostApiResponse =
-  | { mode: "apex" }
+  | { mode: "apex"; multitenancyEnabled?: boolean }
   | {
       mode: "tenant";
+      multitenancyEnabled?: boolean;
       societyId: string;
       alphabeticId: string;
       name: string;
