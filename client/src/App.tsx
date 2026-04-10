@@ -34,6 +34,7 @@ import { StockChangesPage } from "@/pages/StockChangesPage";
 import { StockReceiptsPage } from "@/pages/StockReceiptsPage";
 import { StockTakePage } from "@/pages/StockTakePage";
 import { SocietyPage } from "@/pages/SocietyPage";
+import { SocietyReservationSettingsPage } from "@/pages/SocietyReservationSettingsPage";
 import { SepaExportPage } from "@/pages/SepaExportPage";
 import { MyMovementsPage } from "@/pages/MyMovementsPage";
 import { AccountMovementsPage } from "@/pages/AccountMovementsPage";
@@ -182,6 +183,13 @@ function AppRoutes() {
         {() => (
           <ProtectedRoute requires={Permission.SOCIETY_MANAGE}>
             <SocietyPage />
+          </ProtectedRoute>
+        )}
+      </Route>
+      <Route path="/erreserba-ezarpenak">
+        {() => (
+          <ProtectedRoute requires={Permission.SOCIETY_MANAGE}>
+            <SocietyReservationSettingsPage />
           </ProtectedRoute>
         )}
       </Route>

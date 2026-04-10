@@ -546,6 +546,19 @@ export function AdminReservationsPage() {
                         <p>€{selectedReservation.totalAmount}</p>
                       </div>
                     )}
+                    {Array.isArray(selectedReservation.selectedServices) &&
+                      selectedReservation.selectedServices.length > 0 && (
+                        <div className="col-span-2">
+                          <p className="text-sm font-medium">{t("reservationOptionalServices")}</p>
+                          <ul className="list-disc pl-4 text-sm space-y-1">
+                            {selectedReservation.selectedServices.map(s => (
+                              <li key={s.serviceId}>
+                                {s.label} — €{s.lineTotal}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     {selectedReservation.status === "cancelled" &&
                       selectedReservation.cancellationReason && (
                         <div className="col-span-2">

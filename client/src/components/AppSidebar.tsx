@@ -251,7 +251,14 @@ export function AppSidebar() {
         ? [{ title: t("subscriptionTypes"), url: "/subscriptions", icon: SubscriptionIcon }]
         : []),
       ...(userCan(user, Permission.SOCIETY_MANAGE)
-        ? [{ title: t("society"), url: "/elkartea", icon: Building2 }]
+        ? [
+            { title: t("society"), url: "/elkartea", icon: Building2 },
+            {
+              title: t("societyReservationSettings"),
+              url: "/erreserba-ezarpenak",
+              icon: CalendarDays,
+            },
+          ]
         : []),
     ];
 

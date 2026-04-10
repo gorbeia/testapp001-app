@@ -18,6 +18,7 @@
     "db:reset:seed": "pnpm db:reset && pnpm db:seed",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx script/seed.ts",
+    "db:seed:reservation-services": "tsx script/seed-reservation-services.ts",
     "db:backfill:email-verified": "tsx script/backfill-user-email-verified.ts",
     "db:repair:cash-e2e": "tsx script/repair-cash-pos-e2e-state.ts",
     "db:seed:prepayment-floor-e2e": "tsx script/seed-prepayment-floor-e2e.ts",

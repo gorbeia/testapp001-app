@@ -175,7 +175,7 @@ export function registerPublicSignupRoutes(app: Express) {
               })
               .returning();
 
-            await insertTenantBootstrap(tx, society.id);
+            await insertTenantBootstrap(tx, society.id, society.kitchenPricePerMember);
 
             plainToken = randomBytes(32).toString("base64url");
             const tokenHash = createHash("sha256").update(plainToken).digest("hex");

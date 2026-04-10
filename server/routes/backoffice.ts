@@ -317,6 +317,7 @@ export function registerBackofficeRoutes(app: Express) {
           address,
           phone,
           email,
+          reservationFixedFee,
           reservationPricePerMember,
           kitchenPricePerMember,
           sepaMode,
@@ -330,6 +331,10 @@ export function registerBackofficeRoutes(app: Express) {
         const existingSocieties = await db.query.societies.findMany();
         const isActive = existingSocieties.length === 0;
 
+        const fixedFee =
+          reservationFixedFee !== undefined && reservationFixedFee !== null
+            ? String(reservationFixedFee)
+            : "0.00";
         const resPrice =
           reservationPricePerMember !== undefined && reservationPricePerMember !== null
             ? String(reservationPricePerMember)
@@ -361,6 +366,7 @@ export function registerBackofficeRoutes(app: Express) {
                 address: address ?? null,
                 phone: phone ?? null,
                 email: email ?? null,
+                reservationFixedFee: fixedFee,
                 reservationPricePerMember: resPrice,
                 kitchenPricePerMember: kitPrice,
                 sepaMode: sepaMode ?? "monthly",
@@ -369,7 +375,7 @@ export function registerBackofficeRoutes(app: Express) {
               })
             )
             .returning();
-          await insertTenantBootstrap(tx, row.id);
+          await insertTenantBootstrap(tx, row.id, row.kitchenPricePerMember);
           return row;
         });
 

@@ -11,13 +11,8 @@ reservation of tables by chair count
 
 remove name from reservations, autogenerate title
 
-share a bill with several members
-
-Derived products such as gintonic.
-
-Additional services in reservations: cleaning, heating, etc.
-
 remove demo login data
+
 
 email support
 _ password recovery
@@ -26,4 +21,11 @@ _ notifications
 domain and subdomains
 preload login page based on subdomain (image, society name)
 
+
+Derived products such as gintonic.
+
+share a bill with several members
+
 sample images for common products
+
+xlsx exporter for Direct debits

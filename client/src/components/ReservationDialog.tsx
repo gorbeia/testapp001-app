@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { Calendar as CalendarIcon, Utensils } from "lucide-react";
+import { Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -27,11 +27,14 @@ import { usePrepaymentLedgerStatus } from "@/hooks/usePrepaymentLedgerStatus";
 import { useLanguage } from "@/lib/i18n";
 import { dateFnsLocale } from "@/lib/date-locale";
 import { format } from "date-fns";
-import type { Society, SocietyEvent, Table } from "@shared/schema";
+import type { Society, SocietyEvent, Table, ReservationService } from "@shared/schema";
 import {
   DEFAULT_RESERVATION_MEAL_TYPES,
   getReservationMealTypeLabel,
   normalizeSocietyReservationMealTypes,
+  RESERVATION_SERVICE_SLUG_KITCHEN,
+  computeReservationServiceLineTotal,
+  reservationServiceDisplayLabel,
 } from "@shared/schema";
 import { startOfDay, endOfDay } from "date-fns";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -55,9 +58,7 @@ interface FormData {
   type: string;
   startDate: Date;
   guests: number;
-  useKitchen: boolean;
   table: string;
-  totalAmount: string;
   notes: string;
 }
 
@@ -100,14 +101,14 @@ export function ReservationDialog({
   const [loading, setLoading] = useState(false);
   const [calendarBlockNotes, setCalendarBlockNotes] = useState<string[]>([]);
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
+  const [addonServices, setAddonServices] = useState<ReservationService[]>([]);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<Set<string>>(new Set());
 
   const [formData, setFormData] = useState<FormData>({
     type: DEFAULT_RESERVATION_MEAL_TYPES[0].id,
     startDate: new Date(),
     guests: 10,
-    useKitchen: false,
     table: "",
-    totalAmount: "0",
     notes: "",
   });
 
@@ -119,16 +120,24 @@ export function ReservationDialog({
     [society]
   );
 
-  const calculateTotal = (guests: number, kitchen: boolean) => {
-    if (!society) return "0";
-
-    const reservationPrice = parseFloat(society.reservationPricePerMember ?? "") || 2;
-    const kitchenPrice = parseFloat(society.kitchenPricePerMember ?? "") || 3;
-
-    const guestCharge = guests * reservationPrice;
-    const kitchenCharge = kitchen ? guests * kitchenPrice : 0;
-    return (guestCharge + kitchenCharge).toString();
+  const baseReservationTotal = (guests: number) => {
+    if (!society) return 0;
+    const fixed = parseFloat(String(society.reservationFixedFee ?? "0")) || 0;
+    const reservationPrice = parseFloat(society.reservationPricePerMember ?? "") || 0;
+    return fixed + guests * reservationPrice;
   };
+
+  const addonServicesTotal = (guests: number) => {
+    let sum = 0;
+    for (const s of addonServices) {
+      if (!selectedServiceIds.has(s.id)) continue;
+      sum += parseFloat(computeReservationServiceLineTotal(s.fixedPrice, s.pricePerMember, guests));
+    }
+    return sum;
+  };
+
+  const grandTotal = (guests: number) =>
+    (baseReservationTotal(guests) + addonServicesTotal(guests)).toFixed(2);
 
   const loadSociety = async () => {
     try {
@@ -143,17 +152,38 @@ export function ReservationDialog({
   };
 
   useEffect(() => {
-    if (!society) return;
-    setFormData(prev => ({
-      ...prev,
-      totalAmount: calculateTotal(prev.guests, prev.useKitchen),
-    }));
-  }, [society]);
-
-  useEffect(() => {
     if (open) {
       void loadSociety();
     }
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await authFetch("/api/reservation-services");
+        if (!response.ok || cancelled) return;
+        const data = (await response.json()) as ReservationService[];
+        const list = Array.isArray(data) ? data : [];
+        if (cancelled) return;
+        setAddonServices(list);
+        const init = new Set<string>();
+        for (const s of list) {
+          if (s.isDefault) init.add(s.id);
+        }
+        setSelectedServiceIds(init);
+      } catch (e) {
+        console.error("Error loading reservation services:", e);
+        if (!cancelled) {
+          setAddonServices([]);
+          setSelectedServiceIds(new Set());
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [open]);
 
   useEffect(() => {
@@ -242,7 +272,9 @@ export function ReservationDialog({
           const evE = new Date(ev.endDate);
           if (reservationInstant < evS || reservationInstant > evE) continue;
           if (ev.blocksAllReservations) msgs.push(t("societyClosedOnDate"));
-          if (formData.useKitchen && ev.blocksKitchen) msgs.push(t("kitchenBlockedOnDate"));
+          const kitchenSvc = addonServices.find(s => s.slug === RESERVATION_SERVICE_SLUG_KITCHEN);
+          const kitchenSelected = kitchenSvc ? selectedServiceIds.has(kitchenSvc.id) : false;
+          if (kitchenSelected && ev.blocksKitchen) msgs.push(t("kitchenBlockedOnDate"));
           if (tableId && (ev.blockedTableIds ?? []).includes(tableId)) {
             msgs.push(t("tableBlockedOnDate"));
           }
@@ -255,7 +287,7 @@ export function ReservationDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, reservationInstant, formData.table, formData.useKitchen, tables, t]);
+  }, [open, reservationInstant, formData.table, selectedServiceIds, addonServices, tables, t]);
 
   const mapSrc = society ? societyMapSrc(society.id, society.mapImageUrl) : undefined;
 
@@ -300,9 +332,8 @@ export function ReservationDialog({
       const reservationData = {
         type: formData.type,
         guests: formData.guests,
-        useKitchen: formData.useKitchen,
         table: formData.table,
-        totalAmount: calculateTotal(formData.guests, formData.useKitchen),
+        selectedServiceIds: Array.from(selectedServiceIds),
         startDate: startDate.toISOString(),
         notes: formData.notes.trim() || undefined,
       };
@@ -327,11 +358,14 @@ export function ReservationDialog({
             DEFAULT_RESERVATION_MEAL_TYPES[0].id,
           startDate: new Date(),
           guests: 10,
-          useKitchen: false,
           table: "",
-          totalAmount: "0",
           notes: "",
         });
+        const init = new Set<string>();
+        for (const s of addonServices) {
+          if (s.isDefault) init.add(s.id);
+        }
+        setSelectedServiceIds(init);
 
         onOpenChange(false);
         onSuccess?.();
@@ -443,7 +477,6 @@ export function ReservationDialog({
                     setFormData(prev => ({
                       ...prev,
                       guests: g,
-                      totalAmount: calculateTotal(g, prev.useKitchen),
                     }));
                   }}
                   data-testid="input-guests"
@@ -513,56 +546,95 @@ export function ReservationDialog({
               )}
             </div>
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="kitchen"
-                checked={formData.useKitchen}
-                onCheckedChange={checked => {
-                  const useKitchen = checked === true;
-                  setFormData(prev => ({
-                    ...prev,
-                    useKitchen,
-                    totalAmount: calculateTotal(prev.guests, useKitchen),
-                  }));
-                }}
-                data-testid="checkbox-kitchen"
-              />
-              <Label htmlFor="kitchen" className="flex items-center gap-2">
-                <Utensils className="h-4 w-4" />
-                {t("kitchenEquipment")}
-              </Label>
-            </div>
+            {addonServices.length > 0 ? (
+              <div className="space-y-2">
+                <Label>{t("reservationOptionalServices")}</Label>
+                <div className="space-y-2 rounded-md border p-3">
+                  {addonServices.map(svc => {
+                    const line = computeReservationServiceLineTotal(
+                      svc.fixedPrice,
+                      svc.pricePerMember,
+                      formData.guests
+                    );
+                    const label = reservationServiceDisplayLabel(svc, language);
+                    return (
+                      <div key={svc.id} className="flex items-start space-x-2">
+                        <Checkbox
+                          id={`rs-${svc.id}`}
+                          checked={selectedServiceIds.has(svc.id)}
+                          onCheckedChange={checked => {
+                            setSelectedServiceIds(prev => {
+                              const n = new Set(prev);
+                              if (checked === true) n.add(svc.id);
+                              else n.delete(svc.id);
+                              return n;
+                            });
+                          }}
+                          data-testid={`checkbox-reservation-service-${svc.slug}`}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <Label htmlFor={`rs-${svc.id}`} className="font-normal cursor-pointer">
+                            {label}
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            +{line}€ {t("forThisBooking")}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
 
             <Card className="bg-muted/50" data-testid="reservation-cost-card">
               <CardContent className="pt-4">
                 {society ? (
                   <>
-                    <div className="flex justify-between text-sm">
-                      <span>
-                        {t("guests")} ({formData.guests} × {society.reservationPricePerMember ?? "0"}
-                        €):
-                      </span>
-                      <span>
-                        {(
-                          formData.guests * parseFloat(society.reservationPricePerMember ?? "0")
-                        ).toFixed(2)}
-                        €
-                      </span>
-                    </div>
-                    {formData.useKitchen && (
-                      <div className="flex justify-between text-sm mt-1">
-                        <span>
-                          {t("kitchenCost")} ({formData.guests} ×{" "}
-                          {society.kitchenPricePerMember ?? "0"}€):
-                        </span>
-                        <span>
-                          {(
-                            formData.guests * parseFloat(society.kitchenPricePerMember ?? "0")
-                          ).toFixed(2)}
-                          €
-                        </span>
-                      </div>
-                    )}
+                    {(() => {
+                      const fixed =
+                        parseFloat(String(society.reservationFixedFee ?? "0")) || 0;
+                      const per = parseFloat(society.reservationPricePerMember ?? "") || 0;
+                      const variable = formData.guests * per;
+                      return (
+                        <>
+                          {fixed > 0 ? (
+                            <div className="flex justify-between text-sm">
+                              <span>{t("reservationFixedFee")}</span>
+                              <span>{fixed.toFixed(2)}€</span>
+                            </div>
+                          ) : null}
+                          {variable > 0 || fixed === 0 ? (
+                            <div className="flex justify-between text-sm">
+                                                           <span>
+                                {t("reservationCostVariablePart", {
+                                  guests: String(formData.guests),
+                                  price: String(society.reservationPricePerMember ?? "0"),
+                                })}
+                                :
+                              </span>
+                              <span>{variable.toFixed(2)}€</span>
+                            </div>
+                          ) : null}
+                        </>
+                      );
+                    })()}
+                    {addonServices
+                      .filter(s => selectedServiceIds.has(s.id))
+                      .map(svc => {
+                        const line = computeReservationServiceLineTotal(
+                          svc.fixedPrice,
+                          svc.pricePerMember,
+                          formData.guests
+                        );
+                        const label = reservationServiceDisplayLabel(svc, language);
+                        return (
+                          <div key={svc.id} className="flex justify-between text-sm mt-1">
+                            <span className="truncate pr-2">{label}</span>
+                            <span>{line}€</span>
+                          </div>
+                        );
+                      })}
                   </>
                 ) : (
                   <div className="flex justify-between text-sm">
@@ -571,7 +643,7 @@ export function ReservationDialog({
                 )}
                 <div className="flex justify-between font-medium mt-2 pt-2 border-t">
                   <span>{t("totalCost")}:</span>
-                  <span>{formData.totalAmount}€</span>
+                  <span data-testid="reservation-grand-total">{grandTotal(formData.guests)}€</span>
                 </div>
               </CardContent>
             </Card>
@@ -608,7 +680,7 @@ export function ReservationDialog({
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("reservationFloorPlan")}</DialogTitle>
-            <DialogDescription>{t("societyMapHint")}</DialogDescription>
+            <DialogDescription>{t("reservationMapDialogDescription")}</DialogDescription>
           </DialogHeader>
           {mapSrc ? (
             <img

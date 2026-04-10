@@ -3,6 +3,7 @@ import { db } from "../db";
 import {
   users,
   reservations,
+  reservationServices,
   tables,
   notifications,
   notificationMessages,
@@ -10,11 +11,16 @@ import {
   createReservationBodySchema,
   normalizeSocietyReservationMealTypes,
   reservationNotificationLabel,
+  computeReservationServiceLineTotal,
+  reservationServicePriceToDecimalString,
+  reservationServiceDisplayLabel,
+  RESERVATION_SERVICE_SLUG_KITCHEN,
   type JwtSessionUser,
   type Reservation,
+  type ReservationServiceSnapshot,
   type SocietyReservationMealType,
 } from "@shared/schema";
-import { eq, and, or, like, gte, between, ne, count, desc, asc, sql } from "drizzle-orm";
+import { eq, and, or, like, gte, between, ne, count, desc, asc, sql, inArray } from "drizzle-orm";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { translateWithParams, formatDate, translations, getLanguageFromRequest } from "../lib/i18n";
 import { getReservationBlockBySocietyEvents } from "../lib/reservation-society-events";
@@ -26,7 +32,7 @@ import {
 } from "../lib/prepayment-ledger-floor";
 import { canModerateReservations, canViewReservationRegistry } from "@shared/permissions";
 import { queueUserNotificationEmail } from "../lib/mail";
-
+import { ensureDefaultReservationServicesForSociety } from "../lib/reservation-services-defaults";
 // Helper function to get society ID from JWT (no DB query needed)
 const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
@@ -230,6 +236,7 @@ export function registerReservationRoutes(app: Express) {
             useKitchen: reservations.useKitchen,
             table: reservations.table,
             totalAmount: reservations.totalAmount,
+            selectedServices: reservations.selectedServices,
             notes: reservations.notes,
             cancellationReason: reservations.cancellationReason,
             cancelledBy: reservations.cancelledBy,
@@ -427,6 +434,7 @@ export function registerReservationRoutes(app: Express) {
             useKitchen: reservations.useKitchen,
             table: reservations.table,
             totalAmount: reservations.totalAmount,
+            selectedServices: reservations.selectedServices,
             notes: reservations.notes,
             createdAt: reservations.createdAt,
             updatedAt: reservations.updatedAt,
@@ -636,7 +644,7 @@ export function registerReservationRoutes(app: Express) {
           });
         }
 
-        const { startDate, ...rest } = parsed.data;
+        const { startDate, selectedServiceIds, ...rest } = parsed.data;
 
         const societyRow = await db.query.societies.findFirst({
           where: (s, { eq: eqS }) => eqS(s.id, societyId),
@@ -644,6 +652,12 @@ export function registerReservationRoutes(app: Express) {
         if (!societyRow) {
           return res.status(404).json({ message: "Society not found" });
         }
+
+        await ensureDefaultReservationServicesForSociety(
+          db,
+          societyId,
+          societyRow.kitchenPricePerMember
+        );
         const allowedMealIds = new Set(
           normalizeSocietyReservationMealTypes(societyRow.reservationMealTypes).map(m => m.id)
         );
@@ -721,11 +735,65 @@ export function registerReservationRoutes(app: Express) {
         }
 
         const lang = getLanguageFromRequest(req);
+        const uniqueServiceIds = [...new Set(selectedServiceIds ?? [])];
+        let resolvedServices: (typeof reservationServices.$inferSelect)[] = [];
+        if (uniqueServiceIds.length > 0) {
+          resolvedServices = await db
+            .select()
+            .from(reservationServices)
+            .where(
+              and(
+                eq(reservationServices.societyId, societyId),
+                eq(reservationServices.isActive, true),
+                inArray(reservationServices.id, uniqueServiceIds)
+              )
+            );
+          if (resolvedServices.length !== uniqueServiceIds.length) {
+            return res.status(400).json({
+              message: "One or more reservation services are invalid or inactive",
+            });
+          }
+        }
+
+        const reservationFixed =
+          parseFloat(String(societyRow.reservationFixedFee ?? "0")) || 0;
+        const reservationPrice =
+          parseFloat(String(societyRow.reservationPricePerMember ?? "0")) || 0;
+        const baseTotal = reservationFixed + reservationPrice * guests;
+
+        const selectedSnapshots: ReservationServiceSnapshot[] = resolvedServices.map(row => {
+          const fixedStr = reservationServicePriceToDecimalString(row.fixedPrice);
+          const perStr = reservationServicePriceToDecimalString(row.pricePerMember);
+          const lineTotal = computeReservationServiceLineTotal(
+            row.fixedPrice,
+            row.pricePerMember,
+            guests
+          );
+          return {
+            serviceId: row.id,
+            slug: row.slug,
+            label: reservationServiceDisplayLabel(row, lang),
+            fixedPrice: fixedStr,
+            pricePerMember: perStr,
+            lineTotal,
+          };
+        });
+
+        const servicesSum = selectedSnapshots.reduce(
+          (acc, s) => acc + (parseFloat(s.lineTotal || "0") || 0),
+          0
+        );
+        const totalAmountStr = (baseTotal + servicesSum).toFixed(2);
+
+        const useKitchen = selectedSnapshots.some(
+          s => s.slug === RESERVATION_SERVICE_SLUG_KITCHEN
+        );
+
         const societyEventBlock = await getReservationBlockBySocietyEvents(
           societyId,
           {
             startDate,
-            useKitchen: Boolean(rest.useKitchen),
+            useKitchen,
             table: rest.table,
           },
           lang
@@ -734,7 +802,7 @@ export function registerReservationRoutes(app: Express) {
           return res.status(409).json({ message: societyEventBlock.message });
         }
 
-        const resTotalPreview = Math.max(0, parseFloat(String(rest.totalAmount ?? "0")));
+        const resTotalPreview = Math.max(0, parseFloat(totalAmountStr));
         const prepaymentCheck = await assertPrepaymentDebitAllowed(
           societyId,
           user.id,
@@ -750,7 +818,10 @@ export function registerReservationRoutes(app: Express) {
           startDate,
           userId: user.id,
           societyId,
-          status: "confirmed",
+          status: "confirmed" as const,
+          useKitchen,
+          totalAmount: totalAmountStr,
+          selectedServices: selectedSnapshots,
         };
 
         const newReservation = await db.insert(reservations).values(reservationData).returning();
@@ -771,6 +842,7 @@ export function registerReservationRoutes(app: Express) {
             useKitchen: reservations.useKitchen,
             table: reservations.table,
             totalAmount: reservations.totalAmount,
+            selectedServices: reservations.selectedServices,
             notes: reservations.notes,
             createdAt: reservations.createdAt,
             updatedAt: reservations.updatedAt,

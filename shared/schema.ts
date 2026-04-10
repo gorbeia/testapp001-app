@@ -62,16 +62,31 @@ export function societyAllowsCashPayment(raw: unknown): boolean {
 const RESERVATION_MEAL_TYPE_ID_RE = /^[a-z0-9_-]+$/;
 
 /** One reservation meal slot (lunch, dinner, …); `id` is stored on `reservations.type`. */
-export const societyReservationMealTypeEntrySchema = z.object({
-  id: z
-    .string()
-    .trim()
-    .min(1, "id required")
-    .max(64)
-    .regex(RESERVATION_MEAL_TYPE_ID_RE, "id must be lowercase letters, digits, _ or -"),
-  labelEu: z.string().trim().min(1).max(80),
-  labelEs: z.string().trim().min(1).max(80),
-});
+export const societyReservationMealTypeEntrySchema = z
+  .object({
+    id: z
+      .string()
+      .trim()
+      .min(1, "id required")
+      .max(64)
+      .regex(RESERVATION_MEAL_TYPE_ID_RE, "id must be lowercase letters, digits, _ or -"),
+    labelEu: z.string().max(80),
+    labelEs: z.string().max(80),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.labelEu.trim() && !data.labelEs.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one of labelEu or labelEs must be non-empty",
+        path: ["labelEu"],
+      });
+    }
+  })
+  .transform(data => ({
+    ...data,
+    labelEu: data.labelEu.trim(),
+    labelEs: data.labelEs.trim(),
+  }));
 
 export type SocietyReservationMealType = z.infer<typeof societyReservationMealTypeEntrySchema>;
 
@@ -123,8 +138,21 @@ export function getReservationMealTypeLabel(
 ): string {
   const row = types.find(t => t.id === id);
   if (!row) return id;
-  if (language === "es") return row.labelEs;
-  return row.labelEu;
+  const eu = String(row.labelEu ?? "").trim();
+  const es = String(row.labelEs ?? "").trim();
+  if (language === "es") {
+    if (es) return es;
+    if (eu) return eu;
+    return id;
+  }
+  if (language === "en") {
+    if (eu) return eu;
+    if (es) return es;
+    return id;
+  }
+  if (eu) return eu;
+  if (es) return es;
+  return id;
 }
 
 /** Single-line label for lists, calendar, notifications. Legacy `name` wins when non-empty. */
@@ -178,6 +206,11 @@ export const societies = pgTable("societies", {
   phone: text("phone"),
   email: text("email"),
   // Reservation pricing
+  /** Flat fee added once per reservation (before per-guest rate). */
+  reservationFixedFee: decimal("reservation_fixed_fee", {
+    precision: 10,
+    scale: 2,
+  }).default("0.00"),
   reservationPricePerMember: decimal("reservation_price_per_member", {
     precision: 10,
     scale: 2,
@@ -314,6 +347,7 @@ export const insertSocietySchema = createInsertSchema(societies)
     address: true,
     phone: true,
     email: true,
+    reservationFixedFee: true,
     reservationPricePerMember: true,
     kitchenPricePerMember: true,
     sepaMode: true,
@@ -684,6 +718,161 @@ export const stockTakeLines = pgTable("stock_take_lines", {
   notes: text("notes"),
 });
 
+/** Built-in slugs for reservation add-on services (kitchen migrated from legacy column). */
+export const RESERVATION_SERVICE_SLUG_KITCHEN = "kitchen";
+export const RESERVATION_SERVICE_SLUG_CLEANING = "cleaning";
+export const RESERVATION_SERVICE_SLUG_HEATING = "heating";
+
+/** Default EU/ES labels for the built-in kitchen row (server bootstrap and admin UI fallback). */
+export const BUILTIN_RESERVATION_SERVICE_KITCHEN_LABEL_EU = "Sukaldea";
+export const BUILTIN_RESERVATION_SERVICE_KITCHEN_LABEL_ES = "Cocina";
+
+export const BUILTIN_RESERVATION_SERVICE_SLUGS = [
+  RESERVATION_SERVICE_SLUG_KITCHEN,
+  RESERVATION_SERVICE_SLUG_CLEANING,
+  RESERVATION_SERVICE_SLUG_HEATING,
+] as const;
+
+export function isBuiltinReservationServiceSlug(slug: string): boolean {
+  return (BUILTIN_RESERVATION_SERVICE_SLUGS as readonly string[]).includes(slug);
+}
+
+export const reservationServiceSlugSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "Slug must be lowercase letters, numbers, and hyphens");
+
+/** First non-empty trimmed label (EU, then ES) — used to derive `reservation_services.slug`. */
+export function reservationServiceLabelSourceForSlug(labelEu: string, labelEs: string): string {
+  const eu = String(labelEu ?? "").trim();
+  const es = String(labelEs ?? "").trim();
+  return eu || es;
+}
+
+export type ReservationServiceDisplayLanguage = "eu" | "es" | "en";
+
+/** User-visible label: preferred language, then the other, then internal `slug`. */
+export function reservationServiceDisplayLabel(
+  row: { labelEu: string; labelEs: string; slug: string },
+  lang: ReservationServiceDisplayLanguage
+): string {
+  const eu = String(row.labelEu ?? "").trim();
+  const es = String(row.labelEs ?? "").trim();
+  const preferred = lang === "es" ? es : eu;
+  if (preferred) return preferred;
+  const fallback = lang === "es" ? eu : es;
+  if (fallback) return fallback;
+  return row.slug;
+}
+
+/** URL-safe slug from a label string (`reservation_services.slug`). */
+export function slugifyReservationServiceLabel(label: string): string {
+  const trimmed = label.trim();
+  if (!trimmed) return "zerbitzua";
+  const ascii = trimmed
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase();
+  const raw = ascii
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+  const base = raw || "zerbitzua";
+  return base.length > 50 ? base.slice(0, 50) : base;
+}
+
+const RESERVATION_MEAL_TYPE_ID_FALLBACK = "mota";
+
+/**
+ * Derives a unique `id` for `allRows[forIndex]` from EU/ES labels (EU first, then ES),
+ * using the same slug rules as reservation services. Collisions in the list get `-2`, `-3`, …
+ */
+export function allocateUniqueReservationMealTypeId(
+  allRows: SocietyReservationMealType[],
+  forIndex: number,
+  labelEu: string,
+  labelEs: string
+): string {
+  const source = reservationServiceLabelSourceForSlug(labelEu, labelEs);
+  const baseRaw = source
+    ? slugifyReservationServiceLabel(source)
+    : RESERVATION_MEAL_TYPE_ID_FALLBACK;
+  const base = baseRaw.length > 64 ? baseRaw.slice(0, 64) : baseRaw;
+  const taken = new Set(
+    allRows
+      .map((r, i) => (i === forIndex ? "" : String(r.id ?? "").trim()))
+      .filter(Boolean)
+  );
+  let candidate = base;
+  let counter = 2;
+  while (taken.has(candidate)) {
+    const suffix = `-${counter++}`;
+    candidate = (base.slice(0, Math.max(1, 64 - suffix.length)) + suffix).slice(0, 64);
+  }
+  return candidate;
+}
+
+export const reservationServiceSnapshotSchema = z.object({
+  serviceId: z.string(),
+  slug: z.string(),
+  label: z.string(),
+  fixedPrice: z.string(),
+  pricePerMember: z.string(),
+  lineTotal: z.string(),
+});
+export type ReservationServiceSnapshot = z.infer<typeof reservationServiceSnapshotSchema>;
+
+/** Line charge for one service: fixed + perMember × guests (2 decimal string). */
+export function computeReservationServiceLineTotal(
+  fixedPrice: string | number | null | undefined,
+  pricePerMember: string | number | null | undefined,
+  guests: number
+): string {
+  const fixed =
+    typeof fixedPrice === "number" ? fixedPrice : parseFloat(String(fixedPrice ?? "0")) || 0;
+  const per =
+    typeof pricePerMember === "number"
+      ? pricePerMember
+      : parseFloat(String(pricePerMember ?? "0")) || 0;
+  const g = Number.isFinite(guests) && guests > 0 ? guests : 0;
+  return (fixed + per * g).toFixed(2);
+}
+
+export function reservationServicePriceToDecimalString(
+  value: string | number | null | undefined
+): string {
+  if (value === null || value === undefined || value === "") return "0.00";
+  const n = typeof value === "number" ? value : parseFloat(String(value));
+  if (Number.isNaN(n)) return "0.00";
+  return n.toFixed(2);
+}
+
+/** Optional add-on services per society (cleaning, heating, kitchen, etc.). */
+export const reservationServices = pgTable(
+  "reservation_services",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    societyId: varchar("society_id")
+      .notNull()
+      .references(() => societies.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    labelEu: text("label_eu").notNull(),
+    labelEs: text("label_es").notNull(),
+    fixedPrice: decimal("fixed_price", { precision: 10, scale: 2 }).notNull().default("0"),
+    pricePerMember: decimal("price_per_member", { precision: 10, scale: 2 }).notNull().default("0"),
+    isActive: boolean("is_active").notNull().default(true),
+    /** When true, checkbox is pre-selected in the reservation dialog. */
+    isDefault: boolean("is_default").notNull().default(false),
+    sortOrder: integer("sort_order").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  t => [unique("reservation_services_society_slug_unique").on(t.societyId, t.slug)]
+);
+
 // Reservations (events, bookings, etc.)
 export const reservations = pgTable("reservations", {
   id: varchar("id")
@@ -701,6 +890,11 @@ export const reservations = pgTable("reservations", {
   useKitchen: boolean("use_kitchen").default(false),
   table: text("table").notNull(), // Table name (e.g., "Mahaia 1", "Mahaia 2", etc.)
   totalAmount: text("total_amount").notNull().default("0"), // Using text for decimal precision
+  /** Snapshot of selected add-on services and prices at booking time. */
+  selectedServices: jsonb("selected_services")
+    .$type<ReservationServiceSnapshot[]>()
+    .notNull()
+    .default(sql`'[]'::jsonb`),
   notes: text("notes"),
   cancellationReason: text("cancellation_reason"), // Reason for cancellation
   cancelledBy: varchar("cancelled_by").references(() => users.id), // User who cancelled the reservation
@@ -836,8 +1030,108 @@ export const insertReservationSchema = createInsertSchema(reservations).pick({
   useKitchen: true,
   table: true,
   totalAmount: true,
+  selectedServices: true,
   notes: true,
 });
+
+export type ReservationService = typeof reservationServices.$inferSelect;
+
+export const insertReservationServiceSchema = createInsertSchema(reservationServices).pick({
+  societyId: true,
+  slug: true,
+  labelEu: true,
+  labelEs: true,
+  fixedPrice: true,
+  pricePerMember: true,
+  isActive: true,
+  isDefault: true,
+  sortOrder: true,
+});
+
+export const createReservationServiceBodySchema = insertReservationServiceSchema
+  .omit({ societyId: true, slug: true })
+  .extend({
+    labelEu: z.string().max(200),
+    labelEs: z.string().max(200),
+    fixedPrice: z.union([z.string(), z.number()]).optional(),
+    pricePerMember: z.union([z.string(), z.number()]).optional(),
+    isActive: z.boolean().optional(),
+    isDefault: z.boolean().optional(),
+    sortOrder: z.coerce.number().int().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!reservationServiceLabelSourceForSlug(data.labelEu, data.labelEs)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one of labelEu or labelEs must be non-empty",
+        path: ["labelEu"],
+      });
+    }
+    const fixed =
+      data.fixedPrice === undefined
+        ? 0
+        : typeof data.fixedPrice === "number"
+          ? data.fixedPrice
+          : parseFloat(String(data.fixedPrice));
+    const per =
+      data.pricePerMember === undefined
+        ? 0
+        : typeof data.pricePerMember === "number"
+          ? data.pricePerMember
+          : parseFloat(String(data.pricePerMember));
+    if (
+      Number.isNaN(fixed) ||
+      Number.isNaN(per) ||
+      fixed < 0 ||
+      per < 0 ||
+      (fixed === 0 && per === 0)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "At least one of fixedPrice or pricePerMember must be positive",
+        path: ["fixedPrice"],
+      });
+    }
+  });
+
+export const updateReservationServiceBodySchema = z
+  .object({
+    labelEu: z.string().max(200).optional(),
+    labelEs: z.string().max(200).optional(),
+    fixedPrice: z.union([z.string(), z.number()]).optional(),
+    pricePerMember: z.union([z.string(), z.number()]).optional(),
+    isActive: z.boolean().optional(),
+    isDefault: z.boolean().optional(),
+    sortOrder: z.coerce.number().int().optional(),
+  })
+  .refine(data => Object.values(data).some(v => v !== undefined), {
+    message: "At least one field is required",
+  })
+  .superRefine((data, ctx) => {
+    if (data.fixedPrice === undefined && data.pricePerMember === undefined) return;
+    const fixed =
+      data.fixedPrice === undefined
+        ? undefined
+        : typeof data.fixedPrice === "number"
+          ? data.fixedPrice
+          : parseFloat(String(data.fixedPrice));
+    const per =
+      data.pricePerMember === undefined
+        ? undefined
+        : typeof data.pricePerMember === "number"
+          ? data.pricePerMember
+          : parseFloat(String(data.pricePerMember));
+    if (fixed !== undefined && (Number.isNaN(fixed) || fixed < 0)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid fixedPrice", path: ["fixedPrice"] });
+    }
+    if (per !== undefined && (Number.isNaN(per) || per < 0)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Invalid pricePerMember",
+        path: ["pricePerMember"],
+      });
+    }
+  });
 
 // Superadmins table for backoffice multisociety admin access
 export const superadmins = pgTable("superadmins", {
@@ -1516,7 +1810,7 @@ export const subscriptionTypeUpdateBodySchema = subscriptionTypeFieldsSchema
   });
 
 export const createReservationBodySchema = insertReservationSchema
-  .omit({ userId: true, societyId: true })
+  .omit({ userId: true, societyId: true, useKitchen: true, totalAmount: true, selectedServices: true })
   .extend({
     startDate: z.coerce.date(),
     /** Optional; UI no longer collects it — stored empty when omitted. */
@@ -1526,6 +1820,8 @@ export const createReservationBodySchema = insertReservationSchema
       .transform(s => (s == null ? "" : String(s).trim())),
     type: z.string().min(1),
     table: z.string().min(1),
+    /** Add-on service row IDs; server resolves prices and sets totalAmount, selectedServices, useKitchen. */
+    selectedServiceIds: z.array(z.string().min(1)).optional().default([]),
   });
 
 export const cancelReservationBodySchema = z.object({
@@ -1607,6 +1903,7 @@ export const updateSocietySettingsBodySchema = insertSocietySchema
     address: true,
     phone: true,
     email: true,
+    reservationFixedFee: true,
     reservationPricePerMember: true,
     kitchenPricePerMember: true,
     sepaMode: true,
@@ -1675,6 +1972,7 @@ export const backofficeCreateSocietyBodySchema = z.object({
   address: z.string().nullish(),
   phone: z.string().nullish(),
   email: z.string().nullish(),
+  reservationFixedFee: z.union([z.string(), z.number()]).nullish(),
   reservationPricePerMember: z.union([z.string(), z.number()]).nullish(),
   kitchenPricePerMember: z.union([z.string(), z.number()]).nullish(),
   sepaMode: sepaModeSchema.nullish(),

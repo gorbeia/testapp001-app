@@ -218,7 +218,7 @@ When("I enable kitchen equipment", async function () {
   // Wait for dialog to be fully rendered
   await page.waitForTimeout(500);
 
-  await page.check('[data-testid="checkbox-kitchen"]');
+  await page.check('[data-testid="checkbox-reservation-service-kitchen"]');
 });
 
 When("I keep kitchen equipment disabled", async function () {
@@ -229,7 +229,7 @@ When("I keep kitchen equipment disabled", async function () {
   await page.waitForTimeout(500);
 
   // Ensure checkbox is unchecked
-  await page.uncheck('[data-testid="checkbox-kitchen"]');
+  await page.uncheck('[data-testid="checkbox-reservation-service-kitchen"]');
 });
 
 Then("I should see the correct cost calculation", async function () {
@@ -373,7 +373,7 @@ When("I disable kitchen equipment", async function () {
   // Wait for dialog to be fully rendered
   await page.waitForTimeout(500);
 
-  await page.uncheck('[data-testid="checkbox-kitchen"]');
+  await page.uncheck('[data-testid="checkbox-reservation-service-kitchen"]');
 });
 
 Then("I should see the cost without kitchen", async function () {

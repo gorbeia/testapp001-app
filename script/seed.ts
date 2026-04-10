@@ -9,6 +9,7 @@ import { seedProducts } from "./seed-products";
 import { seedImages } from "./seed-images";
 import { seedConsumptions } from "./seed-consumptions";
 import { seedTables } from "./seed-tables";
+import { seedReservationServices } from "./seed-reservation-services";
 import { seedReservations } from "./seed-reservations";
 import { seedNotes } from "./seed-notes";
 import { seedNotifications } from "./seed-notifications";
@@ -25,6 +26,7 @@ async function runAllSeeds() {
   await seedImages(db);
   await seedConsumptions(db);
   await seedTables(db);
+  await seedReservationServices(db);
   await seedReservations(db);
   await seedNotes(db);
   await seedNotifications(db);

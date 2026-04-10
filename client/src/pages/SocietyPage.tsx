@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Building2, Save, DollarSign, UtensilsCrossed } from "lucide-react";
+import { Building2, CreditCard, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,12 +13,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { SepaMode, SocietyPaymentMethod, SocietyReservationMealType } from "@shared/schema";
-import {
-  normalizeSocietyPaymentMethods,
-  normalizeSocietyReservationMealTypes,
-  societyReservationMealTypesSchema,
-} from "@shared/schema";
+import type { SepaMode, SocietyPaymentMethod, Society } from "@shared/schema";
+import { normalizeSocietyPaymentMethods } from "@shared/schema";
 import { deriveSocietyAcronym } from "@shared/society-acronym";
 import { Permission } from "@shared/permissions";
 import { useAuth, userCan } from "@/lib/auth";
@@ -32,29 +28,6 @@ import { thumbFilenameFromImageUrl } from "@/lib/image-urls";
 
 const SEPA_CADENCE_MODES = ["monthly", "bimonthly", "quarterly", "on_demand"] as const;
 type SepaCadenceMode = (typeof SEPA_CADENCE_MODES)[number];
-
-interface Society {
-  id: string;
-  name: string;
-  shortDescription?: string | null;
-  acronym?: string | null;
-  logoUrl?: string | null;
-  mapImageUrl?: string | null;
-  iban: string;
-  creditorId: string;
-  address: string;
-  phone: string;
-  email: string;
-  reservationPricePerMember: string;
-  kitchenPricePerMember: string;
-  sepaMode?: SepaMode | string;
-  paymentMethods?: SocietyPaymentMethod[] | null;
-  prepaymentMinLedgerBalance?: string | null;
-  reservationMealTypes?: SocietyReservationMealType[];
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
 
 const ACRONYM_LETTERS_RE = /^[A-Za-z\xC0-\xFF\u0100-\u017F\u0180-\u024F]+$/;
 const ACRONYM_INPUT_FILTER = /[^A-Za-z\xC0-\xFF\u0100-\u017F\u0180-\u024F]/g;
@@ -74,7 +47,6 @@ function societyFromApiPayload(data: Society): Society {
     ...data,
     acronym,
     shortDescription: data.shortDescription ?? "",
-    reservationMealTypes: normalizeSocietyReservationMealTypes(data.reservationMealTypes),
   };
 }
 
@@ -97,7 +69,6 @@ export function SocietyPage() {
   const [isLoading, setIsLoading] = useState(true);
   const lastSepaCadenceRef = useRef<SepaCadenceMode>("monthly");
   const acronymCustomizedRef = useRef(false);
-
   // Load current society from API
   useEffect(() => {
     const fetchSociety = async () => {
@@ -176,25 +147,6 @@ export function SocietyPage() {
       return;
     }
 
-    const mealsDraft = society.reservationMealTypes ?? [];
-    if (mealsDraft.length < 1) {
-      toast({
-        title: t("error"),
-        description: t("reservationMealTypesNeedOne"),
-        variant: "destructive",
-      });
-      return;
-    }
-    const parsedMeals = societyReservationMealTypesSchema.safeParse(mealsDraft);
-    if (!parsedMeals.success) {
-      toast({
-        title: t("error"),
-        description: t("reservationMealTypesInvalid"),
-        variant: "destructive",
-      });
-      return;
-    }
-
     try {
       const token = localStorage.getItem("auth:token");
       const sd = society.shortDescription?.trim() ?? "";
@@ -207,8 +159,6 @@ export function SocietyPage() {
         address: society.address,
         phone: society.phone,
         email: society.email,
-        reservationPricePerMember: society.reservationPricePerMember,
-        kitchenPricePerMember: society.kitchenPricePerMember,
         sepaMode: society.sepaMode ?? "monthly",
         paymentMethods: normalizeSocietyPaymentMethods(society.paymentMethods),
         prepaymentMinLedgerBalance:
@@ -217,7 +167,6 @@ export function SocietyPage() {
           String(society.prepaymentMinLedgerBalance).trim() === ""
             ? null
             : String(society.prepaymentMinLedgerBalance),
-        reservationMealTypes: parsedMeals.data,
       };
 
       const response = await fetch(`/api/societies/${society.id}`, {
@@ -267,7 +216,6 @@ export function SocietyPage() {
   }
 
   const paymentMethods = normalizeSocietyPaymentMethods(society.paymentMethods);
-  const reservationMealTypesRows = society.reservationMealTypes ?? [];
   const canManageSocietyImages = userCan(user, Permission.SOCIETY_MANAGE);
   const prepaymentEnabled = paymentMethods.includes("bank_transfer_prepayment");
   const sepaEnabled = (society.sepaMode ?? "monthly") !== "disabled";
@@ -279,13 +227,13 @@ export function SocietyPage() {
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
-      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-6xl mx-auto w-full">
         <div>
           <h2 className="text-2xl font-bold">{t("society")}</h2>
-          <p className="text-muted-foreground">{t("societyDataAndSepaConfig")}</p>
+          <p className="text-muted-foreground">{t("societyPageSubtitleContact")}</p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -374,7 +322,7 @@ export function SocietyPage() {
               <div className="space-y-2">
                 <Label>{t("address")}</Label>
                 <Input
-                  value={society.address}
+                  value={society.address ?? ""}
                   onChange={e => setSociety({ ...society, address: e.target.value })}
                   data-testid="input-society-address"
                 />
@@ -383,7 +331,7 @@ export function SocietyPage() {
                 <div className="space-y-2">
                   <Label>{t("phone")}</Label>
                   <Input
-                    value={society.phone}
+                    value={society.phone ?? ""}
                     onChange={e => setSociety({ ...society, phone: e.target.value })}
                     data-testid="input-society-phone"
                   />
@@ -392,7 +340,7 @@ export function SocietyPage() {
                   <Label>{t("email")}</Label>
                   <Input
                     type="email"
-                    value={society.email}
+                    value={society.email ?? ""}
                     onChange={e => setSociety({ ...society, email: e.target.value })}
                     data-testid="input-society-email"
                   />
@@ -404,7 +352,7 @@ export function SocietyPage() {
           <Card data-testid="card-payment-methods">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Building2 className="h-5 w-5" />
+                <CreditCard className="h-5 w-5" />
                 {t("societyPaymentMethodsCardTitle")}
               </CardTitle>
               <CardDescription>{t("societyPaymentMethodsCardDescription")}</CardDescription>
@@ -462,7 +410,7 @@ export function SocietyPage() {
                     <div className="space-y-2">
                       <Label>{t("societyIban")}</Label>
                       <Input
-                        value={society.iban}
+                        value={society.iban ?? ""}
                         onChange={e => setSociety({ ...society, iban: e.target.value })}
                         placeholder="ES00 0000 0000 0000 0000 0000"
                         data-testid="input-society-iban"
@@ -474,7 +422,7 @@ export function SocietyPage() {
                     <div className="space-y-2">
                       <Label>{t("creditorId")}</Label>
                       <Input
-                        value={society.creditorId}
+                        value={society.creditorId ?? ""}
                         onChange={e => setSociety({ ...society, creditorId: e.target.value })}
                         placeholder="ES00000X00000000"
                         data-testid="input-creditor-id"
@@ -578,168 +526,6 @@ export function SocietyPage() {
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                {t("reservationPricing")}
-              </CardTitle>
-              <CardDescription>{t("setReservationPrices")}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>{t("reservationPricePerMember")}</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={society.reservationPricePerMember}
-                    onChange={e =>
-                      setSociety({ ...society, reservationPricePerMember: e.target.value })
-                    }
-                    data-testid="input-reservation-price-per-member"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>{t("kitchenPricePerMember")}</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={society.kitchenPricePerMember}
-                    onChange={e =>
-                      setSociety({ ...society, kitchenPricePerMember: e.target.value })
-                    }
-                    data-testid="input-kitchen-price-per-member"
-                  />
-                </div>
-              </div>
-              {canManageSocietyImages ? (
-                <div className="space-y-2 pt-4 border-t">
-                  <ImageUpload
-                    societyId={society.id}
-                    entity="society-map"
-                    entityId={society.id}
-                    label={t("societyMapLabel")}
-                    description={t("societyMapHint")}
-                    currentFilename={society.mapImageUrl}
-                    thumbFilename={thumbFilenameFromImageUrl(society.mapImageUrl)}
-                    disabled={!user}
-                    onUploaded={filename => {
-                      setSociety({ ...society, mapImageUrl: filename });
-                      window.dispatchEvent(new Event(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT));
-                    }}
-                    onRemoved={() => {
-                      setSociety({ ...society, mapImageUrl: null });
-                      window.dispatchEvent(new Event(ELKARTE_SOCIETY_PROFILE_UPDATED_EVENT));
-                    }}
-                  />
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-
-          <Card className="lg:col-span-2 xl:col-span-3">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <UtensilsCrossed className="h-5 w-5" />
-                {t("reservationMealTypesTitle")}
-              </CardTitle>
-              <CardDescription>{t("reservationMealTypesDescription")}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="space-y-2 rounded-md border divide-y">
-                <div className="grid grid-cols-12 gap-2 p-2 text-xs font-medium text-muted-foreground bg-muted/40">
-                  <div className="col-span-3">{t("reservationMealTypeId")}</div>
-                  <div className="col-span-4">{t("reservationMealTypeLabelEu")}</div>
-                  <div className="col-span-4">{t("reservationMealTypeLabelEs")}</div>
-                  <div className="col-span-1 text-right" />
-                </div>
-                {reservationMealTypesRows.map((row, index) => (
-                  <div
-                    key={`meal-${index}-${row.id}`}
-                    className="grid grid-cols-12 gap-2 p-2 items-center"
-                  >
-                    <div className="col-span-3">
-                      <Input
-                        className="h-9 font-mono text-sm"
-                        value={row.id}
-                        onChange={e => {
-                          const next = [...reservationMealTypesRows];
-                          next[index] = { ...next[index], id: e.target.value };
-                          setSociety({ ...society, reservationMealTypes: next });
-                        }}
-                        data-testid={`input-reservation-meal-id-${index}`}
-                        spellCheck={false}
-                      />
-                    </div>
-                    <div className="col-span-4">
-                      <Input
-                        className="h-9"
-                        value={row.labelEu}
-                        onChange={e => {
-                          const next = [...reservationMealTypesRows];
-                          next[index] = { ...next[index], labelEu: e.target.value };
-                          setSociety({ ...society, reservationMealTypes: next });
-                        }}
-                        data-testid={`input-reservation-meal-labeu-${index}`}
-                      />
-                    </div>
-                    <div className="col-span-4">
-                      <Input
-                        className="h-9"
-                        value={row.labelEs}
-                        onChange={e => {
-                          const next = [...reservationMealTypesRows];
-                          next[index] = { ...next[index], labelEs: e.target.value };
-                          setSociety({ ...society, reservationMealTypes: next });
-                        }}
-                        data-testid={`input-reservation-meal-labes-${index}`}
-                      />
-                    </div>
-                    <div className="col-span-1 flex justify-end">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-destructive hover:text-destructive"
-                        disabled={reservationMealTypesRows.length <= 1}
-                        onClick={() => {
-                          if (reservationMealTypesRows.length <= 1) return;
-                          setSociety({
-                            ...society,
-                            reservationMealTypes: reservationMealTypesRows.filter(
-                              (_, i) => i !== index
-                            ),
-                          });
-                        }}
-                        data-testid={`button-remove-reservation-meal-${index}`}
-                      >
-                        {t("reservationMealTypeRemove")}
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setSociety({
-                    ...society,
-                    reservationMealTypes: [
-                      ...reservationMealTypesRows,
-                      { id: "", labelEu: "", labelEs: "" },
-                    ],
-                  })
-                }
-                data-testid="button-add-reservation-meal"
-              >
-                {t("reservationMealTypeAdd")}
-              </Button>
             </CardContent>
           </Card>
         </div>

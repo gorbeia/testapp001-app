@@ -35,7 +35,8 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 
 | Story area                    | Unit | Integration                                                                                                                | E2E                                             |
 | ----------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| CRUD / list                   | —    | `reservations.feature`                                                                                                     | `reservation-management.feature`                |
+| CRUD / list                   | —    | `reservations.feature` (bodies use **`selectedServiceIds`**)                                                                 | `reservation-management.feature`                |
+| Add-on services (API)         | —    | `society-calendar.feature` (kitchen via demo kitchen service id), `reservation-services.helpers.ts`                         | —                                               |
 | Partial table capacity (API)  | —    | `reservations.feature` (`@partial-mahaia5`)                                                                                | —                                               |
 | Configurable meal types (API) | —    | `reservations.feature` (`@reservation-meal-types-restricted`), `societies.feature` (`@society-reservation-meal-types-put`) | —                                               |
 | Prepayment ledger floor (API) | —    | `reservations.feature` (`@prepayment-ledger-floor`)                                                                        | —                                               |

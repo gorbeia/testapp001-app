@@ -55,8 +55,8 @@ Status legend:
 
 ## 3. Reservations (Erreserbak) (`reservations.md`)
 
-1. **Create Reservation** – date/time, meal type, table, guests, kitchen flag, cost
-   - **Status**: ✅ Implemented (`POST /api/reservations`; **`type`** must match a **`id`** in **`societies.reservation_meal_types`**; defaults preserve legacy ids `bazkaria`, `afaria`, `askaria`, `hamaiketakako`; **optional `name`** (empty when omitted); **exclusive vs partial table** capacity rules; **`GET /api/tables/available?startDate=&type=`** returns occupancy hints; create dialog **map** link when **`mapImageUrl`** set; **prepayment ledger floor** enforced when society has optional minimum balance + prepayment method — see §5b.10 / `prepayment-ledger-floor.md`)
+1. **Create Reservation** – date/time, meal type, table, guests, optional add-on services, server-computed cost
+   - **Status**: ✅ Implemented (`POST /api/reservations` with **`selectedServiceIds`**; **`totalAmount`** + **`selectedServices`** snapshots computed server-side; **`useKitchen`** derived from **kitchen** service; **`type`** must match **`societies.reservation_meal_types`**; **exclusive vs partial table** rules; **`GET /api/tables/available`**; **map** link when **`mapImageUrl`** set; **prepayment ledger floor** — see §5b.10 / `prepayment-ledger-floor.md`)
 2. **View My Reservations** – list & filters
    - **Status**: ✅ Implemented (`/nire-erreserbak`, `GET /api/reservations/user`)
 3. **Society reservation list** – upcoming/filter for all members
@@ -65,17 +65,19 @@ Status legend:
    - **Status**: 🟡 Partial (`/admin-erreserbak`: list/cancel/detail; no in-place edit; administratzailea-only UI; API treats diruzaina as admin for some list queries)
 5. **Resource configuration (tables)** – capacity & availability metadata
    - **Status**: ✅ Implemented (`/mahaiak`, `tables` CRUD, tenant-scoped; **`allowsPartialReservation`** for shared-capacity tables)
-6. **Per-society reservation pricing** – guest & kitchen rates
-   - **Status**: ✅ Implemented (fields on `societies`, editable via `/elkartea` where allowed)
-7. **Cost calculation** – guest × rates + optional kitchen
-   - **Status**: 🟡 Partial (client-computed `totalAmount`; stored as sent; no server-side recomputation)
+6. **Per-society reservation pricing** – guest base rate + add-on services (kitchen, cleaning, heating, custom)
+   - **Status**: ✅ Implemented (`societies.reservationFixedFee` + **`reservationPricePerMember`** on **`/erreserba-ezarpenak`**; **`reservation_services`** + APIs; built-in **kitchen** (default-on) / **cleaning** / **heating** (“Berogailua”) per society)
+7. **Cost calculation** – base + selected services (fixed and/or per guest)
+   - **Status**: ✅ Implemented (server **`totalAmount`** on **`POST /api/reservations`**; **`selectedServices`** snapshots; detail UIs use snapshots)
 8. **Cost integration with credits (Zorrak)** – monthly debt rows
    - **Status**: ✅ Implemented (`DebtCalculationService` / cron aggregates reservations whose **`startDate` has passed** (in-month) + consumptions into `credits`; ledger **`reservation`** charge deferred until after **`startDate`**, not at booking)
 9. **Society calendar (Egutegia)** – closures, parties, assemblies; optional hard blocks on reservations
    - **Status**: ✅ Implemented ([`society-calendar.md`](./society-calendar.md): `/egutegia`; `society_events` table; `GET/POST/PUT/DELETE /api/society-events`; **`Permission.CALENDAR_MANAGE`** for mutations — admin + diruzaina; **`POST /api/reservations`** overlap checks with localized **409**; member calendar month reservations via **`GET /api/reservations?forCalendar=true&month=YYYY-MM`** max **`limit` 500**; warnings in **`ReservationDialog`**)
 10. **Configurable reservation meal types** – per-society ids + EU/ES labels
 
-- **Status**: ✅ Implemented (`societies.reservation_meal_types`; editor on **`/elkartea`**; reservation UIs read from **`GET /api/societies/user`**; integration: **`@reservation-meal-types-restricted`** on **`reservations.feature`**, meal types PUT on **`societies.feature`**)
+- **Status**: ✅ Implemented (`societies.reservation_meal_types`; editor on **`/erreserba-ezarpenak`**; reservation UIs read from **`GET /api/societies/user`**; integration: **`@reservation-meal-types-restricted`** on **`reservations.feature`**, meal types PUT on **`societies.feature`**)
+11. **Reservation add-on services** – configurable services, checkboxes at booking, price snapshots
+   - **Status**: ✅ Implemented (`reservation_services`, **`selectedServices`** on **`reservations`**; **`/api/reservation-services`**; seed **`script/seed-reservation-services.ts`** in **`pnpm db:seed`** pipeline)
 
 ---
 

@@ -118,6 +118,7 @@ import { registerStockReceiptRoutes } from "./stock-receipts";
 import { registerStockTakeRoutes } from "./stock-takes";
 import { registerConsumptionRoutes } from "./consumptions";
 import { registerReservationRoutes } from "./reservations";
+import { registerReservationServiceRoutes } from "./reservation-services";
 import { registerSocietyEventRoutes } from "./society-events";
 import { registerSepaRoutes } from "./sepa";
 import { registerDebtRoutes } from "./debts";
@@ -178,6 +179,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // Register reservation routes
   registerReservationRoutes(app);
+  registerReservationServiceRoutes(app);
   registerSocietyEventRoutes(app);
 
   // Register SEPA routes

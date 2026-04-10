@@ -8,6 +8,7 @@ import {
   type SepaMode,
   type SocietyPaymentMethod,
 } from "@shared/schema";
+import { ensureDefaultReservationServicesForSociety } from "./reservation-services-defaults";
 
 /**
  * Base slug for `societies.alphabetic_id` from display name (same rules as backoffice create).
@@ -82,12 +83,17 @@ export function buildBackofficeProvisionSocietyInsertValues(input: {
   address: string | null;
   phone: string | null;
   email: string | null;
+  reservationFixedFee?: string | null;
   reservationPricePerMember: string;
   kitchenPricePerMember: string;
   sepaMode: SepaMode;
   paymentMethods?: SocietyPaymentMethod[] | null;
   isActive: boolean;
 }) {
+  const reservationFixedFee =
+    input.reservationFixedFee != null && String(input.reservationFixedFee).trim() !== ""
+      ? String(input.reservationFixedFee)
+      : "0.00";
   return {
     name: input.name,
     shortDescription: input.shortDescription,
@@ -98,6 +104,7 @@ export function buildBackofficeProvisionSocietyInsertValues(input: {
     address: input.address,
     phone: input.phone,
     email: input.email,
+    reservationFixedFee,
     reservationPricePerMember: input.reservationPricePerMember,
     kitchenPricePerMember: input.kitchenPricePerMember,
     sepaMode: input.sepaMode,
@@ -122,9 +129,12 @@ const BOOTSTRAP_CATEGORY = {
 } as const;
 
 /**
- * Tier 2: one product category (eu/es), one flexible reservation table — inside the same transaction as society creation.
+ * Tier 2: one product category (eu/es), one flexible reservation table, default reservation services — inside the same transaction as society creation.
  */
-export async function insertTenantBootstrap(db: AppDatabase, societyId: string): Promise<void> {
+export async function insertTenantBootstrap(
+  db: AppDatabase,
+  societyId: string,
+  kitchenPricePerMember?: string | null): Promise<void> {
   const [cat] = await db
     .insert(productCategories)
     .values({
@@ -153,4 +163,6 @@ export async function insertTenantBootstrap(db: AppDatabase, societyId: string):
     description: null,
     isActive: true,
   });
+
+  await ensureDefaultReservationServicesForSociety(db, societyId, kitchenPricePerMember ?? null);
 }

@@ -10,6 +10,7 @@ import { eq } from "drizzle-orm";
 import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
 import { hasPermission, Permission } from "@shared/permissions";
 import { computeSocietySetupChecklist } from "../lib/society-setup-checklist";
+import { ensureDefaultReservationServicesForSociety } from "../lib/reservation-services-defaults";
 
 const canManageOwnSocietySettings = (user: JwtSessionUser): boolean =>
   hasPermission(user.accessRole, Permission.SOCIETY_MANAGE);
@@ -147,6 +148,11 @@ export function registerSocietyRoutes(app: Express) {
         }
 
         const [newSociety] = await db.insert(societies).values(societyData).returning();
+        await ensureDefaultReservationServicesForSociety(
+          db,
+          newSociety.id,
+          newSociety.kitchenPricePerMember
+        );
         res.status(201).json(newSociety);
       } catch (error) {
         next(error);

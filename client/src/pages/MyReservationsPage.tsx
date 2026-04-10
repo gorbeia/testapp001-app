@@ -231,33 +231,50 @@ export function MyReservationsPage() {
     return new Date(reservation.startDate) > new Date();
   };
 
-  // Calculate cost breakdown for a reservation
+  // Calculate cost breakdown for a reservation (uses stored service snapshots when present)
   const calculateCostBreakdown = (reservation: Reservation) => {
     if (!society) {
       return {
+        reservationFixedFee: 0,
         reservationCost: 0,
-        kitchenCost: 0,
+        serviceLines: [] as { label: string; amount: number }[],
         totalCost: 0,
         pricePerPerson: 0,
         guests: reservation.guests || 0,
+        reservationPricePerMember: 0,
       };
     }
 
     const guests = reservation.guests || 0;
+    const reservationFixed = parseFloat(String(society.reservationFixedFee ?? "0")) || 0;
     const reservationPrice = parseFloat(society.reservationPricePerMember ?? "") || 2;
-    const kitchenPrice = parseFloat(society.kitchenPricePerMember ?? "") || 3;
 
-    const reservationCost = guests * reservationPrice;
-    const kitchenCost = reservation.useKitchen ? guests * kitchenPrice : 0;
-    const totalCost = reservationCost + kitchenCost;
+    const reservationCost = reservationFixed + guests * reservationPrice;
+
+    const snaps = reservation.selectedServices;
+    let serviceLines: { label: string; amount: number }[] = [];
+    if (Array.isArray(snaps) && snaps.length > 0) {
+      serviceLines = snaps.map(s => ({
+        label: s.label,
+        amount: parseFloat(s.lineTotal || "0") || 0,
+      }));
+    } else if (reservation.useKitchen) {
+      const kitchenPrice = parseFloat(society.kitchenPricePerMember ?? "") || 3;
+      serviceLines = [{ label: t("kitchenEquipment"), amount: guests * kitchenPrice }];
+    }
+
+    const servicesSum = serviceLines.reduce((a, l) => a + l.amount, 0);
+    const totalCost = reservationCost + servicesSum;
     const pricePerPerson = guests > 0 ? totalCost / guests : 0;
 
     return {
+      reservationFixedFee: reservationFixed,
       reservationCost,
-      kitchenCost,
+      serviceLines,
       totalCost,
       pricePerPerson,
       guests,
+      reservationPricePerMember: reservationPrice,
     };
   };
 
@@ -274,6 +291,10 @@ export function MyReservationsPage() {
   if (error) {
     return <AccessDeniedOrError error={error} />;
   }
+
+  const reservationDetailBreakdown = selectedReservation
+    ? calculateCostBreakdown(selectedReservation)
+    : null;
 
   return (
     <ErrorBoundary FallbackComponent={ErrorFallback}>
@@ -427,7 +448,7 @@ export function MyReservationsPage() {
             <DialogHeader>
               <DialogTitle>{t("reservationDetails")}</DialogTitle>
             </DialogHeader>
-            {selectedReservation && (
+            {selectedReservation && reservationDetailBreakdown && (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -458,9 +479,13 @@ export function MyReservationsPage() {
                     <p className="text-sm font-medium">{t("guests")}</p>
                     <p>{selectedReservation.guests}</p>
                   </div>
-                  <div>
-                    <p className="text-sm font-medium">{t("useKitchen")}</p>
-                    <p>{selectedReservation.useKitchen ? t("yes") : t("no")}</p>
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium">{t("reservationOptionalServices")}</p>
+                    <p className="text-sm">
+                      {reservationDetailBreakdown.serviceLines.length > 0
+                        ? reservationDetailBreakdown.serviceLines.map(l => l.label).join(", ")
+                        : t("none")}
+                    </p>
                   </div>
                 </div>
                 <div>
@@ -484,46 +509,55 @@ export function MyReservationsPage() {
                         <span className="text-sm">{t("guests")}</span>
                       </div>
                       <span className="font-medium">
-                        {calculateCostBreakdown(selectedReservation).guests} {t("persons")}
+                        {reservationDetailBreakdown.guests} {t("persons")}
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">
-                        {t("reservationCost")} ({society?.reservationPricePerMember || 2}€/
-                        {t("person")})
-                      </span>
-                      <span className="font-medium">
-                        {calculateCostBreakdown(selectedReservation).reservationCost.toFixed(2)}€
-                      </span>
-                    </div>
-
-                    {selectedReservation.useKitchen && (
+                    {reservationDetailBreakdown.reservationFixedFee > 0 ? (
                       <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <ChefHat className="h-4 w-4 text-orange-600" />
-                          <span className="text-sm">
-                            {t("kitchenCost")} ({society?.kitchenPricePerMember || 3}€/{t("person")}
-                            )
-                          </span>
-                        </div>
+                        <span className="text-sm">{t("reservationFixedFee")}</span>
                         <span className="font-medium">
-                          {calculateCostBreakdown(selectedReservation).kitchenCost.toFixed(2)}€
+                          {reservationDetailBreakdown.reservationFixedFee.toFixed(2)}€
                         </span>
                       </div>
-                    )}
+                    ) : null}
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm">
+                        {t("reservationCostVariablePart", {
+                          guests: String(reservationDetailBreakdown.guests),
+                          price: String(reservationDetailBreakdown.reservationPricePerMember),
+                        })}
+                      </span>
+                      <span className="font-medium">
+                        {(
+                          reservationDetailBreakdown.guests *
+                          reservationDetailBreakdown.reservationPricePerMember
+                        ).toFixed(2)}
+                        €
+                      </span>
+                    </div>
+
+                    {reservationDetailBreakdown.serviceLines.map((line, i) => (
+                      <div key={i} className="flex justify-between items-center">
+                        <div className="flex items-center gap-2">
+                          <ChefHat className="h-4 w-4 text-orange-600" />
+                          <span className="text-sm">{line.label}</span>
+                        </div>
+                        <span className="font-medium">{line.amount.toFixed(2)}€</span>
+                      </div>
+                    ))}
 
                     <div className="border-t pt-2 mt-2">
                       <div className="flex justify-between items-center">
                         <span className="font-semibold">{t("totalCost")}</span>
                         <span className="font-bold text-lg text-blue-600">
-                          {calculateCostBreakdown(selectedReservation).totalCost.toFixed(2)}€
+                          {reservationDetailBreakdown.totalCost.toFixed(2)}€
                         </span>
                       </div>
                       <div className="flex justify-between items-center mt-1">
                         <span className="text-xs text-gray-600">{t("pricePerPerson")}</span>
                         <span className="text-sm text-gray-600">
-                          {calculateCostBreakdown(selectedReservation).pricePerPerson.toFixed(2)}€
+                          {reservationDetailBreakdown.pricePerPerson.toFixed(2)}€
                         </span>
                       </div>
                     </div>

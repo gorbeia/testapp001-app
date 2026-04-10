@@ -65,14 +65,13 @@ When(
   async function (this: IntegrationWorld, path: string) {
     assert.strictEqual(path, "/api/reservations");
     const tag = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const body = {
+       const body = {
       name: `Integration reservation ${tag}`,
       type: "bazkaria",
       startDate: buildUniqueStartDateIso(),
       guests: 4,
-      useKitchen: false,
       table: "Mahaia 2",
-      totalAmount: "25.00",
+      selectedServiceIds: [] as string[],
       notes: "",
     };
     const res = await this.agent.post(path).send(body);
@@ -95,9 +94,8 @@ Given("I have created a reservation", async function (this: IntegrationWorld) {
     type: "afaria",
     startDate: buildUniqueStartDateIso(),
     guests: 4,
-    useKitchen: false,
     table: "Mahaia 3",
-    totalAmount: "15.00",
+    selectedServiceIds: [] as string[],
     notes: "",
   };
   const res = await this.agent.post("/api/reservations").send(body);
@@ -172,9 +170,8 @@ When(
     const base = {
       type: "bazkaria",
       startDate,
-      useKitchen: false,
       table: "Mahaia 5",
-      totalAmount: "12.00",
+      selectedServiceIds: [] as string[],
       notes: "",
     };
     const first = await this.agent.post("/api/reservations").send({ ...base, guests: 6 });
@@ -195,9 +192,8 @@ When(
     const base = {
       type: "bazkaria",
       startDate,
-      useKitchen: false,
       table: "Mahaia 5",
-      totalAmount: "12.00",
+      selectedServiceIds: [] as string[],
       notes: "",
     };
     const first = await this.agent.post("/api/reservations").send({ ...base, guests: 6 });

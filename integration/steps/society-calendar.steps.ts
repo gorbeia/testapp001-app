@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { When } from "@cucumber/cucumber";
 
 import type { IntegrationWorld } from "./world";
+import { getDemoSocietyKitchenServiceId } from "./reservation-services.helpers";
 
 /**
  * Shifts all calendar scenarios by the same random number of days per process so
@@ -169,9 +170,8 @@ When(
       type: "bazkaria",
       startDate,
       guests: 4,
-      useKitchen: false,
       table: "Mahaia 2",
-      totalAmount: "25.00",
+      selectedServiceIds: [] as string[],
       notes: "",
     };
     const res = await this.agent.post(path).send(body);
@@ -190,14 +190,14 @@ When(
     const startDate = this.createdIds.calendarMiddayIso;
     assert.ok(startDate);
     const tag = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const kitchenId = await getDemoSocietyKitchenServiceId();
     const body = {
       name: `Calendar test kitchen ${tag}`,
       type: "bazkaria",
       startDate,
       guests: 4,
-      useKitchen: true,
       table: "Mahaia 2",
-      totalAmount: "40.00",
+      selectedServiceIds: [kitchenId],
       notes: "",
     };
     const res = await this.agent.post(path).send(body);
@@ -221,9 +221,8 @@ When(
       type: "bazkaria",
       startDate,
       guests: 4,
-      useKitchen: false,
       table: "Mahaia 2",
-      totalAmount: "25.00",
+      selectedServiceIds: [] as string[],
       notes: "",
     };
     const res = await this.agent.post(path).send(body);
@@ -247,9 +246,8 @@ When(
       type: "bazkaria",
       startDate,
       guests: 2,
-      useKitchen: false,
       table: tableName,
-      totalAmount: "20.00",
+      selectedServiceIds: [] as string[],
       notes: "",
     };
     const res = await this.agent.post(path).send(body);

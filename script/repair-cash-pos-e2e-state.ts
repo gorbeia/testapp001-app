@@ -78,9 +78,10 @@ export async function repairCashPosE2eState(dbConn: SeedDb = db): Promise<void> 
     .from(societies)
     .where(eq(societies.id, societyId))
     .limit(1);
+  const rf = parseFloat(String(demoSociety?.reservationFixedFee ?? "0")) || 0;
   const rp = parseFloat(demoSociety?.reservationPricePerMember ?? "2");
   const guests = 4;
-  const totalAmountStr = (guests * rp).toString();
+  const totalAmountStr = (rf + guests * rp).toString();
 
   const now = new Date();
   const [existingRes] = await dbConn
@@ -99,6 +100,7 @@ export async function repairCashPosE2eState(dbConn: SeedDb = db): Promise<void> 
     guests,
     useKitchen: false,
     table: assignedTable,
+    selectedServices: [],
     notes: "Seed: bazkidea unpaid for cash POS E2E",
     totalAmount: totalAmountStr,
     cancellationReason: null as string | null,

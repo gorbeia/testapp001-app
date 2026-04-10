@@ -1,5 +1,16 @@
 import "dotenv/config";
-import { reservations, societies, users, tables, type Reservation } from "../shared/schema";
+import {
+  reservations,
+  reservationServices,
+  societies,
+  users,
+  tables,
+  computeReservationServiceLineTotal,
+  reservationServicePriceToDecimalString,
+  RESERVATION_SERVICE_SLUG_KITCHEN,
+  type Reservation,
+  type ReservationServiceSnapshot,
+} from "../shared/schema";
 import { and, eq } from "drizzle-orm";
 import type { SeedDb } from "./seed-db-type";
 import { db, pool } from "../server/db";
@@ -62,8 +73,20 @@ export async function seedReservations(dbConn: SeedDb) {
       throw new Error("No active society found for pricing");
     }
 
+    const reservationFixed = parseFloat(String(society.reservationFixedFee ?? "0")) || 0;
     const reservationPrice = parseFloat(society.reservationPricePerMember || "2");
     const kitchenPrice = parseFloat(society.kitchenPricePerMember || "3");
+
+    const [kitchenSvc] = await dbConn
+      .select()
+      .from(reservationServices)
+      .where(
+        and(
+          eq(reservationServices.societyId, societyId),
+          eq(reservationServices.slug, RESERVATION_SERVICE_SLUG_KITCHEN)
+        )
+      )
+      .limit(1);
 
     console.log(
       `Using society pricing: ${reservationPrice}€/person reservation, ${kitchenPrice}€/person kitchen`
@@ -74,6 +97,7 @@ export async function seedReservations(dbConn: SeedDb) {
       | "createdAt"
       | "updatedAt"
       | "totalAmount"
+      | "selectedServices"
       | "cancellationReason"
       | "cancelledBy"
       | "cancelledAt"
@@ -164,6 +188,7 @@ export async function seedReservations(dbConn: SeedDb) {
       | "createdAt"
       | "updatedAt"
       | "totalAmount"
+      | "selectedServices"
       | "cancellationReason"
       | "cancelledBy"
       | "cancelledAt"
@@ -228,6 +253,7 @@ export async function seedReservations(dbConn: SeedDb) {
       | "createdAt"
       | "updatedAt"
       | "totalAmount"
+      | "selectedServices"
       | "cancellationReason"
       | "cancelledBy"
       | "cancelledAt"
@@ -358,6 +384,7 @@ export async function seedReservations(dbConn: SeedDb) {
       | "createdAt"
       | "updatedAt"
       | "totalAmount"
+      | "selectedServices"
       | "cancellationReason"
       | "cancelledBy"
       | "cancelledAt"
@@ -384,15 +411,43 @@ export async function seedReservations(dbConn: SeedDb) {
       ...historicalReservations,
     ];
 
-    // Calculate totalAmount for each reservation using society pricing
+    // Calculate totalAmount for each reservation using society pricing + kitchen snapshot when applicable
     const reservationsWithAmounts = allReservations.map(reservation => {
-      const reservationCost = (reservation.guests ?? 0) * reservationPrice;
-      const kitchenCost = reservation.useKitchen ? (reservation.guests ?? 0) * kitchenPrice : 0;
+      const guests = reservation.guests ?? 0;
+      const reservationCost = reservationFixed + guests * reservationPrice;
+      let selectedServices: ReservationServiceSnapshot[] = [];
+      let kitchenCost = 0;
+      if (reservation.useKitchen && kitchenSvc) {
+        kitchenCost = parseFloat(
+          computeReservationServiceLineTotal(
+            kitchenSvc.fixedPrice,
+            kitchenSvc.pricePerMember,
+            guests
+          )
+        );
+        selectedServices = [
+          {
+            serviceId: kitchenSvc.id,
+            slug: kitchenSvc.slug,
+            label: kitchenSvc.labelEu,
+            fixedPrice: reservationServicePriceToDecimalString(kitchenSvc.fixedPrice),
+            pricePerMember: reservationServicePriceToDecimalString(kitchenSvc.pricePerMember),
+            lineTotal: computeReservationServiceLineTotal(
+              kitchenSvc.fixedPrice,
+              kitchenSvc.pricePerMember,
+              guests
+            ),
+          },
+        ];
+      } else if (reservation.useKitchen) {
+        kitchenCost = guests * kitchenPrice;
+      }
       const totalAmount = reservationCost + kitchenCost;
 
       return {
         ...reservation,
         totalAmount: totalAmount.toString(),
+        selectedServices,
       };
     });
 
@@ -481,10 +536,12 @@ export async function seedReservations(dbConn: SeedDb) {
           .from(societies)
           .where(eq(societies.id, cashPosE2eSocietyId))
           .limit(1);
+        const rf = parseFloat(String(demoForPricing?.reservationFixedFee ?? "0")) || 0;
         const rp = parseFloat(demoForPricing?.reservationPricePerMember ?? "2");
         const kp = parseFloat(demoForPricing?.kitchenPricePerMember ?? "3");
         const guests = cashPosE2eReservation.guests ?? 0;
         const totalAmountStr = (
+          rf +
           guests * rp +
           (cashPosE2eReservation.useKitchen ? guests * kp : 0)
         ).toString();
@@ -526,6 +583,7 @@ export async function seedReservations(dbConn: SeedDb) {
                 guests: cashPosE2eReservation.guests,
                 useKitchen: cashPosE2eReservation.useKitchen,
                 table: assignedTable,
+                selectedServices: [],
                 notes: cashPosE2eReservation.notes,
                 totalAmount: totalAmountStr,
                 cancellationReason: null,
@@ -541,6 +599,7 @@ export async function seedReservations(dbConn: SeedDb) {
               id: CASH_POS_E2E_RESERVATION_ID,
               societyId: cashPosE2eSocietyId,
               table: assignedTable,
+              selectedServices: [],
               totalAmount: totalAmountStr,
               createdAt: now,
               updatedAt: now,

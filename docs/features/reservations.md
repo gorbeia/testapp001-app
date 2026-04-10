@@ -15,14 +15,14 @@
 - **Society-wide bookings** visible on **`/egutegia`** (month grid + agenda list + create flow); see [`society-calendar.md`](./society-calendar.md)
 - Button/dialog to create a new reservation
 - **One table** selected from **`/api/tables/available`**; with optional query **`startDate`** + **`type`**, each row includes **`bookedSeats`** / **`seatsRemaining`** for the slot. Options may be disabled when guest count is outside **min/max capacity** or above **remaining seats** (partial tables).
-- **Meal / event type** stored as `type` string; it must match an **`id`** from the society’s **`reservation_meal_types`** list (JSON on **`societies`**: `id`, `labelEu`, `labelEs`). Treasurers configure the list on **`/elkartea`**. Defaults match the legacy set (`bazkaria`, `afaria`, `askaria`, `hamaiketakako`). Unknown types are rejected by **`POST /api/reservations`**. Labels in the app follow the member’s UI language (EU/ES).
-- **Kitchen use** is a single boolean **`useKitchen`** (not separate equipment: griddle, ovens, etc.)
+- **Meal / event type** stored as `type` string; it must match an **`id`** from the society’s **`reservation_meal_types`** list (JSON on **`societies`**: `id`, `labelEu`, `labelEs`). Treasurers edit labels on **`/erreserba-ezarpenak`**; **at least one** of EU/ES is required per row. Defaults match the legacy set (`bazkaria`, `afaria`, `askaria`, `hamaiketakako`). Unknown types are rejected by **`POST /api/reservations`**. The UI shows the label for the member’s language, falling back to the other language when needed.
+- **Add-on services** (cleaning, heating, kitchen use, custom): tenant-defined rows in **`reservation_services`** (`slug`, **`labelEu`**, **`labelEs`**, **`fixedPrice`**, **`pricePerMember`**, **`isActive`**, **`isDefault`**). **At least one** of EU/ES per row. Members select them with **checkboxes** in the create dialog; charge per line = **`fixedPrice + pricePerMember × guests`**. Built-in services **kitchen**, **cleaning**, and **heating** (default EU label **Berogailua** for heating) exist for every society (bootstrap / seed); **kitchen** is **`isDefault`** so it is pre-selected in the dialog. **`useKitchen`** on **`reservations`** is **derived** from whether the **kitchen** service is among selected snapshots (legacy column kept for older rows and integrations).
 - **Guests** count (integer). **`name`** is optional in the API (stored empty when omitted); **lists and calendar** show **member + meal + date** (and legacy **`name`** when present).
 - **Date**: single `startDate` timestamp (date picker in UI; time follows browser/local Date handling)
 - **Conflict rule (server)**: same table **name**, same `startDate` (exact instant), same `type`, among non-cancelled rows. **Exclusive tables** (default): at most one such row. **Partial tables** (`tables.allowsPartialReservation`): multiple rows allowed if **sum(`guests`) ≤ `maxCapacity`**; each booking must satisfy **minCapacity** and not exceed remaining seats. No broader time-overlap rules.
-- **Cost (client-calculated, stored as sent):**  
-  `totalAmount = guests × reservationPricePerMember + (useKitchen ? guests × kitchenPricePerMember : 0)`  
-  Rates come from the **`societies`** row (`reservationPricePerMember`, `kitchenPricePerMember`), editable under `/elkartea` where API allows
+- **Cost (server-computed on create):**  
+  `totalAmount = reservationFixedFee + guests × reservationPricePerMember + Σ (fixedPrice + pricePerMember × guests)` for each selected service  
+  Base fixed fee + per-guest rate from **`societies.reservationFixedFee`** and **`societies.reservationPricePerMember`**; service rates from **`reservation_services`**. **`POST /api/reservations`** accepts **`selectedServiceIds`**; **`selectedServices`** JSONB stores **per-line snapshots** (label + prices + **`lineTotal`**) at booking time. **`societies.kitchenPricePerMember`** is **kept in sync** when the **kitchen** service row is updated.
 - New reservations are persisted with **`status`** defaulting to **`confirmed`** via API
 - Event-day consumptions are **not** part of this flow; they are normal bar consumptions later
 
@@ -38,7 +38,7 @@
 
 - **Shipped**: `MyReservationsPage` at `/nire-erreserbak`, backed by `GET /api/reservations/user`
 - Table/list with filters (status, type, month search pattern per implementation)
-- Detail view with cost breakdown (UI recomputes breakdown from society rates for display; may differ if rates changed after booking)
+- Detail view with cost breakdown from **`selectedServices`** snapshots (legacy: **`useKitchen`** + society kitchen rate when snapshots empty)
 - Creator can cancel upcoming **pending/confirmed** reservations per UI rules; cancellation uses `PUT /api/reservations/:id` with cancellation fields
 - ❌ Export personal reservation list — **not verified / not a first-class feature** in PRD scope (refine if E2E/product requires it)
 
@@ -81,9 +81,9 @@
 
 **Acceptance Criteria:**
 
-- **Tables**: **`/mahaiak`** — CRUD for table **name**, **minCapacity**, **maxCapacity**, **`allowsPartialReservation`**, **isActive** (`/api/tables`, tenant-scoped by **`societyId`**). **Society map** for the reservation dialog: image on **`societies.mapImageUrl`** (`/elkartea`); link in create dialog when set.
-- **Pricing**: per-guest and per-guest-kitchen **decimals on `societies`**, edited via **`/elkartea`**
-- ❌ Separate inventory for “ovens / grills” etc. — **not implemented** (only `useKitchen` flag)
+- **Tables**: **`/mahaiak`** — CRUD for table **name**, **minCapacity**, **maxCapacity**, **`allowsPartialReservation`**, **isActive** (`/api/tables`, tenant-scoped by **`societyId`**). **Society map** for the reservation dialog: image on **`societies.mapImageUrl`** (**`/erreserba-ezarpenak`**); link in create dialog when set.
+- **Pricing**: optional **fixed** base fee **`societies.reservationFixedFee`** and per-guest **`societies.reservationPricePerMember`** on **`/erreserba-ezarpenak`**; **add-on services** in **`reservation_services`**, managed on the same page (`GET/POST/PUT/DELETE /api/reservation-services`; create dialog uses **`GET /api/reservation-services`**)
+- ❌ Separate inventory for “ovens / grills” etc. — **not implemented** (kitchen is one optional **service** among others)
 - ❌ Time-slot rules engine — **not implemented**
 
 ---
@@ -98,9 +98,9 @@
 
 **Acceptance Criteria:**
 
-- Live total in create dialog from formula in Story 1
-- Breakdown in detail UI uses same guest × rate model
-- ❌ Server-side recomputation / validation of `totalAmount` on `POST` — **not implemented** (client-sent value is stored)
+- Live total in create dialog matches server formula (base + selected services)
+- Breakdown in detail UI uses **`selectedServices`** snapshots when present
+- **Server-side** `totalAmount` on **`POST /api/reservations`** — **implemented** (from **`selectedServiceIds`** + society base rate)
 - ❌ Receipt generation — **not implemented**
 
 ---
@@ -127,4 +127,7 @@
 | `/nire-erreserbak`  | Own reservations                             |
 | `/admin-erreserbak` | Admin management UI                          |
 | `/mahaiak`          | Tables CRUD                                  |
-| `/elkartea`         | Society fields including reservation pricing |
+| `/elkartea`         | Society contact, logo, **payment methods** / SEPA |
+| `/erreserba-ezarpenak` | Reservation base pricing (fixed + per guest), map, meal types, **reservation add-on services** |
+| `/api/reservation-services` | Active add-ons for booking dialog (auth) |
+| `/api/reservation-services/all` | All add-ons incl. inactive (`SOCIETY_MANAGE`) |
