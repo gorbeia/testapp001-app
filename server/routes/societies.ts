@@ -79,27 +79,36 @@ export function registerSocietyRoutes(app: Express) {
     }
   });
 
-  app.get("/api/societies/setup-checklist", sessionMiddleware, requireAuth, async (req, res, next) => {
-    try {
-      if (!req.user) {
-        return res.status(401).json({ message: "User not authenticated" });
-      }
-      if (req.user.accessRole !== "admin") {
-        return res.status(403).json({ message: "Admin access required" });
-      }
+  app.get(
+    "/api/societies/setup-checklist",
+    sessionMiddleware,
+    requireAuth,
+    async (req, res, next) => {
+      try {
+        if (!req.user) {
+          return res.status(401).json({ message: "User not authenticated" });
+        }
+        if (req.user.accessRole !== "admin") {
+          return res.status(403).json({ message: "Admin access required" });
+        }
 
-      const societyId = getUserSocietyId(req.user);
-      const [society] = await db.select().from(societies).where(eq(societies.id, societyId)).limit(1);
-      if (!society) {
-        return res.status(404).json({ message: "Society not found" });
-      }
+        const societyId = getUserSocietyId(req.user);
+        const [society] = await db
+          .select()
+          .from(societies)
+          .where(eq(societies.id, societyId))
+          .limit(1);
+        if (!society) {
+          return res.status(404).json({ message: "Society not found" });
+        }
 
-      const items = await computeSocietySetupChecklist(db, society);
-      res.json({ items });
-    } catch (error) {
-      next(error);
+        const items = await computeSocietySetupChecklist(db, society);
+        res.json({ items });
+      } catch (error) {
+        next(error);
+      }
     }
-  });
+  );
 
   app.get(
     "/api/societies/:id",

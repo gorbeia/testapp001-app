@@ -75,8 +75,7 @@ export function registerStockReceiptRoutes(app: Express) {
           .where(inArray(productRecipeLines.productId, productIds));
         const recipeSet = new Set(withRecipe.map(r => r.productId));
         const notHoldStock = productRows.filter(
-          p =>
-            (p.parentProductId != null && p.parentProductId !== "") || recipeSet.has(p.id)
+          p => (p.parentProductId != null && p.parentProductId !== "") || recipeSet.has(p.id)
         );
         if (notHoldStock.length > 0) {
           return res.status(400).json({

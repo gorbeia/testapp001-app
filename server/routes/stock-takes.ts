@@ -108,8 +108,7 @@ export function registerStockTakeRoutes(app: Express) {
             : [];
         const recipeSet = new Set(withRecipe.map(r => r.productId));
         productRows = productRows.filter(
-          p =>
-            (p.parentProductId == null || p.parentProductId === "") && !recipeSet.has(p.id)
+          p => (p.parentProductId == null || p.parentProductId === "") && !recipeSet.has(p.id)
         );
 
         if (productRows.length === 0) {

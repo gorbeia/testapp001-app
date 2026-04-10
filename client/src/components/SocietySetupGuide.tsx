@@ -57,15 +57,10 @@ export function SocietySetupGuide() {
 
   const visibleItems = useMemo(() => {
     if (!data?.items?.length) return [];
-    return data.items.filter(
-      item => !(item.id === "subdomain" && item.applicable === false)
-    );
+    return data.items.filter(item => !(item.id === "subdomain" && item.applicable === false));
   }, [data?.items]);
 
-  const doneCount = useMemo(
-    () => visibleItems.filter(i => i.done).length,
-    [visibleItems]
-  );
+  const doneCount = useMemo(() => visibleItems.filter(i => i.done).length, [visibleItems]);
   const total = visibleItems.length;
   const allDone = total > 0 && doneCount === total;
 
@@ -103,10 +98,7 @@ export function SocietySetupGuide() {
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
-      <div
-        className="border-b bg-muted/40 shrink-0"
-        data-testid="society-setup-guide"
-      >
+      <div className="border-b bg-muted/40 shrink-0" data-testid="society-setup-guide">
         <div className="flex items-center gap-2 px-3 py-2 sm:px-4">
           <ListChecks className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
           <CollapsibleTrigger asChild>
@@ -150,7 +142,10 @@ export function SocietySetupGuide() {
                     {item.done ? (
                       <Check className="h-4 w-4 shrink-0 text-green-600 mt-0.5" aria-hidden />
                     ) : (
-                      <Circle className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" aria-hidden />
+                      <Circle
+                        className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5"
+                        aria-hidden
+                      />
                     )}
                     <span className="flex-1 min-w-0">
                       <span className="font-medium block">{t(titleKey(item.id))}</span>

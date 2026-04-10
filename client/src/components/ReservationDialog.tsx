@@ -385,9 +385,7 @@ export function ReservationDialog({
     }
   };
 
-  const selectedTableRow = formData.table
-    ? tables.find(x => x.name === formData.table)
-    : undefined;
+  const selectedTableRow = formData.table ? tables.find(x => x.name === formData.table) : undefined;
   const selectedTableInvalid =
     Boolean(formData.table && selectedTableRow) &&
     !isTableSuitableForGuests(selectedTableRow!, formData.guests);
@@ -504,11 +502,7 @@ export function ReservationDialog({
                 disabled={tablesLoading}
               >
                 <SelectTrigger data-testid="select-table">
-                  <SelectValue
-                    placeholder={
-                      tablesLoading ? t("loading") : t("selectTable")
-                    }
-                  />
+                  <SelectValue placeholder={tablesLoading ? t("loading") : t("selectTable")} />
                 </SelectTrigger>
                 <SelectContent>
                   {tables.length > 0 ? (
@@ -592,8 +586,7 @@ export function ReservationDialog({
                 {society ? (
                   <>
                     {(() => {
-                      const fixed =
-                        parseFloat(String(society.reservationFixedFee ?? "0")) || 0;
+                      const fixed = parseFloat(String(society.reservationFixedFee ?? "0")) || 0;
                       const per = parseFloat(society.reservationPricePerMember ?? "") || 0;
                       const variable = formData.guests * per;
                       return (
@@ -606,7 +599,7 @@ export function ReservationDialog({
                           ) : null}
                           {variable > 0 || fixed === 0 ? (
                             <div className="flex justify-between text-sm">
-                                                           <span>
+                              <span>
                                 {t("reservationCostVariablePart", {
                                   guests: String(formData.guests),
                                   price: String(society.reservationPricePerMember ?? "0"),
@@ -667,7 +660,11 @@ export function ReservationDialog({
               onClick={handleCreateReservation}
               data-testid="button-save-reservation"
               disabled={
-                !formData.table || loading || prepaymentBlocks || selectedTableInvalid || tablesLoading
+                !formData.table ||
+                loading ||
+                prepaymentBlocks ||
+                selectedTableInvalid ||
+                tablesLoading
               }
             >
               {loading ? t("loading") : t("reserve")}

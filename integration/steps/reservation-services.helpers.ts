@@ -1,10 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "../../server/db";
-import {
-  reservationServices,
-  societies,
-  RESERVATION_SERVICE_SLUG_KITCHEN,
-} from "@shared/schema";
+import { reservationServices, societies, RESERVATION_SERVICE_SLUG_KITCHEN } from "@shared/schema";
 import { DEMO_SOCIETY_ALPHABETIC_ID } from "../../script/seed-demo-society";
 
 /** Kitchen add-on service id for the demo society (GT001), for integration POST bodies. */

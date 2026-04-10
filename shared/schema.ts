@@ -770,10 +770,7 @@ export function reservationServiceDisplayLabel(
 export function slugifyReservationServiceLabel(label: string): string {
   const trimmed = label.trim();
   if (!trimmed) return "zerbitzua";
-  const ascii = trimmed
-    .normalize("NFD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase();
+  const ascii = trimmed.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
   const raw = ascii
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/-+/g, "-")
@@ -800,9 +797,7 @@ export function allocateUniqueReservationMealTypeId(
     : RESERVATION_MEAL_TYPE_ID_FALLBACK;
   const base = baseRaw.length > 64 ? baseRaw.slice(0, 64) : baseRaw;
   const taken = new Set(
-    allRows
-      .map((r, i) => (i === forIndex ? "" : String(r.id ?? "").trim()))
-      .filter(Boolean)
+    allRows.map((r, i) => (i === forIndex ? "" : String(r.id ?? "").trim())).filter(Boolean)
   );
   let candidate = base;
   let counter = 2;
@@ -1122,7 +1117,11 @@ export const updateReservationServiceBodySchema = z
           ? data.pricePerMember
           : parseFloat(String(data.pricePerMember));
     if (fixed !== undefined && (Number.isNaN(fixed) || fixed < 0)) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Invalid fixedPrice", path: ["fixedPrice"] });
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Invalid fixedPrice",
+        path: ["fixedPrice"],
+      });
     }
     if (per !== undefined && (Number.isNaN(per) || per < 0)) {
       ctx.addIssue({
@@ -1810,7 +1809,13 @@ export const subscriptionTypeUpdateBodySchema = subscriptionTypeFieldsSchema
   });
 
 export const createReservationBodySchema = insertReservationSchema
-  .omit({ userId: true, societyId: true, useKitchen: true, totalAmount: true, selectedServices: true })
+  .omit({
+    userId: true,
+    societyId: true,
+    useKitchen: true,
+    totalAmount: true,
+    selectedServices: true,
+  })
   .extend({
     startDate: z.coerce.date(),
     /** Optional; UI no longer collects it — stored empty when omitted. */

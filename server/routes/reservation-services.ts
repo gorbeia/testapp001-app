@@ -58,7 +58,10 @@ export function registerReservationServiceRoutes(app: Express): void {
           .select()
           .from(reservationServices)
           .where(
-            and(eq(reservationServices.societyId, societyId), eq(reservationServices.isActive, true))
+            and(
+              eq(reservationServices.societyId, societyId),
+              eq(reservationServices.isActive, true)
+            )
           )
           .orderBy(asc(reservationServices.sortOrder), asc(reservationServices.slug));
         res.json(rows);
@@ -205,24 +208,26 @@ export function registerReservationServiceRoutes(app: Express): void {
 
         let nextSlug = existing.slug;
         if (!isBuiltinSlug(existing.slug) && nextSource !== prevSource) {
-          nextSlug = await allocateUniqueReservationServiceSlug(
-            societyId,
-            nextSource,
-            existing.id
-          );
+          nextSlug = await allocateUniqueReservationServiceSlug(societyId, nextSource, existing.id);
         }
 
         const [updated] = await db
           .update(reservationServices)
           .set({
-            ...(!isBuiltinSlug(existing.slug) && nextSlug !== existing.slug ? { slug: nextSlug } : {}),
+            ...(!isBuiltinSlug(existing.slug) && nextSlug !== existing.slug
+              ? { slug: nextSlug }
+              : {}),
             ...(parsed.data.labelEu !== undefined ? { labelEu: mergedEu } : {}),
             ...(parsed.data.labelEs !== undefined ? { labelEs: mergedEs } : {}),
             ...(parsed.data.fixedPrice !== undefined
               ? { fixedPrice: reservationServicePriceToDecimalString(parsed.data.fixedPrice) }
               : {}),
             ...(parsed.data.pricePerMember !== undefined
-              ? { pricePerMember: reservationServicePriceToDecimalString(parsed.data.pricePerMember) }
+              ? {
+                  pricePerMember: reservationServicePriceToDecimalString(
+                    parsed.data.pricePerMember
+                  ),
+                }
               : {}),
             ...(parsed.data.isActive !== undefined ? { isActive: parsed.data.isActive } : {}),
             ...(parsed.data.isDefault !== undefined ? { isDefault: parsed.data.isDefault } : {}),

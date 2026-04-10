@@ -23,17 +23,12 @@ const getUserSocietyId = (user: JwtSessionUser): string => {
   return user.societyId;
 };
 
-function normalizePurpose(
-  value: string | null | undefined
-): "sale" | "internal" | "both" {
+function normalizePurpose(value: string | null | undefined): "sale" | "internal" | "both" {
   const p = productPurposeSchema.safeParse(value);
   return p.success ? p.data : "sale";
 }
 
-async function countRecipeLinesForProduct(
-  tx: AppDatabase,
-  productId: string
-): Promise<number> {
+async function countRecipeLinesForProduct(tx: AppDatabase, productId: string): Promise<number> {
   const rows = await tx
     .select({ c: sql<number>`cast(count(*) as int)` })
     .from(productRecipeLines)
@@ -146,9 +141,7 @@ export function registerProductRoutes(app: Express) {
       try {
         const societyId = getUserSocietyId(req.user!);
         const forPos =
-          req.query.forPos === "true" ||
-          req.query.forPos === "1" ||
-          req.query.forPos === "yes";
+          req.query.forPos === "true" || req.query.forPos === "1" || req.query.forPos === "yes";
 
         if (forPos) {
           const rows = await db

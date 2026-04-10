@@ -134,7 +134,8 @@ const BOOTSTRAP_CATEGORY = {
 export async function insertTenantBootstrap(
   db: AppDatabase,
   societyId: string,
-  kitchenPricePerMember?: string | null): Promise<void> {
+  kitchenPricePerMember?: string | null
+): Promise<void> {
   const [cat] = await db
     .insert(productCategories)
     .values({

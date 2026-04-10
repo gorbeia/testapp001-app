@@ -16,14 +16,14 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 
 ## 1. Authentication (`authentication.md`)
 
-| Story area                                | Unit                         | Integration                                      | E2E                       |
-| ----------------------------------------- | ---------------------------- | ------------------------------------------------ | ------------------------- |
-| Login / tokens / cookies / tenant-by-host | `shared/tenant-host.test.ts` | `auth.feature` (incl. public tenant-by-host)     | `login.feature` (UI)      |
-| Password reset (public API)               | —                            | `password-reset.feature` (`@story:auth-8`; mock mail transport) | —                         |
+| Story area                                | Unit                         | Integration                                                                              | E2E                       |
+| ----------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------- | ------------------------- |
+| Login / tokens / cookies / tenant-by-host | `shared/tenant-host.test.ts` | `auth.feature` (incl. public tenant-by-host)                                             | `login.feature` (UI)      |
+| Password reset (public API)               | —                            | `password-reset.feature` (`@story:auth-8`; mock mail transport)                          | —                         |
 | Email verification gate / public signup   | —                            | `public-signup.feature` (`@story:public-signup`; incl. default category/table provision) | —                         |
-| Refresh / logout                          | —                            | `auth.feature`                                   | —                         |
-| RBAC (API)                                | —                            | `rbac.feature`                                   | —                         |
-| RBAC (sidebar / URL)                      | —                            | —                                                | `role-based-menu.feature` |
+| Refresh / logout                          | —                            | `auth.feature`                                                                           | —                         |
+| RBAC (API)                                | —                            | `rbac.feature`                                                                           | —                         |
+| RBAC (sidebar / URL)                      | —                            | —                                                                                        | `role-based-menu.feature` |
 
 ## 2. User management (`user-management.md`)
 
@@ -35,8 +35,8 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 
 | Story area                    | Unit | Integration                                                                                                                | E2E                                             |
 | ----------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| CRUD / list                   | —    | `reservations.feature` (bodies use **`selectedServiceIds`**)                                                                 | `reservation-management.feature`                |
-| Add-on services (API)         | —    | `society-calendar.feature` (kitchen via demo kitchen service id), `reservation-services.helpers.ts`                         | —                                               |
+| CRUD / list                   | —    | `reservations.feature` (bodies use **`selectedServiceIds`**)                                                               | `reservation-management.feature`                |
+| Add-on services (API)         | —    | `society-calendar.feature` (kitchen via demo kitchen service id), `reservation-services.helpers.ts`                        | —                                               |
 | Partial table capacity (API)  | —    | `reservations.feature` (`@partial-mahaia5`)                                                                                | —                                               |
 | Configurable meal types (API) | —    | `reservations.feature` (`@reservation-meal-types-restricted`), `societies.feature` (`@society-reservation-meal-types-put`) | —                                               |
 | Prepayment ledger floor (API) | —    | `reservations.feature` (`@prepayment-ledger-floor`)                                                                        | —                                               |
@@ -67,21 +67,21 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 
 ## 6. Catalog & society settings
 
-| Story area                                                    | Unit | Integration          | E2E                              |
-| ------------------------------------------------------------- | ---- | -------------------- | -------------------------------- |
-| Products CRUD                                                 | —    | `products.feature`   | —                                |
-| Categories                                                    | —    | `categories.feature` | —                                |
-| Society PATCH (incl. payment methods, reservation meal types) | —    | `societies.feature`  | `society-management.feature`     |
-| Admin go-live setup checklist API                             | —    | `society-setup-checklist.feature` | —                         |
-| Image uploads (logo, map, avatar, product)                    | —    | —                    | —                                |
-| SEPA mode / sidebar                                           | —    | —                    | `sepa-billing-frequency.feature` |
+| Story area                                                    | Unit | Integration                       | E2E                              |
+| ------------------------------------------------------------- | ---- | --------------------------------- | -------------------------------- |
+| Products CRUD                                                 | —    | `products.feature`                | —                                |
+| Categories                                                    | —    | `categories.feature`              | —                                |
+| Society PATCH (incl. payment methods, reservation meal types) | —    | `societies.feature`               | `society-management.feature`     |
+| Admin go-live setup checklist API                             | —    | `society-setup-checklist.feature` | —                                |
+| Image uploads (logo, map, avatar, product)                    | —    | —                                 | —                                |
+| SEPA mode / sidebar                                           | —    | —                                 | `sepa-billing-frequency.feature` |
 
 ## 7. Inventory / stock (`inventory.md`)
 
-| Story area              | Unit                  | Integration     | E2E |
-| ----------------------- | --------------------- | --------------- | --- |
-| Movements list / adjust | ✓ (inventory helpers) | `stock.feature` | —   |
-| Product taxonomy (portion/recipe) | — | `products.feature` (CRUD); dedicated cascade scenario not in `integration/` yet | —   |
+| Story area                        | Unit                  | Integration                                                                     | E2E |
+| --------------------------------- | --------------------- | ------------------------------------------------------------------------------- | --- |
+| Movements list / adjust           | ✓ (inventory helpers) | `stock.feature`                                                                 | —   |
+| Product taxonomy (portion/recipe) | —                     | `products.feature` (CRUD); dedicated cascade scenario not in `integration/` yet | —   |
 
 ## 8. Communication (`communication.md`)
 

@@ -121,13 +121,13 @@
 
 ## Related routes (reference)
 
-| Path                | Purpose                                      |
-| ------------------- | -------------------------------------------- |
-| `/egutegia`         | Society calendar + reservations + create     |
-| `/nire-erreserbak`  | Own reservations                             |
-| `/admin-erreserbak` | Admin management UI                          |
-| `/mahaiak`          | Tables CRUD                                  |
-| `/elkartea`         | Society contact, logo, **payment methods** / SEPA |
-| `/erreserba-ezarpenak` | Reservation base pricing (fixed + per guest), map, meal types, **reservation add-on services** |
-| `/api/reservation-services` | Active add-ons for booking dialog (auth) |
-| `/api/reservation-services/all` | All add-ons incl. inactive (`SOCIETY_MANAGE`) |
+| Path                            | Purpose                                                                                        |
+| ------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `/egutegia`                     | Society calendar + reservations + create                                                       |
+| `/nire-erreserbak`              | Own reservations                                                                               |
+| `/admin-erreserbak`             | Admin management UI                                                                            |
+| `/mahaiak`                      | Tables CRUD                                                                                    |
+| `/elkartea`                     | Society contact, logo, **payment methods** / SEPA                                              |
+| `/erreserba-ezarpenak`          | Reservation base pricing (fixed + per guest), map, meal types, **reservation add-on services** |
+| `/api/reservation-services`     | Active add-ons for booking dialog (auth)                                                       |
+| `/api/reservation-services/all` | All add-ons incl. inactive (`SOCIETY_MANAGE`)                                                  |

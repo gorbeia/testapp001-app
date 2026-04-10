@@ -1042,7 +1042,8 @@ export const translations = {
     resetPasswordDescription: "Aukeratu pasahitz berria zure konturako.",
     resetPasswordSubmit: "Gorde pasahitza",
     resetPasswordSuccess: "Pasahitza eguneratu da. Orain sar zaitezke.",
-    resetPasswordInvalidLink: "Esteka baliogabea edo iraungita. Eskatu berriro berrezartzeko esteka.",
+    resetPasswordInvalidLink:
+      "Esteka baliogabea edo iraungita. Eskatu berriro berrezartzeko esteka.",
     resetPasswordMissingToken: "Esteka baliogabea. Begiratu postako esteka.",
     societySubdomainLabel: "Azpidomeinua",
     societySubdomainHint:
@@ -1995,7 +1996,8 @@ export const translations = {
     resetPasswordDescription: "Elige una nueva contraseña para tu cuenta.",
     resetPasswordSubmit: "Guardar contraseña",
     resetPasswordSuccess: "Contraseña actualizada. Ya puedes iniciar sesión.",
-    resetPasswordInvalidLink: "Enlace no válido o caducado. Solicita un nuevo enlace de restablecimiento.",
+    resetPasswordInvalidLink:
+      "Enlace no válido o caducado. Solicita un nuevo enlace de restablecimiento.",
     resetPasswordMissingToken: "Enlace no válido. Usa el enlace del correo.",
     societySubdomainLabel: "Subdominio",
     societySubdomainHint: "Ejemplo: mitxoko — mitxoko.tu-dominio.es. Déjelo vacío si no aplica.",
@@ -2030,7 +2032,8 @@ export const translations = {
     setupGuideItem_members_title: "Un segundo usuario",
     setupGuideItem_members_desc: "Invita o crea al menos otro usuario activo.",
     setupGuideItem_subdomain_title: "Subdominio",
-    setupGuideItem_subdomain_desc: "En modo un host por sociedad, configura el subdominio de la sociedad.",
+    setupGuideItem_subdomain_desc:
+      "En modo un host por sociedad, configura el subdominio de la sociedad.",
   },
   en: {
     appName: "Gure Txokoa",

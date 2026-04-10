@@ -76,8 +76,10 @@ Status legend:
 10. **Configurable reservation meal types** – per-society ids + EU/ES labels
 
 - **Status**: ✅ Implemented (`societies.reservation_meal_types`; editor on **`/erreserba-ezarpenak`**; reservation UIs read from **`GET /api/societies/user`**; integration: **`@reservation-meal-types-restricted`** on **`reservations.feature`**, meal types PUT on **`societies.feature`**)
+
 11. **Reservation add-on services** – configurable services, checkboxes at booking, price snapshots
-   - **Status**: ✅ Implemented (`reservation_services`, **`selectedServices`** on **`reservations`**; **`/api/reservation-services`**; seed **`script/seed-reservation-services.ts`** in **`pnpm db:seed`** pipeline)
+
+- **Status**: ✅ Implemented (`reservation_services`, **`selectedServices`** on **`reservations`**; **`/api/reservation-services`**; seed **`script/seed-reservation-services.ts`** in **`pnpm db:seed`** pipeline)
 
 ---
 

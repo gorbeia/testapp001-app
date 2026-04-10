@@ -755,8 +755,7 @@ export function registerReservationRoutes(app: Express) {
           }
         }
 
-        const reservationFixed =
-          parseFloat(String(societyRow.reservationFixedFee ?? "0")) || 0;
+        const reservationFixed = parseFloat(String(societyRow.reservationFixedFee ?? "0")) || 0;
         const reservationPrice =
           parseFloat(String(societyRow.reservationPricePerMember ?? "0")) || 0;
         const baseTotal = reservationFixed + reservationPrice * guests;
@@ -785,9 +784,7 @@ export function registerReservationRoutes(app: Express) {
         );
         const totalAmountStr = (baseTotal + servicesSum).toFixed(2);
 
-        const useKitchen = selectedSnapshots.some(
-          s => s.slug === RESERVATION_SERVICE_SLUG_KITCHEN
-        );
+        const useKitchen = selectedSnapshots.some(s => s.slug === RESERVATION_SERVICE_SLUG_KITCHEN);
 
         const societyEventBlock = await getReservationBlockBySocietyEvents(
           societyId,

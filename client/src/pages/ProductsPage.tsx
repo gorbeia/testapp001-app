@@ -780,7 +780,8 @@ export function ProductsPage() {
                         setNewProduct({
                           ...newProduct,
                           parentProductId: value === "__none__" ? "" : value,
-                          parentUnitsPerSale: value === "__none__" ? "" : newProduct.parentUnitsPerSale,
+                          parentUnitsPerSale:
+                            value === "__none__" ? "" : newProduct.parentUnitsPerSale,
                         })
                       }
                     >
@@ -821,7 +822,9 @@ export function ProductsPage() {
                     {newRecipeLines.map(line => (
                       <div key={line.tempId} className="flex flex-wrap gap-2 items-end">
                         <div className="flex-1 min-w-[140px] space-y-1">
-                          <span className="text-xs text-muted-foreground">{t("recipeIngredient")}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {t("recipeIngredient")}
+                          </span>
                           <Select
                             value={line.ingredientProductId || "__pick__"}
                             onValueChange={value =>
@@ -853,7 +856,9 @@ export function ProductsPage() {
                           </Select>
                         </div>
                         <div className="w-24 space-y-1">
-                          <span className="text-xs text-muted-foreground">{t("recipeQuantity")}</span>
+                          <span className="text-xs text-muted-foreground">
+                            {t("recipeQuantity")}
+                          </span>
                           <Input
                             value={line.quantity}
                             onChange={e =>
@@ -1361,7 +1366,8 @@ export function ProductsPage() {
                     setEditProduct({
                       ...editProduct,
                       parentProductId: value === "__none__" ? "" : value,
-                      parentUnitsPerSale: value === "__none__" ? "" : editProduct.parentUnitsPerSale,
+                      parentUnitsPerSale:
+                        value === "__none__" ? "" : editProduct.parentUnitsPerSale,
                     })
                   }
                 >
@@ -1372,8 +1378,7 @@ export function ProductsPage() {
                     <SelectItem value="__none__">{t("productParentNone")}</SelectItem>
                     {bulkParentCandidates
                       .filter(
-                        p =>
-                          (p.recipeLineCount ?? 0) === 0 && p.id !== editDialog.product?.id
+                        p => (p.recipeLineCount ?? 0) === 0 && p.id !== editDialog.product?.id
                       )
                       .map(p => (
                         <SelectItem key={p.id} value={p.id}>
@@ -1425,9 +1430,7 @@ export function ProductsPage() {
                           <SelectItem value="__pick__">—</SelectItem>
                           {bulkParentCandidates
                             .filter(
-                              p =>
-                                (p.recipeLineCount ?? 0) === 0 &&
-                                p.id !== editDialog.product?.id
+                              p => (p.recipeLineCount ?? 0) === 0 && p.id !== editDialog.product?.id
                             )
                             .map(p => (
                               <SelectItem key={p.id} value={p.id}>

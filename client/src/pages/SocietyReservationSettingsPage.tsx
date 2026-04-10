@@ -364,9 +364,7 @@ export function SocietyReservationSettingsPage() {
                     type="number"
                     step="0.01"
                     value={String(society.reservationFixedFee ?? "")}
-                    onChange={e =>
-                      setSociety({ ...society, reservationFixedFee: e.target.value })
-                    }
+                    onChange={e => setSociety({ ...society, reservationFixedFee: e.target.value })}
                     data-testid="input-reservation-fixed-fee"
                   />
                   <p className="text-xs text-muted-foreground">{t("reservationFixedFeeHint")}</p>
@@ -427,8 +425,7 @@ export function SocietyReservationSettingsPage() {
                   {t("reservationServices")}
                 </CardTitle>
                 <CardDescription>
-                  {t("reservationServicesDescription")}{" "}
-                  {t("reservationServicesSaveWithPageHint")}
+                  {t("reservationServicesDescription")} {t("reservationServicesSaveWithPageHint")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -453,70 +450,70 @@ export function SocietyReservationSettingsPage() {
                           key={row.id}
                           className="grid grid-cols-12 gap-2 p-2 items-center text-sm"
                         >
-                        <div className="col-span-3">
-                          <Input
-                            className="h-9"
-                            value={row.labelEu}
-                            onChange={e => patchLocalService(row.id, { labelEu: e.target.value })}
-                          />
-                        </div>
-                        <div className="col-span-3">
-                          <Input
-                            className="h-9"
-                            value={row.labelEs}
-                            onChange={e => patchLocalService(row.id, { labelEs: e.target.value })}
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <Input
-                            className="h-9"
-                            inputMode="decimal"
-                            value={row.fixedPrice}
-                            onChange={e =>
-                              patchLocalService(row.id, { fixedPrice: e.target.value })
-                            }
-                          />
-                        </div>
-                        <div className="col-span-1">
-                          <Input
-                            className="h-9"
-                            inputMode="decimal"
-                            value={row.pricePerMember}
-                            onChange={e =>
-                              patchLocalService(row.id, { pricePerMember: e.target.value })
-                            }
-                          />
-                        </div>
-                        <div className="col-span-1 flex justify-center">
-                          <Checkbox
-                            checked={row.isActive}
-                            onCheckedChange={c =>
-                              patchLocalService(row.id, { isActive: c === true })
-                            }
-                          />
-                        </div>
-                        <div className="col-span-1 flex justify-center">
-                          <Checkbox
-                            checked={row.isDefault}
-                            onCheckedChange={c =>
-                              patchLocalService(row.id, { isDefault: c === true })
-                            }
-                          />
-                        </div>
-                        <div className="col-span-2 flex justify-end">
-                          {!isBuiltinReservationServiceSlug(row.slug) ? (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
-                              aria-label={t("delete")}
-                              onClick={() => void handleDeleteReservationService(row)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          ) : null}
-                        </div>
+                          <div className="col-span-3">
+                            <Input
+                              className="h-9"
+                              value={row.labelEu}
+                              onChange={e => patchLocalService(row.id, { labelEu: e.target.value })}
+                            />
+                          </div>
+                          <div className="col-span-3">
+                            <Input
+                              className="h-9"
+                              value={row.labelEs}
+                              onChange={e => patchLocalService(row.id, { labelEs: e.target.value })}
+                            />
+                          </div>
+                          <div className="col-span-1">
+                            <Input
+                              className="h-9"
+                              inputMode="decimal"
+                              value={row.fixedPrice}
+                              onChange={e =>
+                                patchLocalService(row.id, { fixedPrice: e.target.value })
+                              }
+                            />
+                          </div>
+                          <div className="col-span-1">
+                            <Input
+                              className="h-9"
+                              inputMode="decimal"
+                              value={row.pricePerMember}
+                              onChange={e =>
+                                patchLocalService(row.id, { pricePerMember: e.target.value })
+                              }
+                            />
+                          </div>
+                          <div className="col-span-1 flex justify-center">
+                            <Checkbox
+                              checked={row.isActive}
+                              onCheckedChange={c =>
+                                patchLocalService(row.id, { isActive: c === true })
+                              }
+                            />
+                          </div>
+                          <div className="col-span-1 flex justify-center">
+                            <Checkbox
+                              checked={row.isDefault}
+                              onCheckedChange={c =>
+                                patchLocalService(row.id, { isDefault: c === true })
+                              }
+                            />
+                          </div>
+                          <div className="col-span-2 flex justify-end">
+                            {!isBuiltinReservationServiceSlug(row.slug) ? (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-9 w-9 shrink-0 text-destructive hover:text-destructive"
+                                aria-label={t("delete")}
+                                onClick={() => void handleDeleteReservationService(row)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            ) : null}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -548,7 +545,9 @@ export function SocietyReservationSettingsPage() {
                         />
                       </div>
                       <div className="w-[5.5rem] shrink-0 space-y-1">
-                        <Label className="text-xs whitespace-nowrap">{t("serviceFixedPrice")}</Label>
+                        <Label className="text-xs whitespace-nowrap">
+                          {t("serviceFixedPrice")}
+                        </Label>
                         <Input
                           className="h-9"
                           inputMode="decimal"

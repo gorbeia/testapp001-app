@@ -159,7 +159,10 @@ export function registerPublicPasswordResetRoutes(app: Express) {
           .select()
           .from(userPasswordResets)
           .where(
-            and(eq(userPasswordResets.tokenHash, tokenHash), gt(userPasswordResets.expiresAt, new Date()))
+            and(
+              eq(userPasswordResets.tokenHash, tokenHash),
+              gt(userPasswordResets.expiresAt, new Date())
+            )
           )
           .limit(1);
 

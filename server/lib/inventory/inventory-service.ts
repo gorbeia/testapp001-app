@@ -263,9 +263,7 @@ export async function postConsumptionStockDecrements(
       const [ing] = await dbOrTx
         .select()
         .from(products)
-        .where(
-          and(eq(products.id, line.ingredientProductId), eq(products.societyId, societyId))
-        )
+        .where(and(eq(products.id, line.ingredientProductId), eq(products.societyId, societyId)))
         .limit(1);
       if (!ing) {
         throw new InventoryServiceError("Product not found", "PRODUCT_NOT_FOUND");
@@ -294,9 +292,7 @@ export async function postConsumptionStockDecrements(
     const [parent] = await dbOrTx
       .select()
       .from(products)
-      .where(
-        and(eq(products.id, productRow.parentProductId), eq(products.societyId, societyId))
-      )
+      .where(and(eq(products.id, productRow.parentProductId), eq(products.societyId, societyId)))
       .limit(1);
     if (!parent) {
       throw new InventoryServiceError("Product not found", "PRODUCT_NOT_FOUND");

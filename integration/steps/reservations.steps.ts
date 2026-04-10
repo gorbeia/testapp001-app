@@ -65,7 +65,7 @@ When(
   async function (this: IntegrationWorld, path: string) {
     assert.strictEqual(path, "/api/reservations");
     const tag = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-       const body = {
+    const body = {
       name: `Integration reservation ${tag}`,
       type: "bazkaria",
       startDate: buildUniqueStartDateIso(),

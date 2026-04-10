@@ -13,14 +13,12 @@ remove name from reservations, autogenerate title
 
 remove demo login data
 
-
 email support
 _ password recovery
 _ notifications
 
 domain and subdomains
 preload login page based on subdomain (image, society name)
-
 
 Derived products such as gintonic.
 

@@ -51,7 +51,11 @@ export async function seedReservationServices(dbConn: SeedDb = db): Promise<void
       const guests = r.guests ?? 0;
       const fixedStr = reservationServicePriceToDecimalString(ks.fixedPrice);
       const perStr = reservationServicePriceToDecimalString(ks.pricePerMember);
-      const lineTotal = computeReservationServiceLineTotal(ks.fixedPrice, ks.pricePerMember, guests);
+      const lineTotal = computeReservationServiceLineTotal(
+        ks.fixedPrice,
+        ks.pricePerMember,
+        guests
+      );
       const snap: ReservationServiceSnapshot = {
         serviceId: ks.id,
         slug: ks.slug,

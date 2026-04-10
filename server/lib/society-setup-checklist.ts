@@ -1,10 +1,4 @@
-import {
-  productCategories,
-  products,
-  societies,
-  tables,
-  users,
-} from "@shared/schema";
+import { productCategories, products, societies, tables, users } from "@shared/schema";
 import type { SetupChecklistItem } from "@shared/society-setup-checklist";
 import { getTenantApexDomainFromEnv } from "@shared/tenant-host";
 import { and, count, eq, isNotNull } from "drizzle-orm";
@@ -37,9 +31,7 @@ export async function computeSocietySetupChecklist(
     db
       .select({ n: count() })
       .from(productCategories)
-      .where(
-        and(eq(productCategories.societyId, societyId), eq(productCategories.isActive, true))
-      ),
+      .where(and(eq(productCategories.societyId, societyId), eq(productCategories.isActive, true))),
     db
       .select({ n: count() })
       .from(products)

@@ -219,7 +219,9 @@ export function ConsumptionsPage() {
 
         if (societyResponse.ok) {
           const society = await societyResponse.json();
-          setReservationMealTypes(normalizeSocietyReservationMealTypes(society.reservationMealTypes));
+          setReservationMealTypes(
+            normalizeSocietyReservationMealTypes(society.reservationMealTypes)
+          );
           const allow = societyAllowsCashPayment(society.paymentMethods);
           setCashEnabled(allow);
           if (!allow) {
