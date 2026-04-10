@@ -5,6 +5,7 @@ Feature: Real-time Debt Calculation
     Given the application is running
     And I open the login page
     When I log in as a admin user
+    And demo society has SEPA billing enabled
     And I navigate to the credits page
     Then I should see the debts for all members
     And I find the debt amount for "Miren Urrutia"

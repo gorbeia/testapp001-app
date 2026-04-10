@@ -6,17 +6,24 @@ import { ensureSidebarNavReady, expandAllSidebarSubmenus } from "./sidebar-helpe
 
 const ACCESS_DENIED_SNIPPET = "Ez duzu baimenik orri hau ikusteko";
 
-/** Dashboard + member-facing nav (demo society has SEPA enabled → personal credits link). */
-const COMMON_MAIN_MENU = [
+/** Always shown for logged-in society users (credits link is SEPA-dependent — see below). */
+const MAIN_MENU_CORE = [
   "link-home",
   "link-egutegia",
   "link-nire-erreserbak",
   "link-kontsumoak",
   "link-nire-konsumoak",
-  "link-nire-zorrak",
   "link-nire-mugimenduak",
   "link-jakinarazpenak",
 ];
+
+/** “Nire zorrak” is omitted from the sidebar when society SEPA mode is disabled. */
+async function assertPersonalCreditsLinkIfPresent(page: Page): Promise<void> {
+  await ensureSidebarNavReady(page);
+  const loc = page.locator('[data-testid="link-nire-zorrak"]');
+  if ((await loc.count()) === 0) return;
+  await loc.first().waitFor({ state: "visible", timeout: 15_000 });
+}
 
 const ANNOUNCEMENTS_LINK = "link-oharrak";
 
@@ -93,7 +100,8 @@ async function assertAccessDeniedForPath(page: Page, path: string): Promise<void
 Then("I should see the main menu entries", async function () {
   const page = getPage();
   assert.ok(page, "Page was not initialized");
-  await assertTestIdsVisible(page, COMMON_MAIN_MENU, "Main menu");
+  await assertTestIdsVisible(page, MAIN_MENU_CORE, "Main menu");
+  await assertPersonalCreditsLinkIfPresent(page);
 });
 
 Then("I should not see the announcements menu link", async function () {

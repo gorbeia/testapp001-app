@@ -1,7 +1,30 @@
-import { When, Then } from "@cucumber/cucumber";
+import { Given, When, Then } from "@cucumber/cucumber";
 import assert from "node:assert/strict";
-import { getPage } from "./shared-state";
+import { getPage, e2eUrl } from "./shared-state";
 import { clickSidebarNavLink } from "./sidebar-helpers";
+
+/**
+ * Idempotent: credits UI and personal “Nire zorrak” nav only exist when SEPA is not disabled.
+ * Call while logged in as admin or treasurer (SOCIETY_MANAGE).
+ */
+Given("demo society has SEPA billing enabled", async function () {
+  const page = getPage();
+  if (!page) throw new Error("Page not available");
+
+  await page.goto(e2eUrl("/elkartea"), { waitUntil: "domcontentloaded" });
+  await page.waitForSelector('[data-testid="input-society-name"]', { timeout: 15_000 });
+
+  const sepa = page.getByTestId("checkbox-payment-sepa");
+  await sepa.waitFor({ state: "visible", timeout: 10_000 });
+  const checked = await sepa.isChecked();
+  if (!checked) {
+    await sepa.setChecked(true);
+    await page.click('[data-testid="select-sepa-mode"]');
+    await page.getByRole("option", { name: /Mensual|Hilabeteka/i }).click();
+    await page.click('[data-testid="button-save-society"]');
+    await page.waitForSelector('[data-testid="input-society-name"]', { timeout: 10_000 });
+  }
+});
 
 When("I navigate to the society page", async function () {
   const page = getPage();
@@ -36,6 +59,12 @@ When("I update the society IBAN to {string}", async function (iban: string) {
   if (!page) throw new Error("Page not available");
 
   const ibanInput = page.locator('[data-testid="input-society-iban"]');
+  if (!(await ibanInput.isVisible().catch(() => false))) {
+    const sepaCheckbox = page.locator('[data-testid="checkbox-payment-sepa"]');
+    await sepaCheckbox.waitFor({ state: "visible", timeout: 10_000 });
+    await sepaCheckbox.click();
+    await ibanInput.waitFor({ state: "visible", timeout: 10_000 });
+  }
   await ibanInput.clear();
   await ibanInput.fill(iban);
 });

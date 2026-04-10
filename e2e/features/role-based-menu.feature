@@ -11,6 +11,7 @@ Feature: Role-based access control
   Scenario: Admin sees all menu entries
     When I log in as a admin user
     Then I should see the dashboard instead of the login form
+    And demo society has SEPA billing enabled
     And I should see the main menu entries
     And I should see admin management links
     And I should see config links
