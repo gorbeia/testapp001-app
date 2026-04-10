@@ -6,10 +6,16 @@ import {
   superadmins,
   societies,
   backofficeCreateSocietyBodySchema,
+  backofficeEmailTestBodySchema,
   backofficeLoginBodySchema,
   createSuperadminBodySchema,
   updateSuperadminBodySchema,
 } from "../../shared/schema";
+import {
+  getOutboundEmailConfigSnapshot,
+  verifyAndSendBackofficeTestEmail,
+  BackofficeMailTestError,
+} from "../lib/mail";
 import { deriveSocietyAcronym } from "../../shared/society-acronym";
 import {
   backofficeSocietySubdomainPatchBodySchema,
@@ -130,6 +136,69 @@ export function registerBackofficeRoutes(app: Express) {
       next(err);
     }
   });
+
+  // Outbound email config snapshot (no secrets)
+  app.get(
+    "/api/backoffice/email/status",
+    requireBackoffice,
+    async (_req: Request, res: Response, next: NextFunction) => {
+      try {
+        return res.status(200).json(getOutboundEmailConfigSnapshot());
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
+
+  // Send a single SMTP test message (verifies connection first)
+  app.post(
+    "/api/backoffice/email/test",
+    requireBackoffice,
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        const parsed = backofficeEmailTestBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res.status(400).json({
+            message: "Invalid payload",
+            issues: parsed.error.flatten(),
+          });
+        }
+
+        const status = getOutboundEmailConfigSnapshot();
+        if (!status.readyForSmtp) {
+          return res.status(400).json({
+            message: "SMTP is not fully configured on the server",
+            code: "NOT_CONFIGURED" as const,
+            status,
+          });
+        }
+        if (!status.emailEnabled) {
+          return res.status(400).json({
+            message: "EMAIL_ENABLED is false on the server",
+            code: "EMAIL_DISABLED" as const,
+            status,
+          });
+        }
+
+        try {
+          await verifyAndSendBackofficeTestEmail(parsed.data.to);
+        } catch (err) {
+          if (err instanceof BackofficeMailTestError) {
+            return res.status(502).json({
+              message: err.message,
+              code: err.code,
+              status,
+            });
+          }
+          throw err;
+        }
+
+        return res.status(200).json({ ok: true });
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
 
   // Backoffice endpoint to list all societies (protected)
   app.get(

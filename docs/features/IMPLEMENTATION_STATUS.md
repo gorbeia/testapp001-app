@@ -240,6 +240,7 @@ Documented alongside auth; shipped as `/profila` with profile edit + password ch
 ## 11. Platform backoffice (not in legacy story index)
 
 - **Superadmin login, society list, superadmin users** (`/elkarteapp/kudeaketa/*`): Implemented (separate cookie; `superadmins` table)
+- **SMTP validation (superadmin)** — `GET /api/backoffice/email/status` (env flags, no secrets), `POST /api/backoffice/email/test` (verify + test send), UI `/elkarteapp/kudeaketa/email`: ✅ Implemented
 - **Per-society tenant subdomain** (`societies.subdomain`, `PATCH /api/backoffice/societies/:id`, check-subdomain endpoint, backoffice UI): ✅ Implemented — see [`subdomain-tenancy.md`](./subdomain-tenancy.md)
 
 ## 12. Public marketing landing (not in legacy story index)

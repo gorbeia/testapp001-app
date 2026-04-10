@@ -44,7 +44,12 @@ import { SubscriptionsPage } from "@/pages/SubscriptionsPage";
 import CategoriesPage from "@/pages/CategoriesPage";
 import NotFound from "@/pages/not-found";
 import { SuperAdminLoginPage } from "@/pages/SuperAdminLoginPage";
-import { BackofficeSocietiesPage, BackofficeSuperadminsPage, BackofficeLayout } from "@/backoffice";
+import {
+  BackofficeSocietiesPage,
+  BackofficeSuperadminsPage,
+  BackofficeEmailPage,
+  BackofficeLayout,
+} from "@/backoffice";
 import { LandingPage } from "@/landing/LandingPage";
 import { useTenantByHost } from "@/hooks/useTenantByHost";
 
@@ -217,6 +222,7 @@ function AuthenticatedApp() {
         <Switch>
           <Route path="/elkarteapp/kudeaketa/societies" component={BackofficeSocietiesPage} />
           <Route path="/elkarteapp/kudeaketa/superadmins" component={BackofficeSuperadminsPage} />
+          <Route path="/elkarteapp/kudeaketa/email" component={BackofficeEmailPage} />
           <Route
             component={() => (
               <div className="p-8">

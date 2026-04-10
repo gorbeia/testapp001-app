@@ -85,35 +85,21 @@
 - TypeScript for type safety
 - Environment-based configuration
 
-## 5. Development Setup
+## 5. Development setup
 
-### Prerequisites
+**Step-by-step local setup** (Postgres via Docker, `db:push`, seed, tests, scripts): **[docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)**.
 
-- **Node.js** >= 24 (see `package.json` → `engines`; same as [README](README.md))
-- **PostgreSQL** (v14+)
-- **pnpm** (required for this repo; see README)
+**Prerequisites:** Node.js (see `package.json` → `engines`), **pnpm**, PostgreSQL for local or remote DB.
 
-### Installation
+**Quick install:**
 
 ```bash
-# Install dependencies
 pnpm install
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-# Start development server
+cp .env.example .env   # then edit DATABASE_URL, secrets, PORT, VITE_API_URL
 pnpm dev
 ```
 
-### Available Scripts
-
-- `dev`: Start development server
-- `build`: Build for production
-- `start`: Start production server
-- `check`: Type checking
-- `db:push`: Push database schema changes
+Full script list and CI: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## 6. Deployment
 
@@ -158,7 +144,7 @@ NODE_ENV=production
 ## 9. Testing
 
 - **Unit:** `pnpm test:unit` (Vitest) — ledger rules and service in `server/lib/ledger/` (no database).
-- **E2E:** `pnpm test:e2e` (Cucumber + Playwright) — full product flows; see [README](README.md) for prerequisites (database seed, Playwright browsers).
+- **E2E:** `pnpm test:e2e` (Cucumber + Playwright) — full product flows; see [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for prerequisites (database seed, Playwright browsers).
 
 ## 10. Error Handling
 

@@ -169,6 +169,7 @@ MAIL_FROM_NAME=Gure Txokoa
 - Port **465** often requires **`SMTP_SECURE=true`** (implicit TLS).
 - If **`SMTP_HOST`** or **`MAIL_FROM`** is missing, the app **does not send** mail (a warning is logged in production). In development you still get a short `[mail:noop]` line with To/Subject.
 - **`MAIL_LOG_TO_STDOUT=true`** — prints the full To/Subject/body (and HTML if present) to the server log. Use this to validate copy and flows **without** SMTP (or alongside real SMTP to compare). Disable on production if logs are centralized and messages are sensitive.
+- After deployment, superadmins can open **`/elkarteapp/kudeaketa/email`** (backoffice) to see which mail env flags are set and send a **test message** (runs SMTP `verify` then sends to an address you enter).
 
 ### 6. Database Setup
 

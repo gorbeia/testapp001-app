@@ -1,6 +1,6 @@
 import { useLocation, Link } from "wouter";
 import { useState, useEffect } from "react";
-import { Building2, LogOut, Users } from "lucide-react";
+import { Building2, LogOut, Mail, Users } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -65,6 +65,7 @@ export function BackofficeSidebar() {
   const menuItems = [
     { title: t("societies"), url: "/elkarteapp/kudeaketa/societies", icon: Building2 },
     { title: t("superadmins"), url: "/elkarteapp/kudeaketa/superadmins", icon: Users },
+    { title: t("backofficeEmailNav"), url: "/elkarteapp/kudeaketa/email", icon: Mail },
   ];
 
   return (

@@ -1209,6 +1209,10 @@ export const backofficeLoginBodySchema = z.object({
   password: z.string().min(1),
 });
 
+export const backofficeEmailTestBodySchema = z.object({
+  to: z.string().email(),
+});
+
 export const batchCreditStatusBodySchema = z.object({
   creditIds: z.array(z.string().min(1)).min(1),
   status: z.enum(["pending", "paid", "partial"]),

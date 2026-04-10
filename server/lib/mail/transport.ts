@@ -1,5 +1,5 @@
-import nodemailer from "nodemailer";
 import type { MailPayload, MailTransport } from "./types";
+import { createSmtpTransportFromEnv, parseBoolEnv } from "./smtp-env";
 
 function resolveFromDisplayName(payload: MailPayload): string | undefined {
   const fromPayload = payload.fromName?.trim();
@@ -14,17 +14,12 @@ function formatFromForPreview(payload: MailPayload): string {
   return name ? `"${name.replace(/"/g, "")}" <${addr}>` : addr;
 }
 
-function parseBool(raw: string | undefined, defaultValue: boolean): boolean {
-  if (raw == null || raw === "") return defaultValue;
-  return raw === "1" || raw.toLowerCase() === "true";
-}
-
 /**
  * When `MAIL_LOG_TO_STDOUT=true`, prints a full copy of the message to the server log
  * (for staging / local validation without SMTP). Avoid in production if logs are retained and content is sensitive.
  */
 export function logMailPreviewIfRequested(payload: MailPayload): void {
-  if (!parseBool(process.env.MAIL_LOG_TO_STDOUT, false)) return;
+  if (!parseBoolEnv(process.env.MAIL_LOG_TO_STDOUT, false)) return;
   if (process.env.NODE_ENV === "test") return;
 
   const lines = [
@@ -47,7 +42,7 @@ function createNoopTransport(): MailTransport {
   return {
     async send(payload: MailPayload) {
       logMailPreviewIfRequested(payload);
-      const previewOnly = parseBool(process.env.MAIL_LOG_TO_STDOUT, false);
+      const previewOnly = parseBoolEnv(process.env.MAIL_LOG_TO_STDOUT, false);
       if (process.env.NODE_ENV === "development" && !previewOnly) {
         console.info("[mail:noop] no SMTP / MAIL_FROM — not sending", {
           to: payload.to,
@@ -61,22 +56,10 @@ function createNoopTransport(): MailTransport {
 }
 
 function createNodemailerTransport(): MailTransport {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT ?? "587");
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const secure = parseBool(process.env.SMTP_SECURE, port === 465);
-
-  if (!host) {
+  const transporter = createSmtpTransportFromEnv();
+  if (!transporter) {
     return createNoopTransport();
   }
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure,
-    auth: user && pass ? { user, pass } : undefined,
-  });
 
   return {
     async send(payload: MailPayload) {
