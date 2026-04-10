@@ -76,6 +76,7 @@ import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
 import { useAuth } from "@/lib/auth";
 import { ImageUpload } from "@/components/ImageUpload";
+import { ProductCatalogImagePicker } from "@/components/ProductCatalogImagePicker";
 import { productImageSrc, thumbFilenameFromImageUrl } from "@/lib/image-urls";
 
 // Define Category type for frontend
@@ -189,6 +190,7 @@ export function ProductsPage() {
     purpose: "sale" as ProductPurposeUi,
     parentProductId: "",
     parentUnitsPerSale: "",
+    catalogImageUrl: null as string | null,
   });
   const [newRecipeLines, setNewRecipeLines] = useState<RecipeLineDraft[]>([]);
 
@@ -254,6 +256,7 @@ export function ProductsPage() {
             minStock: newProduct.minStock || "0",
             supplier: newProduct.supplier.trim() ? newProduct.supplier.trim() : undefined,
           }),
+      ...(newProduct.catalogImageUrl ? { imageUrl: newProduct.catalogImageUrl } : {}),
     };
     try {
       const response = await authFetch("/api/products", {
@@ -303,6 +306,7 @@ export function ProductsPage() {
           purpose: "sale",
           parentProductId: "",
           parentUnitsPerSale: "",
+          catalogImageUrl: null,
         });
         setNewRecipeLines([]);
         setIsDialogOpen(false);
@@ -598,6 +602,12 @@ export function ProductsPage() {
                       onChange={e => setNewProduct({ ...newProduct, description: e.target.value })}
                     />
                   </div>
+
+                  <ProductCatalogImagePicker
+                    mode="create"
+                    selectedPath={newProduct.catalogImageUrl}
+                    onChange={path => setNewProduct({ ...newProduct, catalogImageUrl: path })}
+                  />
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -1178,28 +1188,46 @@ export function ProductsPage() {
               </div>
 
               {editDialog.product && user?.societyId ? (
-                <ImageUpload
-                  societyId={user.societyId}
-                  entity="product-image"
-                  entityId={editDialog.product.id}
-                  label={t("productImageLabel")}
-                  description={t("productImageHint")}
-                  currentFilename={editDialog.product.imageUrl}
-                  thumbFilename={thumbFilenameFromImageUrl(editDialog.product.imageUrl)}
-                  disabled={!user.societyId}
-                  onUploaded={filename => {
-                    const p = editDialog.product!;
-                    const updated = { ...p, imageUrl: filename };
-                    setEditDialog({ ...editDialog, product: updated });
-                    setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
-                  }}
-                  onRemoved={() => {
-                    const p = editDialog.product!;
-                    const updated = { ...p, imageUrl: null };
-                    setEditDialog({ ...editDialog, product: updated });
-                    setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
-                  }}
-                />
+                <div className="space-y-4">
+                  <ImageUpload
+                    societyId={user.societyId}
+                    entity="product-image"
+                    entityId={editDialog.product.id}
+                    label={t("productImageLabel")}
+                    description={t("productImageHint")}
+                    currentFilename={editDialog.product.imageUrl}
+                    thumbFilename={thumbFilenameFromImageUrl(editDialog.product.imageUrl)}
+                    disabled={!user.societyId}
+                    onUploaded={filename => {
+                      const p = editDialog.product!;
+                      const updated = { ...p, imageUrl: filename };
+                      setEditDialog({ ...editDialog, product: updated });
+                      setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
+                    }}
+                    onRemoved={() => {
+                      const p = editDialog.product!;
+                      const updated = { ...p, imageUrl: null };
+                      setEditDialog({ ...editDialog, product: updated });
+                      setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
+                    }}
+                  />
+                  <ProductCatalogImagePicker
+                    mode="edit"
+                    productId={editDialog.product.id}
+                    selectedPath={editDialog.product.imageUrl ?? null}
+                    disabled={!user.societyId}
+                    onUpdated={product => {
+                      const prev = editDialog.product!;
+                      const merged: ProductRow = {
+                        ...prev,
+                        ...product,
+                        recipeLineCount: prev.recipeLineCount,
+                      };
+                      setEditDialog({ ...editDialog, product: merged });
+                      setProducts(prev => prev.map(x => (x.id === merged.id ? merged : x)));
+                    }}
+                  />
+                </div>
               ) : null}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

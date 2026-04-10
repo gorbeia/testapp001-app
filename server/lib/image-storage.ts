@@ -54,6 +54,14 @@ export async function writeImageVariants(
   return { filename, thumbFilename };
 }
 
+/** True if value is a tenant upload filename (not a `/catalog/...` path). */
+export function isTenantUploadedProductImage(filename: string | null | undefined): boolean {
+  const s = filename?.trim();
+  if (!s) return false;
+  if (s.includes("/") || s.includes("\\") || s.includes("..")) return false;
+  return /\.webp$/i.test(s);
+}
+
 /** Remove `{stem}.webp` and `{stem}_thumb.webp` if they exist. */
 export async function removeImageVariants(
   societyId: string,

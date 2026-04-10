@@ -6,7 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import type { ImageUploadEntity } from "@shared/schema";
-import { tenantImageSrc } from "@/lib/image-urls";
+import { tenantImageSrc, productImageSrc } from "@/lib/image-urls";
 import { Loader2, Trash2, Upload } from "lucide-react";
 
 export type ImageUploadProps = {
@@ -50,12 +50,13 @@ export function ImageUpload({
   const [busy, setBusy] = useState(false);
   const [localPreview, setLocalPreview] = useState<string | null>(null);
 
+  const thumbOrCurrent =
+    thumbFilename && thumbFilename.trim() !== "" ? thumbFilename : currentFilename;
   const displaySrc =
     localPreview ??
-    tenantImageSrc(
-      societyId,
-      thumbFilename && thumbFilename.trim() !== "" ? thumbFilename : currentFilename
-    );
+    (entity === "product-image"
+      ? productImageSrc(societyId, thumbOrCurrent)
+      : tenantImageSrc(societyId, thumbOrCurrent));
 
   const pickFile = () => inputRef.current?.click();
 

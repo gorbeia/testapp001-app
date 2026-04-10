@@ -34,6 +34,12 @@ export function productImageSrc(
   societyId: string | undefined,
   imageUrl: string | null | undefined
 ): string | undefined {
+  const s = imageUrl?.trim();
+  if (!s) return undefined;
+  if (s.startsWith("/catalog/products/")) {
+    if (s.includes("..")) return undefined;
+    return s;
+  }
   return tenantImageSrc(societyId, imageUrl);
 }
 

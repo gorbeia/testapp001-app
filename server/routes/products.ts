@@ -15,6 +15,7 @@ import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
 import { refreshLowStockNotificationForProduct } from "../lib/stock-notifications";
 import { isValidStockString, parseStockNumber } from "../lib/inventory/stock-number";
+import { removeImageVariants, isTenantUploadedProductImage } from "../lib/image-storage";
 
 const getUserSocietyId = (user: JwtSessionUser): string => {
   if (!user.societyId) {
@@ -409,6 +410,14 @@ export function registerProductRoutes(app: Express) {
 
         if (!existing) {
           return res.status(404).json({ message: "Product not found" });
+        }
+
+        if (
+          parsed.data.imageUrl !== undefined &&
+          parsed.data.imageUrl !== existing.imageUrl &&
+          isTenantUploadedProductImage(existing.imageUrl)
+        ) {
+          await removeImageVariants(societyId, existing.imageUrl);
         }
 
         const mergedParentId =

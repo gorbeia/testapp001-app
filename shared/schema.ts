@@ -18,6 +18,7 @@ import { accessRoleSchema, membershipTypeSchema } from "./permissions";
 import { societyCategorySchema } from "./society-categories";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { productCatalogImagePathSchema } from "./product-catalog-images";
 
 /** How this society bills via SEPA / monthly credit rows (see docs/features/credits.md). */
 export const sepaModeSchema = z.enum([
@@ -407,7 +408,7 @@ export const products = pgTable("products", {
   societyId: varchar("society_id")
     .notNull()
     .references(() => societies.id),
-  /** Product photo filename under `/api/images/{societyId}/` */
+  /** Upload: bare `.webp` filename under `/api/images/{societyId}/`; or `/catalog/products/...` static asset */
   imageUrl: varchar("image_url"),
   purpose: text("purpose").notNull().default("sale"),
   /** Portion product: stock is drawn from this parent (bulk) product. */
@@ -464,6 +465,16 @@ export const categoryMessages = pgTable("category_messages", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+/** Filename produced by `POST /api/images/upload` for products (single segment, `.webp`). */
+export const uploadedProductImageFilenameSchema = z
+  .string()
+  .min(1)
+  .max(300)
+  .refine(
+    s => !s.includes("/") && !s.includes("\\") && !s.includes("..") && /\.webp$/i.test(s),
+    "Invalid uploaded image filename"
+  );
+
 export const insertProductSchema = createInsertSchema(products)
   .pick({
     name: true,
@@ -481,13 +492,21 @@ export const insertProductSchema = createInsertSchema(products)
     purpose: productPurposeSchema.optional(),
     parentProductId: z.string().uuid().nullable().optional(),
     parentUnitsPerSale: z.string().nullable().optional(),
+    /** Create accepts only predefined catalog paths (not client-supplied upload filenames). */
+    imageUrl: productCatalogImagePathSchema.optional(),
   });
 
 /** PATCH-style product updates; tenant is never taken from the client. */
 export const updateProductSchema = insertProductSchema.partial();
 
 /** Catalog-only update (PUT /api/products/:id); stock changes must use POST /api/products/:id/adjust. */
-export const updateProductCatalogSchema = updateProductSchema.omit({ stock: true });
+export const updateProductCatalogSchema = updateProductSchema
+  .omit({ stock: true, imageUrl: true })
+  .extend({
+    imageUrl: z
+      .union([z.null(), productCatalogImagePathSchema, uploadedProductImageFilenameSchema])
+      .optional(),
+  });
 
 /** Body for PUT /api/products/:id/recipe — replaces all recipe lines. */
 export const productRecipeLineInputSchema = z.object({

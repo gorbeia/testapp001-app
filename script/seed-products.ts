@@ -58,6 +58,8 @@ export async function seedProducts(dbConn: SeedDb) {
     supplier: string | null;
     isActive: boolean;
     stockMode: StockMode;
+    /** Static path under `client/public/` (see `shared/product-catalog-images.ts`). */
+    catalogImageUrl?: string;
   };
 
   const demoProducts: DemoProductSeed[] = [
@@ -72,6 +74,7 @@ export async function seedProducts(dbConn: SeedDb) {
       supplier: "Kalea Brewery",
       isActive: true,
       stockMode: "auto",
+      catalogImageUrl: "/catalog/products/garagardo-kana.png",
     },
     {
       name: "Txakoli Getariako",
@@ -108,6 +111,7 @@ export async function seedProducts(dbConn: SeedDb) {
       supplier: "Sukalde kanpokoa",
       isActive: true,
       stockMode: "none",
+      catalogImageUrl: "/catalog/products/tortilla.png",
     },
     {
       name: "Gilda Pintxo",
@@ -217,6 +221,58 @@ export async function seedProducts(dbConn: SeedDb) {
       isActive: true,
       stockMode: "none",
     },
+    {
+      name: "Cola klasikoa",
+      description: "Edari gasifikatua, botila",
+      categoryId: "",
+      price: "2.20",
+      stock: "40",
+      unit: "unit",
+      minStock: "10",
+      supplier: "Hornitzailea",
+      isActive: true,
+      stockMode: "auto",
+      catalogImageUrl: "/catalog/products/cocacola.png",
+    },
+    {
+      name: "KAS larana",
+      description: "KAS laranja, botila",
+      categoryId: "",
+      price: "2.00",
+      stock: "36",
+      unit: "unit",
+      minStock: "8",
+      supplier: "Hornitzailea",
+      isActive: true,
+      stockMode: "auto",
+      catalogImageUrl: "/catalog/products/kas-laranja.png",
+    },
+    {
+      name: "Esne osoa (1L)",
+      description: "Esne osoa, tetra paketea 1L",
+      categoryId: "",
+      price: "1.10",
+      stock: "24",
+      unit: "unit",
+      minStock: "6",
+      supplier: "Esnekiak SA",
+      isActive: true,
+      stockMode: "auto",
+      catalogImageUrl: "/catalog/products/esnea-1l.png",
+    },
+    {
+      name: "Zurito",
+      description: "Garagardo zuritoa",
+      categoryId: "",
+      price: "1.80",
+      stock: "0",
+      unit: "unit",
+      minStock: "0",
+      supplier: "Taberna",
+      isActive: true,
+      stockMode: "none",
+      catalogImageUrl: "/catalog/products/zurito.png",
+    },
   ];
 
   const oldCategoryNames = [
@@ -233,6 +289,10 @@ export async function seedProducts(dbConn: SeedDb) {
     "bestelakoak",
     "bestelakoak",
     "janariak",
+    "edariak",
+    "edariak",
+    "janariak",
+    "edariak",
   ];
   demoProducts.forEach((product, index) => {
     const icon = categoryMap[oldCategoryNames[index]];
@@ -261,6 +321,7 @@ export async function seedProducts(dbConn: SeedDb) {
         isActive: product.isActive,
         stockMode: product.stockMode,
         societyId,
+        ...(product.catalogImageUrl ? { imageUrl: product.catalogImageUrl } : {}),
       });
       console.log(`Added product: ${product.name} (${product.stockMode})`);
     } else {
@@ -269,6 +330,9 @@ export async function seedProducts(dbConn: SeedDb) {
         .set({
           stockMode: product.stockMode,
           description: product.description,
+          ...(product.catalogImageUrl !== undefined
+            ? { imageUrl: product.catalogImageUrl }
+            : {}),
         })
         .where(and(eq(products.name, product.name), eq(products.societyId, societyId)));
       console.log(`Product already exists (updated stockMode/description): ${product.name}`);
