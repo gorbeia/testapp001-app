@@ -26,6 +26,9 @@ function minimalProduct(overrides: Partial<Product> = {}): Product {
     isActive: true,
     societyId: "soc-1",
     imageUrl: null,
+    purpose: "sale",
+    parentProductId: null,
+    parentUnitsPerSale: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -106,7 +109,7 @@ describe("applyStockDelta", () => {
         productId: "prod-1",
         societyId: "soc-1",
         type: "consumption",
-        quantity: -3,
+        quantity: "-3",
         reason: "Bar consumption",
         referenceId: "cons-1",
         previousStock: "10",
@@ -126,13 +129,13 @@ describe("applyStockDelta", () => {
       createdBy: "u1",
     });
 
-    expect(movement.quantity).toBe(-3);
+    expect(movement.quantity).toBe("-3");
     expect(movement.newStock).toBe("7");
     expect(mockDb.insert).toHaveBeenCalled();
     const valuesCall = vi.mocked(mockDb.insert).mock.results[0]?.value.values;
     expect(valuesCall).toHaveBeenCalledWith(
       expect.objectContaining({
-        quantity: -3,
+        quantity: "-3",
         previousStock: "10",
         newStock: "7",
         type: "consumption",
@@ -149,7 +152,7 @@ describe("applyStockDelta", () => {
         productId: "prod-1",
         societyId: "soc-1",
         type: "purchase",
-        quantity: 12,
+        quantity: "12",
         reason: "Hornidura",
         referenceId: "rec-1",
         previousStock: "5",
@@ -181,7 +184,7 @@ describe("applyStockDelta", () => {
         productId: "prod-1",
         societyId: "soc-1",
         type: "adjustment",
-        quantity: 2,
+        quantity: "2",
         reason: "take",
         referenceId: "take-1",
         previousStock: "3",

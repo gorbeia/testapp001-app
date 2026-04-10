@@ -196,7 +196,7 @@ export function ConsumptionsPage() {
     const fetchData = async () => {
       try {
         const [productsResponse, categoriesResponse, societyResponse] = await Promise.all([
-          authFetch("/api/products"),
+          authFetch("/api/products?forPos=true"),
           authFetch("/api/categories"),
           authFetch("/api/societies/user"),
         ]);
@@ -502,7 +502,7 @@ export function ConsumptionsPage() {
         });
       }
 
-      const productsResponse = await authFetch("/api/products");
+      const productsResponse = await authFetch("/api/products?forPos=true");
       if (productsResponse.ok) {
         const data = await productsResponse.json();
         setProducts(data.filter((product: Product) => product.isActive));

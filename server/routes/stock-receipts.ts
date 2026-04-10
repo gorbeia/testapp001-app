@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import {
   products,
+  productRecipeLines,
   stockReceipts,
   stockReceiptLines,
   createStockReceiptSchema,
@@ -65,6 +66,23 @@ export function registerStockReceiptRoutes(app: Express) {
           return res.status(400).json({
             message: "Products without stock tracking cannot appear in receipts",
             productIds: nonTracked.map(p => p.id),
+          });
+        }
+
+        const withRecipe = await db
+          .selectDistinct({ productId: productRecipeLines.productId })
+          .from(productRecipeLines)
+          .where(inArray(productRecipeLines.productId, productIds));
+        const recipeSet = new Set(withRecipe.map(r => r.productId));
+        const notHoldStock = productRows.filter(
+          p =>
+            (p.parentProductId != null && p.parentProductId !== "") || recipeSet.has(p.id)
+        );
+        if (notHoldStock.length > 0) {
+          return res.status(400).json({
+            message:
+              "Portion and composite products cannot appear in supply receipts (stock the bulk or ingredient SKU instead)",
+            productIds: notHoldStock.map(p => p.id),
           });
         }
 

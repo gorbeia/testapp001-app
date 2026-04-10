@@ -65,6 +65,16 @@ export async function seedCategories(dbConn: SeedDb) {
         es: { name: "Cocina", description: "Productos de cocina y comida" },
       },
     },
+    {
+      color: "#8B5CF6",
+      icon: "Sparkles",
+      sortOrder: 5,
+      isActive: true,
+      messages: {
+        eu: { name: "Garbiketak", description: "Garbiketa eta hornidura barnekoa" },
+        es: { name: "Limpieza", description: "Limpieza y suministros internos" },
+      },
+    },
   ];
 
   console.log("Seeding demo categories with multilingual support...");

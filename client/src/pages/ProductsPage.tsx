@@ -52,11 +52,25 @@ import { useToast } from "@/hooks/use-toast";
 import type { Product } from "@shared/schema";
 
 type StockModeUi = "auto" | "manual" | "none";
+type ProductPurposeUi = "sale" | "internal" | "both";
+type ProductRow = Product & { recipeLineCount?: number };
+type RecipeLineDraft = { tempId: string; ingredientProductId: string; quantity: string };
 
 function normalizeStockMode(product: Pick<Product, "stockMode">): StockModeUi {
   const m = product.stockMode ?? "auto";
   if (m === "manual" || m === "none") return m;
   return "auto";
+}
+
+function normalizePurpose(p: Product["purpose"]): ProductPurposeUi {
+  if (p === "internal" || p === "both") return p;
+  return "sale";
+}
+
+function parseStockDisplay(stock: string, minStock: string): { stock: number; minStock: number } {
+  const s = parseFloat(stock);
+  const m = parseFloat(minStock);
+  return { stock: s, minStock: m };
 }
 import { ErrorFallback } from "@/components/ErrorBoundary";
 import { AccessDeniedOrError } from "@/components/AccessDeniedOrError";
@@ -94,15 +108,17 @@ export function ProductsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<ProductRow[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; product: Product | null }>({
-    open: false,
-    product: null,
-  });
-  const [editDialog, setEditDialog] = useState<{ open: boolean; product: Product | null }>({
+  const [deleteConfirm, setDeleteConfirm] = useState<{ open: boolean; product: ProductRow | null }>(
+    {
+      open: false,
+      product: null,
+    }
+  );
+  const [editDialog, setEditDialog] = useState<{ open: boolean; product: ProductRow | null }>({
     open: false,
     product: null,
   });
@@ -150,10 +166,14 @@ export function ProductsPage() {
 
   const lowStockProducts = products.filter(p => {
     if (normalizeStockMode(p) === "none") return false;
-    const stock = parseInt(p.stock);
-    const minStock = parseInt(p.minStock);
+    const { stock, minStock } = parseStockDisplay(p.stock, p.minStock);
+    if (Number.isNaN(stock) || Number.isNaN(minStock)) return false;
     return stock <= minStock;
   });
+
+  const bulkParentCandidates = products.filter(
+    p => p.parentProductId == null || p.parentProductId === ""
+  );
 
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -166,7 +186,11 @@ export function ProductsPage() {
     minStock: "",
     supplier: "",
     isActive: true,
+    purpose: "sale" as ProductPurposeUi,
+    parentProductId: "",
+    parentUnitsPerSale: "",
   });
+  const [newRecipeLines, setNewRecipeLines] = useState<RecipeLineDraft[]>([]);
 
   const [editProduct, setEditProduct] = useState({
     name: "",
@@ -178,9 +202,13 @@ export function ProductsPage() {
     minStock: "",
     supplier: "",
     isActive: true,
+    purpose: "sale" as ProductPurposeUi,
+    parentProductId: "",
+    parentUnitsPerSale: "",
   });
+  const [editRecipeLines, setEditRecipeLines] = useState<RecipeLineDraft[]>([]);
 
-  const [adjustDialog, setAdjustDialog] = useState<{ open: boolean; product: Product | null }>({
+  const [adjustDialog, setAdjustDialog] = useState<{ open: boolean; product: ProductRow | null }>({
     open: false,
     product: null,
   });
@@ -191,8 +219,20 @@ export function ProductsPage() {
   });
 
   const handleCreateProduct = async () => {
-    const mode = newProduct.stockMode;
-    const payload = {
+    const hasParent = Boolean(newProduct.parentProductId.trim());
+    const hasRecipe = newRecipeLines.some(
+      l => l.ingredientProductId.trim() && l.quantity.trim() !== ""
+    );
+    if (hasParent && hasRecipe) {
+      toast({
+        title: t("error"),
+        description: t("recipeMutuallyExclusive"),
+        variant: "destructive",
+      });
+      return;
+    }
+    const mode = hasRecipe ? "none" : newProduct.stockMode;
+    const payload: Record<string, unknown> = {
       name: newProduct.name,
       description: newProduct.description || undefined,
       categoryId: newProduct.categoryId,
@@ -200,6 +240,13 @@ export function ProductsPage() {
       unit: newProduct.unit,
       stockMode: mode,
       isActive: newProduct.isActive,
+      purpose: newProduct.purpose,
+      ...(hasParent
+        ? {
+            parentProductId: newProduct.parentProductId.trim(),
+            parentUnitsPerSale: newProduct.parentUnitsPerSale.trim() || undefined,
+          }
+        : {}),
       ...(mode === "none"
         ? { stock: "0", minStock: "0" }
         : {
@@ -215,14 +262,33 @@ export function ProductsPage() {
       });
 
       if (response.ok) {
-        const createdProduct = await response.json();
-        setProducts([...products, createdProduct]);
+        const createdProduct = (await response.json()) as ProductRow;
+        let finalProduct = createdProduct;
+        if (hasRecipe) {
+          const lines = newRecipeLines
+            .filter(l => l.ingredientProductId.trim() && l.quantity.trim() !== "")
+            .map(l => ({
+              ingredientProductId: l.ingredientProductId.trim(),
+              quantity: l.quantity.trim(),
+            }));
+          if (lines.length > 0) {
+            const recipeRes = await authFetch(`/api/products/${createdProduct.id}/recipe`, {
+              method: "PUT",
+              body: JSON.stringify({ lines }),
+            });
+            if (!recipeRes.ok) {
+              const err = await recipeRes.json().catch(() => ({}));
+              throw new Error(err.message || "Failed to save recipe");
+            }
+            finalProduct = { ...createdProduct, recipeLineCount: lines.length };
+          }
+        }
+        setProducts([...products, finalProduct]);
         toast({
           title: "Produktua sortua",
           description: `${newProduct.name} ondo sortu da`,
         });
 
-        // Reset form
         setNewProduct({
           name: "",
           description: "",
@@ -234,7 +300,11 @@ export function ProductsPage() {
           minStock: "",
           supplier: "",
           isActive: true,
+          purpose: "sale",
+          parentProductId: "",
+          parentUnitsPerSale: "",
         });
+        setNewRecipeLines([]);
         setIsDialogOpen(false);
       } else {
         const errorData = await response.json().catch(() => ({}));
@@ -250,7 +320,7 @@ export function ProductsPage() {
     }
   };
 
-  const handleDeleteProduct = (product: Product) => {
+  const handleDeleteProduct = (product: ProductRow) => {
     setDeleteConfirm({ open: true, product });
   };
 
@@ -287,7 +357,7 @@ export function ProductsPage() {
     setDeleteConfirm({ open: false, product: null });
   };
 
-  const handleEditProduct = (product: Product) => {
+  const handleEditProduct = async (product: ProductRow) => {
     setEditProduct({
       name: product.name,
       description: product.description || "",
@@ -298,11 +368,31 @@ export function ProductsPage() {
       minStock: product.minStock,
       supplier: product.supplier || "",
       isActive: product.isActive,
+      purpose: normalizePurpose(product.purpose ?? "sale"),
+      parentProductId: product.parentProductId ?? "",
+      parentUnitsPerSale: product.parentUnitsPerSale ?? "",
     });
+    let lines: RecipeLineDraft[] = [];
+    try {
+      const res = await authFetch(`/api/products/${product.id}/recipe`);
+      if (res.ok) {
+        const data = (await res.json()) as {
+          lines: { ingredientProductId: string; quantity: string }[];
+        };
+        lines = data.lines.map((l, i) => ({
+          tempId: `e-${i}-${l.ingredientProductId}`,
+          ingredientProductId: l.ingredientProductId,
+          quantity: l.quantity,
+        }));
+      }
+    } catch {
+      /* ignore */
+    }
+    setEditRecipeLines(lines);
     setEditDialog({ open: true, product });
   };
 
-  const openAdjustStock = (product: Product) => {
+  const openAdjustStock = (product: ProductRow) => {
     if (normalizeStockMode(product) === "none") {
       toast({
         title: t("error"),
@@ -317,8 +407,8 @@ export function ProductsPage() {
 
   const submitAdjustStock = async () => {
     if (!adjustDialog.product) return;
-    const raw = parseInt(adjustForm.quantityInput, 10);
-    if (Number.isNaN(raw) || adjustForm.reason.trim() === "") {
+    const raw = parseFloat(adjustForm.quantityInput);
+    if (!Number.isFinite(raw) || adjustForm.reason.trim() === "") {
       toast({
         title: t("error"),
         description: t("stockAdjustFormInvalid"),
@@ -366,6 +456,19 @@ export function ProductsPage() {
   const handleUpdateProduct = async () => {
     if (!editDialog.product) return;
 
+    const hasParent = Boolean(editProduct.parentProductId.trim());
+    const hasRecipe = editRecipeLines.some(
+      l => l.ingredientProductId.trim() && l.quantity.trim() !== ""
+    );
+    if (hasParent && hasRecipe) {
+      toast({
+        title: t("error"),
+        description: t("recipeMutuallyExclusive"),
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const response = await authFetch(`/api/products/${editDialog.product.id}`, {
         method: "PUT",
@@ -375,18 +478,40 @@ export function ProductsPage() {
           categoryId: editProduct.categoryId,
           price: editProduct.price,
           unit: editProduct.unit,
-          stockMode: editProduct.stockMode,
-          minStock: editProduct.stockMode === "none" ? "0" : editProduct.minStock,
+          stockMode: hasRecipe ? "none" : editProduct.stockMode,
+          minStock: hasRecipe || editProduct.stockMode === "none" ? "0" : editProduct.minStock,
           supplier:
-            editProduct.stockMode === "none"
+            hasRecipe || editProduct.stockMode === "none"
               ? undefined
               : editProduct.supplier?.trim() || undefined,
           isActive: editProduct.isActive,
+          purpose: editProduct.purpose,
+          ...(hasParent
+            ? {
+                parentProductId: editProduct.parentProductId.trim(),
+                parentUnitsPerSale: editProduct.parentUnitsPerSale.trim() || undefined,
+              }
+            : { parentProductId: null, parentUnitsPerSale: null }),
         }),
       });
 
       if (response.ok) {
-        const updatedProduct = await response.json();
+        let updatedProduct = (await response.json()) as ProductRow;
+        const lines = editRecipeLines
+          .filter(l => l.ingredientProductId.trim() && l.quantity.trim() !== "")
+          .map(l => ({
+            ingredientProductId: l.ingredientProductId.trim(),
+            quantity: l.quantity.trim(),
+          }));
+        const recipeRes = await authFetch(`/api/products/${editDialog.product.id}/recipe`, {
+          method: "PUT",
+          body: JSON.stringify({ lines }),
+        });
+        if (!recipeRes.ok) {
+          const err = await recipeRes.json().catch(() => ({}));
+          throw new Error(err.message || "Failed to save recipe");
+        }
+        updatedProduct = { ...updatedProduct, recipeLineCount: lines.length };
         setProducts(products.map(p => (p.id === editDialog.product!.id ? updatedProduct : p)));
         toast({
           title: "Produktua eguneratua",
@@ -518,6 +643,29 @@ export function ProductsPage() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label>{t("productPurpose")}</Label>
+                    <Select
+                      value={newProduct.purpose}
+                      onValueChange={value =>
+                        setNewProduct({
+                          ...newProduct,
+                          purpose: value as ProductPurposeUi,
+                        })
+                      }
+                    >
+                      <SelectTrigger data-testid="select-new-product-purpose">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="sale">{t("productPurposeSale")}</SelectItem>
+                        <SelectItem value="internal">{t("productPurposeInternal")}</SelectItem>
+                        <SelectItem value="both">{t("productPurposeBoth")}</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">{t("productPurposeHint")}</p>
+                  </div>
+
+                  <div className="space-y-2">
                     <Label>{t("stockMode")}</Label>
                     <Select
                       value={newProduct.stockMode}
@@ -551,6 +699,7 @@ export function ProductsPage() {
                         <Input
                           type="number"
                           min="0"
+                          step="any"
                           placeholder="0"
                           aria-label="Produktuaren stock kopurua"
                           value={newProduct.stock}
@@ -571,6 +720,7 @@ export function ProductsPage() {
                             <SelectItem value="unit">Unitatea</SelectItem>
                             <SelectItem value="kg">Kg</SelectItem>
                             <SelectItem value="l">L</SelectItem>
+                            <SelectItem value="ml">ml</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -579,6 +729,7 @@ export function ProductsPage() {
                         <Input
                           type="number"
                           min="0"
+                          step="any"
                           placeholder="0"
                           aria-label="Stock minimoaren alerta mugaria"
                           value={newProduct.minStock}
@@ -603,6 +754,7 @@ export function ProductsPage() {
                           <SelectItem value="unit">Unitatea</SelectItem>
                           <SelectItem value="kg">Kg</SelectItem>
                           <SelectItem value="l">L</SelectItem>
+                          <SelectItem value="ml">ml</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -620,6 +772,132 @@ export function ProductsPage() {
                     </div>
                   )}
 
+                  <div className="space-y-3 border-t pt-4">
+                    <Label>{t("productParentLabel")}</Label>
+                    <Select
+                      value={newProduct.parentProductId || "__none__"}
+                      onValueChange={value =>
+                        setNewProduct({
+                          ...newProduct,
+                          parentProductId: value === "__none__" ? "" : value,
+                          parentUnitsPerSale: value === "__none__" ? "" : newProduct.parentUnitsPerSale,
+                        })
+                      }
+                    >
+                      <SelectTrigger data-testid="select-new-product-parent">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">{t("productParentNone")}</SelectItem>
+                        {bulkParentCandidates
+                          .filter(p => (p.recipeLineCount ?? 0) === 0)
+                          .map(p => (
+                            <SelectItem key={p.id} value={p.id}>
+                              {p.name}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    {newProduct.parentProductId ? (
+                      <div className="space-y-2">
+                        <Label>{t("parentUnitsPerSaleLabel")}</Label>
+                        <Input
+                          value={newProduct.parentUnitsPerSale}
+                          onChange={e =>
+                            setNewProduct({ ...newProduct, parentUnitsPerSale: e.target.value })
+                          }
+                          placeholder="100"
+                          data-testid="input-new-parent-units-per-sale"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          {t("parentUnitsPerSaleHint")}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <div className="space-y-3 border-t pt-4">
+                    <Label>{t("recipeSectionTitle")}</Label>
+                    {newRecipeLines.map(line => (
+                      <div key={line.tempId} className="flex flex-wrap gap-2 items-end">
+                        <div className="flex-1 min-w-[140px] space-y-1">
+                          <span className="text-xs text-muted-foreground">{t("recipeIngredient")}</span>
+                          <Select
+                            value={line.ingredientProductId || "__pick__"}
+                            onValueChange={value =>
+                              setNewRecipeLines(
+                                newRecipeLines.map(l =>
+                                  l.tempId === line.tempId
+                                    ? {
+                                        ...l,
+                                        ingredientProductId: value === "__pick__" ? "" : value,
+                                      }
+                                    : l
+                                )
+                              )
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={t("recipeIngredient")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="__pick__">—</SelectItem>
+                              {bulkParentCandidates
+                                .filter(p => (p.recipeLineCount ?? 0) === 0)
+                                .map(p => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    {p.name}
+                                  </SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="w-24 space-y-1">
+                          <span className="text-xs text-muted-foreground">{t("recipeQuantity")}</span>
+                          <Input
+                            value={line.quantity}
+                            onChange={e =>
+                              setNewRecipeLines(
+                                newRecipeLines.map(l =>
+                                  l.tempId === line.tempId ? { ...l, quantity: e.target.value } : l
+                                )
+                              )
+                            }
+                            placeholder="1"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-label={t("delete")}
+                          onClick={() =>
+                            setNewRecipeLines(newRecipeLines.filter(l => l.tempId !== line.tempId))
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setNewRecipeLines([
+                          ...newRecipeLines,
+                          {
+                            tempId: `n-${Date.now()}`,
+                            ingredientProductId: "",
+                            quantity: "1",
+                          },
+                        ])
+                      }
+                    >
+                      {t("addRecipeLine")}
+                    </Button>
+                  </div>
+
                   <div className="flex justify-end gap-2 pt-2">
                     <Button
                       variant="outline"
@@ -629,7 +907,7 @@ export function ProductsPage() {
                       {t("cancel")}
                     </Button>
                     <Button
-                      onClick={handleCreateProduct}
+                      onClick={() => void handleCreateProduct()}
                       data-testid="button-save-product"
                       aria-label="Gorde produktu berria"
                     >
@@ -721,9 +999,15 @@ export function ProductsPage() {
                 ) : (
                   filteredProducts.map(product => {
                     const mode = normalizeStockMode(product);
-                    const stock = parseInt(product.stock);
-                    const minStock = parseInt(product.minStock);
-                    const isLowStock = mode !== "none" && stock <= minStock;
+                    const { stock: stockNum, minStock: minNum } = parseStockDisplay(
+                      product.stock,
+                      product.minStock
+                    );
+                    const isLowStock =
+                      mode !== "none" &&
+                      !Number.isNaN(stockNum) &&
+                      !Number.isNaN(minNum) &&
+                      stockNum <= minNum;
                     const productThumb =
                       user?.societyId && product.imageUrl
                         ? (productImageSrc(
@@ -760,6 +1044,21 @@ export function ProductsPage() {
                                     {t("stockModeBadgeNone")}
                                   </Badge>
                                 )}
+                                {normalizePurpose(product.purpose ?? "sale") === "internal" && (
+                                  <Badge variant="secondary" className="text-xs font-normal">
+                                    {t("badgeInternal")}
+                                  </Badge>
+                                )}
+                                {product.parentProductId && (
+                                  <Badge variant="secondary" className="text-xs font-normal">
+                                    {t("badgePortion")}
+                                  </Badge>
+                                )}
+                                {(product.recipeLineCount ?? 0) > 0 && (
+                                  <Badge variant="outline" className="text-xs font-normal">
+                                    {t("badgeComposite")}
+                                  </Badge>
+                                )}
                               </div>
                               {product.description && (
                                 <p className="text-sm text-muted-foreground">
@@ -785,7 +1084,7 @@ export function ProductsPage() {
                                   <AlertTriangle className="h-4 w-4 text-destructive" />
                                 )}
                                 <span className={isLowStock ? "text-destructive font-medium" : ""}>
-                                  {stock} {product.unit}
+                                  {product.stock} {product.unit}
                                 </span>
                               </>
                             )}
@@ -812,7 +1111,7 @@ export function ProductsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => handleEditProduct(product)}>
+                              <DropdownMenuItem onClick={() => void handleEditProduct(product)}>
                                 <Edit className="mr-2 h-4 w-4" />
                                 {t("edit")}
                               </DropdownMenuItem>
@@ -942,6 +1241,29 @@ export function ProductsPage() {
               </div>
 
               <div className="space-y-2">
+                <Label>{t("productPurpose")}</Label>
+                <Select
+                  value={editProduct.purpose}
+                  onValueChange={value =>
+                    setEditProduct({
+                      ...editProduct,
+                      purpose: value as ProductPurposeUi,
+                    })
+                  }
+                >
+                  <SelectTrigger data-testid="select-edit-product-purpose">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sale">{t("productPurposeSale")}</SelectItem>
+                    <SelectItem value="internal">{t("productPurposeInternal")}</SelectItem>
+                    <SelectItem value="both">{t("productPurposeBoth")}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">{t("productPurposeHint")}</p>
+              </div>
+
+              <div className="space-y-2">
                 <Label>{t("stockMode")}</Label>
                 <Select
                   value={editProduct.stockMode}
@@ -998,6 +1320,7 @@ export function ProductsPage() {
                       <SelectItem value="unit">Unitatea</SelectItem>
                       <SelectItem value="kg">Kg</SelectItem>
                       <SelectItem value="l">L</SelectItem>
+                      <SelectItem value="ml">ml</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -1007,6 +1330,7 @@ export function ProductsPage() {
                     <Input
                       type="number"
                       min="0"
+                      step="any"
                       placeholder="0"
                       aria-label="Editatu stock minimoaren alerta mugaria"
                       value={editProduct.minStock}
@@ -1029,6 +1353,135 @@ export function ProductsPage() {
                 </div>
               )}
 
+              <div className="space-y-3 border-t pt-4">
+                <Label>{t("productParentLabel")}</Label>
+                <Select
+                  value={editProduct.parentProductId || "__none__"}
+                  onValueChange={value =>
+                    setEditProduct({
+                      ...editProduct,
+                      parentProductId: value === "__none__" ? "" : value,
+                      parentUnitsPerSale: value === "__none__" ? "" : editProduct.parentUnitsPerSale,
+                    })
+                  }
+                >
+                  <SelectTrigger data-testid="select-edit-product-parent">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">{t("productParentNone")}</SelectItem>
+                    {bulkParentCandidates
+                      .filter(
+                        p =>
+                          (p.recipeLineCount ?? 0) === 0 && p.id !== editDialog.product?.id
+                      )
+                      .map(p => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                {editProduct.parentProductId ? (
+                  <div className="space-y-2">
+                    <Label>{t("parentUnitsPerSaleLabel")}</Label>
+                    <Input
+                      value={editProduct.parentUnitsPerSale}
+                      onChange={e =>
+                        setEditProduct({ ...editProduct, parentUnitsPerSale: e.target.value })
+                      }
+                      data-testid="input-edit-parent-units-per-sale"
+                    />
+                    <p className="text-xs text-muted-foreground">{t("parentUnitsPerSaleHint")}</p>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className="space-y-3 border-t pt-4">
+                <Label>{t("recipeSectionTitle")}</Label>
+                {editRecipeLines.map(line => (
+                  <div key={line.tempId} className="flex flex-wrap gap-2 items-end">
+                    <div className="flex-1 min-w-[140px] space-y-1">
+                      <span className="text-xs text-muted-foreground">{t("recipeIngredient")}</span>
+                      <Select
+                        value={line.ingredientProductId || "__pick__"}
+                        onValueChange={value =>
+                          setEditRecipeLines(
+                            editRecipeLines.map(l =>
+                              l.tempId === line.tempId
+                                ? {
+                                    ...l,
+                                    ingredientProductId: value === "__pick__" ? "" : value,
+                                  }
+                                : l
+                            )
+                          )
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={t("recipeIngredient")} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__pick__">—</SelectItem>
+                          {bulkParentCandidates
+                            .filter(
+                              p =>
+                                (p.recipeLineCount ?? 0) === 0 &&
+                                p.id !== editDialog.product?.id
+                            )
+                            .map(p => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="w-24 space-y-1">
+                      <span className="text-xs text-muted-foreground">{t("recipeQuantity")}</span>
+                      <Input
+                        value={line.quantity}
+                        onChange={e =>
+                          setEditRecipeLines(
+                            editRecipeLines.map(l =>
+                              l.tempId === line.tempId ? { ...l, quantity: e.target.value } : l
+                            )
+                          )
+                        }
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t("delete")}
+                      onClick={() =>
+                        setEditRecipeLines(editRecipeLines.filter(l => l.tempId !== line.tempId))
+                      }
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setEditRecipeLines([
+                      ...editRecipeLines,
+                      {
+                        tempId: `e-${Date.now()}`,
+                        ingredientProductId: "",
+                        quantity: "1",
+                      },
+                    ])
+                  }
+                >
+                  {t("addRecipeLine")}
+                </Button>
+              </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <Button
                   variant="outline"
@@ -1038,7 +1491,7 @@ export function ProductsPage() {
                   {t("cancel")}
                 </Button>
                 <Button
-                  onClick={handleUpdateProduct}
+                  onClick={() => void handleUpdateProduct()}
                   data-testid="button-update-product"
                   aria-label="Eguneratu produktua"
                 >
@@ -1087,6 +1540,7 @@ export function ProductsPage() {
                 <Label>{t("quantity")}</Label>
                 <Input
                   type="number"
+                  step="any"
                   data-testid="input-adjust-quantity"
                   value={adjustForm.quantityInput}
                   onChange={e => setAdjustForm({ ...adjustForm, quantityInput: e.target.value })}

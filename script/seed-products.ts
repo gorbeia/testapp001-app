@@ -5,6 +5,7 @@ import type { StockMode } from "../shared/schema";
 import type { SeedDb } from "./seed-db-type";
 import { db, pool } from "../server/db";
 import { fileURLToPath } from "node:url";
+import { seedInventoryTaxonomyExamples } from "./seed-inventory-taxonomy";
 
 export async function seedProducts(dbConn: SeedDb) {
   let societyId = "";
@@ -33,6 +34,7 @@ export async function seedProducts(dbConn: SeedDb) {
     opilekuak: "ChefHat",
     kafea: "Coffee",
     bestelakoak: "ChefHat",
+    garbiketak: "Sparkles",
   };
 
   function getCategoryId(icon: string): string {
@@ -243,7 +245,7 @@ export async function seedProducts(dbConn: SeedDb) {
     const existingProduct = await dbConn
       .select()
       .from(products)
-      .where(eq(products.name, product.name))
+      .where(and(eq(products.name, product.name), eq(products.societyId, societyId)))
       .limit(1);
 
     if (existingProduct.length === 0) {
@@ -272,6 +274,8 @@ export async function seedProducts(dbConn: SeedDb) {
       console.log(`Product already exists (updated stockMode/description): ${product.name}`);
     }
   }
+
+  await seedInventoryTaxonomyExamples(dbConn, societyId, getCategoryId);
 
   console.log("Done.");
 }

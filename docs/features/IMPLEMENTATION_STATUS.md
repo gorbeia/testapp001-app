@@ -94,7 +94,7 @@ Status legend:
 6. **Consumption categories as analytics**
    - **Status**: ❌ Not Implemented (no reporting dashboards)
 7. **Inventory update from consumptions** – stock + movements
-   - **Status**: ✅ Implemented (`stock_movements` with type consumption; stock can go negative)
+   - **Status**: ✅ Implemented (`stock_movements` with type consumption; **portion** and **recipe** lines decrement parent/ingredient stock via `postConsumptionStockDecrements`; fractional quantities supported; stock can go negative)
 8. **Consumption analytics**
    - **Status**: ❌ Not Implemented
 9. **Cash settlement (pending reservations / subscription) on POS** — when society cash methods enabled
@@ -190,19 +190,21 @@ Status legend:
 ## 7. Inventory Management (Produktuak) (`inventory.md`)
 
 1. **Add / update / view products**
-   - **Status**: ✅ Implemented (`/produktuak`, `/api/products` CRUD; cellarman-gated UI; **`products.stock_mode`** `auto` / `manual` / `none` — see `inventory.md` Story 4)
+   - **Status**: ✅ Implemented (`/produktuak`, `/api/products` CRUD; cellarman-gated UI; **`products.stock_mode`** `auto` / `manual` / `none`; **`products.purpose`** `sale` / `internal` / `both`; **bulk ↔ portion** link (`parent_product_id`, `parent_units_per_sale`); **composite recipes** (`product_recipe_lines`, `GET/PUT /api/products/:id/recipe`); list includes **`recipeLineCount`**; POS uses **`GET /api/products?forPos=true`** — see `inventory.md` taxonomy epic)
 2. **Product categories**
    - **Status**: ✅ Implemented (see Consumptions §5; `/kategoriak`)
 3. **Stock management & movements**
-   - **Status**: 🟡 Partial (`GET /api/stock-movements`, `POST /api/products/:id/adjust`, UI **`/stock-aldaketak`** with filters + **pagination**; consumption creates **consumption** movements only for **`stock_mode = auto`**; **purchase** / **adjustment** from receipts & stock takes per product mode — see `inventory.md`)
+   - **Status**: 🟡 Partial (`GET /api/stock-movements`, `POST /api/products/:id/adjust`, UI **`/stock-aldaketak`** with filters + **pagination**; consumption creates **consumption** movements for **`stock_mode = auto`** (line SKU or cascaded parent/ingredients); **`stock_movements.quantity`** as text (fractional deltas); **purchase** / **adjustment** from receipts & stock takes; receipts **reject** portion/composite lines — see `inventory.md`)
 4. **Low stock awareness**
    - **Status**: ✅ Implemented (`minStock` + **`ProductsPage`** emphasis; **`products.low_stock_notified`** + `refreshLowStockNotificationForProduct` after stock/threshold-related changes; in-app `notifyFinancialEvent` to admin/cellarman; **`GET /api/products/low-stock-summary`**; dashboard widget for **`products.manage`**)
 5. **Supply receipts (hornidurak)**
    - **Status**: 🟡 Partial (`POST` / `GET /api/stock-receipts` with optional **`month`**, **`supplier`**, **`reference`** query filters + **`GET /api/stock-receipts/:id`**, UI **`/hornidurak`** with list filters + per-receipt detail modal (all lines); **no** supplier entity / POs — see `inventory.md`)
 6. **Physical stock take (inbentarioa)**
-   - **Status**: ✅ Implemented (`stock_takes` / `stock_take_lines`, **`/inbentarioa`**, finalize → `stock_movements` **adjustment** for counted lines only; partial inventory / no need to count every SKU — see `inventory.md` stock-take story)
+   - **Status**: ✅ Implemented (`stock_takes` / `stock_take_lines`, **`/inbentarioa`**, finalize → `stock_movements` **adjustment** for counted lines only; **portion and composite SKUs excluded** from new takes; decimal counted quantities; partial inventory / no need to count every SKU — see `inventory.md` stock-take story)
 7. **Inventory analytics & optimization**
    - **Status**: ❌ Not Implemented
+8. **Demo seed (inventory taxonomy examples)**
+   - **Status**: ✅ Implemented (`script/seed-inventory-taxonomy.ts` via `seed-products.ts`; bulk oil, draft beer sizes, txakoli glass, gintonic, kalimotxo, menu bundle, internal cleaning SKU; category **Garbiketak**)
 
 ---
 

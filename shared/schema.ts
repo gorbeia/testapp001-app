@@ -12,6 +12,7 @@ import {
   unique,
   jsonb,
   index,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { accessRoleSchema, membershipTypeSchema } from "./permissions";
 import { societyCategorySchema } from "./society-categories";
@@ -346,6 +347,10 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const stockModeSchema = z.enum(["auto", "manual", "none"]);
 export type StockMode = z.infer<typeof stockModeSchema>;
 
+/** sale: POS/catalog; internal: inventory only; both: either (e.g. bulk sold whole or as parent of portions). */
+export const productPurposeSchema = z.enum(["sale", "internal", "both"]);
+export type ProductPurpose = z.infer<typeof productPurposeSchema>;
+
 export const products = pgTable("products", {
   id: varchar("id")
     .primaryKey()
@@ -370,6 +375,27 @@ export const products = pgTable("products", {
     .references(() => societies.id),
   /** Product photo filename under `/api/images/{societyId}/` */
   imageUrl: varchar("image_url"),
+  purpose: text("purpose").notNull().default("sale"),
+  /** Portion product: stock is drawn from this parent (bulk) product. */
+  parentProductId: varchar("parent_product_id").references((): AnyPgColumn => products.id),
+  /** Units of parent stock consumed per 1 sale of this portion (same unit as parent's `unit`). */
+  parentUnitsPerSale: text("parent_units_per_sale"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+/** Composite / recipe: ingredient lines consumed when the product is sold at POS. */
+export const productRecipeLines = pgTable("product_recipe_lines", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  productId: varchar("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
+  ingredientProductId: varchar("ingredient_product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "restrict" }),
+  quantity: text("quantity").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -418,6 +444,9 @@ export const insertProductSchema = createInsertSchema(products)
   })
   .extend({
     stockMode: stockModeSchema.optional(),
+    purpose: productPurposeSchema.optional(),
+    parentProductId: z.string().uuid().nullable().optional(),
+    parentUnitsPerSale: z.string().nullable().optional(),
   });
 
 /** PATCH-style product updates; tenant is never taken from the client. */
@@ -426,11 +455,21 @@ export const updateProductSchema = insertProductSchema.partial();
 /** Catalog-only update (PUT /api/products/:id); stock changes must use POST /api/products/:id/adjust. */
 export const updateProductCatalogSchema = updateProductSchema.omit({ stock: true });
 
+/** Body for PUT /api/products/:id/recipe — replaces all recipe lines. */
+export const productRecipeLineInputSchema = z.object({
+  ingredientProductId: z.string().uuid(),
+  quantity: z.string().min(1),
+});
+export const replaceProductRecipeSchema = z.object({
+  lines: z.array(productRecipeLineInputSchema),
+});
+export type ReplaceProductRecipeInput = z.infer<typeof replaceProductRecipeSchema>;
+
 /** Body for audited stock adjustment (cellarman/admin). */
 export const stockAdjustmentSchema = z
   .object({
     type: z.enum(["adjustment", "damage"]),
-    quantity: z.number().int(),
+    quantity: z.number().finite(),
     reason: z.string().min(1).max(500),
   })
   .superRefine((data, ctx) => {
@@ -483,7 +522,7 @@ export const createStockTakeSchema = z.object({
 });
 
 export const updateStockTakeLineSchema = z.object({
-  countedStock: z.string().regex(/^\d+$/),
+  countedStock: z.string().regex(/^\d+(\.\d+)?$/),
   notes: z.string().max(500).optional(),
 });
 
@@ -571,7 +610,8 @@ export const stockMovements = pgTable("stock_movements", {
     .notNull()
     .references(() => societies.id),
   type: text("type").notNull(), // "consumption", "purchase", "adjustment", "damage"
-  quantity: integer("quantity").notNull(), // Negative for consumption, positive for purchase
+  /** Delta applied to stock (may be fractional for portions/recipes). Stored as text for precision. */
+  quantity: text("quantity").notNull(),
   reason: text("reason"),
   referenceId: varchar("reference_id"), // e.g., consumption_id, purchase_id
   previousStock: text("previous_stock").notNull(),

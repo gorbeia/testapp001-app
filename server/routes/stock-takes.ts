@@ -2,6 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { db } from "../db";
 import {
   products,
+  productRecipeLines,
   stockTakeLines,
   stockTakes,
   createStockTakeSchema,
@@ -11,6 +12,7 @@ import {
   type Product,
 } from "@shared/schema";
 import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { isValidStockString, parseStockNumber } from "../lib/inventory/stock-number";
 import { sessionMiddleware, requireAuth } from "./middleware";
 import { canMutateProducts } from "@shared/permissions";
 import { applyStockDelta, refreshLowStockNotifications } from "../lib/inventory/inventory-service";
@@ -94,6 +96,27 @@ export function registerStockTakeRoutes(app: Express) {
 
         if (productRows.length === 0) {
           return res.status(400).json({ message: "No active products to include in stock take" });
+        }
+
+        const takeProductIds = productRows.map(p => p.id);
+        const withRecipe =
+          takeProductIds.length > 0
+            ? await db
+                .selectDistinct({ productId: productRecipeLines.productId })
+                .from(productRecipeLines)
+                .where(inArray(productRecipeLines.productId, takeProductIds))
+            : [];
+        const recipeSet = new Set(withRecipe.map(r => r.productId));
+        productRows = productRows.filter(
+          p =>
+            (p.parentProductId == null || p.parentProductId === "") && !recipeSet.has(p.id)
+        );
+
+        if (productRows.length === 0) {
+          return res.status(400).json({
+            message:
+              "No eligible products for stock take (portion and composite SKUs are excluded)",
+          });
         }
 
         const [take] = await db
@@ -345,7 +368,7 @@ export function registerStockTakeRoutes(app: Express) {
 
         const countedLines = lines.filter(l => {
           if (l.countedStock == null || l.countedStock === "") return false;
-          return !Number.isNaN(parseInt(l.countedStock, 10));
+          return isValidStockString(l.countedStock);
         });
 
         if (countedLines.length === 0) {
@@ -360,7 +383,7 @@ export function registerStockTakeRoutes(app: Express) {
         await db.transaction(async tx => {
           for (const line of countedLines) {
             const countedStock = line.countedStock!;
-            const newQty = parseInt(countedStock, 10);
+            const newQty = parseStockNumber(countedStock);
 
             const [pRow] = await tx
               .select()
@@ -372,8 +395,11 @@ export function registerStockTakeRoutes(app: Express) {
               throw new Error("Product not found");
             }
 
-            const prev = parseInt(pRow.stock, 10);
-            if (Number.isNaN(prev) || Number.isNaN(newQty)) {
+            if (!isValidStockString(pRow.stock)) {
+              throw new Error("Invalid stock values");
+            }
+            const prev = parseStockNumber(pRow.stock);
+            if (!Number.isFinite(prev) || !Number.isFinite(newQty)) {
               throw new Error("Invalid stock values");
             }
 

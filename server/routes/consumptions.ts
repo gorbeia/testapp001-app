@@ -21,9 +21,8 @@ import {
   prepaymentFloorHttpBody,
 } from "../lib/prepayment-ledger-floor";
 import {
-  applyStockDelta,
-  refreshLowStockNotificationForProduct,
-  shouldAutoDecrement,
+  InventoryServiceError,
+  postConsumptionStockDecrements,
 } from "../lib/inventory/inventory-service";
 
 // Helper function to get society ID from JWT (no DB query needed)
@@ -591,17 +590,24 @@ export function registerConsumptionRoutes(app: Express) {
             createdBy: user.id,
           });
 
-          if (shouldAutoDecrement(product[0])) {
-            await applyStockDelta(db, {
+          try {
+            await postConsumptionStockDecrements(db, {
               productId: item.productId,
               societyId,
-              delta: -item.quantity,
-              type: "consumption",
-              reason: "Bar consumption",
+              saleQty: item.quantity,
               referenceId: id,
               createdBy: user.id,
             });
-            await refreshLowStockNotificationForProduct(item.productId, societyId);
+          } catch (e) {
+            if (e instanceof InventoryServiceError) {
+              if (e.code === "PRODUCT_NOT_FOUND") {
+                return res.status(404).json({ message: e.message });
+              }
+              if (e.code === "INVALID_STOCK") {
+                return res.status(400).json({ message: e.message });
+              }
+            }
+            throw e;
           }
         }
 

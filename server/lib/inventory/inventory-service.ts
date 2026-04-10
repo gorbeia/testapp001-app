@@ -1,7 +1,8 @@
 import { db, type AppDatabase } from "../../db";
-import { products, stockMovements, users } from "@shared/schema";
+import { products, productRecipeLines, stockMovements, users } from "@shared/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { notifyFinancialEvent } from "../financial-notifications";
+import { formatStockNumber, isValidStockString, parseStockNumber } from "./stock-number";
 
 /** Posted row from stock_movements insert. */
 export type StockMovementRow = typeof stockMovements.$inferSelect;
@@ -44,7 +45,7 @@ export function shouldAutoDecrement(product: { stockMode?: string | null }): boo
 export interface ApplyStockDeltaParams {
   productId: string;
   societyId: string;
-  /** Added to current parsed integer stock (may be negative). */
+  /** Added to current parsed stock (may be negative or fractional). */
   delta: number;
   type: StockMovementType;
   reason: string;
@@ -52,7 +53,7 @@ export interface ApplyStockDeltaParams {
   createdBy: string;
   /**
    * When set, written to `products.stock` and `stock_movements.new_stock`
-   * (e.g. stock take counted string). Otherwise `String(current + delta)`.
+   * (e.g. stock take counted string). Otherwise `current + delta`.
    */
   newStockOverride?: string;
 }
@@ -85,12 +86,20 @@ export async function applyStockDelta(
     );
   }
 
-  const currentStock = parseInt(productRow.stock, 10);
-  if (Number.isNaN(currentStock)) {
+  if (!isValidStockString(productRow.stock)) {
     throw new InventoryServiceError("Invalid product stock value", "INVALID_STOCK");
   }
+  const currentStock = parseStockNumber(productRow.stock);
 
-  const newStockStr = newStockOverride ?? String(currentStock + delta);
+  let newStockStr: string;
+  if (newStockOverride != null) {
+    if (!isValidStockString(newStockOverride)) {
+      throw new InventoryServiceError("Invalid product stock value", "INVALID_STOCK");
+    }
+    newStockStr = formatStockNumber(parseStockNumber(newStockOverride));
+  } else {
+    newStockStr = formatStockNumber(currentStock + delta);
+  }
 
   await dbOrTx
     .update(products)
@@ -103,10 +112,10 @@ export async function applyStockDelta(
       productId,
       societyId,
       type,
-      quantity: delta,
+      quantity: formatStockNumber(delta),
       reason,
       referenceId,
-      previousStock: String(currentStock),
+      previousStock: formatStockNumber(currentStock),
       newStock: newStockStr,
       createdBy,
     })
@@ -147,9 +156,14 @@ export async function refreshLowStockNotificationForProduct(
       return;
     }
 
-    const stock = parseInt(row.stock, 10);
-    const minStock = parseInt(row.minStock, 10);
-    const isLow = !Number.isNaN(stock) && !Number.isNaN(minStock) && stock <= minStock;
+    const stock = parseStockNumber(row.stock);
+    const minStock = parseStockNumber(row.minStock);
+    const isLow =
+      Number.isFinite(stock) &&
+      Number.isFinite(minStock) &&
+      isValidStockString(row.stock) &&
+      isValidStockString(row.minStock) &&
+      stock <= minStock;
 
     if (!isLow) {
       if (row.lowStockNotified) {
@@ -208,4 +222,110 @@ export async function refreshLowStockNotifications(
 ): Promise<void> {
   const unique = Array.from(new Set(productIds));
   await Promise.all(unique.map(id => refreshLowStockNotificationForProduct(id, societyId)));
+}
+
+/**
+ * Apply inventory decrements for a consumption line: recipe ingredients, parent bulk for portions, or the product itself.
+ */
+export async function postConsumptionStockDecrements(
+  dbOrTx: AppDatabase,
+  params: {
+    productId: string;
+    societyId: string;
+    saleQty: number;
+    referenceId: string;
+    createdBy: string;
+  }
+): Promise<void> {
+  const { productId, societyId, saleQty, referenceId, createdBy } = params;
+
+  const [productRow] = await dbOrTx
+    .select()
+    .from(products)
+    .where(and(eq(products.id, productId), eq(products.societyId, societyId)))
+    .limit(1);
+
+  if (!productRow) {
+    throw new InventoryServiceError("Product not found", "PRODUCT_NOT_FOUND");
+  }
+
+  const recipeLines = await dbOrTx
+    .select()
+    .from(productRecipeLines)
+    .where(eq(productRecipeLines.productId, productId));
+
+  if (recipeLines.length > 0) {
+    for (const line of recipeLines) {
+      const lineQty = parseFloat(line.quantity);
+      if (Number.isNaN(lineQty) || lineQty < 0) {
+        throw new InventoryServiceError("Invalid recipe line quantity", "INVALID_STOCK");
+      }
+      const [ing] = await dbOrTx
+        .select()
+        .from(products)
+        .where(
+          and(eq(products.id, line.ingredientProductId), eq(products.societyId, societyId))
+        )
+        .limit(1);
+      if (!ing) {
+        throw new InventoryServiceError("Product not found", "PRODUCT_NOT_FOUND");
+      }
+      if (shouldAutoDecrement(ing)) {
+        await applyStockDelta(dbOrTx, {
+          productId: ing.id,
+          societyId,
+          delta: -saleQty * lineQty,
+          type: "consumption",
+          reason: "Bar consumption (recipe)",
+          referenceId,
+          createdBy,
+        });
+        await refreshLowStockNotificationForProduct(ing.id, societyId);
+      }
+    }
+    return;
+  }
+
+  if (productRow.parentProductId) {
+    const parentUnits = parseFloat(productRow.parentUnitsPerSale ?? "");
+    if (Number.isNaN(parentUnits) || parentUnits <= 0) {
+      return;
+    }
+    const [parent] = await dbOrTx
+      .select()
+      .from(products)
+      .where(
+        and(eq(products.id, productRow.parentProductId), eq(products.societyId, societyId))
+      )
+      .limit(1);
+    if (!parent) {
+      throw new InventoryServiceError("Product not found", "PRODUCT_NOT_FOUND");
+    }
+    if (shouldAutoDecrement(parent)) {
+      await applyStockDelta(dbOrTx, {
+        productId: parent.id,
+        societyId,
+        delta: -saleQty * parentUnits,
+        type: "consumption",
+        reason: "Bar consumption (portion)",
+        referenceId,
+        createdBy,
+      });
+      await refreshLowStockNotificationForProduct(parent.id, societyId);
+    }
+    return;
+  }
+
+  if (shouldAutoDecrement(productRow)) {
+    await applyStockDelta(dbOrTx, {
+      productId,
+      societyId,
+      delta: -saleQty,
+      type: "consumption",
+      reason: "Bar consumption",
+      referenceId,
+      createdBy,
+    });
+    await refreshLowStockNotificationForProduct(productId, societyId);
+  }
 }

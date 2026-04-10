@@ -80,6 +80,7 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 | Story area              | Unit                  | Integration     | E2E |
 | ----------------------- | --------------------- | --------------- | --- |
 | Movements list / adjust | ✓ (inventory helpers) | `stock.feature` | —   |
+| Product taxonomy (portion/recipe) | — | `products.feature` (CRUD); dedicated cascade scenario not in `integration/` yet | —   |
 
 ## 8. Communication (`communication.md`)
 

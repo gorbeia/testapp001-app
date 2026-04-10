@@ -119,6 +119,27 @@
 
 ---
 
+## Epic: Product taxonomy (bulk, portion, composite)
+
+### Story: Purpose, parent stock, and recipes
+
+**As a** Sotolaria  
+**I want to** define products that draw stock from a bulk parent, composite recipes, and internal-only SKUs  
+**So that** inventory matches how we buy and sell (oil by bottle, raciones, gintonic, cleaning supplies)
+
+**Acceptance criteria:**
+
+- **Shipped:** `products.purpose` `sale` | `internal` | `both`; **`internal`** hidden from POS (`GET /api/products?forPos=true`)
+- **Shipped:** Portion products: `parent_product_id` + `parent_units_per_sale`; consumption decrements parent stock when parent `stock_mode = auto` (manual parents unchanged on POS)
+- **Shipped:** Composites: `product_recipe_lines`; consumption decrements each ingredient per line quantity when ingredient `stock_mode = auto`
+- **Shipped:** `GET/PUT /api/products/:id/recipe` (product managers); validation: no chained portions, no composite-as-ingredient (single-level BOM)
+- **Shipped:** Supply receipts reject portion and composite rows; stock take creation excludes portion and composite SKUs
+- **Shipped:** `stock_movements.quantity` supports fractional deltas; `products.stock` parsed as decimal for low-stock and adjustments
+- **Shipped:** Demo seed examples in `script/seed-inventory-taxonomy.ts` (+ category **Garbiketak** / Sparkles)
+- **Deferred (future):** multi-level recipes (composite inside composite), variable-weight POS, returnable containers, yield factors — see `inventory.md` backlog below
+
+---
+
 ## Epic: Stock take (physical count)
 
 ### Story: Periodic inventory count
@@ -138,3 +159,12 @@
 ### Stories 10–12: Reports, consumption analytics, optimization
 
 **Status:** ❌ **Not implemented**
+
+---
+
+## Backlog: inventory taxonomy (future)
+
+- **Multi-level BOM:** composite products as ingredients in other composites
+- **Variable-weight sales:** POS quantity from scale / manual weight entry
+- **Returnable containers:** keg/crate deposits tracked separately from liquid stock
+- **Yield / loss factors** on parent–portion and recipe lines
