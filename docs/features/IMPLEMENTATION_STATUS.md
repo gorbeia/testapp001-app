@@ -72,7 +72,8 @@ Status legend:
 9. **Society calendar (Egutegia)** – closures, parties, assemblies; optional hard blocks on reservations
    - **Status**: ✅ Implemented ([`society-calendar.md`](./society-calendar.md): `/egutegia`; `society_events` table; `GET/POST/PUT/DELETE /api/society-events`; **`Permission.CALENDAR_MANAGE`** for mutations — admin + diruzaina; **`POST /api/reservations`** overlap checks with localized **409**; member calendar month reservations via **`GET /api/reservations?forCalendar=true&month=YYYY-MM`** max **`limit` 500**; warnings in **`ReservationDialog`**)
 10. **Configurable reservation meal types** – per-society ids + EU/ES labels
-   - **Status**: ✅ Implemented (`societies.reservation_meal_types`; editor on **`/elkartea`**; reservation UIs read from **`GET /api/societies/user`**; integration: **`@reservation-meal-types-restricted`** on **`reservations.feature`**, meal types PUT on **`societies.feature`**)
+
+- **Status**: ✅ Implemented (`societies.reservation_meal_types`; editor on **`/elkartea`**; reservation UIs read from **`GET /api/societies/user`**; integration: **`@reservation-meal-types-restricted`** on **`reservations.feature`**, meal types PUT on **`societies.feature`**)
 
 ---
 

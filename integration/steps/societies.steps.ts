@@ -51,7 +51,9 @@ When(
       { id: "bazkaria", labelEu: "Bazkaria", labelEs: "Comida" },
       { id: "brunch", labelEu: "Brunch", labelEs: "Brunch" },
     ];
-    const res = await this.agent.put(`/api/societies/${id}`).send({ reservationMealTypes: mealTypes });
+    const res = await this.agent
+      .put(`/api/societies/${id}`)
+      .send({ reservationMealTypes: mealTypes });
     this.lastResponse = {
       status: res.status,
       headers: res.headers as Record<string, string | string[] | undefined>,

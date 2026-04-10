@@ -31,13 +31,13 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 
 ## 3. Reservations (`reservations.md`)
 
-| Story area                    | Unit | Integration                                         | E2E                                             |
-| ----------------------------- | ---- | --------------------------------------------------- | ----------------------------------------------- |
-| CRUD / list                   | —    | `reservations.feature`                              | `reservation-management.feature`                |
-| Configurable meal types (API) | —    | `reservations.feature` (`@reservation-meal-types-restricted`), `societies.feature` (`@society-reservation-meal-types-put`) | — |
-| Prepayment ledger floor (API) | —    | `reservations.feature` (`@prepayment-ledger-floor`) | —                                               |
-| Prepayment ledger floor (UI)  | —    | —                                                   | `prepayment-ledger-floor.feature`               |
-| Cancellation + notification   | —    | —                                                   | `reservation-cancellation-notification.feature` |
+| Story area                    | Unit | Integration                                                                                                                | E2E                                             |
+| ----------------------------- | ---- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| CRUD / list                   | —    | `reservations.feature`                                                                                                     | `reservation-management.feature`                |
+| Configurable meal types (API) | —    | `reservations.feature` (`@reservation-meal-types-restricted`), `societies.feature` (`@society-reservation-meal-types-put`) | —                                               |
+| Prepayment ledger floor (API) | —    | `reservations.feature` (`@prepayment-ledger-floor`)                                                                        | —                                               |
+| Prepayment ledger floor (UI)  | —    | —                                                                                                                          | `prepayment-ledger-floor.feature`               |
+| Cancellation + notification   | —    | —                                                                                                                          | `reservation-cancellation-notification.feature` |
 
 ## 3a. Society calendar (`society-calendar.md`)
 
@@ -63,13 +63,13 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 
 ## 6. Catalog & society settings
 
-| Story area                                 | Unit | Integration          | E2E                              |
-| ------------------------------------------ | ---- | -------------------- | -------------------------------- |
-| Products CRUD                              | —    | `products.feature`   | —                                |
-| Categories                                 | —    | `categories.feature` | —                                |
+| Story area                                                    | Unit | Integration          | E2E                              |
+| ------------------------------------------------------------- | ---- | -------------------- | -------------------------------- |
+| Products CRUD                                                 | —    | `products.feature`   | —                                |
+| Categories                                                    | —    | `categories.feature` | —                                |
 | Society PATCH (incl. payment methods, reservation meal types) | —    | `societies.feature`  | `society-management.feature`     |
-| Image uploads (logo, map, avatar, product) | —    | —                    | —                                |
-| SEPA mode / sidebar                        | —    | —                    | `sepa-billing-frequency.feature` |
+| Image uploads (logo, map, avatar, product)                    | —    | —                    | —                                |
+| SEPA mode / sidebar                                           | —    | —                    | `sepa-billing-frequency.feature` |
 
 ## 7. Inventory / stock (`inventory.md`)
 

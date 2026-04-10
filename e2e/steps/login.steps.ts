@@ -98,7 +98,10 @@ When("I re-login as a {word} user", async function (role: string) {
     await logout.click();
     // Logout does not change the URL; on non-tenant hosts `/` is the landing page (no login form).
     await page.goto(e2eUrl("/sartu"), { waitUntil: "domcontentloaded" });
-    await page.waitForSelector('[data-testid="input-email"]', { state: "visible", timeout: 20_000 });
+    await page.waitForSelector('[data-testid="input-email"]', {
+      state: "visible",
+      timeout: 20_000,
+    });
   }
 
   await fillDemoLogin(page, role);

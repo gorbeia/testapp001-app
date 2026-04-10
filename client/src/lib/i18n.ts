@@ -406,7 +406,8 @@ export const translations = {
     reservationMealTypeLabelEs: "Etiketa (ES)",
     reservationMealTypeAdd: "Gehitu mota",
     reservationMealTypeRemove: "Kendu",
-    reservationMealTypesInvalid: "Egiaztatu moten zerrenda: gutxienez bat, ID bakartiak (minuskulak, zenbakiak, _ eta -).",
+    reservationMealTypesInvalid:
+      "Egiaztatu moten zerrenda: gutxienez bat, ID bakartiak (minuskulak, zenbakiak, _ eta -).",
     reservationMealTypesNeedOne: "Gutxienez erreserba-mota bat behar da.",
     contactInformation: "Kontaktu informazioa",
     communicationPreferences: "Komunikazioaren hobespenak",
