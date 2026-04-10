@@ -1,4 +1,4 @@
-# Design Guidelines: Elkartearen App
+# Design Guidelines: Elkartetippia
 
 _Product domain: gastronomic society management._
 

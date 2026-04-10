@@ -7,7 +7,7 @@ description: >-
   create CRUD for a new entity (events, suppliers, etc.).
 ---
 
-# Scaffold feature (Elkartearen App)
+# Scaffold feature (Elkartetippia)
 
 ## Before coding
 

@@ -1,9 +1,9 @@
 ---
-description: Elkartearen App stack, layout, aliases, multi-tenancy
+description: Elkartetippia stack, layout, aliases, multi-tenancy
 alwaysApply: true
 ---
 
-# Project context (Elkartearen App)
+# Project context (Elkartetippia)
 
 ## Stack (one line)
 

@@ -1,6 +1,6 @@
 # Society-wide accounting: options and decision
 
-This document records how we could extend Elkartearen App from the **member sub-ledger** (`account_movements`, per `userId`) to **society-level financial visibility** (all money in and out, not only member charges and payments). It is the product-facing summary of the options analysis; implementation detail may evolve.
+This document records how we could extend Elkartetippia from the **member sub-ledger** (`account_movements`, per `userId`) to **society-level financial visibility** (all money in and out, not only member charges and payments). It is the product-facing summary of the options analysis; implementation detail may evolve.
 
 ---
 

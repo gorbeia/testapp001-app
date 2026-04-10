@@ -33,20 +33,20 @@ function copy(
 
   if (lang === "es") {
     return {
-      subject: "Tus enlaces de acceso — Elkartearen",
+      subject: "Tus enlaces de acceso — Elkartetippia",
       text: `Hola,\n\nAquí tienes las direcciones web donde puedes iniciar sesión con tu correo:\n\n${listText}\n\nAbre el enlace de tu sociedad e inicia sesión allí.\n`,
       html: `<p>Hola,</p><p>Aquí tienes las direcciones web donde puedes iniciar sesión con tu correo:</p><ul>${listHtml}</ul><p>Abre el enlace de tu sociedad e inicia sesión allí.</p>`,
     };
   }
   if (lang === "en") {
     return {
-      subject: "Your sign-in links — Elkartearen",
+      subject: "Your sign-in links — Elkartetippia",
       text: `Hello,\n\nHere are the web addresses where you can sign in with your email:\n\n${listText}\n\nOpen your society’s link and sign in there.\n`,
       html: `<p>Hello,</p><p>Here are the web addresses where you can sign in with your email:</p><ul>${listHtml}</ul><p>Open your society’s link and sign in there.</p>`,
     };
   }
   return {
-    subject: "Zure sarbide-estekak — Elkartearen",
+    subject: "Zure sarbide-estekak — Elkartetippia",
     text: `Kaixo,\n\nHonako helbideetan saioa has dezakezu zure postarekin:\n\n${listText}\n\nIreki zure elkarteko esteka eta hasi saioa bertan.\n`,
     html: `<p>Kaixo,</p><p>Honako helbideetan saioa has dezakezu zure postarekin:</p><ul>${listHtml}</ul><p>Ireki zure elkarteko esteka eta hasi saioa bertan.</p>`,
   };

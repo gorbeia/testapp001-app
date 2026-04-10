@@ -148,7 +148,7 @@ export function LoginForm() {
                   />
                 ) : (
                   <span className="text-2xl font-bold text-primary-foreground">
-                    {isTenant ? (tenantData.acronym || "?").slice(0, 3).toUpperCase() : "GT"}
+                    {isTenant ? (tenantData.acronym || "?").slice(0, 3).toUpperCase() : "Et"}
                   </span>
                 )}
               </div>

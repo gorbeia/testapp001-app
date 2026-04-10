@@ -1,6 +1,6 @@
 # Development guide
 
-Local setup, database, running the app, and tests for **Elkartearen App** (UI brand: **Gure Txokoa**).
+Local setup, database, running the app, and tests for **Elkartetippia** (demo society in seeds: **Gure Txoko**).
 
 For production deployment on Ubuntu, see [INSTALLATION_UBUNTU_24.md](./INSTALLATION_UBUNTU_24.md). For architecture and stack details, see [TECHNICAL_DOCUMENTATION.md](../TECHNICAL_DOCUMENTATION.md) in the repo root.
 

@@ -1,8 +1,8 @@
-# Technical Documentation: Elkartearen App
+# Technical Documentation: Elkartetippia
 
 ## 1. Project Overview
 
-**Elkartearen App** is a modern web application built with a full-stack TypeScript architecture, featuring a React frontend and an Express.js backend. The application follows a client-server architecture with a clear separation of concerns.
+**Elkartetippia** is a modern web application built with a full-stack TypeScript architecture, featuring a React frontend and an Express.js backend. The application follows a client-server architecture with a clear separation of concerns.
 
 ## 2. Technology Stack
 

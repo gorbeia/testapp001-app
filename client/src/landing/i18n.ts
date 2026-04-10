@@ -9,14 +9,15 @@ export const LANDING_LOCALE_STORAGE_KEY = "landing:locale";
 export const LANDING_ACCESS_SOCIETY_PATH = "/elkartea-sartu";
 
 const eu = {
-  brandShort: "Gure Txokoa",
-  productName: "Elkartearen App",
+  brandShort: "Elkartetippia",
+  brandInitials: "Et",
+  productName: "Elkarteen kudeaketa",
   ctaLogin: "Sartu aplikazioan",
   heroTitle: "Zure elkartearen kudeaketa digitala",
   heroSubtitle:
     "Bazkideak, erreserbak, kontsumoak, finantzak, inbentarioa eta komunikazioa — tresna bakarrean.",
   heroLead:
-    "Elkartearen App elkarte gastronomiko baten eguneroko kudeaketa osoa eskaintzen du: rol-oinarritutako sarbidea, egutegi bateratua, kutxa (POS), zorrak eta SEPA, kontu-liburua, aurreordainketak, kontabilitatea, inbentarioa eta oharrak jakinarazpenekin. Interfazea euskaraz eta gaztelaniaz.",
+    "Elkartetippia elkarte gastronomiko baten eguneroko kudeaketa osoa eskaintzen du: rol-oinarritutako sarbidea, egutegi bateratua, kutxa (POS), zorrak eta SEPA, kontu-liburua, aurreordainketak, kontabilitatea, inbentarioa eta oharrak jakinarazpenekin. Interfazea euskaraz eta gaztelaniaz.",
   featuresHeading: "Zer eskaintzen duen",
   featuresSub: "Bazkideentzat eta kudeaketa-taldeentzat diseinatutako funtzionalitate nagusiak.",
   card1Title: "Bazkideak eta sarbidea",
@@ -100,7 +101,7 @@ const eu = {
   signupFieldAdminPassword: "Pasahitza (gutxienez 8 karaktere)",
   signupFieldAdminPasswordConfirm: "Errepikatu pasahitza",
   signupMarketingOptIn:
-    "Nahi dut Elkartearen App-eko berriak eta garapenak jaso (borondatezko harpidetza).",
+    "Nahi dut Elkartetippia-ko berriak eta garapenak jaso (borondatezko harpidetza).",
   signupAcceptTerms: "Onartzen ditut erabilera-baldintzak eta pribatutasun-politika.",
   signupTermsLink: "Baldintzak",
   signupPrivacyLink: "Pribatutasuna",
@@ -131,14 +132,15 @@ const eu = {
 } as const;
 
 const es = {
-  brandShort: "Gure Txokoa",
-  productName: "Elkartearen App",
+  brandShort: "Elkartetippia",
+  brandInitials: "Et",
+  productName: "Gestión de sociedades gastronómicas",
   ctaLogin: "Entrar a la aplicación",
   heroTitle: "La gestión digital de tu sociedad",
   heroSubtitle:
     "Socios, reservas, consumos, finanzas, inventario y comunicación — en una sola herramienta.",
   heroLead:
-    "Elkartearen App ofrece la gestión integral de una sociedad gastronómica: acceso por roles, calendario unificado, caja (TPV), deudas y SEPA, libro de movimientos, anticipos por transferencia, contabilidad de la sociedad, inventario y avisos con notificaciones. Interfaz en euskera y castellano.",
+    "Elkartetippia ofrece la gestión integral de una sociedad gastronómica: acceso por roles, calendario unificado, caja (TPV), deudas y SEPA, libro de movimientos, anticipos por transferencia, contabilidad de la sociedad, inventario y avisos con notificaciones. Interfaz en euskera y castellano.",
   featuresHeading: "Qué ofrece",
   featuresSub: "Funcionalidades principales para socios y equipos de gestión.",
   card1Title: "Socios y acceso",
@@ -218,7 +220,7 @@ const es = {
   signupFieldAdminEmail: "Correo electrónico (inicio de sesión)",
   signupFieldAdminPassword: "Contraseña (mín. 8 caracteres)",
   signupFieldAdminPasswordConfirm: "Repetir contraseña",
-  signupMarketingOptIn: "Quiero recibir novedades y actualizaciones de Elkartearen App (opcional).",
+  signupMarketingOptIn: "Quiero recibir novedades y actualizaciones de Elkartetippia (opcional).",
   signupAcceptTerms: "Acepto los términos de uso y la política de privacidad.",
   signupTermsLink: "Términos",
   signupPrivacyLink: "Privacidad",

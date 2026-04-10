@@ -13,7 +13,7 @@ Feature: Society Management
   Scenario: Modify society basic information
     When I navigate to the society page
     Then I should see the current society information
-    When I update the society name to "Gure Txokoa Berria"
+    When I update the society name to "Gure Txoko Berria"
     And I update the society IBAN to "ES91 2100 0418 4502 0005 1331"
     And I update the society phone to "+34 943 111 223"
     And I save the society changes

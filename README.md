@@ -1,8 +1,8 @@
-# Elkartearen App · Gure Txokoa
+# Elkartetippia
 
 Web application for **gastronomic societies** (elkarte gastronomikoak): members manage reservations, consumptions, debts, inventory, and society communication from one place.
 
-**Naming:** documentation and the repo use **Elkartearen App**; the member-facing UI is branded **Gure Txokoa** (see `client/index.html` and baseline copy in `client/src/lib/i18n.ts`).
+**Naming:** the product is **Elkartetippia**. The seeded demo society is **Gure Txoko** (alphabetic id `GT001`, subdomain `guretxokoa` when used). See `client/index.html` and `client/src/lib/i18n.ts` for UI copy.
 
 ---
 

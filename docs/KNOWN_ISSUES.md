@@ -45,7 +45,7 @@ _No open items from the last review._ (`next(err)` for unexpected errors; global
 
 Keeping feature stories and [`IMPLEMENTATION_STATUS.md`](features/IMPLEMENTATION_STATUS.md) aligned is covered by [`.cursor/rules/feature-workflow.mdc`](../.cursor/rules/feature-workflow.mdc), not an open product defect.
 
-Root onboarding docs ([`README.md`](../README.md) — product overview; [`docs/DEVELOPMENT.md`](DEVELOPMENT.md) — dev setup; [`INSTALLATION_UBUNTU_24.md`](../INSTALLATION_UBUNTU_24.md), [`TECHNICAL_DOCUMENTATION.md`](../TECHNICAL_DOCUMENTATION.md), [`docs/design_guidelines.md`](design_guidelines.md)) were reconciled for Node **`engines`**, **Elkartearen App** vs **Gure Txokoa** naming, **Lucide** icons, JWT auth description, and **E2E-only** testing.
+Root onboarding docs ([`README.md`](../README.md) — product overview; [`docs/DEVELOPMENT.md`](DEVELOPMENT.md) — dev setup; [`INSTALLATION_UBUNTU_24.md`](../INSTALLATION_UBUNTU_24.md), [`TECHNICAL_DOCUMENTATION.md`](../TECHNICAL_DOCUMENTATION.md), [`docs/design_guidelines.md`](design_guidelines.md)) were reconciled for Node **`engines`**, **Elkartetippia** / demo society **Gure Txoko** naming, **Lucide** icons, JWT auth description, and **E2E-only** testing.
 
 ---
 

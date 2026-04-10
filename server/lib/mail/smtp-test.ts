@@ -45,7 +45,7 @@ export async function verifyAndSendBackofficeTestEmail(to: string): Promise<void
   }
 
   const from = process.env.MAIL_FROM!.trim();
-  const displayName = process.env.MAIL_FROM_NAME?.trim() || "Elkartearen backoffice";
+  const displayName = process.env.MAIL_FROM_NAME?.trim() || "Elkartetippia backoffice";
 
   try {
     await transport.verify();
@@ -60,7 +60,7 @@ export async function verifyAndSendBackofficeTestEmail(to: string): Promise<void
       to,
       subject: `[Backoffice test] Outbound email — ${new Date().toISOString()}`,
       text: [
-        "This is a test message from the Elkartearen multisociety backoffice.",
+        "This is a test message from the Elkartetippia multisociety backoffice.",
         "If you received it, SMTP settings on the server are valid.",
         "",
         `Sent at ${new Date().toISOString()}`,

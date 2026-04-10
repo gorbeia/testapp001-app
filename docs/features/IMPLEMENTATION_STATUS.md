@@ -1,4 +1,4 @@
-# Implementation Status – Elkartearen App User Stories
+# Implementation Status – Elkartetippia User Stories
 
 Status legend:
 

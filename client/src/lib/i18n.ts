@@ -4,7 +4,7 @@ export type Language = "eu" | "es";
 
 export const translations = {
   eu: {
-    appName: "Gure Txokoa",
+    appName: "Elkartetippia",
     login: "Sartu",
     logout: "Irten",
     email: "Posta elektronikoa",
@@ -1057,7 +1057,7 @@ export const translations = {
     failedToUpdateSocietySubdomain: "Huts egin du azpidomeinua eguneratzean",
   },
   es: {
-    appName: "Gure Txokoa",
+    appName: "Elkartetippia",
     login: "Entrar",
     logout: "Salir",
     email: "Correo electrónico",
@@ -2036,7 +2036,7 @@ export const translations = {
       "En modo un host por sociedad, configura el subdominio de la sociedad.",
   },
   en: {
-    appName: "Gure Txokoa",
+    appName: "Elkartetippia",
     login: "Login",
     logout: "Logout",
     email: "Email",

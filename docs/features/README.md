@@ -1,8 +1,8 @@
 # User Stories Index
 
-## Elkartearen App - User Stories Documentation
+## Elkartetippia - User Stories Documentation
 
-This directory contains user stories organized by feature area for the Elkartearen App.
+This directory contains user stories organized by feature area for Elkartetippia.
 
 **Live tracker:** [IMPLEMENTATION_STATUS.md](./IMPLEMENTATION_STATUS.md) (keep in sync when shipping or changing behavior).
 

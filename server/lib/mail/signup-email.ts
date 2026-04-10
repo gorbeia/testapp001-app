@@ -13,13 +13,13 @@ function verificationCopy(
 ): { subject: string; text: string; html: string } {
   if (lang === "es") {
     return {
-      subject: "Confirma tu correo — Elkartearen",
+      subject: "Confirma tu correo — Elkartetippia",
       text: `Hola,\n\nPara activar tu cuenta de administración de "${vars.societyName}", confirma tu correo abriendo este enlace (válido 48 h):\n\n${vars.verifyUrl}\n\nSi no has solicitado esto, ignora este mensaje.\n`,
       html: `<p>Hola,</p><p>Para activar tu cuenta de administración de <strong>${escapeHtml(vars.societyName)}</strong>, confirma tu correo:</p><p><a href="${escapeHtml(vars.verifyUrl)}">Confirmar correo</a></p><p>Si no has solicitado esto, ignora este mensaje.</p>`,
     };
   }
   return {
-    subject: "Egiaztatu zure posta — Elkartearen",
+    subject: "Egiaztatu zure posta — Elkartetippia",
     text: `Kaixo,\n\n"${vars.societyName}" elkarteko administratzaile kontua aktibatzeko, egiaztatu zure posta esteka hau irekiz (48 ordu balio-duina):\n\n${vars.verifyUrl}\n\nEz baduzu eskatu, ez ikusi mezu honi.\n`,
     html: `<p>Kaixo,</p><p><strong>${escapeHtml(vars.societyName)}</strong> elkarteko administratzaile kontua aktibatzeko, egiaztatu zure posta:</p><p><a href="${escapeHtml(vars.verifyUrl)}">Posta egiaztatu</a></p><p>Ez baduzu eskatu, ez ikusi mezu honi.</p>`,
   };

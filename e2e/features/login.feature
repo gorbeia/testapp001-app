@@ -1,7 +1,7 @@
 Feature: Login page
   As a visitor
   I want to access the login page
-  So that I can authenticate into the Elkartearen App
+  So that I can authenticate into Elkartetippia
 
   Scenario: Visit the login page
     Given the application is running

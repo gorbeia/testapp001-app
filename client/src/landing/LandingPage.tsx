@@ -59,7 +59,7 @@ export function LandingPage() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3">
           <Link href="/" className="flex min-w-0 items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
-              GT
+              {t("brandInitials")}
             </div>
             <div className="min-w-0">
               <p className="truncate font-semibold leading-tight">{t("brandShort")}</p>

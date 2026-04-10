@@ -255,9 +255,9 @@ export class SepaDirectDebitGenerator {
   }
 }
 
-// Default configuration for Gure Txokoa
+// Default configuration for demo society (seed)
 export const defaultSepaConfig: SepaConfig = {
-  creditorName: "Gure Txokoa",
+  creditorName: "Gure Txoko",
   creditorIBAN: "ES45000B12345678", // This should be replaced with actual IBAN
   creditorId: "ES45000B12345678",
   creditorBIC: "BANKESMM",

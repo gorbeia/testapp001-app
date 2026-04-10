@@ -1,6 +1,6 @@
 # Ubuntu 24.04 Installation Guide
 
-This guide provides step-by-step instructions for installing and setting up **Elkartearen App** on Ubuntu 24.04 LTS (the app UI is branded _Gure Txokoa_ in the client).
+This guide provides step-by-step instructions for installing and setting up **Elkartetippia** on Ubuntu 24.04 LTS (demo society name in seeds: _Gure Txoko_).
 
 ## Prerequisites
 
@@ -162,7 +162,7 @@ SMTP_SECURE=false
 SMTP_USER=your-smtp-user
 SMTP_PASS=your-smtp-password
 MAIL_FROM=noreply@your-domain.com
-MAIL_FROM_NAME=Gure Txokoa
+MAIL_FROM_NAME=Elkartetippia
 ```
 
 - Jakinarazpenak emails use the **society `name`** as the From display name. **`MAIL_FROM_NAME`** is optional and only used as a fallback for other mail (e.g. future `sendRawEmail` calls without `fromName`).

@@ -25,7 +25,7 @@ export async function seedSocieties(dbConn: SeedDb) {
       id: SOCIETY_UUID,
       alphabeticId: DEMO_SOCIETY_ALPHABETIC_ID,
       subdomain: DEMO_SOCIETY_SUBDOMAIN,
-      name: "Gure Txokoa",
+      name: "Gure Txoko",
       acronym: "GT",
       shortDescription: "Gastronomia elkartea",
       iban: "ES91 2100 0418 4502 0005 1330",
