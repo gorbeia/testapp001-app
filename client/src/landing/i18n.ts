@@ -128,7 +128,6 @@ const eu = {
   accessSocietyErrorGeneric: "Ezin izan da eskaera prozesatu. Saiatu berriro.",
   accessSocietyTooManyRequests: "Eskaera gehiegi. Saiatu beranduago.",
   accessSocietyBackHome: "Hasierara",
-  accessSocietyForgotPassword: "Pasahitza ahaztu",
 } as const;
 
 const es = {
@@ -247,7 +246,6 @@ const es = {
   accessSocietyErrorGeneric: "No se ha podido procesar la solicitud. Inténtalo de nuevo.",
   accessSocietyTooManyRequests: "Demasiadas solicitudes. Prueba más tarde.",
   accessSocietyBackHome: "Inicio",
-  accessSocietyForgotPassword: "Olvidé mi contraseña",
 } as const;
 
 export const landingByLocale = { eu, es } as const;

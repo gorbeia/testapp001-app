@@ -141,14 +141,6 @@ export function AccessSocietyPage() {
                 </form>
               </Form>
             )}
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              <Link
-                href="/pasahitza-ahaztu"
-                className="underline underline-offset-4 hover:text-foreground"
-              >
-                {t("accessSocietyForgotPassword")}
-              </Link>
-            </p>
           </CardContent>
         </Card>
       </main>
