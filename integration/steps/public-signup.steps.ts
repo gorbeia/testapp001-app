@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { When } from "@cucumber/cucumber";
+import { Then, When } from "@cucumber/cucumber";
 import { eq } from "drizzle-orm";
 
-import { users } from "@shared/schema";
+import { categoryMessages, productCategories, societies, tables, users } from "@shared/schema";
 import { db } from "../../server/db";
 import type { IntegrationWorld } from "./world";
 
@@ -59,5 +59,40 @@ When(
       .update(users)
       .set({ emailVerifiedAt: new Date(), updatedAt: new Date() })
       .where(eq(users.username, email));
+  }
+);
+
+Then(
+  "the last signup society should have default provision data",
+  async function (this: IntegrationWorld) {
+    const alphabeticId = this.createdIds.signupAlphabeticId;
+    assert.ok(alphabeticId, "expected signupAlphabeticId");
+    const society = await db.query.societies.findFirst({
+      where: (s, { eq: e }) => e(s.alphabeticId, alphabeticId),
+    });
+    assert.ok(society, "society row");
+    assert.equal(society.sepaMode, "disabled");
+    assert.equal(society.isActive, true);
+
+    const cats = await db
+      .select()
+      .from(productCategories)
+      .where(eq(productCategories.societyId, society.id));
+    assert.equal(cats.length, 1, "one bootstrap category");
+    assert.equal(cats[0]?.icon, "Package");
+
+    const msgs = await db
+      .select()
+      .from(categoryMessages)
+      .where(eq(categoryMessages.categoryId, cats[0]!.id));
+    assert.equal(msgs.length, 2, "eu + es category messages");
+    const langs = new Set(msgs.map(m => m.language));
+    assert.ok(langs.has("eu") && langs.has("es"));
+
+    const tbls = await db.select().from(tables).where(eq(tables.societyId, society.id));
+    assert.equal(tbls.length, 1, "one bootstrap table");
+    assert.equal(tbls[0]?.name, "Mahaia 1");
+    assert.equal(tbls[0]?.minCapacity, 1);
+    assert.equal(tbls[0]?.maxCapacity, 50);
   }
 );

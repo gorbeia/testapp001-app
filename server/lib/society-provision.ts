@@ -1,4 +1,13 @@
 import type { AppDatabase } from "../db";
+import {
+  categoryMessages,
+  productCategories,
+  tables,
+  DEFAULT_RESERVATION_MEAL_TYPES,
+  DEFAULT_SOCIETY_PAYMENT_METHODS,
+  type SepaMode,
+  type SocietyPaymentMethod,
+} from "@shared/schema";
 
 /**
  * Base slug for `societies.alphabetic_id` from display name (same rules as backoffice create).
@@ -33,4 +42,115 @@ export async function allocateUniqueAlphabeticId(
     counter += 1;
   }
   return final;
+}
+
+/** Tier 0/1 row for public self-serve signup (explicit payment + meal types for clarity). */
+export function buildPublicProvisionSocietyInsertValues(input: {
+  name: string;
+  shortDescription: string | null;
+  acronym: string;
+  alphabeticId: string;
+  societyEmail: string;
+  phone: string | null;
+  address: string | null;
+  subdomain: string | null;
+}) {
+  return {
+    name: input.name,
+    shortDescription: input.shortDescription,
+    acronym: input.acronym,
+    alphabeticId: input.alphabeticId,
+    email: input.societyEmail,
+    phone: input.phone,
+    address: input.address,
+    subdomain: input.subdomain,
+    sepaMode: "disabled" as const,
+    isActive: true,
+    paymentMethods: [...DEFAULT_SOCIETY_PAYMENT_METHODS] as SocietyPaymentMethod[],
+    reservationMealTypes: [...DEFAULT_RESERVATION_MEAL_TYPES],
+  };
+}
+
+/** Tier 0/1 row for backoffice create (preserves price / SEPA / payment method behavior). */
+export function buildBackofficeProvisionSocietyInsertValues(input: {
+  name: string;
+  shortDescription: string | null;
+  acronym: string;
+  alphabeticId: string;
+  iban: string | null;
+  creditorId: string | null;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  reservationPricePerMember: string;
+  kitchenPricePerMember: string;
+  sepaMode: SepaMode;
+  paymentMethods?: SocietyPaymentMethod[] | null;
+  isActive: boolean;
+}) {
+  return {
+    name: input.name,
+    shortDescription: input.shortDescription,
+    acronym: input.acronym,
+    alphabeticId: input.alphabeticId,
+    iban: input.iban,
+    creditorId: input.creditorId,
+    address: input.address,
+    phone: input.phone,
+    email: input.email,
+    reservationPricePerMember: input.reservationPricePerMember,
+    kitchenPricePerMember: input.kitchenPricePerMember,
+    sepaMode: input.sepaMode,
+    isActive: input.isActive,
+    paymentMethods:
+      input.paymentMethods !== undefined && input.paymentMethods !== null
+        ? input.paymentMethods
+        : ([...DEFAULT_SOCIETY_PAYMENT_METHODS] as SocietyPaymentMethod[]),
+    reservationMealTypes: [...DEFAULT_RESERVATION_MEAL_TYPES],
+  };
+}
+
+const BOOTSTRAP_CATEGORY = {
+  color: "#64748B",
+  icon: "Package",
+  sortOrder: 0,
+  isActive: true,
+  messages: {
+    eu: { name: "Orokorra", description: "Produktu orokorrak" },
+    es: { name: "General", description: "Productos generales" },
+  },
+} as const;
+
+/**
+ * Tier 2: one product category (eu/es), one flexible reservation table — inside the same transaction as society creation.
+ */
+export async function insertTenantBootstrap(db: AppDatabase, societyId: string): Promise<void> {
+  const [cat] = await db
+    .insert(productCategories)
+    .values({
+      societyId,
+      color: BOOTSTRAP_CATEGORY.color,
+      icon: BOOTSTRAP_CATEGORY.icon,
+      sortOrder: BOOTSTRAP_CATEGORY.sortOrder,
+      isActive: BOOTSTRAP_CATEGORY.isActive,
+    })
+    .returning();
+
+  for (const [language, messageData] of Object.entries(BOOTSTRAP_CATEGORY.messages)) {
+    await db.insert(categoryMessages).values({
+      categoryId: cat.id,
+      language,
+      name: messageData.name,
+      description: messageData.description,
+    });
+  }
+
+  await db.insert(tables).values({
+    societyId,
+    name: "Mahaia 1",
+    minCapacity: 1,
+    maxCapacity: 50,
+    description: null,
+    isActive: true,
+  });
 }

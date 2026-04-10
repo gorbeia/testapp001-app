@@ -16,7 +16,7 @@ Allow visitors on the **public apex** site to provision a new tenant (`societies
 
 - Landing CTAs on `/` and `/hasiera` link to `/sortu-elkartea` (`client/src/landing/` — isolated copy in `landing/i18n.ts`).
 - Form collects society profile (name, optional tagline, acronym, contact), optional subdomain when `VITE_TENANT_APEX_DOMAIN` / `TENANT_APEX_DOMAIN` are set, administrator name/email/password, **marketing opt-in** (off by default), and **terms acceptance** (required).
-- Submits to `POST /api/public/society-signup` (rate-limited). New societies use `sepaMode: "disabled"` until configured in-app.
+- Submits to `POST /api/public/society-signup` (rate-limited). New societies use `sepaMode: "disabled"` until configured in-app, with explicit default `paymentMethods` / `reservationMealTypes`, plus **bootstrap** rows: one general product category (eu/es messages) and one reservation table (`Mahaia 1`, capacity 1–50) so the first admin can add products and reservations immediately (`server/lib/society-provision.ts`).
 - Success: redirects to `https://{subdomain}.{apex}/sartu` when multitenancy is enabled; otherwise shows alphabetic society id and link to `/sartu`.
 - User receives a **verification email** (via existing `sendRawEmail` / SMTP when configured; `MAIL_LOG_TO_STDOUT` supported).
 

@@ -17,7 +17,11 @@ import {
   BackofficeMailTestError,
 } from "../lib/mail";
 import { deriveSocietyAcronym } from "../../shared/society-acronym";
-import { allocateUniqueAlphabeticId } from "../lib/society-provision";
+import {
+  allocateUniqueAlphabeticId,
+  buildBackofficeProvisionSocietyInsertValues,
+  insertTenantBootstrap,
+} from "../lib/society-provision";
 import {
   backofficeSocietySubdomainPatchBodySchema,
   backofficeCheckSubdomainQuerySchema,
@@ -322,8 +326,6 @@ export function registerBackofficeRoutes(app: Express) {
         const acronym =
           acronymRaw && acronymRaw.length > 0 ? acronymRaw : deriveSocietyAcronym(name) || "?";
 
-        const finalAlphabeticId = await allocateUniqueAlphabeticId(db, name);
-
         // If this is the first society, make it active
         const existingSocieties = await db.query.societies.findMany();
         const isActive = existingSocieties.length === 0;
@@ -337,32 +339,41 @@ export function registerBackofficeRoutes(app: Express) {
             ? String(kitchenPricePerMember)
             : "10.00";
 
-        const newSociety = await db
-          .insert(societies)
-          .values({
-            name,
-            shortDescription:
-              shortDescription === undefined
-                ? null
-                : shortDescription === null || shortDescription.trim() === ""
-                  ? null
-                  : shortDescription.trim(),
-            acronym,
-            alphabeticId: finalAlphabeticId,
-            iban: iban ?? null,
-            creditorId: creditorId ?? null,
-            address: address ?? null,
-            phone: phone ?? null,
-            email: email ?? null,
-            reservationPricePerMember: resPrice,
-            kitchenPricePerMember: kitPrice,
-            sepaMode: sepaMode ?? "monthly",
-            ...(paymentMethods !== undefined && paymentMethods !== null ? { paymentMethods } : {}),
-            isActive,
-          })
-          .returning();
+        const shortDescriptionNormalized =
+          shortDescription === undefined
+            ? null
+            : shortDescription === null || shortDescription.trim() === ""
+              ? null
+              : shortDescription.trim();
 
-        return res.status(201).json(newSociety[0]);
+        const newSociety = await db.transaction(async tx => {
+          const finalAlphabeticId = await allocateUniqueAlphabeticId(tx, name);
+          const [row] = await tx
+            .insert(societies)
+            .values(
+              buildBackofficeProvisionSocietyInsertValues({
+                name,
+                shortDescription: shortDescriptionNormalized,
+                acronym,
+                alphabeticId: finalAlphabeticId,
+                iban: iban ?? null,
+                creditorId: creditorId ?? null,
+                address: address ?? null,
+                phone: phone ?? null,
+                email: email ?? null,
+                reservationPricePerMember: resPrice,
+                kitchenPricePerMember: kitPrice,
+                sepaMode: sepaMode ?? "monthly",
+                paymentMethods: paymentMethods ?? null,
+                isActive,
+              })
+            )
+            .returning();
+          await insertTenantBootstrap(tx, row.id);
+          return row;
+        });
+
+        return res.status(201).json(newSociety);
       } catch (err: unknown) {
         if (isPostgresUniqueViolation(err)) {
           return res.status(409).json({ message: "Society with this name already exists" });

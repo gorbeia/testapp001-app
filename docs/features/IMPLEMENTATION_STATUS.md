@@ -249,7 +249,7 @@ Documented alongside auth; shipped as `/profila` with profile edit + password ch
 ## 12. Public marketing landing (not in legacy story index)
 
 - **Bilingual landing page** (`/` when logged out, alias `/hasiera`): ✅ Implemented (`client/src/landing/`: copy + `useLandingI18n` in `i18n.ts`, locale in `localStorage` key **`landing:locale`** — independent of app `client/src/lib/i18n.ts` / **`language`**; **member login** at `/sartu`; unauthenticated deep links outside those routes redirect to `/sartu`; **on a configured tenant subdomain**, landing is skipped and `/` + `/hasiera` redirect to `/sartu` — see [`subdomain-tenancy.md`](./subdomain-tenancy.md))
-- **Public self-serve society signup** (`/sortu-elkartea`, email verification `/egiaztatu-posta`, `POST /api/public/society-signup`, `GET /api/public/check-subdomain`, `GET /api/public/verify-email`): ✅ Implemented — see [`public-society-signup.md`](./public-society-signup.md). After schema upgrade, run **`pnpm db:backfill:email-verified`** (or **`pnpm db:seed`**) so existing demo users keep login.
+- **Public self-serve society signup** (`/sortu-elkartea`, email verification `/egiaztatu-posta`, `POST /api/public/society-signup`, `GET /api/public/check-subdomain`, `GET /api/public/verify-email`): ✅ Implemented — see [`public-society-signup.md`](./public-society-signup.md). Provisioning includes default catalog + table bootstrap (shared with **`POST /api/backoffice/societies`** via `server/lib/society-provision.ts`). After schema upgrade, run **`pnpm db:backfill:email-verified`** (or **`pnpm db:seed`**) so existing demo users keep login.
 
 ---
 

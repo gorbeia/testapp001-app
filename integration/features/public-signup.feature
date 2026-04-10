@@ -7,6 +7,11 @@ Feature: Public society self-signup
     And the response body should include property "available"
     And the response body should include "available" equal to "true"
 
+  Scenario: Signup creates society with bootstrap category and table
+    When I submit a valid public society signup
+    Then the response status should be 201
+    And the last signup society should have default provision data
+
   Scenario: Signup creates society and login requires verified email
     When I submit a valid public society signup
     Then the response status should be 201

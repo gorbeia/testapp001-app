@@ -17,7 +17,11 @@ import {
   backofficeCheckSubdomainQuerySchema,
 } from "@shared/tenant-host";
 import { deriveSocietyAcronym } from "@shared/society-acronym";
-import { allocateUniqueAlphabeticId } from "../lib/society-provision";
+import {
+  allocateUniqueAlphabeticId,
+  buildPublicProvisionSocietyInsertValues,
+  insertTenantBootstrap,
+} from "../lib/society-provision";
 import { createPublicSignupRateLimiter } from "../lib/public-signup-rate-limit";
 import { sendSignupVerificationEmail, sendSignupWelcomeEmail } from "../lib/mail/signup-email";
 import { isPostgresUniqueViolation } from "../lib/pg-errors";
@@ -140,18 +144,18 @@ export function registerPublicSignupRoutes(app: Express) {
 
             const [society] = await tx
               .insert(societies)
-              .values({
-                name: parsed.data.societyName.trim(),
-                shortDescription: parsed.data.shortDescription?.trim() || null,
-                acronym,
-                alphabeticId,
-                email: societyEmail,
-                phone: parsed.data.societyPhone?.trim() || null,
-                address: parsed.data.societyAddress?.trim() || null,
-                subdomain: subdomainLabel,
-                sepaMode: "disabled",
-                isActive: true,
-              })
+              .values(
+                buildPublicProvisionSocietyInsertValues({
+                  name: parsed.data.societyName.trim(),
+                  shortDescription: parsed.data.shortDescription?.trim() || null,
+                  acronym,
+                  alphabeticId,
+                  societyEmail,
+                  phone: parsed.data.societyPhone?.trim() || null,
+                  address: parsed.data.societyAddress?.trim() || null,
+                  subdomain: subdomainLabel,
+                })
+              )
               .returning();
 
             alphabeticIdOut = society.alphabeticId;
@@ -170,6 +174,8 @@ export function registerPublicSignupRoutes(app: Express) {
                 emailVerifiedAt: null,
               })
               .returning();
+
+            await insertTenantBootstrap(tx, society.id);
 
             plainToken = randomBytes(32).toString("base64url");
             const tokenHash = createHash("sha256").update(plainToken).digest("hex");
