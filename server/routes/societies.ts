@@ -9,6 +9,7 @@ import {
 import { eq } from "drizzle-orm";
 import { sessionMiddleware, requireAuth, requirePermission } from "./middleware";
 import { hasPermission, Permission } from "@shared/permissions";
+import { computeSocietySetupChecklist } from "../lib/society-setup-checklist";
 
 const canManageOwnSocietySettings = (user: JwtSessionUser): boolean =>
   hasPermission(user.accessRole, Permission.SOCIETY_MANAGE);
@@ -73,6 +74,28 @@ export function registerSocietyRoutes(app: Express) {
       res.json(society[0]);
     } catch (error) {
       console.error("Error in /api/societies/user:", error);
+      next(error);
+    }
+  });
+
+  app.get("/api/societies/setup-checklist", sessionMiddleware, requireAuth, async (req, res, next) => {
+    try {
+      if (!req.user) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+      if (req.user.accessRole !== "admin") {
+        return res.status(403).json({ message: "Admin access required" });
+      }
+
+      const societyId = getUserSocietyId(req.user);
+      const [society] = await db.select().from(societies).where(eq(societies.id, societyId)).limit(1);
+      if (!society) {
+        return res.status(404).json({ message: "Society not found" });
+      }
+
+      const items = await computeSocietySetupChecklist(db, society);
+      res.json({ items });
+    } catch (error) {
       next(error);
     }
   });

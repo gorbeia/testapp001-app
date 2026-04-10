@@ -69,6 +69,7 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 | Products CRUD                                                 | —    | `products.feature`   | —                                |
 | Categories                                                    | —    | `categories.feature` | —                                |
 | Society PATCH (incl. payment methods, reservation meal types) | —    | `societies.feature`  | `society-management.feature`     |
+| Admin go-live setup checklist API                             | —    | `society-setup-checklist.feature` | —                         |
 | Image uploads (logo, map, avatar, product)                    | —    | —                    | —                                |
 | SEPA mode / sidebar                                           | —    | —                    | `sepa-billing-frequency.feature` |
 

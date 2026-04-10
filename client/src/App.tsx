@@ -14,6 +14,7 @@ import { Permission } from "@shared/permissions";
 import { LoginForm } from "@/components/LoginForm";
 import { AppSidebar } from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
+import { SocietySetupGuide } from "@/components/SocietySetupGuide";
 import { PrepaymentLedgerBanner } from "@/components/PrepaymentLedgerBanner";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Dashboard } from "@/pages/dashboard";
@@ -290,6 +291,7 @@ function AuthenticatedApp() {
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
           <AppHeader />
+          <SocietySetupGuide />
           <PrepaymentLedgerBanner />
           <main className="flex-1 overflow-auto">
             <AppRoutes />

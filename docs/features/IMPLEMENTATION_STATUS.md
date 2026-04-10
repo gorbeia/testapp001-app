@@ -216,6 +216,8 @@ Status legend:
    - **Status**: ✅ Implemented (`/subscriptions`, `subscription_types` table)
 5. **Rules, policies, role transfers, operating hours, compliance, backup UX**
    - **Status**: ❌ Not Implemented
+6. **Admin go-live setup checklist**
+   - **Status**: ✅ Implemented (`GET /api/societies/setup-checklist` — **admin** only; collapsible **`SocietySetupGuide`** banner under the main header with EU/ES copy, deep links to **`/elkartea`**, **`/kategoriak`**, **`/produktuak`**, **`/mahaiak`**, **`/erabiltzaileak`**; items derived from tenant data — contact, SEPA readiness, active categories/products, tables with capacities, ≥2 active users, subdomain when `TENANT_APEX_DOMAIN` is set; optional dismiss when all done — `integration/features/society-setup-checklist.feature`)
 
 ---
 
