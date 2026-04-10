@@ -898,6 +898,7 @@ export const translations = {
     loginBackToPublicHome: "Hasierara itzuli",
     loginDefaultTagline: "Gastronomi elkartea",
     loginTenantNotFound: "Ez da elkarte hau aurkitu ostalari honetan.",
+    loginTenantNotFoundGoToMain: "Joan nagusiko orrira",
     societySubdomainLabel: "Azpidomeinua",
     societySubdomainHint:
       "Adibidez: niretxokoa — niretxokoa.zure-domeinua.eus. Hutsik utzi ez badago beharrik.",
@@ -1730,6 +1731,7 @@ export const translations = {
     loginBackToPublicHome: "Volver al inicio",
     loginDefaultTagline: "Sociedad gastronómica",
     loginTenantNotFound: "No se encontró la sociedad para este sitio.",
+    loginTenantNotFoundGoToMain: "Ir a la página principal",
     societySubdomainLabel: "Subdominio",
     societySubdomainHint:
       "Ejemplo: mitxoko — mitxoko.tu-dominio.es. Déjelo vacío si no aplica.",
@@ -1818,6 +1820,7 @@ export const translations = {
     loginBackToPublicHome: "Back to home",
     loginDefaultTagline: "Gastronomic society",
     loginTenantNotFound: "No society was found for this site.",
+    loginTenantNotFoundGoToMain: "Go to the main site",
     societySubdomainLabel: "Subdomain",
     societySubdomainHint:
       "Example: myclub — myclub.your-domain.com. Leave empty if not used.",

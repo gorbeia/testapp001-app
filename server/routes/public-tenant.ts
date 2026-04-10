@@ -22,7 +22,10 @@ export function registerPublicTenantRoutes(app: Express) {
         });
 
         if (!row) {
-          return res.status(404).json({ message: "Tenant not found for this host" });
+          return res.status(404).json({
+            message: "Tenant not found for this host",
+            apexDomain: apex,
+          });
         }
 
         return res.status(200).json({

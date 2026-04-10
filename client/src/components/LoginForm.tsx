@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -20,6 +20,7 @@ import { useAuth } from "@/lib/auth";
 import { LanguageToggle } from "./LanguageToggle";
 import { ThemeToggle } from "./ThemeToggle";
 import { useTenantByHost } from "@/hooks/useTenantByHost";
+import { absoluteApexOrigin, getClientTenantApexDomain } from "@/lib/tenant-client";
 
 const loginSchema = z.object({
   societyId: z.string().min(1),
@@ -75,6 +76,12 @@ export function LoginForm() {
 
   const isTenant = tenantData?.mode === "tenant";
   const isTenantMissing = tenantData?.mode === "tenant_not_found";
+  const mainSiteOrigin = useMemo(() => {
+    if (tenantData?.mode !== "tenant_not_found") return null;
+    const apex = tenantData.apexDomain ?? getClientTenantApexDomain();
+    if (!apex) return null;
+    return absoluteApexOrigin(apex);
+  }, [tenantData]);
   const showPublicBackLink = !isTenant && !isTenantMissing;
   const showDemoBlock = !isTenant && !isTenantMissing;
   const logoSrc =
@@ -116,6 +123,17 @@ export function LoginForm() {
                 <AlertCircle className="h-8 w-8 text-destructive" aria-hidden />
               </div>
               <CardTitle className="text-xl font-bold">{t("loginTenantNotFound")}</CardTitle>
+              {mainSiteOrigin ? (
+                <CardDescription className="pt-2">
+                  <a
+                    href={`${mainSiteOrigin}/`}
+                    className="font-medium text-primary underline-offset-4 hover:underline"
+                    data-testid="link-tenant-not-found-main-site"
+                  >
+                    {t("loginTenantNotFoundGoToMain")}
+                  </a>
+                </CardDescription>
+              ) : null}
             </>
           ) : (
             <>

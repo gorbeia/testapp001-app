@@ -15,12 +15,14 @@ export type TenantByHostApiResponse =
 
 export type TenantByHostQueryData =
   | TenantByHostApiResponse
-  | { mode: "tenant_not_found" };
+  | { mode: "tenant_not_found"; apexDomain?: string };
 
 async function fetchTenantByHost(): Promise<TenantByHostQueryData> {
   const res = await fetch("/api/public/tenant-by-host", { credentials: "include" });
   if (res.status === 404) {
-    return { mode: "tenant_not_found" };
+    const body = (await res.json().catch(() => ({}))) as { apexDomain?: unknown };
+    const apexDomain = typeof body.apexDomain === "string" ? body.apexDomain : undefined;
+    return { mode: "tenant_not_found", apexDomain };
   }
   if (!res.ok) {
     const text = await res.text();
