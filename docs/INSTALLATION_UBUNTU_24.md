@@ -58,12 +58,24 @@ npx playwright install --with-deps
 # Start PostgreSQL service
 sudo systemctl start postgresql
 sudo systemctl enable postgresql
-
-# Switch to postgres user and create database
-sudo -u postgres psql
 ```
 
-In the PostgreSQL shell:
+Create the database role and database in one shot (replace `your_secure_password` with a strong password; use the **same** password in `DATABASE_URL` in `.env`):
+
+```bash
+sudo -u postgres psql <<'SQL'
+CREATE DATABASE guretxokoa;
+CREATE USER guretxokoa_user WITH PASSWORD 'your_secure_password';
+GRANT ALL PRIVILEGES ON DATABASE guretxokoa TO guretxokoa_user;
+ALTER USER guretxokoa_user CREATEDB;
+SQL
+```
+
+Alternatively, open an interactive shell and paste the same statements:
+
+```bash
+sudo -u postgres psql
+```
 
 ```sql
 CREATE DATABASE guretxokoa;
@@ -93,7 +105,14 @@ cp .env.example .env
 nano .env
 ```
 
-Edit the `.env` file with your configuration:
+Edit the `.env` file with your configuration. Replace every placeholder (`your_secure_password`, `203.0.113.50`, `elkartea.eus`, etc.) with your real values.
+
+```bash
+# Generate three different secrets (paste each output into .env):
+openssl rand -base64 32
+openssl rand -base64 32
+openssl rand -base64 32
+```
 
 ```env
 # Database Configuration
@@ -105,17 +124,29 @@ NODE_ENV=production
 # Application port (default 5000)
 PORT=5000
 
-# JWT Secret — society app tokens (generate with: openssl rand -base64 32)
-JWT_SECRET="your_jwt_secret_key_here"
+# JWT Secret — society app tokens
+JWT_SECRET="paste_output_of_openssl_rand_here_1"
 
-# JWT Secret — backoffice / superadmin tokens (separate from society JWT)
-BACKOFFICE_JWT_SECRET="your_backoffice_jwt_secret_here"
+# JWT Secret — backoffice / superadmin tokens (must differ from JWT_SECRET)
+BACKOFFICE_JWT_SECRET="paste_output_of_openssl_rand_here_2"
 
 # Session secret
-SESSION_SECRET="your_session_secret_here"
+SESSION_SECRET="paste_output_of_openssl_rand_here_3"
+
+# --- Tenant hosts (default multitenancy) ---
+# Same apex hostname everywhere: no scheme, no path, no trailing dot (e.g. elkartea.eus).
+# Server: resolves society from Host header for {subdomain}.{TENANT_APEX_DOMAIN}.
+TENANT_APEX_DOMAIN="elkartea.eus"
+
+# Client build (Vite): must match TENANT_APEX_DOMAIN. Set before `pnpm build`; change requires rebuild.
+VITE_TENANT_APEX_DOMAIN="elkartea.eus"
+
+# Behind nginx TLS termination: safe to omit when NODE_ENV=production (Express enables trust proxy).
+# Uncomment if you need X-Forwarded-* trust without production NODE_ENV:
+# TRUST_PROXY=1
 ```
 
-> **Tip**: Generate secure secrets with `openssl rand -base64 32`. Never reuse the same value for `JWT_SECRET` and `BACKOFFICE_JWT_SECRET`.
+> **Tip**: Never reuse the same random string for `JWT_SECRET` and `BACKOFFICE_JWT_SECRET`. Society subdomains are configured in the backoffice (`societies.subdomain`); DNS and TLS must cover `*.your-domain.com`. Details: [subdomain-tenancy.md](features/subdomain-tenancy.md).
 
 ### 6. Database Setup
 
@@ -145,8 +176,9 @@ pnpm db:seed
 
 ### 7. Build the Application
 
+Client assets embed `VITE_*` values from `.env` at **build** time. If you change `VITE_TENANT_APEX_DOMAIN` (or `VITE_API_URL`), run `pnpm build` again before restarting the server.
+
 ```bash
-# Build the application
 pnpm build
 ```
 
@@ -166,12 +198,27 @@ pnpm start
 
 ### 9. Verify Installation
 
-Open your web browser and navigate to:
+If you are testing **without** nginx (direct to Node), replace `203.0.113.50` with your server IP and run:
 
-- **Application**: [http://YOUR_SERVER_IP:5000](http://YOUR_SERVER_IP:5000)
-- **API Health Check**: [http://YOUR_SERVER_IP:5000/api](http://YOUR_SERVER_IP:5000/api)
+```bash
+curl -sS "http://203.0.113.50:5000/api" | head -c 300
+```
 
-Replace `YOUR_SERVER_IP` with your server's IP address or domain name. If you configured a different `PORT` in `.env`, use that port instead.
+Open in a browser (same IP/port):
+
+- **Application**: `http://203.0.113.50:5000`
+- **API**: `http://203.0.113.50:5000/api`
+
+With **nginx + HTTPS** and apex `elkartea.eus`, use your real domain:
+
+```bash
+curl -sS "https://elkartea.eus/api" | head -c 300
+```
+
+- **Public / marketing host (apex)**: `https://elkartea.eus`
+- **Example society host** (after DNS + TLS + backoffice subdomain `txokoa`): `https://txokoa.elkartea.eus`
+
+If you set a different `PORT` in `.env`, use that port in the direct-to-Node URLs.
 
 ## Default Login Credentials
 
@@ -185,7 +232,7 @@ After seeding (`pnpm db:seed`), you can use these demo accounts:
 | `bazkidea@txokoa.eus`  | demo     | Arrunta           | Bazkidea |
 | `laguna@txokoa.eus`    | demo     | Arrunta           | Laguna   |
 
-**Society ID**: Use `GT001` in the login form.
+**Society ID**: Use `GT001` in the login form when you are **not** on that society’s tenant subdomain. On `https://{subdomain}.{TENANT_APEX_DOMAIN}`, the app binds login to the host; set each society’s subdomain in the backoffice to match DNS.
 
 > **Important**: Change all demo passwords immediately after installation in production.
 
@@ -194,15 +241,18 @@ After seeding (`pnpm db:seed`), you can use these demo accounts:
 If you want to access the application from other machines:
 
 ```bash
-# If using Nginx reverse proxy (recommended), only open HTTP/HTTPS
-sudo ufw allow 80
-sudo ufw allow 443
+# Allow SSH first so you are not locked out (skip if already allowed)
+sudo ufw allow OpenSSH
 
-# If accessing the app directly without Nginx, open the app port
-sudo ufw allow 5000
+# With Nginx reverse proxy (recommended): only HTTP/HTTPS
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
 
-# Enable firewall (if not already enabled)
+# Direct access to Node (no Nginx): open the app port
+sudo ufw allow 5000/tcp
+
 sudo ufw enable
+sudo ufw status
 ```
 
 ## PM2 Production Deployment (Recommended)
@@ -244,6 +294,8 @@ module.exports = {
       env_production: {
         NODE_ENV: "production",
         PORT: 5000,
+        // Same apex as .env TENANT_APEX_DOMAIN (optional here if PM2 loads .env from cwd)
+        TENANT_APEX_DOMAIN: "elkartea.eus",
       },
       error_file: "./logs/err.log",
       out_file: "./logs/out.log",
@@ -326,15 +378,31 @@ pm2 scale guretxokoa 4
 
 ## Nginx Reverse Proxy (Recommended)
 
-To set up Nginx as a reverse proxy for ports 80 and 443:
+The app resolves **which society** to show from the HTTP **`Host`** header when `TENANT_APEX_DOMAIN` is set (e.g. `txokoa.elkartea.eus` → society subdomain `txokoa`). Nginx must proxy **all** of these names to the same upstream and pass **`Host` unchanged** (`proxy_set_header Host $host;` — as below).
 
-**Important:** Do **not** add `listen 443`, `ssl_certificate`, or `ssl_certificate_key` until **after** Let’s Encrypt has created the files under `/etc/letsencrypt/live/`. If nginx points at certificates that do not exist yet, `sudo nginx -t` fails and **`certbot --nginx` cannot run** (it runs `nginx -t` internally).
+**DNS (do this before or alongside nginx):** Point your apex and every society hostname at the server. Replace `203.0.113.50` with your server’s public IPv4 (or use your provider’s “flattened” / ALIAS pattern if you use a CNAME on the apex).
+
+| Purpose | Type | Name / host | Value |
+|--------|------|-------------|--------|
+| Apex | `A` | `@` | `203.0.113.50` |
+| `www` | `A` or `CNAME` | `www` | `203.0.113.50` or `@` |
+| All tenant subdomains | `A` or `CNAME` | `*` | `203.0.113.50` or `@` |
+
+Example checks after DNS propagates:
+
+```bash
+dig +short elkartea.eus A
+dig +short www.elkartea.eus A
+dig +short txokoa.elkartea.eus A
+```
+
+**Important:** Do **not** add `listen 443`, `ssl_certificate`, or `ssl_certificate_key` until certificate files exist under `/etc/letsencrypt/live/`. If nginx references missing certs, `sudo nginx -t` fails and **`certbot --nginx` cannot run** (it runs `nginx -t` internally).
 
 Order of operations:
 
-1. Install nginx and deploy an **HTTP-only** site on port **80** (below).
-2. Run **`nginx -t`** and reload nginx — config must be valid.
-3. Run **`certbot --nginx`** — certbot obtains certificates and rewrites nginx for HTTPS (and usually redirects HTTP → HTTPS).
+1. Install nginx and deploy an **HTTP-only** site on port **80** (below), including **`*.your-domain.com`** in `server_name`.
+2. Run **`sudo nginx -t`** and reload nginx — config must be valid.
+3. Obtain TLS certificates (see [SSL Certificate](#ssl-certificate-required-for-port-443)): for tenant subdomains you need a name set that includes **`*.your-domain.com`** (wildcard via DNS-01, or per-host certificates).
 
 ```bash
 # Install Nginx
@@ -344,15 +412,15 @@ sudo apt install -y nginx
 sudo nano /etc/nginx/sites-available/guretxokoa
 ```
 
-Add this **initial** configuration (replace `your-domain.com` with your real domain, e.g. `elkartettipia.eus`):
+Add this **initial** configuration. Replace `elkartea.eus` with your real apex domain (same value as `TENANT_APEX_DOMAIN` / `VITE_TENANT_APEX_DOMAIN` in `.env`):
 
 ```nginx
-# HTTP only — until certbot has created certificates (then it adds HTTPS)
+# HTTP only — add HTTPS after certificates exist (see SSL section)
 server {
     listen 80;
-    server_name your-domain.com www.your-domain.com;
+    server_name elkartea.eus www.elkartea.eus *.elkartea.eus;
 
-    # Application Proxy
+    # Application proxy — Host must reach Node for tenant resolution
     location / {
         proxy_pass http://127.0.0.1:5000;
         proxy_http_version 1.1;
@@ -400,48 +468,143 @@ After HTTPS is working (next section), you can edit the generated SSL server blo
 
 ## SSL Certificate (Required for Port 443)
 
-For HTTPS on port 443, use Let's Encrypt:
+Society URLs use **`https://{subdomain}.{TENANT_APEX_DOMAIN}`**. A single certificate obtained with HTTP-01 for **only** the apex and `www` does **not** cover arbitrary subdomains. For production with tenant hosts, obtain a certificate that includes **`*.your-domain.com`** (wildcard) using Let’s Encrypt **DNS-01**, or use your DNS provider’s **certbot DNS plugin** (fewer manual TXT steps).
 
 ```bash
-# Install Certbot
+# Install Certbot and the nginx plugin (plugin used when you choose --nginx below)
 sudo apt install -y certbot python3-certbot-nginx
+```
 
-# Obtain SSL certificate (this will update Nginx config automatically)
-sudo certbot --nginx -d your-domain.com -d www.your-domain.com
+### Obtain a wildcard certificate (recommended for tenant subdomains)
 
-# Test auto-renewal
+Use the same apex label as in `.env` (`TENANT_APEX_DOMAIN`). Example domain: `elkartea.eus`.
+
+```bash
+sudo certbot certonly --manual --preferred-challenges dns \
+  -d "elkartea.eus" \
+  -d "*.elkartea.eus"
+```
+
+Certbot will print a **TXT** record name (usually `_acme-challenge.elkartea.eus`) and a **value**. Add it at your DNS provider, verify it is visible in the public DNS, then press Enter in the terminal. If certbot asks for a second TXT record, add that one too (some providers merge challenges on the same name — follow certbot’s prompts).
+
+**New value every time:** Each Certbot run (including after a failed attempt) issues a **new** challenge string. You must set the TXT record to the **current** value Certbot shows; **do not reuse** an old token. If you already pressed Enter and validation failed, run Certbot again and update DNS to match the **new** output.
+
+**Verify before Enter** (replace `elkartea.eus` with your apex):
+
+```bash
+dig TXT _acme-challenge.elkartea.eus +short
+```
+
+Continue only when the output includes the exact string Certbot gave you (propagation can take from seconds to many minutes).
+
+After success, certificates are under:
+
+```text
+/etc/letsencrypt/live/elkartea.eus/fullchain.pem
+/etc/letsencrypt/live/elkartea.eus/privkey.pem
+```
+
+Add an **HTTPS** `server` block (and keep HTTP on port 80 for redirects and renewal). Edit the site file:
+
+```bash
+sudo nano /etc/nginx/sites-available/guretxokoa
+```
+
+Append or merge the following (same `server_name` list and `proxy_*` headers as the HTTP server; replace `elkartea.eus` if needed):
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name elkartea.eus www.elkartea.eus *.elkartea.eus;
+
+    ssl_certificate     /etc/letsencrypt/live/elkartea.eus/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/elkartea.eus/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cache_bypass $http_upgrade;
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+    location /ws {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2)$ {
+        proxy_pass http://127.0.0.1:5000;
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
+
+server {
+    listen 80;
+    server_name elkartea.eus www.elkartea.eus *.elkartea.eus;
+    return 301 https://$host$request_uri;
+}
+```
+
+The site file should contain **only** these two `server` blocks for this vhost: `listen 443` (proxy) and `listen 80` (redirect). Delete the earlier **HTTP-only** `server { listen 80; ... proxy_pass ... }` block so nginx does not define port 80 twice. Then test and reload:
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+```bash
+curl -sS "https://elkartea.eus/api" | head -c 200
+curl -sS "https://txokoa.elkartea.eus/api" | head -c 200
+```
+
+(The second URL succeeds only if DNS points `txokoa.elkartea.eus` to this server and that society’s subdomain is configured in the backoffice.)
+
+### Optional: apex + `www` only via `certbot --nginx` (HTTP-01)
+
+If you truly do **not** need arbitrary subdomains over HTTPS, you can use the automated nginx plugin **after** the HTTP-only config validates:
+
+```bash
+sudo certbot --nginx -d elkartea.eus -d www.elkartea.eus
+```
+
+This does **not** issue `*.elkartea.eus`; tenant subdomains would need separate certificates (e.g. repeat certbot with `-d txokoa.elkartea.eus` for each host) or switch to wildcard DNS-01.
+
+### Renewal
+
+Let’s Encrypt **does not keep the same TXT token forever**. On each **renewal**, the CA performs a **new** DNS challenge: you must publish the **new** `_acme-challenge` value(s) again (same hostname, updated content), unless renewal is fully automated.
+
+- **`certbot renew`** with **`--manual`**: not suitable for unattended cron — renewal will stop and wait for you to change DNS, or fail. Use a **DNS plugin** (or auth hook) for your provider so Certbot can set TXT records itself.
+- **HTTP-01** (`certbot --nginx`): renewals usually need **no** DNS TXT changes.
+
+```bash
 sudo certbot renew --dry-run
+```
 
-# Set up auto-renewal cron job
+```bash
 sudo crontab -e
 ```
 
-Add this line for auto-renewal:
+Add (only meaningful when renewal does not require interactive DNS; with manual DNS-01, fix automation first):
 
 ```
 0 12 * * * /usr/bin/certbot renew --quiet --post-hook "systemctl reload nginx"
 ```
 
-After SSL setup, your Nginx configuration will automatically handle:
-
-- **Port 80**: HTTP traffic (typically redirected to HTTPS by certbot)
-- **Port 443**: HTTPS traffic to your application
-- **SSL certificates**: Automatically renewed
-- **Security headers**: Add any HTTPS-only headers you need in the SSL `server` block
-
-### Wildcard TLS and tenant subdomains (`*.example.com`)
-
-If each society uses **`{subdomain}.your-domain.com`** (same app for all hosts):
-
-1. **DNS**: Point **`your-domain.com`** and **wildcard `*.your-domain.com`** to the server IP (A/AAAA).
-2. **Nginx `server_name`**: Include apex, `www`, and the wildcard in one server block, e.g. `your-domain.com www.your-domain.com *.your-domain.com;`, with the same `proxy_pass` and `proxy_set_header Host $host;` as in the [Nginx Reverse Proxy](#nginx-reverse-proxy-recommended) example.
-3. **Certificate**: A **wildcard** cert for `*.your-domain.com` requires Let’s Encrypt **DNS-01** (HTTP-01 cannot issue wildcards). Use your DNS provider’s **certbot** plugin or `certbot certonly --manual` with a DNS challenge, then point `ssl_certificate` / `ssl_certificate_key` at the resulting `fullchain.pem` / `privkey.pem`. Renew via cron as above (`certbot renew` + reload nginx).
-4. **Application env** (same value for apex in both places):
-   - **Server / PM2**: `TENANT_APEX_DOMAIN=your-domain.com` (no `https://`, no trailing path).
-   - **SPA build** (Vite): `VITE_TENANT_APEX_DOMAIN=your-domain.com` so the browser can avoid flashing the public landing before the first `GET /api/public/tenant-by-host` response.
-5. **Reverse proxy trust**: Set **`TRUST_PROXY=1`** in the environment when nginx terminates TLS (see Express `trust proxy` in the app), or rely on production defaults if your deployment already sets them.
-
-See [subdomain-tenancy.md](features/subdomain-tenancy.md) for behavior (login binding, backoffice subdomain field).
+After SSL is working, you can add extra **security headers** in the `listen 443` server block if you want (e.g. `Strict-Transport-Security`, `X-Frame-Options`).
 
 ## Troubleshooting
 
@@ -460,9 +623,8 @@ See [subdomain-tenancy.md](features/subdomain-tenancy.md) for behavior (login bi
 2. **Permission Denied**
 
 ```bash
- # Fix file permissions
- sudo chown -R $USER:$USER /path/to/testapp001-app
- chmod +x /path/to/testapp001-app/script/*.ts
+sudo chown -R "$USER:$USER" /home/your_username/testapp001-app
+chmod +x /home/your_username/testapp001-app/script/*.ts
 ```
 
 3. **Port Already in Use**
@@ -497,7 +659,7 @@ This happens when the site config references `/etc/letsencrypt/live/<domain>/ful
 
 ```bash
 sudo nginx -t && sudo systemctl reload nginx
-sudo certbot --nginx -d your-domain.com -d www.your-domain.com
+sudo certbot --nginx -d elkartea.eus -d www.elkartea.eus
 ```
 
 5. After certbot succeeds, reload nginx if needed: `sudo systemctl reload nginx`.
