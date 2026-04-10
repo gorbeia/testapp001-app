@@ -12,3 +12,8 @@ export {
   BackofficeMailTestError,
   type BackofficeMailTestErrorCode,
 } from "./smtp-test";
+export {
+  sendSignupVerificationEmail,
+  sendSignupWelcomeEmail,
+  buildEmailVerificationUrl,
+} from "./signup-email";

@@ -11,6 +11,7 @@ import {
   date,
   unique,
   jsonb,
+  index,
 } from "drizzle-orm/pg-core";
 import { accessRoleSchema, membershipTypeSchema } from "./permissions";
 import { societyCategorySchema } from "./society-categories";
@@ -212,10 +213,31 @@ export const users = pgTable("users", {
   notifyEmail: boolean("notify_email").notNull().default(true),
   /** Preferred language for emails and future off-app messages. */
   communicationLanguage: varchar("communication_language", { length: 8 }).notNull().default("eu"),
+  /** Product news / marketing email opt-in (self-serve and profile). */
+  marketingOptIn: boolean("marketing_opt_in").notNull().default(false),
+  /** Set when the user completes email verification (null = must verify before login). */
+  emailVerifiedAt: timestamp("email_verified_at"),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+/** One-time email verification token for self-serve signup (row deleted after use). */
+export const userEmailVerifications = pgTable(
+  "user_email_verifications",
+  {
+    id: varchar("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: varchar("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  t => [index("user_email_verifications_token_hash_idx").on(t.tokenHash)]
+);
 
 /** Uppercase Latin letters + common Latin-1 / Latin Extended-A letters (matches deriveSocietyAcronym output). */
 const SOCIETY_ACRONYM_CHARS = /^[A-Za-z\xC0-\xFF\u0100-\u017F\u0180-\u024F]+$/;
@@ -1028,6 +1050,10 @@ export const jwtUserPayloadSchema = z.object({
   avatarUrl: z.string().nullish(),
   notifyEmail: z.boolean().default(true),
   communicationLanguage: communicationLanguageSchema.default("eu"),
+  /** Omitted on legacy tokens issued before this field existed. */
+  marketingOptIn: z.boolean().optional(),
+  /** Omitted on legacy tokens; login still enforced using DB row. */
+  emailVerifiedAt: z.coerce.date().nullable().optional(),
   isActive: z.boolean(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
@@ -1506,6 +1532,29 @@ export const updateSocietySettingsBodySchema = insertSocietySchema
   .refine(data => Object.values(data).some(v => v !== undefined), {
     message: "At least one field is required",
   });
+
+/** Public self-serve signup (landing); subdomain validated server-side when multitenancy is enabled. */
+export const publicSocietySignupBodySchema = z.object({
+  societyName: z.string().trim().min(1).max(200),
+  shortDescription: z.string().trim().max(500).optional(),
+  acronym: societyAcronymFieldSchema.optional(),
+  societyContactEmail: z.string().email().optional(),
+  societyPhone: z.string().trim().max(80).optional(),
+  societyAddress: z.string().trim().max(500).optional(),
+  /** DNS label; required at runtime when `TENANT_APEX_DOMAIN` is set. */
+  subdomain: z.string().optional(),
+  adminName: z.string().trim().min(1).max(200),
+  adminEmail: z.string().email(),
+  adminPassword: z.string().min(8).max(128),
+  /** When true, the user agrees to receive product news and updates (opt-in). */
+  marketingOptIn: z.boolean(),
+  acceptTerms: z.literal(true),
+  communicationLanguage: communicationLanguageSchema.optional(),
+});
+
+export const publicVerifyEmailQuerySchema = z.object({
+  token: z.string().min(1),
+});
 
 export const backofficeCreateSocietyBodySchema = z.object({
   name: z.string().min(1),

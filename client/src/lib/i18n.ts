@@ -307,6 +307,8 @@ export const translations = {
     errorLoadingReservations: "Errorea erreserbak kargatzean",
     invalidDate: "Data baliogabea",
     invalidCredentials: "Kredentzial okerrak",
+    emailNotVerified:
+      "Egiaztatu zure posta elektronikoa saioa hasi aurretik. Begiratu sarrerako ontzia esteka baterako.",
     serverConnectionFailed:
       "Zerbitzariarekin konexioak huts egin du. Mesedez, saiatu berriro geroago.",
     serverErrorOccurred: "Zerbitzariaren errorea gertatu da. Mesedez, saiatu berriro geroago.",
@@ -1287,6 +1289,8 @@ export const translations = {
     errorLoadingReservations: "Error al cargar las reservas",
     invalidDate: "Fecha inválida",
     invalidCredentials: "Credenciales incorrectas",
+    emailNotVerified:
+      "Verifica tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada para el enlace.",
     serverConnectionFailed:
       "La conexión con el servidor ha fallado. Por favor, inténtalo de nuevo más tarde.",
     serverErrorOccurred:

@@ -134,6 +134,7 @@ import { registerCashSettlementRoutes } from "./cash-settlements";
 import { registerPrepaymentLedgerStatusRoutes } from "./prepayment-ledger-status";
 import { registerImageRoutes } from "./images";
 import { registerPublicTenantRoutes } from "./public-tenant";
+import { registerPublicSignupRoutes } from "./public-signup";
 import { getUploadsRoot } from "../lib/image-storage";
 
 export async function registerRoutes(httpServer: Server, app: Express): Promise<Server> {
@@ -147,6 +148,7 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
   app.use("/api", noCache);
 
   registerPublicTenantRoutes(app);
+  registerPublicSignupRoutes(app);
 
   // Uploaded images (GET); upload/delete registered in registerImageRoutes
   app.use("/api/images", express.static(getUploadsRoot(), { index: false }));
@@ -269,6 +271,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
         return res.status(401).json({ message: "Invalid credentials" });
       }
 
+      if (!dbUser.emailVerifiedAt) {
+        return res.status(403).json({
+          message: "Please verify your email before signing in",
+          code: "EMAIL_NOT_VERIFIED" as const,
+        });
+      }
+
       // Create JWT token and refresh token, set in httpOnly cookies
       const token = generateToken(dbUser);
       const refreshToken = generateRefreshToken(dbUser);
@@ -312,6 +321,13 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
       // Check if user is active (not disabled)
       if (!dbUser.isActive) {
         return res.status(401).json({ message: "User account is disabled" });
+      }
+
+      if (!dbUser.emailVerifiedAt) {
+        return res.status(403).json({
+          message: "Please verify your email before signing in",
+          code: "EMAIL_NOT_VERIFIED" as const,
+        });
       }
 
       // Generate new access token

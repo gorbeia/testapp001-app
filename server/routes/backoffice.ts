@@ -17,6 +17,7 @@ import {
   BackofficeMailTestError,
 } from "../lib/mail";
 import { deriveSocietyAcronym } from "../../shared/society-acronym";
+import { allocateUniqueAlphabeticId } from "../lib/society-provision";
 import {
   backofficeSocietySubdomainPatchBodySchema,
   backofficeCheckSubdomainQuerySchema,
@@ -321,27 +322,7 @@ export function registerBackofficeRoutes(app: Express) {
         const acronym =
           acronymRaw && acronymRaw.length > 0 ? acronymRaw : deriveSocietyAcronym(name) || "?";
 
-        // Generate alphabetic ID (similar to existing society creation logic)
-        const alphabeticId = name
-          .toLowerCase()
-          .replace(/[^a-z0-9\s-]/g, "")
-          .replace(/\s+/g, "-")
-          .replace(/-+/g, "-")
-          .replace(/^-|-$/g, "")
-          .substring(0, 20);
-
-        // Check if alphabetic ID already exists and make it unique
-        let finalAlphabeticId = alphabeticId;
-        let counter = 1;
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const existing = await db.query.societies.findFirst({
-            where: (s, { eq }) => eq(s.alphabeticId, finalAlphabeticId),
-          });
-          if (!existing) break;
-          finalAlphabeticId = `${alphabeticId}-${counter}`;
-          counter++;
-        }
+        const finalAlphabeticId = await allocateUniqueAlphabeticId(db, name);
 
         // If this is the first society, make it active
         const existingSocieties = await db.query.societies.findMany();

@@ -136,11 +136,13 @@ export async function seedUsers(dbConn: SeedDb) {
 
   console.log("Seeding demo users with predefined UUIDs...");
 
+  const verifiedAt = new Date();
+
   for (const user of demoUsers) {
     // Upsert so RBAC columns stay correct after migrations (e.g. 0005 defaulted NULL access_role to member).
     await dbConn
       .insert(users)
-      .values(user)
+      .values({ ...user, emailVerifiedAt: verifiedAt })
       .onConflictDoUpdate({
         target: users.username,
         set: {
@@ -153,6 +155,7 @@ export async function seedUsers(dbConn: SeedDb) {
           societyId: user.societyId,
           linkedMemberId: user.linkedMemberId,
           linkedMemberName: user.linkedMemberName,
+          emailVerifiedAt: verifiedAt,
           updatedAt: new Date(),
         },
       });

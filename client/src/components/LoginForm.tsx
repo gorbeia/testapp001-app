@@ -66,6 +66,8 @@ export function LoginForm() {
         );
       } else if (errorMessage === "Server error occurred") {
         setError(t("serverErrorOccurred") || "Server error occurred. Please try again later.");
+      } else if (errorMessage === "EMAIL_NOT_VERIFIED") {
+        setError(t("emailNotVerified"));
       } else {
         setError(t("invalidCredentials"));
       }

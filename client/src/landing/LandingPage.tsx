@@ -52,7 +52,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-background text-foreground" lang={locale}>
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-3">
           <Link href="/" className="flex min-w-0 items-center gap-3">
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground">
               GT
@@ -65,6 +65,9 @@ export function LandingPage() {
           <div className="flex shrink-0 items-center gap-2">
             <LandingLanguageToggle locale={locale} onLocaleChange={setLocale} />
             <ThemeToggle />
+            <Button asChild variant="outline" data-testid="landing-cta-create-header">
+              <Link href="/sortu-elkartea">{t("ctaCreateSociety")}</Link>
+            </Button>
             <Button asChild data-testid="landing-login-header">
               <Link href="/sartu">{t("ctaLogin")}</Link>
             </Button>
@@ -79,6 +82,9 @@ export function LandingPage() {
             <p className="mt-4 text-lg text-muted-foreground md:text-xl">{t("heroSubtitle")}</p>
             <p className="mt-6 leading-relaxed text-muted-foreground">{t("heroLead")}</p>
             <div className="mt-10 flex flex-wrap justify-center gap-3">
+              <Button asChild variant="outline" size="lg" data-testid="landing-cta-create-hero">
+                <Link href="/sortu-elkartea">{t("ctaCreateSociety")}</Link>
+              </Button>
               <Button asChild size="lg" data-testid="landing-login-hero">
                 <Link href="/sartu">{t("ctaLogin")}</Link>
               </Button>
@@ -153,9 +159,14 @@ export function LandingPage() {
           <Building2 className="mx-auto h-10 w-10 text-primary opacity-90" aria-hidden />
           <h2 className="mt-4 text-2xl font-semibold">{t("closingTitle")}</h2>
           <p className="mt-3 leading-relaxed text-muted-foreground">{t("closingBody")}</p>
-          <Button asChild className="mt-8" size="lg" data-testid="landing-login-footer">
-            <Link href="/sartu">{t("ctaLogin")}</Link>
-          </Button>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Button asChild variant="outline" size="lg" data-testid="landing-cta-create-footer">
+              <Link href="/sortu-elkartea">{t("ctaCreateSociety")}</Link>
+            </Button>
+            <Button asChild size="lg" data-testid="landing-login-footer">
+              <Link href="/sartu">{t("ctaLogin")}</Link>
+            </Button>
+          </div>
         </section>
       </main>
 

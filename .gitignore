@@ -8,3 +8,4 @@ vite.config.ts.*
 *.tar.gz
 .env
 e2e/artifacts/
+.cursor/plans

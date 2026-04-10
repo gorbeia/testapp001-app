@@ -51,6 +51,8 @@ import {
   BackofficeLayout,
 } from "@/backoffice";
 import { LandingPage } from "@/landing/LandingPage";
+import { CreateSocietyLandingPage } from "@/landing/CreateSocietyLandingPage";
+import { VerifyEmailLandingPage } from "@/landing/VerifyEmailLandingPage";
 import { useTenantByHost } from "@/hooks/useTenantByHost";
 
 function AppRoutes() {
@@ -265,6 +267,8 @@ function AuthenticatedApp() {
 
     return (
       <Switch>
+        <Route path="/sortu-elkartea" component={CreateSocietyLandingPage} />
+        <Route path="/egiaztatu-posta" component={VerifyEmailLandingPage} />
         <Route path="/" component={LandingPage} />
         <Route path="/hasiera" component={LandingPage} />
         <Route path="/sartu" component={LoginForm} />

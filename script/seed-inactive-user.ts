@@ -46,6 +46,7 @@ async function main() {
     linkedMemberId: null;
     linkedMemberName: null;
     isActive: boolean;
+    emailVerifiedAt: Date;
   } = {
     username: "bazkide-ezaktiboa@txokoa.eus",
     password: "demo",
@@ -58,6 +59,7 @@ async function main() {
     linkedMemberId: null,
     linkedMemberName: null,
     isActive: false, // This user is inactive
+    emailVerifiedAt: new Date(),
   };
 
   console.log("Seeding inactive demo user...");

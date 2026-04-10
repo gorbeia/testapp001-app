@@ -16,12 +16,13 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 
 ## 1. Authentication (`authentication.md`)
 
-| Story area                                | Unit                         | Integration                                  | E2E                       |
-| ----------------------------------------- | ---------------------------- | -------------------------------------------- | ------------------------- |
-| Login / tokens / cookies / tenant-by-host | `shared/tenant-host.test.ts` | `auth.feature` (incl. public tenant-by-host) | `login.feature` (UI)      |
-| Refresh / logout                          | —                            | `auth.feature`                               | —                         |
-| RBAC (API)                                | —                            | `rbac.feature`                               | —                         |
-| RBAC (sidebar / URL)                      | —                            | —                                            | `role-based-menu.feature` |
+| Story area                                | Unit                         | Integration                                      | E2E                       |
+| ----------------------------------------- | ---------------------------- | ------------------------------------------------ | ------------------------- |
+| Login / tokens / cookies / tenant-by-host | `shared/tenant-host.test.ts` | `auth.feature` (incl. public tenant-by-host)     | `login.feature` (UI)      |
+| Email verification gate / public signup   | —                            | `public-signup.feature` (`@story:public-signup`) | —                         |
+| Refresh / logout                          | —                            | `auth.feature`                                   | —                         |
+| RBAC (API)                                | —                            | `rbac.feature`                                   | —                         |
+| RBAC (sidebar / URL)                      | —                            | —                                                | `role-based-menu.feature` |
 
 ## 2. User management (`user-management.md`)
 

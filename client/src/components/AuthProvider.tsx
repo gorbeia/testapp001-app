@@ -146,8 +146,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         throw new Error("Server connection failed");
       }
 
-      // For other HTTP errors, check if it's specifically invalid credentials
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = (await response.json().catch(() => ({}))) as {
+        message?: string;
+        code?: string;
+      };
+      if (response.status === 403 && errorData.code === "EMAIL_NOT_VERIFIED") {
+        throw new Error("EMAIL_NOT_VERIFIED");
+      }
       if (response.status === 401 || errorData.message?.includes("credentials")) {
         throw new Error("Invalid credentials");
       } else {

@@ -88,6 +88,9 @@ public
 tmp/
 temp/
 
+# Cursor agent plans (may be outside normal doc formatting)
+.cursor/plans/
+
 # Editor directories and files
 .vscode/
 .idea/
