@@ -75,7 +75,7 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 | Society PATCH (incl. payment methods, reservation meal types) | —    | `societies.feature`               | `society-management.feature`     |
 | Admin go-live setup checklist API                             | —    | `society-setup-checklist.feature` | —                                |
 | Image uploads (logo, map, avatar, product)                    | —    | —                                 | —                                |
-| SEPA mode / sidebar                                           | —    | —                                 | `sepa-billing-frequency.feature` |
+| Direct debit / domiciliación UI (`sepaMode`) / sidebar        | —    | —                                 | `sepa-billing-frequency.feature` |
 
 ## 7. Inventory / stock (`inventory.md`)
 

@@ -17,7 +17,7 @@ const eu = {
   heroSubtitle:
     "Bazkideak, erreserbak, kontsumoak, finantzak, inbentarioa eta komunikazioa — tresna bakarrean.",
   heroLead:
-    "Elkartetippia elkarte gastronomiko baten eguneroko kudeaketa osoa eskaintzen du: rol-oinarritutako sarbidea, egutegi bateratua, kutxa (POS), zorrak eta SEPA, kontu-liburua, aurreordainketak, kontabilitatea, inbentarioa eta oharrak jakinarazpenekin. Interfazea euskaraz eta gaztelaniaz.",
+    "Elkartetippia elkarte gastronomiko baten eguneroko kudeaketa osoa eskaintzen du: rol-oinarritutako sarbidea, egutegi bateratua, kutxa (POS), zorrak eta bankuko helbideratzea (XML), kontu-liburua, aurreordainketak, kontabilitatea, inbentarioa eta oharrak jakinarazpenekin. Interfazea euskaraz eta gaztelaniaz.",
   featuresHeading: "Zer eskaintzen duen",
   featuresSub: "Bazkideentzat eta kudeaketa-taldeentzat diseinatutako funtzionalitate nagusiak.",
   card1Title: "Bazkideak eta sarbidea",
@@ -31,7 +31,7 @@ const eu = {
     "Kutxa sistema erraza produktu-txarteletan, kategorietan eta argazkiekin. Ireki kontsumoa, gehitu artikuluak eta itxi; stock-a automatikoki eguneratzen da moduan. Historia pertsonala eta, konfiguratuta badago, diruarekin ordainketak.",
   card4Title: "Finantza osoa",
   card4Body:
-    "Hilabeteko zorrak automatikoki (erreserbak, kontsumoak, kuotak). SEPA XML esportazioa, kontu-mugimenduen liburua, aurreordainketen proposamen eta balioztapena, itzulketak, SEPA itzulerak eta elkartearen kontabilitate propioa CSVrekin.",
+    "Hilabeteko zorrak automatikoki (erreserbak, kontsumoak, kuotak). Bankurako helbideratze XMLa (SEPA estandardua), kontu-mugimenduen liburua, aurreordainketen proposamen eta balioztapena, itzulketak, helbideratze itzulerak eta elkartearen kontabilitate propioa CSVrekin.",
   card5Title: "Inbentarioa",
   card5Body:
     "Produktuak, stock-a, hornidura-sarrerak, inbentario fisikoa, mugimenduak kontsumoetatik eta alertak stock baxuan — sotolariaren tresnak.",
@@ -57,8 +57,8 @@ const eu = {
   tableR2Funcs: "Sortu, ikusi; mahaia eta gonbidatuak; egutegia",
   tableR3Area: "Kontsumoak",
   tableR3Funcs: "POS txartelak, saioak, historia, ordainketak eskuragarri",
-  tableR4Area: "Zorrak & SEPA",
-  tableR4Funcs: "Zor automatikoa, SEPA XML, kobrantza-kadentzia",
+  tableR4Area: "Zorrak eta helbideratzea",
+  tableR4Funcs: "Zor automatikoa, bankurako XML (SEPA), kobrantza-kadentzia",
   tableR5Area: "Mugimenduak",
   tableR5Funcs: "Liburua (ledger) pertsonala eta diruzainarena, CSV",
   tableR6Area: "Aurreordainketak",
@@ -140,7 +140,7 @@ const es = {
   heroSubtitle:
     "Socios, reservas, consumos, finanzas, inventario y comunicación — en una sola herramienta.",
   heroLead:
-    "Elkartetippia ofrece la gestión integral de una sociedad gastronómica: acceso por roles, calendario unificado, caja (TPV), deudas y SEPA, libro de movimientos, anticipos por transferencia, contabilidad de la sociedad, inventario y avisos con notificaciones. Interfaz en euskera y castellano.",
+    "Elkartetippia ofrece la gestión integral de una sociedad gastronómica: acceso por roles, calendario unificado, caja (TPV), deudas y domiciliación bancaria (XML), libro de movimientos, prepago por transferencia, contabilidad de la sociedad, inventario y avisos con notificaciones. Interfaz en euskera y castellano.",
   featuresHeading: "Qué ofrece",
   featuresSub: "Funcionalidades principales para socios y equipos de gestión.",
   card1Title: "Socios y acceso",
@@ -154,7 +154,7 @@ const es = {
     "Caja intuitiva con tarjetas de producto, categorías e imágenes. Abre un consumo, añade líneas y cierra; el stock se actualiza según el modo. Historial personal y, si está configurado, cobro en efectivo de pendientes.",
   card4Title: "Finanzas completas",
   card4Body:
-    "Deudas mensuales automáticas (reservas, consumos, cuotas). Exportación SEPA XML, libro de cuenta, propuestas de anticipo con validación, devoluciones, devoluciones SEPA y contabilidad propia de la sociedad con CSV.",
+    "Deudas mensuales automáticas (reservas, consumos, cuotas). Archivo XML para el banco (domiciliación, estándar SEPA), libro de cuenta, prepago por transferencia con validación, devoluciones, devoluciones de domiciliación y contabilidad propia de la sociedad con CSV.",
   card5Title: "Inventario",
   card5Body:
     "Productos, stock, albaranes de compra, inventario físico, movimientos por consumos y alertas de stock bajo — herramientas del bodeguero.",
@@ -179,11 +179,11 @@ const es = {
   tableR2Funcs: "Crear, ver; mesa e invitados; calendario",
   tableR3Area: "Consumos",
   tableR3Funcs: "TPV con tarjetas, sesiones, historial, cobros si aplica",
-  tableR4Area: "Deudas y SEPA",
-  tableR4Funcs: "Deuda automática, XML SEPA, cadencia de cobro",
+  tableR4Area: "Deudas y domiciliación",
+  tableR4Funcs: "Deuda automática, XML de domiciliación (SEPA), cadencia de cobro",
   tableR5Area: "Movimientos",
   tableR5Funcs: "Libro mayor personal y de tesorería, CSV",
-  tableR6Area: "Anticipos",
+  tableR6Area: "Prepago",
   tableR6Funcs: "Transferencias, validar/rechazar, saldo mínimo",
   tableR7Area: "Contabilidad",
   tableR7Funcs: "Libro de la sociedad, categorías exportables",

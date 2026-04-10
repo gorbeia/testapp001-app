@@ -43,7 +43,7 @@ Then("I should see a prepayment line on my movements", async function () {
   assert.ok(page);
   const cell = page
     .locator('[data-testid^="movement-type-"]')
-    .filter({ hasText: /Aurreordainketa|Anticipo/ });
+    .filter({ hasText: /Aurreordainketa|Prepago/ });
   await cell.first().waitFor({ state: "visible", timeout: 10000 });
 });
 

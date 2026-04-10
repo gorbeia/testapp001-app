@@ -678,7 +678,7 @@ export function SepaExportPage() {
                 </Button>
                 <Button onClick={() => handleExport("sepa")} data-testid="button-export-sepa">
                   <Download className="mr-2 h-4 w-4" />
-                  SEPA XML
+                  {t("sepaExportBankXmlButton")}
                 </Button>
               </div>
             </div>
