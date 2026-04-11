@@ -19,35 +19,117 @@ import {
 } from "@/components/ui/form";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LandingLanguageToggle } from "@/landing/LandingLanguageToggle";
-import { landingByLocale, useLandingI18n, type LandingLocale } from "@/landing/i18n";
+import type { TenantByHostQueryData } from "@/hooks/useTenantByHost";
+import { useTenantByHost } from "@/hooks/useTenantByHost";
+import {
+  landingByLocale,
+  useLandingI18n,
+  type LandingKey,
+  type LandingLocale,
+} from "@/landing/i18n";
 import { getClientTenantApexDomain } from "@/lib/tenant-client";
 import { cn } from "@/lib/utils";
+import {
+  RESERVED_SOCIETY_SUBDOMAIN_LABELS,
+  SOCIETY_SUBDOMAIN_LABEL_REGEX,
+} from "@shared/tenant-host";
+
+const SIGNUP_API_MESSAGE_KEYS: Record<string, LandingKey> = {
+  "Too many requests": "signupErrorTooManyRequests",
+  "Invalid signup payload": "signupErrorInvalidPayload",
+  "A valid subdomain is required for your organization URL": "signupErrorSubdomainRequired",
+  "Could not complete signup": "signupErrorCouldNotComplete",
+};
+
+function mapSignupSubmitError(message: string | undefined, t: (key: LandingKey) => string): string {
+  if (!message) return t("signupErrorGeneric");
+  const key = SIGNUP_API_MESSAGE_KEYS[message];
+  return key ? t(key) : message;
+}
+
+function resolveApexForSignup(
+  tenantData: TenantByHostQueryData | undefined,
+  isPending: boolean,
+  viteApex: string | null
+): string | null {
+  if (tenantData?.mode === "tenant_not_found" && tenantData.apexDomain) {
+    return tenantData.apexDomain;
+  }
+  if (tenantData?.mode === "tenant") {
+    return null;
+  }
+  if (tenantData?.mode === "apex") {
+    if (tenantData.multitenancyEnabled === true && tenantData.apexDomain) {
+      return tenantData.apexDomain;
+    }
+    return null;
+  }
+  if (isPending) {
+    return viteApex;
+  }
+  return viteApex;
+}
 
 function buildSignupSchema(requireSubdomain: boolean, locale: LandingLocale) {
   const copy = landingByLocale[locale];
   return z
     .object({
-      societyName: z.string().trim().min(1).max(200),
-      shortDescription: z.string().trim().max(500).optional(),
-      acronym: z.string().trim().max(3).optional(),
-      societyContactEmail: z.union([z.literal(""), z.string().trim().email()]),
-      societyPhone: z.string().trim().max(80).optional(),
-      societyAddress: z.string().trim().max(500).optional(),
+      societyName: z
+        .string()
+        .trim()
+        .min(1, { message: copy.signupValidationRequired })
+        .max(200, { message: copy.signupValidationText200Max }),
+      shortDescription: z
+        .string()
+        .trim()
+        .max(250, { message: copy.signupValidationShortDescriptionMax })
+        .optional(),
+      acronym: z.string().trim().max(3, { message: copy.signupValidationAcronymMax }).optional(),
+      societyContactEmail: z.union([
+        z.literal(""),
+        z.string().trim().email({ message: copy.signupValidationEmailInvalid }),
+      ]),
+      societyPhone: z
+        .string()
+        .trim()
+        .max(80, { message: copy.signupValidationPhoneMax })
+        .optional(),
+      societyAddress: z
+        .string()
+        .trim()
+        .max(500, { message: copy.signupValidationAddressMax })
+        .optional(),
       subdomain: z.string().optional(),
-      adminName: z.string().trim().min(1).max(200),
-      adminEmail: z.string().trim().email(),
-      adminPassword: z.string().min(8).max(128),
+      adminName: z
+        .string()
+        .trim()
+        .min(1, { message: copy.signupValidationRequired })
+        .max(200, { message: copy.signupValidationText200Max }),
+      adminEmail: z.string().trim().email({ message: copy.signupValidationEmailInvalid }),
+      adminPassword: z
+        .string()
+        .min(8, { message: copy.signupValidationPasswordTooShort })
+        .max(128, { message: copy.signupValidationPasswordTooLong }),
       adminPasswordConfirm: z.string(),
       marketingOptIn: z.boolean(),
       acceptTerms: z.boolean(),
     })
     .superRefine((data, ctx) => {
       if (requireSubdomain) {
-        const s = data.subdomain?.trim();
+        const s = data.subdomain?.trim().toLowerCase() ?? "";
         if (!s) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             message: copy.signupSubdomainRequired,
+            path: ["subdomain"],
+          });
+        } else if (
+          !SOCIETY_SUBDOMAIN_LABEL_REGEX.test(s) ||
+          RESERVED_SOCIETY_SUBDOMAIN_LABELS.has(s)
+        ) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: copy.signupSubdomainInvalid,
             path: ["subdomain"],
           });
         }
@@ -73,8 +155,10 @@ type SignupFormValues = z.infer<ReturnType<typeof buildSignupSchema>>;
 
 export function CreateSocietyLandingPage() {
   const { locale, setLocale, t } = useLandingI18n();
-  const apex = getClientTenantApexDomain();
-  const requireSubdomain = Boolean(apex);
+  const { data: tenantHostData, isPending: tenantHostPending } = useTenantByHost();
+  const viteApex = getClientTenantApexDomain();
+  const apexForSignup = resolveApexForSignup(tenantHostData, tenantHostPending, viteApex);
+  const requireSubdomain = Boolean(apexForSignup);
   const signupSchema = useMemo(
     () => buildSignupSchema(requireSubdomain, locale),
     [requireSubdomain, locale]
@@ -107,7 +191,7 @@ export function CreateSocietyLandingPage() {
   const subdomainWatch = useWatch({ control: form.control, name: "subdomain" });
 
   useEffect(() => {
-    if (!apex) {
+    if (!apexForSignup) {
       setSubdomainStatus("idle");
       return;
     }
@@ -131,7 +215,7 @@ export function CreateSocietyLandingPage() {
     }, 400);
 
     return () => window.clearTimeout(handle);
-  }, [subdomainWatch, apex]);
+  }, [subdomainWatch, apexForSignup]);
 
   const onSubmit = async (values: SignupFormValues) => {
     setSubmitError(null);
@@ -142,7 +226,7 @@ export function CreateSocietyLandingPage() {
       societyContactEmail: values.societyContactEmail?.trim() || undefined,
       societyPhone: values.societyPhone?.trim() || undefined,
       societyAddress: values.societyAddress?.trim() || undefined,
-      subdomain: apex ? values.subdomain?.trim() : undefined,
+      subdomain: apexForSignup ? values.subdomain?.trim() : undefined,
       adminName: values.adminName.trim(),
       adminEmail: values.adminEmail.trim().toLowerCase(),
       adminPassword: values.adminPassword,
@@ -164,16 +248,16 @@ export function CreateSocietyLandingPage() {
       };
 
       if (!res.ok) {
-        setSubmitError(data.message ?? t("signupErrorGeneric"));
+        setSubmitError(mapSignupSubmitError(data.message, t));
         return;
       }
 
       const alphabeticId = data.alphabeticId ?? "";
       const sub = data.subdomain ?? null;
 
-      if (apex && sub) {
+      if (apexForSignup && sub) {
         const secure = import.meta.env.PROD;
-        const url = `${secure ? "https" : "http"}://${sub}.${apex}/sartu`;
+        const url = `${secure ? "https" : "http"}://${sub}.${apexForSignup}/sartu`;
         window.location.href = url;
         return;
       }
@@ -265,7 +349,7 @@ export function CreateSocietyLandingPage() {
                   <FormItem>
                     <FormLabel>{t("signupFieldShortDescription")}</FormLabel>
                     <FormControl>
-                      <Textarea {...field} rows={2} data-testid="signup-short-desc" />
+                      <Input {...field} maxLength={250} data-testid="signup-short-desc" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -325,7 +409,7 @@ export function CreateSocietyLandingPage() {
               />
             </section>
 
-            {apex ? (
+            {apexForSignup ? (
               <section className="space-y-4">
                 <h2 className="text-lg font-semibold">{t("signupSectionWeb")}</h2>
                 <FormField
@@ -337,14 +421,13 @@ export function CreateSocietyLandingPage() {
                       <FormControl>
                         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
                           <Input {...field} autoComplete="off" data-testid="signup-subdomain" />
-                          <span className="text-sm text-muted-foreground">.{apex}</span>
+                          <span className="text-sm text-muted-foreground">.{apexForSignup}</span>
                         </div>
                       </FormControl>
                       <p className="text-xs text-muted-foreground">
                         {t("signupSubdomainHint")}{" "}
                         <span className="font-medium text-foreground">
-                          {window.location.protocol}//
-                          {field.value?.trim() ? `${field.value.trim()}.${apex}` : `…${apex}`}/sartu
+                          {`${window.location.protocol}//${field.value?.trim() ? `${field.value.trim()}.${apexForSignup}` : `…${apexForSignup}`}/sartu`}
                         </span>
                       </p>
                       <div

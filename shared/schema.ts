@@ -1977,7 +1977,7 @@ export const updateSocietySettingsBodySchema = insertSocietySchema
 /** Public self-serve signup (landing); subdomain validated server-side when multitenancy is enabled. */
 export const publicSocietySignupBodySchema = z.object({
   societyName: z.string().trim().min(1).max(200),
-  shortDescription: z.string().trim().max(500).optional(),
+  shortDescription: z.string().trim().max(250).optional(),
   acronym: societyAcronymFieldSchema.optional(),
   societyContactEmail: z.string().email().optional(),
   societyPhone: z.string().trim().max(80).optional(),

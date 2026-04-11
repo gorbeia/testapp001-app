@@ -13,7 +13,11 @@ export function registerPublicTenantRoutes(app: Express) {
 
       const parsed = parseHostForTenant(req.get("host"), apex);
       if (parsed.kind === "apex" || parsed.kind === "no_apex_config") {
-        return res.status(200).json({ mode: "apex" as const, multitenancyEnabled: true });
+        return res.status(200).json({
+          mode: "apex" as const,
+          multitenancyEnabled: true,
+          apexDomain: apex,
+        });
       }
 
       const row = await db.query.societies.findFirst({
