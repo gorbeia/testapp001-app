@@ -59,6 +59,7 @@ import { LandingPage } from "@/landing/LandingPage";
 import { CreateSocietyLandingPage } from "@/landing/CreateSocietyLandingPage";
 import { VerifyEmailLandingPage } from "@/landing/VerifyEmailLandingPage";
 import { AccessSocietyPage } from "@/landing/AccessSocietyPage";
+import { TermsPage, PrivacyPage } from "@/landing/LegalPage";
 import { LANDING_ACCESS_SOCIETY_PATH } from "@/landing/i18n";
 import { useTenantByHost } from "@/hooks/useTenantByHost";
 
@@ -325,6 +326,8 @@ function AuthenticatedApp() {
           <Route path="/sartu" component={LoginForm} />
           <Route path="/pasahitza-ahaztu" component={ForgotPasswordPage} />
           <Route path="/pasahitza-berrezarri" component={ResetPasswordPage} />
+          <Route path="/baldintzak" component={TermsPage} />
+          <Route path="/pribatutasuna" component={PrivacyPage} />
           <Route path="/">{() => <Redirect to="/sartu" />}</Route>
           <Route path="/hasiera">{() => <Redirect to="/sartu" />}</Route>
           <Route>{() => <Redirect to="/sartu" />}</Route>
@@ -339,6 +342,8 @@ function AuthenticatedApp() {
           <Route path="/egiaztatu-posta" component={VerifyEmailLandingPage} />
           <Route path="/pasahitza-ahaztu" component={ForgotPasswordPage} />
           <Route path="/pasahitza-berrezarri" component={ResetPasswordPage} />
+          <Route path="/baldintzak" component={TermsPage} />
+          <Route path="/pribatutasuna" component={PrivacyPage} />
           <Route path={LANDING_ACCESS_SOCIETY_PATH} component={AccessSocietyPage} />
           <Route path="/" component={LandingPage} />
           <Route path="/hasiera" component={LandingPage} />
@@ -354,6 +359,8 @@ function AuthenticatedApp() {
         <Route path="/egiaztatu-posta" component={VerifyEmailLandingPage} />
         <Route path="/pasahitza-ahaztu" component={ForgotPasswordPage} />
         <Route path="/pasahitza-berrezarri" component={ResetPasswordPage} />
+        <Route path="/baldintzak" component={TermsPage} />
+        <Route path="/pribatutasuna" component={PrivacyPage} />
         <Route path="/" component={LandingPage} />
         <Route path="/hasiera" component={LandingPage} />
         <Route path="/sartu" component={LoginForm} />

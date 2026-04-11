@@ -554,13 +554,13 @@ export function CreateSocietyLandingPage() {
                     <div className="space-y-1 leading-none">
                       <FormLabel className="font-normal">
                         {t("signupAcceptTerms")}{" "}
-                        <a href="#" className="text-primary underline">
+                        <Link href="/baldintzak" className="text-primary underline">
                           {t("signupTermsLink")}
-                        </a>
+                        </Link>
                         {" · "}
-                        <a href="#" className="text-primary underline">
+                        <Link href="/pribatutasuna" className="text-primary underline">
                           {t("signupPrivacyLink")}
-                        </a>
+                        </Link>
                       </FormLabel>
                       <FormMessage />
                     </div>
