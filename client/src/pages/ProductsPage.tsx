@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -605,6 +606,7 @@ export function ProductsPage() {
 
                   <ProductCatalogImagePicker
                     mode="create"
+                    collapsible
                     selectedPath={newProduct.catalogImageUrl}
                     onChange={path => setNewProduct({ ...newProduct, catalogImageUrl: path })}
                   />
@@ -1188,46 +1190,57 @@ export function ProductsPage() {
               </div>
 
               {editDialog.product && user?.societyId ? (
-                <div className="space-y-4">
-                  <ImageUpload
-                    societyId={user.societyId}
-                    entity="product-image"
-                    entityId={editDialog.product.id}
-                    label={t("productImageLabel")}
-                    description={t("productImageHint")}
-                    currentFilename={editDialog.product.imageUrl}
-                    thumbFilename={thumbFilenameFromImageUrl(editDialog.product.imageUrl)}
-                    disabled={!user.societyId}
-                    onUploaded={filename => {
-                      const p = editDialog.product!;
-                      const updated = { ...p, imageUrl: filename };
-                      setEditDialog({ ...editDialog, product: updated });
-                      setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
-                    }}
-                    onRemoved={() => {
-                      const p = editDialog.product!;
-                      const updated = { ...p, imageUrl: null };
-                      setEditDialog({ ...editDialog, product: updated });
-                      setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
-                    }}
-                  />
-                  <ProductCatalogImagePicker
-                    mode="edit"
-                    productId={editDialog.product.id}
-                    selectedPath={editDialog.product.imageUrl ?? null}
-                    disabled={!user.societyId}
-                    onUpdated={product => {
-                      const prev = editDialog.product!;
-                      const merged: ProductRow = {
-                        ...prev,
-                        ...product,
-                        recipeLineCount: prev.recipeLineCount,
-                      };
-                      setEditDialog({ ...editDialog, product: merged });
-                      setProducts(prev => prev.map(x => (x.id === merged.id ? merged : x)));
-                    }}
-                  />
-                </div>
+                <Tabs
+                  key={editDialog.product.id}
+                  defaultValue={editDialog.product.imageUrl?.startsWith("/catalog/") ? "catalog" : "upload"}
+                >
+                  <TabsList className="w-full">
+                    <TabsTrigger value="upload" className="flex-1">{t("imageTabUpload")}</TabsTrigger>
+                    <TabsTrigger value="catalog" className="flex-1">{t("imageTabCatalog")}</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="upload">
+                    <ImageUpload
+                      societyId={user.societyId}
+                      entity="product-image"
+                      entityId={editDialog.product.id}
+                      label={t("productImageLabel")}
+                      description={t("productImageHint")}
+                      currentFilename={editDialog.product.imageUrl}
+                      thumbFilename={thumbFilenameFromImageUrl(editDialog.product.imageUrl)}
+                      disabled={!user.societyId}
+                      onUploaded={filename => {
+                        const p = editDialog.product!;
+                        const updated = { ...p, imageUrl: filename };
+                        setEditDialog({ ...editDialog, product: updated });
+                        setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
+                      }}
+                      onRemoved={() => {
+                        const p = editDialog.product!;
+                        const updated = { ...p, imageUrl: null };
+                        setEditDialog({ ...editDialog, product: updated });
+                        setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
+                      }}
+                    />
+                  </TabsContent>
+                  <TabsContent value="catalog">
+                    <ProductCatalogImagePicker
+                      mode="edit"
+                      productId={editDialog.product.id}
+                      selectedPath={editDialog.product.imageUrl ?? null}
+                      disabled={!user.societyId}
+                      onUpdated={product => {
+                        const prev = editDialog.product!;
+                        const merged: ProductRow = {
+                          ...prev,
+                          ...product,
+                          recipeLineCount: prev.recipeLineCount,
+                        };
+                        setEditDialog({ ...editDialog, product: merged });
+                        setProducts(prev => prev.map(x => (x.id === merged.id ? merged : x)));
+                      }}
+                    />
+                  </TabsContent>
+                </Tabs>
               ) : null}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
