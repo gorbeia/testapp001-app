@@ -210,6 +210,77 @@ export function registerPublicSignupRoutes(app: Express) {
     }
   );
 
+  app.post(
+    "/api/public/resend-verification",
+    async (req: Request, res: Response, next: NextFunction) => {
+      try {
+        if (!signupPostLimiter(clientIp(req))) {
+          return res.status(429).json({ message: "Too many requests" });
+        }
+
+        const { email, societyId } = req.body ?? {};
+        if (typeof email !== "string" || !email.trim()) {
+          return res.status(400).json({ message: "Email is required" });
+        }
+        if (typeof societyId !== "string" || !societyId.trim()) {
+          return res.status(400).json({ message: "Society ID is required" });
+        }
+
+        const lowerEmail = email.trim().toLowerCase();
+
+        const society = await db.query.societies.findFirst({
+          where: (s, { eq: e }) => e(s.alphabeticId, societyId.trim()),
+        });
+
+        // Always return 200 to avoid leaking info
+        if (!society) {
+          return res.status(200).json({ ok: true });
+        }
+
+        const user = await db.query.users.findFirst({
+          where: (u, { eq: e, and: a }) =>
+            a(e(u.username, lowerEmail), e(u.societyId, society.id)),
+        });
+
+        if (!user || user.emailVerifiedAt) {
+          return res.status(200).json({ ok: true });
+        }
+
+        // Delete old token and insert a fresh one
+        await db
+          .delete(userEmailVerifications)
+          .where(eq(userEmailVerifications.userId, user.id));
+
+        const newToken = randomBytes(32).toString("base64url");
+        const tokenHash = createHash("sha256").update(newToken).digest("hex");
+        const expiresAt = new Date(Date.now() + 48 * 3600 * 1000);
+
+        await db.insert(userEmailVerifications).values({
+          userId: user.id,
+          tokenHash,
+          expiresAt,
+        });
+
+        const lang: CommunicationLanguage = (user.communicationLanguage as CommunicationLanguage) ?? "eu";
+
+        try {
+          await sendSignupVerificationEmail({
+            to: lowerEmail,
+            language: lang,
+            societyName: society.name,
+            token: newToken,
+          });
+        } catch (mailErr) {
+          console.error("[public-signup] resend verification email failed:", mailErr);
+        }
+
+        return res.status(200).json({ ok: true });
+      } catch (err) {
+        next(err);
+      }
+    }
+  );
+
   app.get("/api/public/verify-email", async (req: Request, res: Response, next: NextFunction) => {
     try {
       const parsed = publicVerifyEmailQuerySchema.safeParse(req.query);
