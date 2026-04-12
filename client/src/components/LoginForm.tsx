@@ -34,6 +34,8 @@ export function LoginForm() {
   const { t } = useLanguage();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [emailNotVerified, setEmailNotVerified] = useState(false);
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const { login } = useAuth();
   const { data: tenantData, isPending: tenantLoading, likelyTenantHost } = useTenantByHost();
 
@@ -55,6 +57,8 @@ export function LoginForm() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
     setError(null);
+    setEmailNotVerified(false);
+    setResendState("idle");
     try {
       await login(data.email, data.password, data.societyId);
     } catch (err) {
@@ -68,11 +72,27 @@ export function LoginForm() {
         setError(t("serverErrorOccurred") || "Server error occurred. Please try again later.");
       } else if (errorMessage === "EMAIL_NOT_VERIFIED") {
         setError(t("emailNotVerified"));
+        setEmailNotVerified(true);
       } else {
         setError(t("invalidCredentials"));
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    const { email, societyId } = form.getValues();
+    setResendState("sending");
+    try {
+      const res = await fetch("/api/public/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, societyId }),
+      });
+      setResendState(res.ok ? "sent" : "error");
+    } catch {
+      setResendState("error");
     }
   };
 
@@ -166,9 +186,35 @@ export function LoginForm() {
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 {error && (
-                  <div className="flex items-center gap-2 p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-                    <AlertCircle className="h-4 w-4" />
-                    {error}
+                  <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                    {emailNotVerified && resendState !== "sent" && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        disabled={resendState === "sending"}
+                        onClick={() => void handleResendVerification()}
+                        data-testid="button-resend-verification"
+                      >
+                        {resendState === "sending" ? (
+                          <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                        ) : (
+                          <Mail className="mr-2 h-3 w-3" />
+                        )}
+                        {t("resendVerificationEmail")}
+                      </Button>
+                    )}
+                    {resendState === "sent" && (
+                      <p className="text-xs text-muted-foreground">{t("resendVerificationEmailSent")}</p>
+                    )}
+                    {resendState === "error" && (
+                      <p className="text-xs">{t("resendVerificationEmailError")}</p>
+                    )}
                   </div>
                 )}
 

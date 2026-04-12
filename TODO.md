@@ -22,8 +22,12 @@ preload login page based on subdomain (image, society name)
 
 Derived products such as gintonic.
 
+dont show configuration steps in narrow screens
+
 share a bill with several members
 
 sample images for common products
 
 xlsx exporter for Direct debits
+
+POS open sessions and sessions related to a reservation

@@ -124,6 +124,10 @@ export function ProductsPage() {
     open: false,
     product: null,
   });
+  const [showImageSelector, setShowImageSelector] = useState(false);
+  useEffect(() => {
+    setShowImageSelector(false);
+  }, [editDialog.product?.id]);
 
   // Fetch products and categories from API
   useEffect(() => {
@@ -1190,57 +1194,85 @@ export function ProductsPage() {
               </div>
 
               {editDialog.product && user?.societyId ? (
-                <Tabs
-                  key={editDialog.product.id}
-                  defaultValue={editDialog.product.imageUrl?.startsWith("/catalog/") ? "catalog" : "upload"}
-                >
-                  <TabsList className="w-full">
-                    <TabsTrigger value="upload" className="flex-1">{t("imageTabUpload")}</TabsTrigger>
-                    <TabsTrigger value="catalog" className="flex-1">{t("imageTabCatalog")}</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="upload">
-                    <ImageUpload
-                      societyId={user.societyId}
-                      entity="product-image"
-                      entityId={editDialog.product.id}
-                      label={t("productImageLabel")}
-                      description={t("productImageHint")}
-                      currentFilename={editDialog.product.imageUrl}
-                      thumbFilename={thumbFilenameFromImageUrl(editDialog.product.imageUrl)}
-                      disabled={!user.societyId}
-                      onUploaded={filename => {
-                        const p = editDialog.product!;
-                        const updated = { ...p, imageUrl: filename };
-                        setEditDialog({ ...editDialog, product: updated });
-                        setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
-                      }}
-                      onRemoved={() => {
-                        const p = editDialog.product!;
-                        const updated = { ...p, imageUrl: null };
-                        setEditDialog({ ...editDialog, product: updated });
-                        setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
-                      }}
-                    />
-                  </TabsContent>
-                  <TabsContent value="catalog">
-                    <ProductCatalogImagePicker
-                      mode="edit"
-                      productId={editDialog.product.id}
-                      selectedPath={editDialog.product.imageUrl ?? null}
-                      disabled={!user.societyId}
-                      onUpdated={product => {
-                        const prev = editDialog.product!;
-                        const merged: ProductRow = {
-                          ...prev,
-                          ...product,
-                          recipeLineCount: prev.recipeLineCount,
-                        };
-                        setEditDialog({ ...editDialog, product: merged });
-                        setProducts(prev => prev.map(x => (x.id === merged.id ? merged : x)));
-                      }}
-                    />
-                  </TabsContent>
-                </Tabs>
+                editDialog.product.imageUrl && !showImageSelector ? (
+                  <div className="space-y-2">
+                    <Label>{t("productImageLabel")}</Label>
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={
+                          productImageSrc(
+                            user.societyId,
+                            thumbFilenameFromImageUrl(editDialog.product.imageUrl)
+                          ) ?? productImageSrc(user.societyId, editDialog.product.imageUrl)
+                        }
+                        alt=""
+                        className="w-16 h-16 rounded-md object-cover border bg-muted"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowImageSelector(true)}
+                      >
+                        {t("imageChange")}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Tabs
+                    key={editDialog.product.id}
+                    defaultValue={editDialog.product.imageUrl?.startsWith("/catalog/") ? "catalog" : "upload"}
+                  >
+                    <TabsList className="w-full">
+                      <TabsTrigger value="upload" className="flex-1">{t("imageTabUpload")}</TabsTrigger>
+                      <TabsTrigger value="catalog" className="flex-1">{t("imageTabCatalog")}</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="upload">
+                      <ImageUpload
+                        societyId={user.societyId}
+                        entity="product-image"
+                        entityId={editDialog.product.id}
+                        label={t("productImageLabel")}
+                        description={t("productImageHint")}
+                        currentFilename={editDialog.product.imageUrl}
+                        thumbFilename={thumbFilenameFromImageUrl(editDialog.product.imageUrl)}
+                        disabled={!user.societyId}
+                        onUploaded={filename => {
+                          const p = editDialog.product!;
+                          const updated = { ...p, imageUrl: filename };
+                          setEditDialog({ ...editDialog, product: updated });
+                          setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
+                          setShowImageSelector(false);
+                        }}
+                        onRemoved={() => {
+                          const p = editDialog.product!;
+                          const updated = { ...p, imageUrl: null };
+                          setEditDialog({ ...editDialog, product: updated });
+                          setProducts(prev => prev.map(x => (x.id === updated.id ? updated : x)));
+                        }}
+                      />
+                    </TabsContent>
+                    <TabsContent value="catalog">
+                      <ProductCatalogImagePicker
+                        mode="edit"
+                        productId={editDialog.product.id}
+                        selectedPath={editDialog.product.imageUrl ?? null}
+                        disabled={!user.societyId}
+                        onUpdated={product => {
+                          const prev = editDialog.product!;
+                          const merged: ProductRow = {
+                            ...prev,
+                            ...product,
+                            recipeLineCount: prev.recipeLineCount,
+                          };
+                          setEditDialog({ ...editDialog, product: merged });
+                          setProducts(prev => prev.map(x => (x.id === merged.id ? merged : x)));
+                          setShowImageSelector(false);
+                        }}
+                      />
+                    </TabsContent>
+                  </Tabs>
+                )
               ) : null}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

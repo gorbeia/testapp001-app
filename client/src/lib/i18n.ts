@@ -351,6 +351,9 @@ export const translations = {
     invalidCredentials: "Kredentzial okerrak",
     emailNotVerified:
       "Egiaztatu zure posta elektronikoa saioa hasi aurretik. Begiratu sarrerako ontzia esteka baterako.",
+    resendVerificationEmail: "Berria bidali",
+    resendVerificationEmailSent: "Egiaztapen posta bidali da. Begiratu sarrerako ontzia.",
+    resendVerificationEmailError: "Errorea bidaltzean. Saiatu berriro.",
     serverConnectionFailed:
       "Zerbitzariarekin konexioak huts egin du. Mesedez, saiatu berriro geroago.",
     serverErrorOccurred: "Zerbitzariaren errorea gertatu da. Mesedez, saiatu berriro geroago.",
@@ -379,6 +382,7 @@ export const translations = {
     productCatalogImagesHint: "Aukeratu irudi bat edo igo zurea.",
     imageTabUpload: "Kargatu irudia",
     imageTabCatalog: "Katalogoa",
+    imageChange: "Aldatu irudia",
     reservationFloorPlan: "Aretoaren mapa",
     reservationMapDialogDescription: "Mahaien kokapena egiaztatzeko erreferentzia.",
     viewReservationMapLink: "Ikusi mapa",
@@ -1442,6 +1446,9 @@ export const translations = {
     invalidCredentials: "Credenciales incorrectas",
     emailNotVerified:
       "Verifica tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada para el enlace.",
+    resendVerificationEmail: "Reenviar enlace",
+    resendVerificationEmailSent: "Correo de verificación enviado. Revisa tu bandeja de entrada.",
+    resendVerificationEmailError: "Error al enviar. Inténtalo de nuevo.",
     serverConnectionFailed:
       "La conexión con el servidor ha fallado. Por favor, inténtalo de nuevo más tarde.",
     serverErrorOccurred:
@@ -1471,6 +1478,7 @@ export const translations = {
     productCatalogImagesHint: "Elige una imagen o sube la tuya.",
     imageTabUpload: "Cargar imagen",
     imageTabCatalog: "Catálogo",
+    imageChange: "Cambiar imagen",
     reservationFloorPlan: "Plano del local",
     reservationMapDialogDescription: "Referencia para ver la distribución de las mesas.",
     viewReservationMapLink: "Ver mapa",
