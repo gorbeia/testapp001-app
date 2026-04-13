@@ -65,7 +65,9 @@ jobs:
         run: pnpm exec playwright install chromium --with-deps
 
       - name: Apply database schema
-        run: pnpm exec drizzle-kit push --force
+        run: pnpm db:push --force
+        env:
+          ALLOW_PRODUCTION_DB_OPS: "1"
 
       - name: Seed database
         run: pnpm db:seed

@@ -3,10 +3,12 @@ import * as dotenv from "dotenv";
 import { execSync } from "child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { guardProduction } from "./lib/guard-production";
 
 const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 dotenv.config();
+guardProduction("db:reset (script/reset.ts)");
 
 /** Drops every table in `public` (no hardcoded list). */
 const DROP_ALL_PUBLIC_TABLES = `

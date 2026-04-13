@@ -1,6 +1,9 @@
 import "dotenv/config";
 import { fileURLToPath } from "node:url";
+import { guardProduction } from "./lib/guard-production";
 import { db, pool } from "../server/db";
+
+guardProduction("db:seed (script/seed.ts)");
 import { seedSocieties } from "./seed-societies";
 import { seedUsers } from "./seed-users";
 import { seedSuperadmins } from "./seed-superadmins";
