@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm exec:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git add:*)",
+      "Bash(pnpm db:migrate)",
+      "Bash(pnpm db:push)",
+      "Bash(pnpm db:reset)",
+      "Bash(pnpm db:seed)",
+      "Bash(pnpm db:reset:seed)",
+      "Bash(pnpm check)"
+    ]
+  }
+}
