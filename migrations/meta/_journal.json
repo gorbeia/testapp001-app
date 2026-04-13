@@ -5,85 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1775500800000,
-      "tag": "0000_add_society_sepa_mode",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1775600000000,
-      "tag": "0001_flip_account_movement_amounts",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1775700000000,
-      "tag": "0002_drop_society_allow_positive_balance",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1775800000000,
-      "tag": "0003_society_payment_methods",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1775850000000,
-      "tag": "0004_society_prepayment_min_ledger_balance",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1775900000000,
-      "tag": "0005_user_rbac",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1776000000000,
-      "tag": "0006_stock_receipts_and_stock_takes",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1776100000000,
-      "tag": "0007_product_low_stock_notified",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1776200000000,
-      "tag": "0008_product_stock_mode",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1776210000000,
-      "tag": "0009_society_ledger",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1776220000000,
-      "tag": "0010_category_enum",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1776230000000,
-      "tag": "0011_users_society_username_unique",
+      "when": 1000000000000,
+      "tag": "0000_baseline",
       "breakpoints": true
     }
   ]
