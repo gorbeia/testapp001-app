@@ -719,7 +719,7 @@ git pull origin main
 pnpm install --frozen-lockfile
 
 # 4. Apply database schema changes (non-destructive)
-pnpm db:push
+pnpm db:migrate
 
 # 5. Rebuild the production bundle
 pnpm build
@@ -736,16 +736,16 @@ curl -s http://localhost:5000/api | head -c 200
 
 The project uses **Drizzle ORM** for schema management. There are two approaches:
 
-| Command              | Use case                                                                   | Destructive?                |
-| -------------------- | -------------------------------------------------------------------------- | --------------------------- |
-| `pnpm db:push`       | Apply schema from code to DB (adds columns/tables, does **not** drop data) | No                          |
-| `pnpm db:migrate`    | Run SQL migration files from `migrations/` directory                       | No                          |
-| `pnpm db:reset`      | **Drops all tables** and re-creates from schema                            | **Yes — destroys all data** |
-| `pnpm db:reset:seed` | Reset + insert demo data                                                   | **Yes — destroys all data** |
+| Command              | Use case                                                                          | Destructive?                                          |
+| -------------------- | --------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `pnpm db:migrate`    | Run versioned SQL migration files from `migrations/` — **correct for production** | No                                                    |
+| `pnpm db:push`       | Dev convenience: push schema directly to DB (blocked on remote hosts by default)  | Potentially — blocked in production without override  |
+| `pnpm db:reset`      | **Drops all tables** and re-creates from schema                                   | **Yes — destroys all data** (blocked in production)   |
+| `pnpm db:reset:seed` | Reset + insert demo data                                                          | **Yes — destroys all data** (blocked in production)   |
 
-For production updates, use `**pnpm db:push`** or `**pnpm db:migrate\*\`\*. Never use `db:reset` on a production database.
+For production updates, always use **`pnpm db:migrate`**. Never use `db:reset` or `db:reset:seed` on a production database.
 
-If a release includes migration files, prefer `pnpm db:migrate`. Otherwise `pnpm db:push` is safe for additive changes.
+`pnpm db:push` is blocked on remote databases by a safeguard — it will exit with an error unless `ALLOW_PRODUCTION_DB_OPS=1` is explicitly set. Use `db:migrate` instead.
 
 ### Rolling Back
 
