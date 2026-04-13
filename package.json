@@ -12,7 +12,7 @@
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "db:push": "tsx script/db-push.ts",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "tsx script/migrate.ts",
     "db:generate": "drizzle-kit generate",
     "db:reset": "NODE_OPTIONS='--import tsx' tsx script/reset.ts",
     "db:reset:seed": "pnpm db:reset && pnpm db:seed",
