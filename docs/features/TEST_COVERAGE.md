@@ -64,7 +64,7 @@ Status legend: **✓** = covered · **—** = not applicable / deferred · _(emp
 | My movements / refund (API)        | ✓ (ledger math, select helpers) | `account-movements.feature` | —                                         |
 | Bank transfers / validate / reject | —                               | `bank-transfers.feature`    | `bank-transfers.feature` (ledger line UI) |
 | SEPA bounce (unknown credit)       | —                               | `account-movements.feature` | —                                         |
-| Correction movements (admin only)       | ✓ (postLedgerCorrection) | `account-movements.feature` | — |
+| Correction movements (admin only)  | ✓ (postLedgerCorrection)        | `account-movements.feature` | —                                         |
 | Debts / credits listing (API)      | —                               | `debts.feature`             | —                                         |
 
 ## 6. Catalog & society settings
