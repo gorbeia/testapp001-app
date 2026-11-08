@@ -7,7 +7,7 @@ import { accountMovements, users } from "@shared/schema";
 import { eq, and } from "drizzle-orm";
 
 const MIREN_USER_ID = "550e8400-e29b-41d4-a716-446655440004";
-const DEMO_SOCIETY_ID = "GT001";
+const DEMO_SOCIETY_ID = "550e8400-e29b-41d4-a716-446655440000";
 
 // Helper to get user ID by username (email)
 async function getUserIdByEmail(email: string): Promise<string> {
@@ -159,26 +159,6 @@ When(
 );
 
 // Step definitions for checking response body properties
-When(
-  "I create a correction for that movement with amount {string} and reason {string}",
-  async function (this: IntegrationWorld, amount: string, reason: string) {
-    // Find the movement ID
-    const movementId = Object.values(this.createdIds).find(id => id.startsWith("movement"));
-    assert.ok(movementId, "No movement found to correct");
-
-    const res = await this.agent.post("/api/account-movements/correction").send({
-      originalMovementId: movementId,
-      amount,
-      reason,
-    });
-    this.lastResponse = {
-      status: res.status,
-      headers: res.headers as Record<string, string | string[] | undefined>,
-      body: res.body,
-    };
-  }
-);
-
 Then(
   "the response body should include property {string} with value true",
   function (this: IntegrationWorld, property: string) {

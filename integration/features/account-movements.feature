@@ -33,7 +33,7 @@ Feature: Account movements API
 
   Scenario: Cannot correct a non-existent movement
     Given I am authenticated as a "admin" user
-    When I create a correction for movement "00000000-0000-4000-8000-000000000000" with amount "10.00" and reason "Test"
+    When I create a correction for movement "00000000-0000-4000-8000-000000000000" with amount "10.00" and reason "Test correction"
     Then the response status should be 404
 
   Scenario: Cannot correct a correction
