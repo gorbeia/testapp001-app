@@ -1,35 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockInsert, mockMovementExists, mockTx, mockUpdateChain, mockSelectChain } = vi.hoisted(() => {
-  const mockInsert = vi.fn();
-  const mockMovementExists = vi.fn();
+const { mockInsert, mockMovementExists, mockTx, mockUpdateChain, mockSelectChain } = vi.hoisted(
+  () => {
+    const mockInsert = vi.fn();
+    const mockMovementExists = vi.fn();
 
-  function mockUpdateChain() {
-    return {
-      set: vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue(undefined),
-      }),
-    };
-  }
-
-  function mockSelectChain(results: any[] = []) {
-    return {
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue(results),
+    function mockUpdateChain() {
+      return {
+        set: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue(undefined),
         }),
-      }),
+      };
+    }
+
+    function mockSelectChain(results: any[] = []) {
+      return {
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue(results),
+          }),
+        }),
+      };
+    }
+
+    const mockTx = {
+      update: vi.fn().mockImplementation(() => mockUpdateChain()),
+      select: vi.fn().mockImplementation(() => mockSelectChain()),
+      insert: vi.fn(),
     };
+
+    return { mockInsert, mockMovementExists, mockTx, mockUpdateChain, mockSelectChain };
   }
-
-  const mockTx = {
-    update: vi.fn().mockImplementation(() => mockUpdateChain()),
-    select: vi.fn().mockImplementation(() => mockSelectChain()),
-    insert: vi.fn(),
-  };
-
-  return { mockInsert, mockMovementExists, mockTx, mockUpdateChain, mockSelectChain };
-});
+);
 
 vi.mock("../account-movements", () => ({
   insertAccountMovementRow: (...args: unknown[]) => mockInsert(...args),
@@ -360,7 +362,7 @@ describe("ledger-service", () => {
     // For postLedgerCorrection, we need a more sophisticated mock
     // because it uses tx.select().from().where(and(...))
     // Let's create a query builder mock that actually returns results
-    
+
     const createQueryBuilder = (results: any[]) => {
       const builder: any = {
         results,
@@ -378,21 +380,20 @@ describe("ledger-service", () => {
     beforeEach(() => {
       vi.clearAllMocks();
       // Reset to default behavior
-      mockInsert.mockImplementation(
-        (input: any) =>
-          Promise.resolve({
-            id: "mov-new",
-            societyId: input.societyId,
-            type: input.type,
-            amount: input.amount,
-            description: input.description ?? null,
-            referenceId: input.referenceId ?? null,
-            referenceType: input.referenceType ?? null,
-            isCorrection: input.isCorrection ?? false,
-            correctionReason: input.correctionReason ?? null,
-            createdAt: input.createdAt ?? new Date("2024-01-15T12:00:00.000Z"),
-            createdBy: input.createdBy,
-          })
+      mockInsert.mockImplementation((input: any) =>
+        Promise.resolve({
+          id: "mov-new",
+          societyId: input.societyId,
+          type: input.type,
+          amount: input.amount,
+          description: input.description ?? null,
+          referenceId: input.referenceId ?? null,
+          referenceType: input.referenceType ?? null,
+          isCorrection: input.isCorrection ?? false,
+          correctionReason: input.correctionReason ?? null,
+          createdAt: input.createdAt ?? new Date("2024-01-15T12:00:00.000Z"),
+          createdBy: input.createdBy,
+        })
       );
       mockTx.select.mockImplementation(() => createQueryBuilder([]));
       mockTx.update.mockImplementation(() => mockUpdateChain());
@@ -400,15 +401,17 @@ describe("ledger-service", () => {
 
     it("creates correction movement and links to original", async () => {
       mockTx.select.mockReturnValue(
-        createQueryBuilder([{
-          id: "orig-123",
-          societyId: "s1",
-          userId: "u1",
-          type: "consumption",
-          amount: "-50.00",
-          isCorrection: false,
-          correctedById: null,
-        }])
+        createQueryBuilder([
+          {
+            id: "orig-123",
+            societyId: "s1",
+            userId: "u1",
+            type: "consumption",
+            amount: "-50.00",
+            isCorrection: false,
+            correctedById: null,
+          },
+        ])
       );
       mockTx.update.mockReturnValue(mockUpdateChain());
 
@@ -416,7 +419,7 @@ describe("ledger-service", () => {
         societyId: "s1",
         userId: "u1",
         originalMovementId: "orig-123",
-        amount: 25.00,
+        amount: 25.0,
         reason: "Overcharged",
         createdBy: "admin",
       });
@@ -451,7 +454,7 @@ describe("ledger-service", () => {
           societyId: "s1",
           userId: "u1",
           originalMovementId: "not-found",
-          amount: 10.00,
+          amount: 10.0,
           reason: "Test",
           createdBy: "admin",
         })
@@ -460,14 +463,16 @@ describe("ledger-service", () => {
 
     it("throws error when correcting a correction", async () => {
       mockTx.select.mockReturnValue(
-        createQueryBuilder([{
-          id: "corr-123",
-          societyId: "s1",
-          userId: "u1",
-          type: "correction",
-          isCorrection: true,
-          correctedById: null,
-        }])
+        createQueryBuilder([
+          {
+            id: "corr-123",
+            societyId: "s1",
+            userId: "u1",
+            type: "correction",
+            isCorrection: true,
+            correctedById: null,
+          },
+        ])
       );
 
       await expect(
@@ -475,7 +480,7 @@ describe("ledger-service", () => {
           societyId: "s1",
           userId: "u1",
           originalMovementId: "corr-123",
-          amount: 10.00,
+          amount: 10.0,
           reason: "Test",
           createdBy: "admin",
         })
@@ -484,13 +489,15 @@ describe("ledger-service", () => {
 
     it("throws error when original already corrected", async () => {
       mockTx.select.mockReturnValue(
-        createQueryBuilder([{
-          id: "orig-123",
-          societyId: "s1",
-          userId: "u1",
-          isCorrection: false,
-          correctedById: "existing-correction",
-        }])
+        createQueryBuilder([
+          {
+            id: "orig-123",
+            societyId: "s1",
+            userId: "u1",
+            isCorrection: false,
+            correctedById: "existing-correction",
+          },
+        ])
       );
 
       await expect(
@@ -498,7 +505,7 @@ describe("ledger-service", () => {
           societyId: "s1",
           userId: "u1",
           originalMovementId: "orig-123",
-          amount: 10.00,
+          amount: 10.0,
           reason: "Test",
           createdBy: "admin",
         })
@@ -507,13 +514,15 @@ describe("ledger-service", () => {
 
     it("uses description from params if provided", async () => {
       mockTx.select.mockReturnValue(
-        createQueryBuilder([{
-          id: "orig-456",
-          societyId: "s1",
-          userId: "u1",
-          isCorrection: false,
-          correctedById: null,
-        }])
+        createQueryBuilder([
+          {
+            id: "orig-456",
+            societyId: "s1",
+            userId: "u1",
+            isCorrection: false,
+            correctedById: null,
+          },
+        ])
       );
       mockTx.update.mockReturnValue(mockUpdateChain());
 
@@ -521,7 +530,7 @@ describe("ledger-service", () => {
         societyId: "s1",
         userId: "u1",
         originalMovementId: "orig-456",
-        amount: 10.00,
+        amount: 10.0,
         reason: "Test reason",
         description: "Custom description",
         createdBy: "admin",
@@ -537,13 +546,15 @@ describe("ledger-service", () => {
 
     it("uses default description when not provided", async () => {
       mockTx.select.mockReturnValue(
-        createQueryBuilder([{
-          id: "orig-789",
-          societyId: "s1",
-          userId: "u1",
-          isCorrection: false,
-          correctedById: null,
-        }])
+        createQueryBuilder([
+          {
+            id: "orig-789",
+            societyId: "s1",
+            userId: "u1",
+            isCorrection: false,
+            correctedById: null,
+          },
+        ])
       );
       mockTx.update.mockReturnValue(mockUpdateChain());
 
@@ -551,7 +562,7 @@ describe("ledger-service", () => {
         societyId: "s1",
         userId: "u1",
         originalMovementId: "orig-789",
-        amount: 10.00,
+        amount: 10.0,
         reason: "Test reason",
         createdBy: "admin",
       });

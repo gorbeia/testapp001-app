@@ -433,7 +433,7 @@ export async function reverseReservationLedgerOnCancel(params: {
  * Posts a correction movement to adjust an existing movement.
  * Creates a new movement with type "correction" and links it to the original.
  * Also updates the original to reference the correction.
- * 
+ *
  * @param params - Correction parameters
  * @returns The created correction movement
  */
@@ -451,10 +451,12 @@ export async function postLedgerCorrection(params: {
     const [original] = await tx
       .select()
       .from(accountMovements)
-      .where(and(
-        eq(accountMovements.id, params.originalMovementId),
-        eq(accountMovements.societyId, params.societyId)
-      ));
+      .where(
+        and(
+          eq(accountMovements.id, params.originalMovementId),
+          eq(accountMovements.societyId, params.societyId)
+        )
+      );
 
     if (!original) {
       throw new Error("Original movement not found or not in your society");
@@ -462,7 +464,9 @@ export async function postLedgerCorrection(params: {
 
     // Prevent correcting a correction (chain corrections instead)
     if (original.isCorrection) {
-      throw new Error("Cannot correct a correction. Create a new correction for the original movement.");
+      throw new Error(
+        "Cannot correct a correction. Create a new correction for the original movement."
+      );
     }
 
     // Prevent correcting an already corrected movement
@@ -471,27 +475,29 @@ export async function postLedgerCorrection(params: {
     }
 
     // Validate amount
-    const amountNum = typeof params.amount === "number"
-      ? params.amount
-      : parseFloat(String(params.amount));
-    
+    const amountNum =
+      typeof params.amount === "number" ? params.amount : parseFloat(String(params.amount));
+
     if (Number.isNaN(amountNum)) {
       throw new Error("Invalid correction amount");
     }
 
     // Create the correction movement
-    const correction = await insertAccountMovementRow({
-      societyId: params.societyId,
-      userId: params.userId,
-      type: "correction",
-      amount: formatLedgerAmount(amountNum),
-      description: params.description || `Correction for movement ${params.originalMovementId}`,
-      referenceId: params.originalMovementId,
-      referenceType: "movement_correction",
-      createdBy: params.createdBy,
-      isCorrection: true,
-      correctionReason: params.reason,
-    }, tx);
+    const correction = await insertAccountMovementRow(
+      {
+        societyId: params.societyId,
+        userId: params.userId,
+        type: "correction",
+        amount: formatLedgerAmount(amountNum),
+        description: params.description || `Correction for movement ${params.originalMovementId}`,
+        referenceId: params.originalMovementId,
+        referenceType: "movement_correction",
+        createdBy: params.createdBy,
+        isCorrection: true,
+        correctionReason: params.reason,
+      },
+      tx
+    );
 
     // Update original to link to correction
     await tx
@@ -524,4 +530,3 @@ export const ledgerService = {
   reverseReservationLedgerOnCancel,
   REF_TYPE_SEPA_BOUNCE,
 };
-

@@ -132,6 +132,4 @@ export const translations = {
       "A correction of {amount} \u20ac has been recorded on your account. Reason: {reason}.",
   },
 };
-;
-
 export type TranslationKey = keyof typeof translations.eu;

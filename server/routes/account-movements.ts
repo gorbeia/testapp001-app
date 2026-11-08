@@ -670,9 +670,7 @@ export function registerAccountMovementRoutes(app: Express) {
 
         const { originalMovementId, amount, reason, description } = parsed.data;
         const societyId = getUserSocietyId(req.user!);
-        const amountNum = typeof amount === "number"
-          ? amount
-          : parseFloat(String(amount));
+        const amountNum = typeof amount === "number" ? amount : parseFloat(String(amount));
 
         // Validate amount
         if (Number.isNaN(amountNum)) {
@@ -684,8 +682,8 @@ export function registerAccountMovementRoutes(app: Express) {
 
         // Validate reason
         if (!reason || reason.trim().length < 5) {
-          return res.status(400).json({ 
-            message: "Correction reason must be at least 5 characters" 
+          return res.status(400).json({
+            message: "Correction reason must be at least 5 characters",
           });
         }
 
@@ -693,28 +691,31 @@ export function registerAccountMovementRoutes(app: Express) {
         const [original] = await db
           .select()
           .from(accountMovements)
-          .where(and(
-            eq(accountMovements.id, originalMovementId),
-            eq(accountMovements.societyId, societyId)
-          ));
+          .where(
+            and(
+              eq(accountMovements.id, originalMovementId),
+              eq(accountMovements.societyId, societyId)
+            )
+          );
 
         if (!original) {
-          return res.status(404).json({ 
-            message: "Original movement not found or not in your society" 
+          return res.status(404).json({
+            message: "Original movement not found or not in your society",
           });
         }
 
         // Prevent correcting a correction
         if (original.isCorrection) {
           return res.status(400).json({
-            message: "Cannot correct a correction. Create a new correction for the original movement."
+            message:
+              "Cannot correct a correction. Create a new correction for the original movement.",
           });
         }
 
         // Prevent correcting already corrected movement
         if (original.correctedById) {
           return res.status(400).json({
-            message: "This movement has already been corrected."
+            message: "This movement has already been corrected.",
           });
         }
 

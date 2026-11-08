@@ -22,7 +22,11 @@ async function getUserIdByEmail(email: string): Promise<string> {
 }
 
 // Helper to create a movement for testing
-async function createTestMovement(userId: string, type: string = "consumption", amount: string = "-50.00"): Promise<string> {
+async function createTestMovement(
+  userId: string,
+  type: string = "consumption",
+  amount: string = "-50.00"
+): Promise<string> {
   const [movement] = await db
     .insert(accountMovements)
     .values({
@@ -66,25 +70,31 @@ When("I POST SEPA bounce with a non-existent credit id", async function (this: I
 });
 
 // Store movement IDs for later use
-Given("a consumption movement exists for {string}", async function (this: IntegrationWorld, userLabel: string) {
-  const email = userLabel === "Miren" ? "bazkidea@txokoa.eus" : "admin@txokoa.eus";
-  const userId = await getUserIdByEmail(email);
-  const movementId = await createTestMovement(userId, "consumption", "-50.00");
-  this.createdIds[`movement_${userLabel}`] = movementId;
-});
+Given(
+  "a consumption movement exists for {string}",
+  async function (this: IntegrationWorld, userLabel: string) {
+    const email = userLabel === "Miren" ? "bazkidea@txokoa.eus" : "admin@txokoa.eus";
+    const userId = await getUserIdByEmail(email);
+    const movementId = await createTestMovement(userId, "consumption", "-50.00");
+    this.createdIds[`movement_${userLabel}`] = movementId;
+  }
+);
 
-Given("a correction movement exists for {string}", async function (this: IntegrationWorld, userLabel: string) {
-  const email = userLabel === "Miren" ? "bazkidea@txokoa.eus" : "admin@txokoa.eus";
-  const userId = await getUserIdByEmail(email);
-  const movementId = await createTestMovement(userId, "correction", "25.00");
-  this.createdIds[`correction_${userLabel}`] = movementId;
-});
+Given(
+  "a correction movement exists for {string}",
+  async function (this: IntegrationWorld, userLabel: string) {
+    const email = userLabel === "Miren" ? "bazkidea@txokoa.eus" : "admin@txokoa.eus";
+    const userId = await getUserIdByEmail(email);
+    const movementId = await createTestMovement(userId, "correction", "25.00");
+    this.createdIds[`correction_${userLabel}`] = movementId;
+  }
+);
 
 Given("that movement has been corrected", async function (this: IntegrationWorld) {
   // Get the movement ID from the last created movement
   const movementId = Object.values(this.createdIds).find(id => id.startsWith("mov"));
   assert.ok(movementId, "No movement found to mark as corrected");
-  
+
   // Mark it as corrected by creating a dummy correction
   await db
     .update(accountMovements)
@@ -92,62 +102,58 @@ Given("that movement has been corrected", async function (this: IntegrationWorld
     .where(eq(accountMovements.id, movementId));
 });
 
-When("I create a correction for that movement with amount {string} and reason {string}", async function (
-  this: IntegrationWorld,
-  amount: string,
-  reason: string
-) {
-  // Find the movement ID
-  const movementId = Object.values(this.createdIds).find(id => id.startsWith("mov"));
-  assert.ok(movementId, "No movement found to correct");
-  
-  const res = await this.agent.post("/api/account-movements/correction").send({
-    originalMovementId: movementId,
-    amount,
-    reason,
-  });
-  this.lastResponse = {
-    status: res.status,
-    headers: res.headers as Record<string, string | string[] | undefined>,
-    body: res.body,
-  };
-});
+When(
+  "I create a correction for that movement with amount {string} and reason {string}",
+  async function (this: IntegrationWorld, amount: string, reason: string) {
+    // Find the movement ID
+    const movementId = Object.values(this.createdIds).find(id => id.startsWith("mov"));
+    assert.ok(movementId, "No movement found to correct");
 
-When("I create a correction for movement {string} with amount {string} and reason {string}", async function (
-  this: IntegrationWorld,
-  movementId: string,
-  amount: string,
-  reason: string
-) {
-  const res = await this.agent.post("/api/account-movements/correction").send({
-    originalMovementId: movementId,
-    amount,
-    reason,
-  });
-  this.lastResponse = {
-    status: res.status,
-    headers: res.headers as Record<string, string | string[] | undefined>,
-    body: res.body,
-  };
-});
+    const res = await this.agent.post("/api/account-movements/correction").send({
+      originalMovementId: movementId,
+      amount,
+      reason,
+    });
+    this.lastResponse = {
+      status: res.status,
+      headers: res.headers as Record<string, string | string[] | undefined>,
+      body: res.body,
+    };
+  }
+);
 
-When("I create a correction for that correction movement with amount {string} and reason {string}", async function (
-  this: IntegrationWorld,
-  amount: string,
-  reason: string
-) {
-  // Find the correction ID
-  const correctionId = Object.values(this.createdIds).find(id => id.startsWith("correction"));
-  assert.ok(correctionId, "No correction found to correct");
-  
-  const res = await this.agent.post("/api/account-movements/correction").send({
-    originalMovementId: correctionId,
-    amount,
-    reason,
-  });
-  this.lastResponse = {
-    status: res.status,
-    headers: res.headers as Record<string, string | string[] | undefined>,
-    body: res.body,
-  };
-});
+When(
+  "I create a correction for movement {string} with amount {string} and reason {string}",
+  async function (this: IntegrationWorld, movementId: string, amount: string, reason: string) {
+    const res = await this.agent.post("/api/account-movements/correction").send({
+      originalMovementId: movementId,
+      amount,
+      reason,
+    });
+    this.lastResponse = {
+      status: res.status,
+      headers: res.headers as Record<string, string | string[] | undefined>,
+      body: res.body,
+    };
+  }
+);
+
+When(
+  "I create a correction for that correction movement with amount {string} and reason {string}",
+  async function (this: IntegrationWorld, amount: string, reason: string) {
+    // Find the correction ID
+    const correctionId = Object.values(this.createdIds).find(id => id.startsWith("correction"));
+    assert.ok(correctionId, "No correction found to correct");
+
+    const res = await this.agent.post("/api/account-movements/correction").send({
+      originalMovementId: correctionId,
+      amount,
+      reason,
+    });
+    this.lastResponse = {
+      status: res.status,
+      headers: res.headers as Record<string, string | string[] | undefined>,
+      body: res.body,
+    };
+  }
+);
