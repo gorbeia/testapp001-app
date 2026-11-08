@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
+import crypto from "node:crypto";
 import { Given, Then, When } from "@cucumber/cucumber";
 
 import type { IntegrationWorld } from "./world";
 import { db } from "../../server/db";
 import { accountMovements, users } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 
 const MIREN_USER_ID = "550e8400-e29b-41d4-a716-446655440004";
 const DEMO_SOCIETY_ID = "550e8400-e29b-41d4-a716-446655440000";
@@ -28,20 +29,10 @@ async function createTestMovement(
   amount: string = "-50.00"
 ): Promise<string> {
   const movementId = crypto.randomUUID();
-  await db.insert(accountMovements).values({
-    id: movementId,
-    societyId: DEMO_SOCIETY_ID,
-    userId,
-    type,
-    amount: parseFloat(amount),
-    description: "Test movement for correction",
-    referenceId: null,
-    referenceType: null,
-    createdBy: "test",
-    correctedById: null,
-    isCorrection: false,
-    correctionReason: null,
-  });
+  await db.execute(sql`
+    INSERT INTO account_movements (id, society_id, user_id, type, amount, description, reference_id, reference_type, created_by, corrected_by_id, is_correction, correction_reason)
+    VALUES (${movementId}, ${DEMO_SOCIETY_ID}, ${userId}, ${type}, ${parseFloat(amount)}, 'Test movement for correction', null, null, 'test', null, false, null)
+  `);
   return movementId;
 }
 
