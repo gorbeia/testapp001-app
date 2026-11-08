@@ -1,37 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockInsert, mockMovementExists, mockTx, mockUpdateChain } = vi.hoisted(
-  () => {
-    const mockInsert = vi.fn();
-    const mockMovementExists = vi.fn();
+const { mockInsert, mockMovementExists, mockTx, mockUpdateChain } = vi.hoisted(() => {
+  const mockInsert = vi.fn();
+  const mockMovementExists = vi.fn();
 
-    function mockUpdateChain() {
-      return {
-        set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue(undefined),
-        }),
-      };
-    }
-
-    function mockSelectChain(results: any[] = []) {
-      return {
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue(results),
-          }),
-        }),
-      };
-    }
-
-    const mockTx = {
-      update: vi.fn().mockImplementation(() => mockUpdateChain()),
-      select: vi.fn().mockImplementation(() => mockSelectChain()),
-      insert: vi.fn(),
+  function mockUpdateChain() {
+    return {
+      set: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(undefined),
+      }),
     };
-
-    return { mockInsert, mockMovementExists, mockTx, mockUpdateChain };
   }
-);
+
+  function mockSelectChain(results: any[] = []) {
+    return {
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue(results),
+        }),
+      }),
+    };
+  }
+
+  const mockTx = {
+    update: vi.fn().mockImplementation(() => mockUpdateChain()),
+    select: vi.fn().mockImplementation(() => mockSelectChain()),
+    insert: vi.fn(),
+  };
+
+  return { mockInsert, mockMovementExists, mockTx, mockUpdateChain };
+});
 
 vi.mock("../account-movements", () => ({
   insertAccountMovementRow: (...args: unknown[]) => mockInsert(...args),
