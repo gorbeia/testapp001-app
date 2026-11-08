@@ -210,7 +210,9 @@ export function LoginForm() {
                       </Button>
                     )}
                     {resendState === "sent" && (
-                      <p className="text-xs text-muted-foreground">{t("resendVerificationEmailSent")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("resendVerificationEmailSent")}
+                      </p>
                     )}
                     {resendState === "error" && (
                       <p className="text-xs">{t("resendVerificationEmailError")}</p>

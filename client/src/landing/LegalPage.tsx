@@ -10,8 +10,7 @@ import { useLandingI18n, type LandingLocale } from "@/landing/i18n";
 // ---------------------------------------------------------------------------
 
 const COMPANY = "Elkartetippia";
-const COMPANY_LEGAL =
-  "'URDUÑAKO HARRESIA' KULTURA, AISIALDI, KIROL ETA GASTRONOMIA ELKARTEA";
+const COMPANY_LEGAL = "'URDUÑAKO HARRESIA' KULTURA, AISIALDI, KIROL ETA GASTRONOMIA ELKARTEA";
 const NIF = "G25883182";
 const ADDRESS = "Burdin kalea 3, 48460, Urduña, Bizkaia";
 const EMAIL = "urdunakoharresia@gmail.com";
@@ -27,9 +26,8 @@ function TermsEu() {
       <section className="mt-8 space-y-4 text-sm leading-relaxed">
         <h2 className="text-lg font-semibold">1. Identifikazioa (LSSI-CE 10. art.)</h2>
         <p>
-          Webgune hau {COMPANY_LEGAL} entitateak kudeatzen du, IFK {NIF}, egoitza soziala{" "}
-          {ADDRESS}, e-posta {EMAIL}. Bizkaiko Lurralde Historikoko Elkarteen Erregistroan
-          inskribatuta.
+          Webgune hau {COMPANY_LEGAL} entitateak kudeatzen du, IFK {NIF}, egoitza soziala {ADDRESS},
+          e-posta {EMAIL}. Bizkaiko Lurralde Historikoko Elkarteen Erregistroan inskribatuta.
         </p>
 
         <h2 className="text-lg font-semibold">2. Xedea</h2>
@@ -47,15 +45,18 @@ function TermsEu() {
             erabiltzaile-kontuak kudeatzen ditu.
           </li>
           <li>
-            Pasahitzaren konfidentzialtasuna erabiltzailearen ardura da. Erabilera
-            desegokia susmatzean, berehala jakinarazi <em>{EMAIL}</em> helbidera.
+            Pasahitzaren konfidentzialtasuna erabiltzailearen ardura da. Erabilera desegokia
+            susmatzean, berehala jakinarazi <em>{EMAIL}</em> helbidera.
           </li>
         </ul>
 
         <h2 className="text-lg font-semibold">4. Erabilera onargarria</h2>
         <p>Debekatuta dago:</p>
         <ul className="list-disc space-y-1 pl-5">
-          <li>Plataforma legez kanpoko, iraingarri, diskriminatzaile edo kaltegarri helburuz erabiltzea.</li>
+          <li>
+            Plataforma legez kanpoko, iraingarri, diskriminatzaile edo kaltegarri helburuz
+            erabiltzea.
+          </li>
           <li>Segurtasun-neurriak edo sarbide-kontrolak saihesten saiatzea.</li>
           <li>Hirugarrenen datu pertsonalak plataformara baimenik gabe igotzea.</li>
         </ul>
@@ -69,9 +70,9 @@ function TermsEu() {
         <h2 className="text-lg font-semibold">6. Zerbitzuaren erabilgarritasuna</h2>
         <p>
           {COMPANY}k ahalegina egingo du zerbitzua etengabe eskaintzeko, baina ez du
-          erabilgarritasun etenikoa bermatzen. Mantentze-lanak aldez aurretik jakinarazi
-          daitezke. Matxura larriengatiko kalteak ez dira {COMPANY}ren erantzukizuna, legeek
-          ezarritako mugen barruan.
+          erabilgarritasun etenikoa bermatzen. Mantentze-lanak aldez aurretik jakinarazi daitezke.
+          Matxura larriengatiko kalteak ez dira {COMPANY}ren erantzukizuna, legeek ezarritako mugen
+          barruan.
         </p>
 
         <h2 className="text-lg font-semibold">7. Prezioak eta ordainketa</h2>
@@ -82,24 +83,23 @@ function TermsEu() {
 
         <h2 className="text-lg font-semibold">8. Baja eta datuen ezabaketa</h2>
         <p>
-          Erabiltzaileak edozein unetan eska dezake kontuaren eta elkartearen baja{" "}
-          <em>{EMAIL}</em> helbidera idatziz. Bajarengatik, datuak ezabatuko dira legeak
-          ezarritako epean (ikus Pribatutasun Politika).
+          Erabiltzaileak edozein unetan eska dezake kontuaren eta elkartearen baja <em>{EMAIL}</em>{" "}
+          helbidera idatziz. Bajarengatik, datuak ezabatuko dira legeak ezarritako epean (ikus
+          Pribatutasun Politika).
         </p>
 
         <h2 className="text-lg font-semibold">9. Erantzukizun-mugaketa</h2>
         <p>
           {COMPANY}k ez du erantzukizunik hartzen plataformako edukien zehaztasunagatik,
-          erabiltzaileek sartutako datuen egokitasunagatik, edo konexio-arazoengatik.
-          Zeharkako kalteengatiko erantzukizuna baztertzen da indarrean dagoen legediak
-          ahalbidetzen duen neurrian.
+          erabiltzaileek sartutako datuen egokitasunagatik, edo konexio-arazoengatik. Zeharkako
+          kalteengatiko erantzukizuna baztertzen da indarrean dagoen legediak ahalbidetzen duen
+          neurrian.
         </p>
 
         <h2 className="text-lg font-semibold">10. Lege aplikagarria eta jurisdikzioa</h2>
         <p>
-          Baldintza hauek Espainiako legeriaren arabera arautzen dira. Alderdiek Bilboko
-          epaitegi eta auzitegien jurisdikzioari men egiten diote, legez derrigorrezkoa den
-          forua salbu.
+          Baldintza hauek Espainiako legeriaren arabera arautzen dira. Alderdiek Bilboko epaitegi
+          eta auzitegien jurisdikzioari men egiten diote, legez derrigorrezkoa den forua salbu.
         </p>
 
         <h2 className="text-lg font-semibold">11. Aldaketak</h2>
@@ -121,16 +121,16 @@ function TermsEs() {
       <section className="mt-8 space-y-4 text-sm leading-relaxed">
         <h2 className="text-lg font-semibold">1. Identificación (art. 10 LSSI-CE)</h2>
         <p>
-          Este sitio web es titularidad de {COMPANY_LEGAL}, NIF {NIF}, domicilio social en{" "}
-          {ADDRESS}, correo electrónico {EMAIL}. Inscrita en el Registro de Asociaciones del
-          Territorio Histórico de Bizkaia.
+          Este sitio web es titularidad de {COMPANY_LEGAL}, NIF {NIF}, domicilio social en {ADDRESS}
+          , correo electrónico {EMAIL}. Inscrita en el Registro de Asociaciones del Territorio
+          Histórico de Bizkaia.
         </p>
 
         <h2 className="text-lg font-semibold">2. Objeto</h2>
         <p>
-          {COMPANY} ofrece una plataforma digital para la gestión de sociedades gastronómicas:
-          alta de socios, reservas, consumos (TPV), finanzas, inventario y comunicación. Al
-          registrarse, el usuario acepta las presentes condiciones.
+          {COMPANY} ofrece una plataforma digital para la gestión de sociedades gastronómicas: alta
+          de socios, reservas, consumos (TPV), finanzas, inventario y comunicación. Al registrarse,
+          el usuario acepta las presentes condiciones.
         </p>
 
         <h2 className="text-lg font-semibold">3. Registro y cuentas</h2>
@@ -165,8 +165,8 @@ function TermsEs() {
         <p>
           {COMPANY} realizará esfuerzos razonables para mantener el servicio disponible de forma
           continua, si bien no garantiza la ausencia de interrupciones. Las tareas de mantenimiento
-          programado se comunicarán con antelación razonable. {COMPANY} no será responsable de
-          daños derivados de interrupciones fuera de su control, en la medida permitida por la ley.
+          programado se comunicarán con antelación razonable. {COMPANY} no será responsable de daños
+          derivados de interrupciones fuera de su control, en la medida permitida por la ley.
         </p>
 
         <h2 className="text-lg font-semibold">7. Precios y pago</h2>
@@ -185,8 +185,8 @@ function TermsEs() {
         <h2 className="text-lg font-semibold">9. Limitación de responsabilidad</h2>
         <p>
           {COMPANY} no se responsabiliza de la exactitud de los contenidos introducidos por los
-          usuarios, ni de los daños derivados de problemas de conexión ajenos a la plataforma.
-          La responsabilidad por daños indirectos queda excluida en la medida que la legislación
+          usuarios, ni de los daños derivados de problemas de conexión ajenos a la plataforma. La
+          responsabilidad por daños indirectos queda excluida en la medida que la legislación
           vigente lo permita.
         </p>
 
@@ -215,9 +215,7 @@ function PrivacyEu() {
       <p className="mt-1 text-sm text-muted-foreground">Azken eguneraketa: 2026-04-11</p>
 
       <section className="mt-8 space-y-4 text-sm leading-relaxed">
-        <h2 className="text-lg font-semibold">
-          1. Arduraduna (DBEO 13-14. art. / LOPDGDD)
-        </h2>
+        <h2 className="text-lg font-semibold">1. Arduraduna (DBEO 13-14. art. / LOPDGDD)</h2>
         <p>
           Tratamenduaren arduraduna: {COMPANY_LEGAL}, IFK {NIF}, helbidea {ADDRESS}.
           Harremanetarako: <em>{EMAIL}</em>.
@@ -239,8 +237,8 @@ function PrivacyEu() {
             nabigatzailearen oinarrizko datuak erregistroen eta segurtasunaren aldetik.
           </li>
           <li>
-            <strong>Marketing opt-in:</strong> Erabiltzaileak borondatez markatzen badu
-            komunikazio komertzialak jasotzeko.
+            <strong>Marketing opt-in:</strong> Erabiltzaileak borondatez markatzen badu komunikazio
+            komertzialak jasotzeko.
           </li>
         </ul>
 
@@ -281,9 +279,9 @@ function PrivacyEu() {
 
         <h2 className="text-lg font-semibold">5. Hartzaileak eta transferentzia internazionalak</h2>
         <p>
-          Datuak ez zaizkie hirugarrenei lagako, legezko betebeharrak salbu. Zerbitzariak
-          Europar Batasunean kokatzen dira. Etorkizunean kanpoko zerbitzuren bat erabiltzen bada,
-          DBEO 46. artikuluko bermeak betetzen direla ziurtatuko da.
+          Datuak ez zaizkie hirugarrenei lagako, legezko betebeharrak salbu. Zerbitzariak Europar
+          Batasunean kokatzen dira. Etorkizunean kanpoko zerbitzuren bat erabiltzen bada, DBEO 46.
+          artikuluko bermeak betetzen direla ziurtatuko da.
         </p>
 
         <h2 className="text-lg font-semibold">6. Erabiltzailearen eskubideak</h2>
@@ -298,23 +296,23 @@ function PrivacyEu() {
         </ul>
         <p>
           Eskaerak <em>{EMAIL}</em> helbidera bidal daitezke, identifikazio-dokumentuarekin.
-          Erantzuna gehienez 30 egunetan. Ados ez bazaude, erreklamazioa aurkeztu dezakezu
-          Datuak Babesteko Espainiako Agentzian (AEPD, <em>www.aepd.es</em>).
+          Erantzuna gehienez 30 egunetan. Ados ez bazaude, erreklamazioa aurkeztu dezakezu Datuak
+          Babesteko Espainiako Agentzian (AEPD, <em>www.aepd.es</em>).
         </p>
 
         <h2 className="text-lg font-semibold">7. Segurtasun-neurriak</h2>
         <p>
           Pasahitzak hash bidez gordetzen dira (bcrypt). Sarbidea JWT bidez, cookie seguruetan
-          (httpOnly, SameSite). HTTPS komunikazio guztietan. Sarbide-kontrola rol-sistemaren
-          bidez (admin, diruzaina, sotolaria, bazkidea, laguna). Tenant isolamendua multi-tenant
+          (httpOnly, SameSite). HTTPS komunikazio guztietan. Sarbide-kontrola rol-sistemaren bidez
+          (admin, diruzaina, sotolaria, bazkidea, laguna). Tenant isolamendua multi-tenant
           arkitekturan.
         </p>
 
         <h2 className="text-lg font-semibold">8. Cookieak</h2>
         <p>
-          Plataformak funtzionaltasun-cookieak erabiltzen ditu soilik (auth-token,
-          refresh-token, hizkuntza-lehentasuna). Ez dira publizitate- edo jarraibide-cookieak
-          erabiltzen. Beraz, ez da cookie-bannerra behar LSSI-CE 22.2 artikuluaren arabera.
+          Plataformak funtzionaltasun-cookieak erabiltzen ditu soilik (auth-token, refresh-token,
+          hizkuntza-lehentasuna). Ez dira publizitate- edo jarraibide-cookieak erabiltzen. Beraz, ez
+          da cookie-bannerra behar LSSI-CE 22.2 artikuluaren arabera.
         </p>
 
         <h2 className="text-lg font-semibold">9. Adingabekoak</h2>
@@ -338,8 +336,7 @@ function PrivacyEs() {
           1. Responsable del tratamiento (arts. 13-14 RGPD / LOPDGDD)
         </h2>
         <p>
-          Responsable: {COMPANY_LEGAL}, NIF {NIF}, domicilio {ADDRESS}. Contacto:{" "}
-          <em>{EMAIL}</em>.
+          Responsable: {COMPANY_LEGAL}, NIF {NIF}, domicilio {ADDRESS}. Contacto: <em>{EMAIL}</em>.
         </p>
 
         <h2 className="text-lg font-semibold">2. Datos recogidos</h2>
@@ -432,15 +429,15 @@ function PrivacyEs() {
         <h2 className="text-lg font-semibold">8. Cookies</h2>
         <p>
           La plataforma utiliza únicamente cookies funcionales (auth-token, refresh-token,
-          preferencia de idioma). No se emplean cookies publicitarias ni de seguimiento. Conforme
-          al artículo 22.2 de la LSSI-CE, no se requiere banner de cookies al ser estrictamente
+          preferencia de idioma). No se emplean cookies publicitarias ni de seguimiento. Conforme al
+          artículo 22.2 de la LSSI-CE, no se requiere banner de cookies al ser estrictamente
           necesarias para el servicio.
         </p>
 
         <h2 className="text-lg font-semibold">9. Menores</h2>
         <p>
-          El servicio está dirigido a mayores de 16 años. Si eres menor de 16 años, no te
-          registres sin la autorización de tu padre, madre o tutor legal (art. 7 LOPDGDD).
+          El servicio está dirigido a mayores de 16 años. Si eres menor de 16 años, no te registres
+          sin la autorización de tu padre, madre o tutor legal (art. 7 LOPDGDD).
         </p>
       </section>
     </>
@@ -477,7 +474,8 @@ function LegalShell({
       </header>
       <main className="mx-auto max-w-3xl px-4 py-10">{children}</main>
       <footer className="border-t py-6 text-center text-xs text-muted-foreground">
-        {COMPANY} — {locale === "eu" ? "Elkarteen kudeaketa" : "Gestión de sociedades gastronómicas"}
+        {COMPANY} —{" "}
+        {locale === "eu" ? "Elkarteen kudeaketa" : "Gestión de sociedades gastronómicas"}
       </footer>
     </div>
   );

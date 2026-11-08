@@ -238,8 +238,7 @@ export function registerPublicSignupRoutes(app: Express) {
         }
 
         const user = await db.query.users.findFirst({
-          where: (u, { eq: e, and: a }) =>
-            a(e(u.username, lowerEmail), e(u.societyId, society.id)),
+          where: (u, { eq: e, and: a }) => a(e(u.username, lowerEmail), e(u.societyId, society.id)),
         });
 
         if (!user || user.emailVerifiedAt) {
@@ -247,9 +246,7 @@ export function registerPublicSignupRoutes(app: Express) {
         }
 
         // Delete old token and insert a fresh one
-        await db
-          .delete(userEmailVerifications)
-          .where(eq(userEmailVerifications.userId, user.id));
+        await db.delete(userEmailVerifications).where(eq(userEmailVerifications.userId, user.id));
 
         const newToken = randomBytes(32).toString("base64url");
         const tokenHash = createHash("sha256").update(newToken).digest("hex");
@@ -261,7 +258,8 @@ export function registerPublicSignupRoutes(app: Express) {
           expiresAt,
         });
 
-        const lang: CommunicationLanguage = (user.communicationLanguage as CommunicationLanguage) ?? "eu";
+        const lang: CommunicationLanguage =
+          (user.communicationLanguage as CommunicationLanguage) ?? "eu";
 
         try {
           await sendSignupVerificationEmail({

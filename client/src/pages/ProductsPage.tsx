@@ -1221,11 +1221,17 @@ export function ProductsPage() {
                 ) : (
                   <Tabs
                     key={editDialog.product.id}
-                    defaultValue={editDialog.product.imageUrl?.startsWith("/catalog/") ? "catalog" : "upload"}
+                    defaultValue={
+                      editDialog.product.imageUrl?.startsWith("/catalog/") ? "catalog" : "upload"
+                    }
                   >
                     <TabsList className="w-full">
-                      <TabsTrigger value="upload" className="flex-1">{t("imageTabUpload")}</TabsTrigger>
-                      <TabsTrigger value="catalog" className="flex-1">{t("imageTabCatalog")}</TabsTrigger>
+                      <TabsTrigger value="upload" className="flex-1">
+                        {t("imageTabUpload")}
+                      </TabsTrigger>
+                      <TabsTrigger value="catalog" className="flex-1">
+                        {t("imageTabCatalog")}
+                      </TabsTrigger>
                     </TabsList>
                     <TabsContent value="upload">
                       <ImageUpload

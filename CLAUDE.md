@@ -8,16 +8,16 @@ This is **not** Next.js. Files under `client/src/components/ui/` may contain `"u
 
 ## Folder map
 
-| Path | Role |
-|------|------|
-| `client/src/` | React app: pages, components, hooks, `lib/` |
-| `server/` | Express entry, `routes/`, `db.ts`, `lib/` |
-| `shared/` | Drizzle schema, shared TS (`schema.ts`, `society.ts`) |
-| `e2e/` | Cucumber features + Playwright steps (browser) |
-| `integration/` | Cucumber API tests + Supertest (no browser) |
-| `server/app.ts` | Express `createApp()` — used by `server/index.ts` and integration tests |
-| `docs/features/` | Feature specs + `IMPLEMENTATION_STATUS.md` |
-| `script/` | build, seed, DB reset |
+| Path             | Role                                                                    |
+| ---------------- | ----------------------------------------------------------------------- |
+| `client/src/`    | React app: pages, components, hooks, `lib/`                             |
+| `server/`        | Express entry, `routes/`, `db.ts`, `lib/`                               |
+| `shared/`        | Drizzle schema, shared TS (`schema.ts`, `society.ts`)                   |
+| `e2e/`           | Cucumber features + Playwright steps (browser)                          |
+| `integration/`   | Cucumber API tests + Supertest (no browser)                             |
+| `server/app.ts`  | Express `createApp()` — used by `server/index.ts` and integration tests |
+| `docs/features/` | Feature specs + `IMPLEMENTATION_STATUS.md`                              |
+| `script/`        | build, seed, DB reset                                                   |
 
 ## Path aliases (must use)
 
@@ -58,6 +58,7 @@ For non-trivial features: add or extend a spec under `docs/features/` and add/up
 - Use Drizzle/`sql` patterns consistent with existing tables (`defaultNow()`, `updatedAt`).
 
 **After schema changes:**
+
 - Dev: `pnpm db:push`
 - Migrations: `pnpm db:generate` then `pnpm db:migrate`
 - Full reset: `pnpm db:reset` (drops all tables in `public` dynamically, then `pnpm db:push`)
@@ -75,7 +76,7 @@ async (req: Request, res: Response, next: NextFunction) => {
   } catch (err) {
     next(err);
   }
-}
+};
 ```
 
 ### Middleware chain (typical order)
@@ -146,11 +147,11 @@ All user-visible strings: **`useLanguage()`** + **`t("key")`**. Add keys to **bo
 
 ### Test tiers
 
-| Tier | Location | Runner | Use for |
-|------|-----------|--------|---------|
-| **Unit** | `server/**/*.test.ts` | Vitest | Pure logic, mocked DB |
-| **Integration** | `integration/features/` | Cucumber + Supertest | API contracts, RBAC, business rules |
-| **E2E** | `e2e/features/` | Cucumber + Playwright | Critical UI journeys |
+| Tier            | Location                | Runner                | Use for                             |
+| --------------- | ----------------------- | --------------------- | ----------------------------------- |
+| **Unit**        | `server/**/*.test.ts`   | Vitest                | Pure logic, mocked DB               |
+| **Integration** | `integration/features/` | Cucumber + Supertest  | API contracts, RBAC, business rules |
+| **E2E**         | `e2e/features/`         | Cucumber + Playwright | Critical UI journeys                |
 
 Prefer new **backend** coverage in **integration** features, not browser E2E.
 
