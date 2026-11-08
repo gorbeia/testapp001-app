@@ -115,6 +115,28 @@ When the society enables **`bank_transfer_prepayment`** and sets **`prepaymentMi
 - **Statement JSON** (in addition to opening/closing, `summary`, `movements`): `totalDebits` / `totalCredits` (period magnitudes), `movementCount`, `generatedAt` (ISO).
 - **CSV**: client-generated UTF-8 with BOM for Excel; headers translated (eu/es); rows include username, formatted generation time, movement count, debit/credit totals after per-type summary, locale-friendly movement datetimes, and `referenceType:referenceId` when present. Society-wide CSV adds **member** and **username** columns on each movement line and includes **period net** in the header block.
 
+## F11  Corrective movements (Zuzendutako mugimenduak)
+
+**As a** treasurer/admin **I want** to create corrective entries linked to original movements **so that** accounting errors can be fixed without breaking the audit trail.
+
+### Acceptance criteria
+
+- **No deletion**: Movements cannot be deleted; corrections are the only way to adjust errors.
+- **Correction type**: New movement type `correction` with **negative** or **positive** amount to offset the original.
+- **Linking**: Corrections reference the original via `correctedById` (original movement's `correctedById` points to the correction) and `isCorrection: true` flag.
+- **Reason required**: `correctionReason` field (min 5 characters) explains the adjustment.
+- **Validation**: Cannot correct a correction (prevent chaining); cannot correct an already-corrected movement.
+- **Permissions**: `MOVEMENTS_MANAGE` permission required (admin/treasurer only).
+- **API**: `POST /api/account-movements/correction` with `originalMovementId`, `amount`, `reason`.
+- **Notifications**: Member notified when a correction affects their balance (eu/es/en).
+
+### Implementation
+
+- **Schema**: `accountMovements` extended with `correctedById` (varchar, nullable), `isCorrection` (boolean, default false), `correctionReason` (text, nullable).
+- **Service**: `postLedgerCorrection` in [`server/lib/ledger/ledger-service.ts`](../../server/lib/ledger/ledger-service.ts) with full validation and transaction wrapping.
+- **Balance impact**: Correction amount is applied to member balance (signed convention: positive = credit, negative = debit).
+- **Society ledger**: Corrections are mirrored to `society_ledger` via `mirrorAccountMovementToSocietyLedger`.
+
 ## Society setting
 
 - `sepaMode`: when `disabled`, SEPA export and related UI/API are off; **`subscription` ledger movements and subscription charge notifications still run** when debt calculation posts a subscription fee (see `credits.md`). Monthly **credits** list UIs (**`/nire-zorrak`**, **`/zorrak`**) are not shown; use member **`/nire-mugimenduak`** and treasurer **`/mugimenduak`** for balances and audit.

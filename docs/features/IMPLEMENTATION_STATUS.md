@@ -155,8 +155,11 @@ Status legend:
    - **Status**: ✅ Implemented (see `prepayment-ledger-floor.md`; E2E: `prepayment-ledger-floor.feature`, scripts `db:seed:prepayment-floor-e2e` / `db:undo:prepayment-floor-e2e`)
 10. **Period account statement & balances (CSV)** — `GET /api/account-movements/me/statement`, `GET /api/account-movements/statement`, `GET /api/account-movements/society-statement` (treasurer, all members in range), `GET /api/account-movements/balances`; opening/closing balance + period movements + per-type summary; society-wide flat extract without running balance; **`/nire-mugimenduak`** and **`/mugimenduak`** download buttons (treasurer dialog: whole-society or single-member statement); helpers in `server/lib/account-movements.ts` (`getMemberBalanceBeforeMonth`, `getMemberBalanceThroughMonth`, `getAllMemberBalances`); `computeRunningBalancesWithInitial` in `ledger-rules.ts`
     - **Status**: ✅ Implemented (see `account-movements.md` F10; PDF not in scope)
-11. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
-12. **Society accounting (Kontabilitatea)** — [`society-transactions.md`](./society-transactions.md)
+
+11. **Corrective movements** — `POST /api/account-movements/correction` for treasurer/admin to create correction entries linked to original movements; `accountMovements` extended with `correctedById`, `isCorrection`, `correctionReason`; validation prevents correcting corrections or already-corrected movements; `MOVEMENTS_MANAGE` permission; notifications on correction; unit + integration tests
+    - **Status**: ✅ Implemented (see `account-movements.md` F11; integration: `account-movements.feature` correction scenarios)
+12. **Future (spec only):** period closing, transfer attachments, PDF statements, two-step refund approval — see `account-movements.md`
+13. **Society accounting (Kontabilitatea)** — [`society-transactions.md`](./society-transactions.md)
     - **Status**: ✅ Implemented — standalone page **`/kontabilitatea`**: **`society_ledger`** posted cashbook (mirrored member-ledger income/expense + manual lines + adjustments); `GET /api/society-accounting/summary` and **`/derived-movements`** (paginated **`page`/`limit`**, response **`movements` + `total`**, running balance via full-range window then **`LIMIT`/`OFFSET`**) read only from that table; manual CRUD via **`/api/society-transactions`** with fixed **`category`** keys (**`shared/society-categories.ts`**, migration **`0010_category_enum.sql`**); **`Permission.SOCIETY_TRANSACTIONS_MANAGE`**; **`server/lib/society-ledger.ts`** as write gateway from app code; **`0009_society_ledger.sql`** + **`0010_category_enum.sql`**; E2E: `society-accounting.feature`
 
 ---
