@@ -22,5 +22,21 @@ module.exports = {
       max_memory_restart: "1G",
       node_args: "--max-old-space-size=1024",
     },
+    {
+      name: "guretxokoa-staging",
+      script: "dist/index.cjs",
+      instances: 1,
+      exec_mode: "fork",
+      env: {
+        NODE_ENV: "staging",
+        PORT: 5001,
+      },
+      error_file: "./logs/err-staging.log",
+      out_file: "./logs/out-staging.log",
+      time: true,
+      autorestart: true,
+      watch: false,
+      max_memory_restart: "512M",
+    },
   ],
 };
