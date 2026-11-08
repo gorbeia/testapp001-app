@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { Given, When } from "@cucumber/cucumber";
+import { Given, Then, When } from "@cucumber/cucumber";
 
 import type { IntegrationWorld } from "./world";
 import { db } from "../../server/db";
