@@ -165,6 +165,10 @@ export type InsertMovementInput = {
   referenceType?: string | null;
   createdBy: string | null;
   createdAt?: Date;
+  // Correction tracking
+  correctedById?: string | null;
+  isCorrection?: boolean;
+  correctionReason?: string | null;
 };
 
 export async function insertAccountMovementRow(
@@ -183,6 +187,9 @@ export async function insertAccountMovementRow(
       referenceType: input.referenceType ?? null,
       createdBy: input.createdBy,
       createdAt: input.createdAt ?? new Date(),
+      correctedById: input.correctedById ?? null,
+      isCorrection: input.isCorrection ?? false,
+      correctionReason: input.correctionReason ?? null,
     })
     .returning();
   return row;

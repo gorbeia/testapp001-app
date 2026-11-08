@@ -2,6 +2,7 @@ import type { Express, Request as ExpressRequest } from "express";
 import { db } from "../db";
 import {
   accountMovements,
+  accountMovementCorrectionBodySchema,
   accountMovementRefundBodySchema,
   accountMovementSepaBounceBodySchema,
   accountMovementTypeSchema,
@@ -21,6 +22,7 @@ import {
 import { computeRunningBalancesWithInitial } from "../lib/ledger/ledger-rules";
 import {
   bounceAlreadyRecorded,
+  postLedgerCorrection,
   postLedgerRefund,
   postSepaBounceAndResetCredit,
 } from "../lib/ledger/ledger-service";
@@ -646,6 +648,98 @@ export function registerAccountMovementRoutes(app: Express) {
         });
 
         res.status(201).json(movement);
+      } catch (e) {
+        next(e);
+      }
+    }
+  );
+
+  // Correction endpoint
+  app.post(
+    "/api/account-movements/correction",
+    sessionMiddleware,
+    requirePermission(Permission.MOVEMENTS_MANAGE),
+    async (req, res, next) => {
+      try {
+        const parsed = accountMovementCorrectionBodySchema.safeParse(req.body);
+        if (!parsed.success) {
+          return res
+            .status(400)
+            .json({ message: "Invalid payload", issues: parsed.error.flatten() });
+        }
+
+        const { originalMovementId, amount, reason, description } = parsed.data;
+        const societyId = getUserSocietyId(req.user!);
+        const amountNum = typeof amount === "number"
+          ? amount
+          : parseFloat(String(amount));
+
+        // Validate amount
+        if (Number.isNaN(amountNum)) {
+          return res.status(400).json({ message: "Invalid amount" });
+        }
+        if (amountNum === 0) {
+          return res.status(400).json({ message: "Correction amount cannot be zero" });
+        }
+
+        // Validate reason
+        if (!reason || reason.trim().length < 5) {
+          return res.status(400).json({ 
+            message: "Correction reason must be at least 5 characters" 
+          });
+        }
+
+        // Get original movement
+        const [original] = await db
+          .select()
+          .from(accountMovements)
+          .where(and(
+            eq(accountMovements.id, originalMovementId),
+            eq(accountMovements.societyId, societyId)
+          ));
+
+        if (!original) {
+          return res.status(404).json({ 
+            message: "Original movement not found or not in your society" 
+          });
+        }
+
+        // Prevent correcting a correction
+        if (original.isCorrection) {
+          return res.status(400).json({
+            message: "Cannot correct a correction. Create a new correction for the original movement."
+          });
+        }
+
+        // Prevent correcting already corrected movement
+        if (original.correctedById) {
+          return res.status(400).json({
+            message: "This movement has already been corrected."
+          });
+        }
+
+        // Create correction
+        const correction = await postLedgerCorrection({
+          societyId,
+          userId: original.userId,
+          originalMovementId,
+          amount: amountNum,
+          reason,
+          description,
+          createdBy: req.user!.id,
+        });
+
+        // Notify the user
+        await notifyFinancialEvent({
+          userId: original.userId,
+          societyId,
+          referenceId: correction.id,
+          titleKey: "financialCorrectionCreatedTitle",
+          messageKey: "financialCorrectionCreatedMessage",
+          params: { amount: Math.abs(amountNum).toFixed(2), reason },
+        });
+
+        res.status(201).json(correction);
       } catch (e) {
         next(e);
       }

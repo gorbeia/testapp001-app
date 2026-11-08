@@ -40,6 +40,9 @@ export const translations = {
       'Ezin da sukaldea erabili erreserba honetan: "{title}" gertaerak blokeatzen du.',
     reservationBlockedTableByEvent:
       'Ezin da mahaia erreserbatu: "{title}" gertaerak mahaia blokeatzen du.',
+    financialCorrectionCreatedTitle: "Zuzendapen finantzarioa",
+    financialCorrectionCreatedMessage:
+      "Zure kontuan {amount} \u20ac-ko zuzendapen bat erregistratu da. Arrazoia: {reason}.",
   },
 
   es: {
@@ -81,6 +84,9 @@ export const translations = {
       'No se puede usar la cocina en esta reserva: el evento "{title}" lo impide.',
     reservationBlockedTableByEvent:
       'No se puede reservar la mesa: el evento "{title}" bloquea esa mesa.',
+    financialCorrectionCreatedTitle: "Corrección financiera",
+    financialCorrectionCreatedMessage:
+      "Se ha registrado una corrección de {amount} \u20ac en tu cuenta. Motivo: {reason}.",
   },
 
   en: {
@@ -121,7 +127,11 @@ export const translations = {
       'Kitchen use is blocked for this reservation: the event "{title}" blocks kitchen use.',
     reservationBlockedTableByEvent:
       'Cannot reserve this table: the event "{title}" blocks that table.',
+    financialCorrectionCreatedTitle: "Financial correction",
+    financialCorrectionCreatedMessage:
+      "A correction of {amount} \u20ac has been recorded on your account. Reason: {reason}.",
   },
 };
+;
 
 export type TranslationKey = keyof typeof translations.eu;
