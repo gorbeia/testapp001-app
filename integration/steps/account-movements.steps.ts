@@ -27,23 +27,22 @@ async function createTestMovement(
   type: string = "consumption",
   amount: string = "-50.00"
 ): Promise<string> {
-  const [movement] = await db
-    .insert(accountMovements)
-    .values({
-      societyId: DEMO_SOCIETY_ID,
-      userId,
-      type,
-      amount: parseFloat(amount),
-      description: "Test movement for correction",
-      referenceId: null,
-      referenceType: null,
-      createdBy: "test",
-      correctedById: null,
-      isCorrection: false,
-      correctionReason: null,
-    })
-    .returning({ id: accountMovements.id });
-  return movement.id;
+  const movementId = crypto.randomUUID();
+  await db.insert(accountMovements).values({
+    id: movementId,
+    societyId: DEMO_SOCIETY_ID,
+    userId,
+    type,
+    amount: parseFloat(amount),
+    description: "Test movement for correction",
+    referenceId: null,
+    referenceType: null,
+    createdBy: "test",
+    correctedById: null,
+    isCorrection: false,
+    correctionReason: null,
+  });
+  return movementId;
 }
 
 When("I record a refund for Miren via API", async function (this: IntegrationWorld) {
