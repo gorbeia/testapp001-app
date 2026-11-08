@@ -9,9 +9,7 @@
  */
 export function guardProduction(scriptName: string): void {
   if (process.env.ALLOW_PRODUCTION_DB_OPS === "1") {
-    console.warn(
-      `[guard] ALLOW_PRODUCTION_DB_OPS=1 — skipping production check for ${scriptName}`
-    );
+    console.warn(`[guard] ALLOW_PRODUCTION_DB_OPS=1 — skipping production check for ${scriptName}`);
     return;
   }
 

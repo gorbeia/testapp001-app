@@ -38,6 +38,7 @@ export function balanceMultiplierForMovementType(type: AccountMovementType): 1 |
     case "refund":
       return 1;
     case "adjustment":
+    case "correction":
       return null;
   }
 }

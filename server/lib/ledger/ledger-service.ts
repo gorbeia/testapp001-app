@@ -1,8 +1,9 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   ACCOUNT_MOVEMENT_REF_RESERVATION_CASH,
   ACCOUNT_MOVEMENT_REF_RESERVATION_CASH_CANCEL,
   ACCOUNT_MOVEMENT_REF_SUBSCRIPTION_CASH,
+  accountMovements,
   bankTransfers,
   credits,
   type Reservation,
@@ -428,11 +429,98 @@ export async function reverseReservationLedgerOnCancel(params: {
   });
 }
 
+/**
+ * Posts a correction movement to adjust an existing movement.
+ * Creates a new movement with type "correction" and links it to the original.
+ * Also updates the original to reference the correction.
+ *
+ * @param params - Correction parameters
+ * @returns The created correction movement
+ */
+export async function postLedgerCorrection(params: {
+  societyId: string;
+  userId: string;
+  originalMovementId: string;
+  amount: number;
+  reason: string;
+  description?: string;
+  createdBy: string;
+}) {
+  return db.transaction(async tx => {
+    // Verify original movement exists and get it
+    const [original] = await tx
+      .select()
+      .from(accountMovements)
+      .where(
+        and(
+          eq(accountMovements.id, params.originalMovementId),
+          eq(accountMovements.societyId, params.societyId)
+        )
+      );
+
+    if (!original) {
+      throw new Error("Original movement not found or not in your society");
+    }
+
+    // Prevent correcting a correction (chain corrections instead)
+    if (original.isCorrection) {
+      throw new Error(
+        "Cannot correct a correction. Create a new correction for the original movement."
+      );
+    }
+
+    // Prevent correcting an already corrected movement
+    if (original.correctedById) {
+      throw new Error("This movement has already been corrected.");
+    }
+
+    // Validate amount
+    const amountNum =
+      typeof params.amount === "number" ? params.amount : parseFloat(String(params.amount));
+
+    if (Number.isNaN(amountNum)) {
+      throw new Error("Invalid correction amount");
+    }
+
+    // Create the correction movement
+    const correction = await insertAccountMovementRow(
+      {
+        societyId: params.societyId,
+        userId: params.userId,
+        type: "correction",
+        amount: formatLedgerAmount(amountNum),
+        description: params.description || `Correction for movement ${params.originalMovementId}`,
+        referenceId: params.originalMovementId,
+        referenceType: "movement_correction",
+        createdBy: params.createdBy,
+        isCorrection: true,
+        correctionReason: params.reason,
+      },
+      tx
+    );
+
+    // Update original to link to correction
+    await tx
+      .update(accountMovements)
+      .set({
+        correctedById: correction.id,
+        correctionReason: params.reason,
+      })
+      .where(eq(accountMovements.id, params.originalMovementId));
+
+    // Mirror to society ledger
+    await mirrorAccountMovementToSocietyLedger(tx, correction);
+
+    return correction;
+  });
+}
+
 export const ledgerService = {
   postLedgerRefund,
   postConsumptionDebit,
   validateBankTransferAndPostLedger,
   postSepaBounceAndResetCredit,
+  postLedgerCorrection,
   bounceAlreadyRecorded,
   appendSepaCollectionMovementsForCredits,
   postCashReservationSettlement,

@@ -21,3 +21,42 @@ Feature: Account movements API
     Given I am authenticated as a "admin" user
     When I POST SEPA bounce with a non-existent credit id
     Then the response status should be 404
+
+  Scenario: Admin creates a correction for a movement
+    Given I am authenticated as a "admin" user
+    And a consumption movement exists for "Miren"
+    When I create a correction for that movement with amount "10.00" and reason "Overcharged"
+    Then the response status should be 201
+    And the response body should include property "type" with value "correction"
+    And the response body should include property "isCorrection" with value true
+    And the response body should include property "referenceType" with value "movement_correction"
+
+  Scenario: Cannot correct a non-existent movement
+    Given I am authenticated as a "admin" user
+    When I create a correction for movement "00000000-0000-4000-8000-000000000000" with amount "10.00" and reason "Test correction"
+    Then the response status should be 404
+
+  Scenario: Cannot correct a correction
+    Given I am authenticated as a "admin" user
+    And a correction movement exists for "Miren"
+    When I create a correction for that correction movement with amount "5.00" and reason "Test"
+    Then the response status should be 400
+
+  Scenario: Cannot correct an already corrected movement
+    Given I am authenticated as a "admin" user
+    And a consumption movement exists for "Miren"
+    And that movement has been corrected
+    When I create a correction for that movement with amount "5.00" and reason "Test"
+    Then the response status should be 400
+
+  Scenario: Correction requires a reason
+    Given I am authenticated as a "admin" user
+    And a consumption movement exists for "Miren"
+    When I create a correction for that movement with amount "10.00" and reason ""
+    Then the response status should be 400
+
+  Scenario: Correction requires non-zero amount
+    Given I am authenticated as a "admin" user
+    And a consumption movement exists for "Miren"
+    When I create a correction for that movement with amount "0" and reason "Test"
+    Then the response status should be 400

@@ -1212,6 +1212,7 @@ export const accountMovementTypeSchema = z.enum([
   "refund",
   "adjustment",
   "cash_payment",
+  "correction",
 ]);
 
 export type AccountMovementType = z.infer<typeof accountMovementTypeSchema>;
@@ -1233,6 +1234,10 @@ export const accountMovements = pgTable("account_movements", {
   referenceType: text("reference_type"),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
+  // Correction tracking
+  correctedById: varchar("corrected_by_id"),
+  isCorrection: boolean("is_correction").notNull().default(false),
+  correctionReason: text("correction_reason"),
 });
 
 export const bankTransferStatusSchema = z.enum(["pending", "validated", "rejected"]);
@@ -1329,6 +1334,9 @@ export const insertAccountMovementSchema = createInsertSchema(accountMovements).
   referenceId: true,
   referenceType: true,
   createdBy: true,
+  correctedById: true,
+  isCorrection: true,
+  correctionReason: true,
 });
 
 export const insertBankTransferSchema = createInsertSchema(bankTransfers).pick({
@@ -1349,6 +1357,13 @@ export const accountMovementRefundBodySchema = z.object({
 
 export const accountMovementSepaBounceBodySchema = z.object({
   creditId: z.string().min(1),
+});
+
+export const accountMovementCorrectionBodySchema = z.object({
+  originalMovementId: z.string().min(1),
+  amount: z.union([z.coerce.number(), z.string()]),
+  reason: z.string().min(5).max(500),
+  description: z.string().min(1).max(200).optional(),
 });
 
 /** YYYY-MM */

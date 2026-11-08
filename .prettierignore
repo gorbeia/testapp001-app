@@ -91,6 +91,10 @@ temp/
 # Cursor agent plans (may be outside normal doc formatting)
 .cursor/plans/
 
+# AI tool configurations
+.claude/
+.windsurf/
+
 # Editor directories and files
 .vscode/
 .idea/
