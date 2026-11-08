@@ -33,13 +33,11 @@ async function createTestMovement(
       societyId: DEMO_SOCIETY_ID,
       userId,
       type,
-      amount,
+      amount: parseFloat(amount),
       description: "Test movement for correction",
       referenceId: null,
       referenceType: null,
       createdBy: "test",
-      isCorrection: false,
-      correctionReason: null,
     })
     .returning({ id: accountMovements.id });
   return movement.id;
