@@ -9,14 +9,14 @@ import { eq, and } from "drizzle-orm";
 const MIREN_USER_ID = "550e8400-e29b-41d4-a716-446655440004";
 const DEMO_SOCIETY_ID = "GT001";
 
-// Helper to get user ID by email
+// Helper to get user ID by username (email)
 async function getUserIdByEmail(email: string): Promise<string> {
   const [user] = await db
     .select({ id: users.id })
     .from(users)
-    .where(and(eq(users.email, email), eq(users.societyId, DEMO_SOCIETY_ID)));
+    .where(and(eq(users.username, email), eq(users.societyId, DEMO_SOCIETY_ID)));
   if (!user) {
-    throw new Error(`User with email ${email} not found`);
+    throw new Error(`User with username ${email} not found`);
   }
   return user.id;
 }
@@ -155,5 +155,52 @@ When(
       headers: res.headers as Record<string, string | string[] | undefined>,
       body: res.body,
     };
+  }
+);
+
+// Step definitions for checking response body properties
+When(
+  "I create a correction for that movement with amount {string} and reason {string}",
+  async function (this: IntegrationWorld, amount: string, reason: string) {
+    // Find the movement ID
+    const movementId = Object.values(this.createdIds).find(id => id.startsWith("movement"));
+    assert.ok(movementId, "No movement found to correct");
+
+    const res = await this.agent.post("/api/account-movements/correction").send({
+      originalMovementId: movementId,
+      amount,
+      reason,
+    });
+    this.lastResponse = {
+      status: res.status,
+      headers: res.headers as Record<string, string | string[] | undefined>,
+      body: res.body,
+    };
+  }
+);
+
+Then(
+  "the response body should include property {string} with value true",
+  function (this: IntegrationWorld, property: string) {
+    assert.ok(this.lastResponse, "No last response recorded");
+    assert.ok(this.lastResponse.body, "Response body is empty");
+    assert.strictEqual(
+      this.lastResponse.body[property],
+      true,
+      `Expected ${property} to be true, got ${this.lastResponse.body[property]}`
+    );
+  }
+);
+
+Then(
+  "the response body should include property {string} with value {string}",
+  function (this: IntegrationWorld, property: string, expectedValue: string) {
+    assert.ok(this.lastResponse, "No last response recorded");
+    assert.ok(this.lastResponse.body, "Response body is empty");
+    assert.strictEqual(
+      this.lastResponse.body[property],
+      expectedValue,
+      `Expected ${property} to be ${expectedValue}, got ${this.lastResponse.body[property]}`
+    );
   }
 );
