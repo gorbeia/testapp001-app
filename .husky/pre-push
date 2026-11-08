@@ -1,0 +1,27 @@
+#!/bin/sh
+
+# Pre-push hook for testapp001-app
+# Runs prettier and eslint checks before allowing push
+
+echo "Running pre-push checks..."
+
+# Run prettier check
+echo "Checking code formatting with prettier..."
+if pnpm format:check; then
+    echo "✅ Prettier check passed"
+else
+    echo "❌ Prettier check failed - please run 'pnpm format' to fix formatting issues"
+    exit 1
+fi
+
+# Run eslint
+echo "Running lint checks..."
+if pnpm lint; then
+    echo "✅ Lint check passed"
+else
+    echo "❌ Lint check failed - please fix lint errors"
+    exit 1
+fi
+
+echo "✅ All pre-push checks passed!"
+exit 0

@@ -44,7 +44,8 @@
     "lint:ci": "eslint . --ext ts,tsx --report-unused-disable-directives --quiet",
     "lint:fix": "eslint . --ext ts,tsx --fix",
     "audit:security": "node script/security-audit.mjs",
-    "audit:security:prod": "node script/security-audit.mjs --prod"
+    "audit:security:prod": "node script/security-audit.mjs --prod",
+    "prepare": "husky"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -157,6 +158,7 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "husky": "^9.1.7",
     "nodemon": "^3.1.11",
     "playwright": "^1.57.0",
     "postcss": "^8.4.47",
