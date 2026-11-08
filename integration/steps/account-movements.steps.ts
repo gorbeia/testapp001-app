@@ -84,8 +84,10 @@ Given(
 
 Given("that movement has been corrected", async function (this: IntegrationWorld) {
   // Get the movement ID from the last created movement
-  const movementId = Object.values(this.createdIds).find(id => id.startsWith("mov"));
-  assert.ok(movementId, "No movement found to mark as corrected");
+  const movementKey = Object.keys(this.createdIds).find(key => key.startsWith("movement_"));
+  assert.ok(movementKey, "No movement key found to mark as corrected");
+  const movementId = this.createdIds[movementKey];
+  assert.ok(movementId, "No movement ID found to mark as corrected");
 
   // Mark it as corrected by creating a dummy correction
   await db
@@ -98,8 +100,10 @@ When(
   "I create a correction for that movement with amount {string} and reason {string}",
   async function (this: IntegrationWorld, amount: string, reason: string) {
     // Find the movement ID
-    const movementId = Object.values(this.createdIds).find(id => id.startsWith("mov"));
-    assert.ok(movementId, "No movement found to correct");
+    const movementKey = Object.keys(this.createdIds).find(key => key.startsWith("movement_"));
+    assert.ok(movementKey, "No movement key found to correct");
+    const movementId = this.createdIds[movementKey];
+    assert.ok(movementId, "No movement ID found to correct");
 
     const res = await this.agent.post("/api/account-movements/correction").send({
       originalMovementId: movementId,
@@ -134,8 +138,10 @@ When(
   "I create a correction for that correction movement with amount {string} and reason {string}",
   async function (this: IntegrationWorld, amount: string, reason: string) {
     // Find the correction ID
-    const correctionId = Object.values(this.createdIds).find(id => id.startsWith("correction"));
-    assert.ok(correctionId, "No correction found to correct");
+    const correctionKey = Object.keys(this.createdIds).find(key => key.startsWith("correction_"));
+    assert.ok(correctionKey, "No correction key found to correct");
+    const correctionId = this.createdIds[correctionKey];
+    assert.ok(correctionId, "No correction ID found to correct");
 
     const res = await this.agent.post("/api/account-movements/correction").send({
       originalMovementId: correctionId,
