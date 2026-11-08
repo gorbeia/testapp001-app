@@ -38,6 +38,9 @@ async function createTestMovement(
       referenceId: null,
       referenceType: null,
       createdBy: "test",
+      correctedById: null,
+      isCorrection: false,
+      correctionReason: null,
     })
     .returning({ id: accountMovements.id });
   return movement.id;
