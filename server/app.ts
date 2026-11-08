@@ -76,6 +76,21 @@ export async function createApp(): Promise<{ app: Express; httpServer: Server }>
 
   await registerRoutes(httpServer, app);
 
+  // Security middleware: block sensitive path probing
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    const sensitivePatterns = [
+      '.env', 'azure', 'secrets', 'credentials', 'config',
+      'yaml', 'yml', 'json', '%2e', '%252e', '%c0%af'
+    ];
+
+    const path = req.path.toLowerCase();
+    if (sensitivePatterns.some(pattern => path.includes(pattern))) {
+      log(`[SECURITY] Blocked sensitive path: ${req.path}`, "express");
+      return res.status(403).json({ message: 'Access denied' });
+    }
+    next();
+  });
+
   app.use((err: unknown, req: Request, res: Response, next: NextFunction) => {
     console.error("Error:", err instanceof Error ? err.message : err);
     if (res && typeof res.status === "function") {

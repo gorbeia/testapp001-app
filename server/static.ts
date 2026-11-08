@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import fs from "fs";
 import path from "path";
 
@@ -12,8 +12,13 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(distPath));
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  // Only serve index.html for non-API paths (SPA client-side routing)
+  // This prevents API routes from returning HTML and blocks sensitive path probing
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.resolve(distPath, "index.html"));
+    } else {
+      next();
+    }
   });
 }
