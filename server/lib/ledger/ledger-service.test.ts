@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { mockInsert, mockMovementExists, mockTx, mockUpdateChain, mockSelectChain } = vi.hoisted(
+const { mockInsert, mockMovementExists, mockTx, mockUpdateChain } = vi.hoisted(
   () => {
     const mockInsert = vi.fn();
     const mockMovementExists = vi.fn();
@@ -29,7 +29,7 @@ const { mockInsert, mockMovementExists, mockTx, mockUpdateChain, mockSelectChain
       insert: vi.fn(),
     };
 
-    return { mockInsert, mockMovementExists, mockTx, mockUpdateChain, mockSelectChain };
+    return { mockInsert, mockMovementExists, mockTx, mockUpdateChain };
   }
 );
 

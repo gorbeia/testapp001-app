@@ -1,3 +1,4 @@
+import React from "react";
 import { Link } from "wouter";
 import { ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
