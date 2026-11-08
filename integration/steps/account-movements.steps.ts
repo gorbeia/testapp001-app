@@ -8,6 +8,7 @@ import { accountMovements, users } from "@shared/schema";
 import { eq, and, sql } from "drizzle-orm";
 
 const MIREN_USER_ID = "550e8400-e29b-41d4-a716-446655440004";
+const ADMIN_USER_ID = "550e8400-e29b-41d4-a716-446655440001";
 const DEMO_SOCIETY_ID = "550e8400-e29b-41d4-a716-446655440000";
 
 // Helper to get user ID by username (email)
@@ -30,8 +31,8 @@ async function createTestMovement(
 ): Promise<string> {
   const movementId = crypto.randomUUID();
   await db.execute(sql`
-    INSERT INTO account_movements (id, society_id, user_id, type, amount, description, reference_id, reference_type, created_by, corrected_by_id, is_correction, correction_reason)
-    VALUES (${movementId}, ${DEMO_SOCIETY_ID}, ${userId}, ${type}, ${parseFloat(amount)}, 'Test movement for correction', null, null, 'test', null, false, null)
+    INSERT INTO account_movements (id, society_id, user_id, type, amount, description, reference_id, reference_type, created_by, created_at, corrected_by_id, is_correction, correction_reason)
+    VALUES (${movementId}, ${DEMO_SOCIETY_ID}, ${userId}, ${type}, ${parseFloat(amount)}, 'Test movement for correction', null, null, ${ADMIN_USER_ID}, NOW(), null, false, null)
   `);
   return movementId;
 }
