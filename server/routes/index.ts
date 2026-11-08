@@ -364,5 +364,31 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
     }
   });
 
+  // Ping endpoint for basic connectivity check
+  app.get("/api/ping", (req: Request, res: Response) => {
+    res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
+  });
+
+  // Health endpoint with database connection test
+  app.get("/api/health", async (_req: Request, res: Response) => {
+    try {
+      // Test database connection
+      await db.query.societies.findFirst();
+
+      res.status(200).json({
+        status: "healthy",
+        timestamp: new Date().toISOString(),
+        database: "connected",
+      });
+    } catch (err) {
+      res.status(503).json({
+        status: "unhealthy",
+        timestamp: new Date().toISOString(),
+        database: "disconnected",
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  });
+
   return httpServer;
 }
